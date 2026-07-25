@@ -378,6 +378,9 @@ final class PermissionMatrixIntegrationTest extends TestCase
 		$response = $config->index();
 		$this->assertArrayHasKey('accessRestrictionEnabled', $response->getData());
 		$this->assertTrue($response->getData()['isAppAdmin']);
+		$this->assertArrayHasKey('isSystemAdmin', $response->getData());
+		$this->assertArrayHasKey('appAdmins', $response->getData());
+		$this->assertIsArray($response->getData()['appAdmins']);
 
 		$acl = Server::get(AccessControlService::class);
 		$before = $acl->allowNegativeStock();

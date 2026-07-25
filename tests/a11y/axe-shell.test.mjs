@@ -80,6 +80,8 @@ test('movements fixture exposes filter form and receive dialog', () => {
 test('settings fixture exposes license seats devices and support', () => {
 	const html = loadFixture('a11y-settings.html');
 	assert.match(html, /id="iv-license"/);
+	assert.match(html, /id="iv-app-admins"/);
+	assert.match(html, /Delegated app administrators/);
 	assert.match(html, /Assign seat/);
 	assert.match(html, /Create device slot/);
 	assert.match(html, /One-time pairing code/);

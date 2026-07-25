@@ -133,6 +133,24 @@ test('settings edit allow and office groups', () => {
 	assert.match(appJs, /officeGroups:\s*lines\(officeGroups\)/);
 });
 
+test('settings expose delegated app administrators \(L0 writable\)', () => {
+	assert.match(appJs, /Delegated app administrators/);
+	assert.match(appJs, /iv-app-admins/);
+	assert.match(appJs, /canEditAppAdmins/);
+	assert.match(appJs, /isSystemAdmin/);
+	assert.match(appJs, /payload\.appAdmins = lines\(appAdmins\)/);
+	assert.match(appJs, /Only Nextcloud system administrators can change the app administrator list/);
+});
+
+test('settings surface unknown user and group field errors', () => {
+	assert.match(appJs, /unknown_user/);
+	assert.match(appJs, /unknown_group/);
+	assert.match(appJs, /This Nextcloud user does not exist/);
+	assert.match(appJs, /This Nextcloud group does not exist/);
+	assert.match(appJs, /applyFieldErrors\(mount,/);
+	assert.match(appJs, /clearFieldErrors\(mount\)/);
+});
+
 test('movements transfer group is clickable filter', () => {
 	assert.match(appJs, /Filter by transfer group/);
 	assert.match(appJs, /transferGroup=/);

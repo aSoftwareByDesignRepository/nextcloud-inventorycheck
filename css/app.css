@@ -51,10 +51,10 @@ a.button {
 	left: -9999px;
 	top: 0;
 	z-index: 3000;
-	padding: 10px 16px;
+	padding: var(--iv-space-2, 8px) var(--iv-space-4, 16px);
 	background: var(--color-primary-element);
 	color: var(--color-primary-element-text);
-	border-radius: 0 0 var(--border-radius) 0;
+	border-radius: 0 0 var(--iv-radius-sm, 6px) 0;
 }
 
 .iv-skip-link:focus {
@@ -725,29 +725,31 @@ textarea.iv-input {
 /* ── Sections / columns / detail ──────────────────────────────────── */
 
 .iv-section {
-	margin-top: 28px;
+	margin-top: var(--iv-space-6, 32px);
 }
 
 .iv-section__head {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 12px;
+	gap: var(--iv-space-3, 12px);
 	align-items: center;
 	justify-content: space-between;
-	margin-bottom: 8px;
+	margin-bottom: var(--iv-space-2, 8px);
 }
 
 .iv-section__title {
 	margin: 0;
-	font-size: 18px;
+	font-size: var(--iv-fs-lg, 1.125rem);
 	font-weight: 700;
+	line-height: var(--iv-line-tight, 1.2);
 }
 
 .iv-section__hint {
-	margin: 0 0 12px;
-	font-size: 13.5px;
-	color: var(--color-text-maxcontrast);
-	max-width: 72ch;
+	margin: 0 0 var(--iv-space-3, 12px);
+	font-size: var(--iv-fs-sm, 0.875rem);
+	color: var(--iv-muted, var(--color-text-maxcontrast));
+	max-width: 65ch;
+	line-height: var(--iv-line-base, 1.45);
 }
 
 .iv-columns {

@@ -114,22 +114,41 @@ export async function ensureLoggedIn(page, prefix = 'ADMIN') {
 }
 
 export async function openInventory(page, path = '/apps/inventorycheck/') {
-	await page.goto(path, { waitUntil: 'domcontentloaded' })
-	if (page.url().includes('/login')) {
-		await ensureLoggedIn(page, 'ADMIN')
-		await page.goto(path, { waitUntil: 'domcontentloaded' })
+	let lastErr = null
+	for (let attempt = 1; attempt <= 3; attempt++) {
+		try {
+			await page.goto(path, { waitUntil: 'domcontentloaded', timeout: 45_000 })
+			if (page.url().includes('/login')) {
+				await ensureLoggedIn(page, 'ADMIN')
+				await page.goto(path, { waitUntil: 'domcontentloaded', timeout: 45_000 })
+			}
+			const denied = page.locator('.iv-app--denied, #iv-denied-title')
+			if (await denied.first().isVisible({ timeout: 2_000 }).catch(() => false)) {
+				throw new Error('InventoryCheck access denied for this user — check allow-lists')
+			}
+			const notFound = page.getByRole('heading', { name: /Page not found|Seite nicht gefunden/i })
+			if (await notFound.first().isVisible({ timeout: 1_000 }).catch(() => false)) {
+				lastErr = new Error(`InventoryCheck 404 for ${path} (attempt ${attempt})`)
+				await page.waitForTimeout(1000 * attempt)
+				continue
+			}
+			// Shell landmark: title is always painted; #iv-main-content can be empty
+			// (zero-height) until JS fills it — Playwright then reports it as "hidden".
+			const shell = page.locator('#app-content.iv-app')
+			await expect(shell, 'expected InventoryCheck shell (#app-content.iv-app)').toBeVisible({
+				timeout: 30_000,
+			})
+			await expect(page.locator('#iv-page-title')).toBeVisible({ timeout: 30_000 })
+			await expect(page.locator('#iv-main-content')).toBeAttached({ timeout: 30_000 })
+			return shell
+		} catch (err) {
+			lastErr = err
+			const msg = String(err && err.message ? err.message : err)
+			if (!/ERR_CONNECTION_|ERR_SOCKET_|Timeout|net::|404|Page not found/i.test(msg) || attempt === 3) {
+				throw err
+			}
+			await page.waitForTimeout(1500 * attempt)
+		}
 	}
-	const denied = page.locator('.iv-app--denied, #iv-denied-title')
-	if (await denied.first().isVisible({ timeout: 2_000 }).catch(() => false)) {
-		throw new Error('InventoryCheck access denied for this user — check allow-lists')
-	}
-	// Shell landmark: title is always painted; #iv-main-content can be empty
-	// (zero-height) until JS fills it — Playwright then reports it as "hidden".
-	const shell = page.locator('#app-content.iv-app')
-	await expect(shell, 'expected InventoryCheck shell (#app-content.iv-app)').toBeVisible({
-		timeout: 30_000,
-	})
-	await expect(page.locator('#iv-page-title')).toBeVisible({ timeout: 30_000 })
-	await expect(page.locator('#iv-main-content')).toBeAttached({ timeout: 30_000 })
-	return shell
+	throw lastErr
 }

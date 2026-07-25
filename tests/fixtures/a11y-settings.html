@@ -32,6 +32,11 @@
 				<label class="iv-label" for="iv-allowed-users">Allowed users (one per line)</label>
 				<textarea class="iv-input" id="iv-allowed-users" rows="3"></textarea>
 			</div>
+			<div class="iv-field">
+				<label class="iv-label" for="iv-app-admins">Delegated app administrators</label>
+				<textarea class="iv-input" id="iv-app-admins" rows="3" aria-describedby="iv-app-admins-hint"></textarea>
+				<p id="iv-app-admins-hint" class="iv-field__hint">Nextcloud user IDs who may change access policy, office lists, and the license (in addition to system administrators).</p>
+			</div>
 			<label class="iv-switch" for="iv-allow-negative">
 				<input type="checkbox" class="iv-switch__input" id="iv-allow-negative">
 				<span class="iv-switch__label">Allow negative stock</span>

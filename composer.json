@@ -40,6 +40,7 @@
 		"test:mutation:adjust": "php tests/Mutation/run-adjust-mutations.php",
 		"test:mutation:codes": "php tests/Mutation/run-code-rules-mutations.php",
 		"test:mutation:access": "php tests/Mutation/run-access-mutations.php",
+		"test:mutation:config": "php tests/Mutation/run-config-mutations.php",
 		"test:mutation:license": "php tests/Mutation/run-license-mutations.php",
 		"test:mutation:hash": "php tests/Mutation/run-hash-secret-mutations.php",
 		"test:mutation:rank": "php tests/Mutation/run-rank-mutations.php",
@@ -48,7 +49,7 @@
 		"test:mutation:movement": "php tests/Mutation/run-movement-service-mutations.php",
 		"test:mutation:pairing": "php tests/Mutation/run-pairing-mutations.php",
 		"test:mutation:balance": "php tests/Mutation/run-balance-mutations.php",
-		"test:mutation": "composer test:mutation:math && composer test:mutation:adjust && composer test:mutation:codes && composer test:mutation:access && composer test:mutation:license && composer test:mutation:hash && composer test:mutation:rank && composer test:mutation:support && composer test:mutation:middleware && composer test:mutation:movement && composer test:mutation:pairing && composer test:mutation:balance",
+		"test:mutation": "composer test:mutation:math && composer test:mutation:adjust && composer test:mutation:codes && composer test:mutation:access && composer test:mutation:config && composer test:mutation:license && composer test:mutation:hash && composer test:mutation:rank && composer test:mutation:support && composer test:mutation:middleware && composer test:mutation:movement && composer test:mutation:pairing && composer test:mutation:balance",
 		"test:msi": "php tests/Mutation/msi-report.php",
 		"test:gauntlet": "composer test:all && composer test:js && composer test:a11y && composer test:msi"
 	},

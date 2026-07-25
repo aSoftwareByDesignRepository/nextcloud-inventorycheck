@@ -65,6 +65,7 @@ final class AzcShellParityContractTest extends TestCase
 			'iv-alert-region',
 			'iv-skip-link',
 			'iv-main-content',
+			'data-iv-is-system-admin',
 		] as $token) {
 			$this->assertStringContainsString($token, $start, 'page-start missing ' . $token);
 		}

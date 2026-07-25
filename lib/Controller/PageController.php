@@ -90,6 +90,7 @@ class PageController extends Controller
 		$l = $this->l10nFactory->get(Application::APP_ID);
 		$uid = $this->userSession->getUser()?->getUID() ?? '';
 		$isAppAdmin = $this->access->isAppAdmin($uid);
+		$isSystemAdmin = $this->access->isSystemAdmin($uid);
 		$isOffice = $this->access->isOffice($uid);
 
 		$urls = [
@@ -129,6 +130,7 @@ class PageController extends Controller
 			'entityId' => $entityId,
 			'currentUserId' => $uid,
 			'isAppAdmin' => $isAppAdmin,
+			'isSystemAdmin' => $isSystemAdmin,
 			'isOffice' => $isOffice,
 			'mobileAppStatus' => LicenseService::MOBILE_APP_STATUS,
 			'urlsJson' => json_encode($urls, JSON_UNESCAPED_SLASHES),

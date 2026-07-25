@@ -244,6 +244,7 @@
 			entityId: root.getAttribute('data-iv-entity-id'),
 			userId: root.getAttribute('data-iv-current-user') || '',
 			isAppAdmin: root.getAttribute('data-iv-is-app-admin') === '1',
+			isSystemAdmin: root.getAttribute('data-iv-is-system-admin') === '1',
 			isOffice: root.getAttribute('data-iv-is-office') === '1',
 			allowNegative: root.getAttribute('data-iv-allow-negative') === '1',
 			urls: urls,
@@ -303,7 +304,7 @@
 		});
 	}
 
-	function applyFieldErrors(root, details) {
+	function applyFieldErrors(root, details, fallbackMessage) {
 		clearFieldErrors(root);
 		if (!details || !details.length) return false;
 		var applied = false;
@@ -314,7 +315,15 @@
 			if (!wrap || !wrap._ivError || !wrap._ivInput) return;
 			wrap._ivInput.setAttribute('aria-invalid', 'true');
 			wrap._ivError.hidden = false;
-			wrap._ivError.textContent = d.message || d.code || tr('Please check this field.');
+			var text = d.message || fallbackMessage || '';
+			if (!text && d.code === 'unknown_user') {
+				text = tr('This Nextcloud user does not exist.');
+			} else if (!text && d.code === 'unknown_group') {
+				text = tr('This Nextcloud group does not exist.');
+			} else if (!text) {
+				text = d.code || tr('Please check this field.');
+			}
+			wrap._ivError.textContent = text;
 			applied = true;
 		});
 		return applied;
@@ -379,7 +388,7 @@
 					confirmBtn.disabled = false;
 					cancelBtn.disabled = false;
 					confirmBtn.removeAttribute('aria-busy');
-					var inline = applyFieldErrors(bodyEl, err && err.details);
+					var inline = applyFieldErrors(bodyEl, err && err.details, err && err.message);
 					toast(err.message || tr('Something went wrong.'), true);
 					if (inline) {
 						var bad = bodyEl.querySelector('[aria-invalid="true"]');
@@ -1611,33 +1620,65 @@
 				id: 'iv-allowed-groups',
 				text: (cfg.allowedGroups || []).join('\n'),
 			});
+			var appAdmins = el('textarea', {
+				className: 'iv-input',
+				rows: '3',
+				id: 'iv-app-admins',
+				text: (cfg.appAdmins || []).join('\n'),
+				'aria-describedby': 'iv-app-admins-hint',
+			});
+			var canEditAppAdmins = !!(ctx.isSystemAdmin || cfg.isSystemAdmin);
+			if (!canEditAppAdmins) {
+				appAdmins.setAttribute('readonly', '');
+			}
 
 			function lines(ta) {
 				return ta.value.split(/\n+/).map(function (s) { return s.trim(); }).filter(Boolean);
 			}
 
-			mount.appendChild(el('section', { className: 'iv-section', 'aria-labelledby': 'iv-access-title' }, [
+			var accessKids = [
 				el('h2', { id: 'iv-access-title', className: 'iv-section__title', text: tr('Access') }),
+				el('p', {
+					className: 'iv-section__hint',
+					text: tr('By default every logged-in user can open InventoryCheck. Turn on the restriction to limit access to the lists below. Administrators always keep access.'),
+				}),
 				el('label', { className: 'iv-switch', for: 'iv-access-restriction' }, [
 					restriction,
 					el('span', { className: 'iv-switch__label', text: tr('Restrict access to allow-listed users and groups') }),
 				]),
 				field(tr('Allowed users (one per line)'), allowedUsers, { name: 'allowedUsers' }),
 				field(tr('Allowed groups (one per line)'), allowedGroups, { name: 'allowedGroups' }),
+				field(tr('Delegated app administrators'), appAdmins, { name: 'appAdmins' }),
+				el('p', {
+					className: 'iv-field__hint',
+					id: 'iv-app-admins-hint',
+					text: canEditAppAdmins
+						? tr('Nextcloud user IDs who may change access policy, office lists, and the license (in addition to system administrators).')
+						: tr('Only Nextcloud system administrators can change the app administrator list.'),
+				}),
 				btn(tr('Save access'), {
 					primary: true,
 					onclick: function () {
-						api('POST', ctx.urls.api.configAccess, {
+						var payload = {
 							accessRestrictionEnabled: restriction.checked,
 							allowedUsers: lines(allowedUsers),
 							allowedGroups: lines(allowedGroups),
-							appAdmins: cfg.appAdmins || [],
-						}).then(function () {
+						};
+						if (canEditAppAdmins) {
+							payload.appAdmins = lines(appAdmins);
+						}
+						clearFieldErrors(mount);
+						api('POST', ctx.urls.api.configAccess, payload).then(function () {
 							toast(tr('Access settings saved.'));
-						}).catch(function (err) { toast(err.message, true); });
+						}).catch(function (err) {
+							applyFieldErrors(mount, err && err.details, err && err.message);
+							toast(err.message, true);
+						});
 					},
 				}),
-			]));
+			];
+
+			mount.appendChild(el('section', { className: 'iv-section', 'aria-labelledby': 'iv-access-title' }, accessKids));
 
 			mount.appendChild(el('section', { className: 'iv-section', 'aria-labelledby': 'iv-office-title' }, [
 				el('h2', { id: 'iv-office-title', className: 'iv-section__title', text: tr('Office / storekeeper') }),
@@ -1650,13 +1691,17 @@
 				btn(tr('Save office settings'), {
 					primary: true,
 					onclick: function () {
+						clearFieldErrors(mount);
 						api('POST', ctx.urls.api.configOffice, {
 							officeUsers: lines(officeUsers),
 							officeGroups: lines(officeGroups),
 							allowNegativeStock: neg.checked,
 						}).then(function () {
 							toast(tr('Office settings saved.'));
-						}).catch(function (err) { toast(err.message, true); });
+						}).catch(function (err) {
+							applyFieldErrors(mount, err && err.details, err && err.message);
+							toast(err.message, true);
+						});
 					},
 				}),
 			]));

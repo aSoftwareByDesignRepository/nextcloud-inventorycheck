@@ -210,6 +210,7 @@ class AppAccessMiddleware extends Middleware
 			'invalid_query' => $l->t('The list parameters are not valid.'),
 			'license_invalid' => $l->t('This license key is not valid: %s', [$exception->getMessage()]),
 			'unknown_user' => $l->t('This Nextcloud user does not exist.'),
+			'unknown_group' => $l->t('This Nextcloud group does not exist.'),
 			'invalid_pair_code' => $l->t('This pairing code is invalid or expired.'),
 			default => $l->t('Please check the highlighted fields.'),
 		};

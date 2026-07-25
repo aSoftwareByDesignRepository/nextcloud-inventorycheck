@@ -17,6 +17,7 @@ $pageHint = (string)$_['pageHint'];
 $entityId = $_['entityId'] ?? null;
 $currentUserId = (string)$_['currentUserId'];
 $isAppAdmin = !empty($_['isAppAdmin']);
+$isSystemAdmin = !empty($_['isSystemAdmin']);
 $isOffice = !empty($_['isOffice']);
 $mobileAppStatus = (string)$_['mobileAppStatus'];
 $urlsJson = (string)$_['urlsJson'];
@@ -48,6 +49,7 @@ require __DIR__ . '/navigation.php';
 	<?php if ($entityId !== null): ?>data-iv-entity-id="<?php p((string)$entityId); ?>"<?php endif; ?>
 	data-iv-current-user="<?php p($currentUserId); ?>"
 	data-iv-is-app-admin="<?php p($isAppAdmin ? '1' : '0'); ?>"
+	data-iv-is-system-admin="<?php p($isSystemAdmin ? '1' : '0'); ?>"
 	data-iv-is-office="<?php p($isOffice ? '1' : '0'); ?>"
 	data-iv-allow-negative="<?php p($allowNegativeStock ? '1' : '0'); ?>"
 	data-iv-mobile-app-status="<?php p($mobileAppStatus); ?>"
