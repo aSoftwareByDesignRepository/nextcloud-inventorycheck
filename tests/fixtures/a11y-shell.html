@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>InventoryCheck a11y fixture</title>
+	<style>
+		.iv-sr-only {
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			padding: 0;
+			margin: -1px;
+			overflow: hidden;
+			clip: rect(0, 0, 0, 0);
+			white-space: nowrap;
+			border: 0;
+		}
+		.iv-btn {
+			min-height: 44px;
+			min-width: 44px;
+			padding: 8px 14px;
+		}
+		.iv-input {
+			min-height: 44px;
+			padding: 8px 12px;
+		}
+		:focus-visible {
+			outline: 2px solid #006aa3;
+			outline-offset: 2px;
+		}
+		body { font-family: system-ui, sans-serif; color: #111; background: #fff; margin: 0; }
+		main { padding: 16px; }
+		.iv-nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 8px; color: #003366; }
+	</style>
+</head>
+<body>
+	<a class="iv-skip-link" href="#iv-main">Skip to main content</a>
+	<nav class="iv-nav" role="navigation" aria-label="InventoryCheck navigation">
+		<a href="#" aria-current="page">Dashboard</a>
+		<a href="#">Items</a>
+		<a href="#">Locations</a>
+		<a href="#">Movements</a>
+		<a href="#">Settings</a>
+	</nav>
+	<div id="iv-live-region" class="iv-sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+	<div id="iv-alert-region" class="iv-sr-only" role="alert" aria-live="assertive" aria-atomic="true"></div>
+	<main id="iv-main">
+		<header class="iv-page-header" aria-labelledby="iv-page-title">
+			<h1 id="iv-page-title">Dashboard</h1>
+			<p>Low stock and recent movements</p>
+		</header>
+		<section class="iv-section" aria-labelledby="iv-low-title">
+			<h2 id="iv-low-title">Low stock</h2>
+			<p>No items below reorder level.</p>
+			<button type="button" class="iv-btn">Receive stock</button>
+		</section>
+		<section class="iv-section" aria-labelledby="iv-mov-title">
+			<h2 id="iv-mov-title">Recent movements</h2>
+			<label>
+				Search
+				<input class="iv-input" type="search" aria-label="Search movements" name="q">
+			</label>
+			<button type="button" class="iv-btn">Issue</button>
+			<button type="button" class="iv-btn">Transfer</button>
+		</section>
+		<dialog id="iv-dialog" open aria-modal="true" aria-labelledby="iv-dialog-title">
+			<h2 id="iv-dialog-title">Receive stock</h2>
+			<label>
+				Item
+				<select class="iv-input" required aria-required="true">
+					<option value="">Choose an item</option>
+					<option value="1">Air filter (FILTER-42)</option>
+				</select>
+			</label>
+			<label>
+				Quantity
+				<input class="iv-input" type="number" min="1" value="1" required aria-required="true">
+			</label>
+			<button type="button" class="iv-btn">Save</button>
+			<button type="button" class="iv-btn">Cancel</button>
+		</dialog>
+	</main>
+</body>
+</html>

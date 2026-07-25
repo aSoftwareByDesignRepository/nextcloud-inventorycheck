@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>InventoryCheck — Settings / License a11y</title>
+	<!--STYLE-->
+</head>
+<body>
+	<a class="iv-skip-link" href="#iv-main">Skip to main content</a>
+	<nav class="iv-nav" role="navigation" aria-label="InventoryCheck navigation">
+		<a href="#">Dashboard</a>
+		<a href="#">Items</a>
+		<a href="#">Locations</a>
+		<a href="#">Movements</a>
+		<a href="#" aria-current="page">Settings</a>
+	</nav>
+	<div id="iv-live-region" class="iv-sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+	<div id="iv-alert-region" class="iv-sr-only" role="alert" aria-live="assertive" aria-atomic="true"></div>
+	<main id="iv-main">
+		<header class="iv-page-header" aria-labelledby="iv-page-title">
+			<h1 id="iv-page-title">Settings</h1>
+			<p>Access, stock policy, license, support</p>
+		</header>
+		<section class="iv-section" aria-labelledby="iv-access-title">
+			<h2 id="iv-access-title" class="iv-section__title">Access</h2>
+			<label class="iv-switch" for="iv-access-restriction">
+				<input type="checkbox" class="iv-switch__input" id="iv-access-restriction">
+				<span class="iv-switch__label">Restrict app access</span>
+			</label>
+			<div class="iv-field">
+				<label class="iv-label" for="iv-allowed-users">Allowed users (one per line)</label>
+				<textarea class="iv-input" id="iv-allowed-users" rows="3"></textarea>
+			</div>
+			<label class="iv-switch" for="iv-allow-negative">
+				<input type="checkbox" class="iv-switch__input" id="iv-allow-negative">
+				<span class="iv-switch__label">Allow negative stock</span>
+			</label>
+			<button type="button" class="iv-btn iv-btn--primary">Save access</button>
+		</section>
+		<section class="iv-section" id="iv-license" aria-labelledby="iv-license-title">
+			<h2 id="iv-license-title" class="iv-section__title">License / Mobile &amp; Scanner</h2>
+			<div class="iv-field">
+				<label class="iv-label" for="iv-license-key">License key</label>
+				<textarea class="iv-input" id="iv-license-key" rows="3" aria-describedby="iv-license-hint"></textarea>
+				<p id="iv-license-hint" class="iv-muted">Paste an IV2 key. Validity is checked on this server.</p>
+			</div>
+			<button type="button" class="iv-btn iv-btn--primary">Apply key</button>
+			<h3 class="iv-section__title">Seats</h3>
+			<div class="iv-field">
+				<label class="iv-label" for="iv-seat-uid">Assign seat to user</label>
+				<input class="iv-input" id="iv-seat-uid" type="text" autocomplete="username">
+			</div>
+			<button type="button" class="iv-btn">Assign seat</button>
+			<table class="iv-table">
+				<thead>
+					<tr>
+						<th scope="col">User</th>
+						<th scope="col">Status</th>
+						<th scope="col">Actions</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td data-label="User">alice</td>
+						<td data-label="Status">Within limit</td>
+						<td data-label="Actions"><button type="button" class="iv-btn">Remove</button></td>
+					</tr>
+				</tbody>
+			</table>
+			<h3 class="iv-section__title">Devices</h3>
+			<div class="iv-field">
+				<label class="iv-label" for="iv-device-label">Device label</label>
+				<input class="iv-input" id="iv-device-label" type="text">
+			</div>
+			<button type="button" class="iv-btn">Create device slot</button>
+			<p class="iv-muted" role="status">One-time pairing code: <code class="iv-label-code">AB12CD34</code> — Copy this code now. It is shown only once.</p>
+			<button type="button" class="iv-btn">Copy code</button>
+			<button type="button" class="iv-btn">Regenerate code</button>
+		</section>
+		<section class="iv-section iv-support-us" id="iv-support-us" aria-labelledby="iv-support-us-title" data-support-us="1">
+			<h2 id="iv-support-us-title" class="iv-section__title">Support &amp; us</h2>
+			<p id="iv-support-us-intro">InventoryCheck stays free (AGPL) on your Nextcloud. If your organisation needs bookable help on an invoice, choose an option below:</p>
+			<a class="iv-btn iv-btn--primary" href="mailto:info@software-by-design.de?subject=InventoryCheck%3A%20Partner">Ask for a partner offer</a>
+		</section>
+	</main>
+</body>
+</html>

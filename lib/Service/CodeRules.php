@@ -1,0 +1,81 @@
+<?php
+
+declare(strict_types=1);
+
+namespace OCA\InventoryCheck\Service;
+
+/**
+ * SKU / scan_code / location code rules (SPEC S7, S19).
+ *
+ * Charset ^[A-Za-z0-9._/-]{1,N}$ — no spaces (wedge scanners / QR).
+ * Stored as entered after trim; uniqueness is exact byte match (case-sensitive).
+ */
+final class CodeRules
+{
+	public const SKU_MAX = 64;
+	public const SCAN_MAX = 128;
+	public const LOC_CODE_MAX = 64;
+
+	public const PATTERN_SKU = '/^[A-Za-z0-9._\\/-]{1,64}$/';
+	public const PATTERN_SCAN = '/^[A-Za-z0-9._\\/-]{1,128}$/';
+	public const PATTERN_LOC = '/^[A-Za-z0-9._\\/-]{1,64}$/';
+
+	public static function trim(string $value): string
+	{
+		return trim($value);
+	}
+
+	public static function isValidSku(string $value): bool
+	{
+		return $value !== '' && preg_match(self::PATTERN_SKU, $value) === 1;
+	}
+
+	public static function isValidScanCode(string $value): bool
+	{
+		return $value !== '' && preg_match(self::PATTERN_SCAN, $value) === 1;
+	}
+
+	public static function isValidLocationCode(string $value): bool
+	{
+		return $value !== '' && preg_match(self::PATTERN_LOC, $value) === 1;
+	}
+
+	/**
+	 * Cross-field uniqueness: a scan_code must not equal another item's sku
+	 * and vice versa (S7). Same-item sku === scan_code is allowed (D6 default).
+	 *
+	 * @param list<array{id: int, sku: string, scanCode: string}> $others
+	 */
+	public static function conflictsWithOthers(
+		?int $selfId,
+		string $sku,
+		string $scanCode,
+		array $others,
+	): bool {
+		foreach ($others as $row) {
+			if ($selfId !== null && (int)$row['id'] === $selfId) {
+				continue;
+			}
+			$otherSku = (string)$row['sku'];
+			$otherScan = (string)$row['scanCode'];
+			if ($sku === $otherSku || $sku === $otherScan) {
+				return true;
+			}
+			if ($scanCode === $otherSku || $scanCode === $otherScan) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/** @return list<string> */
+	public static function locationKinds(): array
+	{
+		return ['warehouse', 'shelf', 'van', 'site', 'other'];
+	}
+
+	public static function isValidLocationKind(string $kind): bool
+	{
+		return in_array($kind, self::locationKinds(), true);
+	}
+}

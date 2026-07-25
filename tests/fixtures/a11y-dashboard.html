@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>InventoryCheck — Dashboard a11y</title>
+	<!--STYLE-->
+</head>
+<body>
+	<a class="iv-skip-link" href="#iv-main">Skip to main content</a>
+	<nav class="iv-nav" role="navigation" aria-label="InventoryCheck navigation">
+		<a href="#" aria-current="page">Dashboard</a>
+		<a href="#">Items</a>
+		<a href="#">Locations</a>
+		<a href="#">Movements</a>
+		<a href="#">Settings</a>
+	</nav>
+	<div id="iv-live-region" class="iv-sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+	<div id="iv-alert-region" class="iv-sr-only" role="alert" aria-live="assertive" aria-atomic="true"></div>
+	<main id="iv-main">
+		<header class="iv-page-header" aria-labelledby="iv-page-title">
+			<h1 id="iv-page-title">Dashboard</h1>
+			<p>Low stock and recent movements</p>
+		</header>
+		<section class="iv-section" aria-labelledby="iv-neg-title">
+			<h2 id="iv-neg-title" class="iv-section__title">Negative balances</h2>
+			<p class="iv-muted">Negative stock is turned off. Adjust or receive to clear these.</p>
+			<table class="iv-table">
+				<thead>
+					<tr>
+						<th scope="col">Item</th>
+						<th scope="col">Location</th>
+						<th scope="col">On hand</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td data-label="Item">Air filter (FILTER-42)</td>
+						<td data-label="Location">Van (VAN-1)</td>
+						<td data-label="On hand"><span class="iv-badge iv-badge--overdue">−4 — negative stock</span></td>
+					</tr>
+				</tbody>
+			</table>
+		</section>
+		<section class="iv-section" aria-labelledby="iv-low-title">
+			<h2 id="iv-low-title" class="iv-section__title">Low stock</h2>
+			<table class="iv-table">
+				<thead>
+					<tr>
+						<th scope="col">Item</th>
+						<th scope="col">SKU</th>
+						<th scope="col">On hand</th>
+						<th scope="col">Reorder at</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td data-label="Item">Seal kit</td>
+						<td data-label="SKU">SEAL-7</td>
+						<td data-label="On hand">2</td>
+						<td data-label="Reorder at">5</td>
+					</tr>
+				</tbody>
+			</table>
+			<button type="button" class="iv-btn iv-btn--primary">Receive stock</button>
+			<button type="button" class="iv-btn">Issue stock</button>
+			<button type="button" class="iv-btn">Transfer stock</button>
+		</section>
+		<section class="iv-section" aria-labelledby="iv-mov-title">
+			<h2 id="iv-mov-title" class="iv-section__title">Recent movements</h2>
+			<table class="iv-table">
+				<thead>
+					<tr>
+						<th scope="col">Kind</th>
+						<th scope="col">Item</th>
+						<th scope="col">Location</th>
+						<th scope="col">Delta</th>
+						<th scope="col">After</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td data-label="Kind"><span class="iv-badge iv-badge--done">Receive</span></td>
+						<td data-label="Item">Air filter (FILTER-42)</td>
+						<td data-label="Location">Warehouse (WH)</td>
+						<td data-label="Delta">+10</td>
+						<td data-label="After">10</td>
+					</tr>
+				</tbody>
+			</table>
+		</section>
+	</main>
+</body>
+</html>

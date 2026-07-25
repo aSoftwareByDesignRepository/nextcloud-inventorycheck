@@ -1,0 +1,9 @@
+/vendor/
+/node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/tests/e2e/.env
+/tests/e2e/.auth/
+/tests/e2e/artifacts/
+.phpunit.result.cache

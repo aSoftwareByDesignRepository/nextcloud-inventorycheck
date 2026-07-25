@@ -1,0 +1,176 @@
+<?php
+
+declare(strict_types=1);
+
+namespace OCA\InventoryCheck\Service;
+
+use OCA\InventoryCheck\Db\Location;
+use OCA\InventoryCheck\Db\LocationMapper;
+use OCA\InventoryCheck\Db\UniqueViolation;
+use OCA\InventoryCheck\Exception\ConflictException;
+use OCA\InventoryCheck\Exception\ValidationException;
+use OCP\IDBConnection;
+
+class LocationService
+{
+	public function __construct(
+		private readonly IDBConnection $db,
+		private readonly LocationMapper $locations,
+		private readonly AccessControlService $access,
+		private readonly Clock $clock,
+	) {
+	}
+
+	/** @return array{data: list<array<string, mixed>>, total: int, limit: int, offset: int} */
+	public function list(?bool $active, int $limit, int $offset): array
+	{
+		$result = $this->locations->search($active, $limit, $offset);
+		return [
+			'data' => array_map(static fn (Location $l) => $l->toApi(), $result['data']),
+			'total' => $result['total'],
+			'limit' => $limit,
+			'offset' => $offset,
+		];
+	}
+
+	/** @return array<string, mixed> */
+	public function get(int $id): array
+	{
+		return $this->locations->findById($id)->toApi();
+	}
+
+	/**
+	 * @param array<string, mixed> $input
+	 * @return array<string, mixed>
+	 */
+	public function create(string $actorUid, array $input): array
+	{
+		$this->access->requireOffice($actorUid);
+		$code = CodeRules::trim((string)($input['code'] ?? ''));
+		$name = CodeRules::trim((string)($input['name'] ?? ''));
+		$kind = CodeRules::trim((string)($input['kind'] ?? 'other'));
+		if ($kind === '') {
+			$kind = 'other';
+		}
+		$notes = isset($input['notes']) ? CodeRules::trim((string)$input['notes']) : null;
+		if ($notes === '') {
+			$notes = null;
+		}
+		$this->validateMaster($code, $name, $kind, $notes);
+		if ($this->locations->findByCode($code) !== null) {
+			throw new ConflictException('code_exists');
+		}
+		$now = $this->clock->now();
+		$loc = new Location();
+		$loc->setCode($code);
+		$loc->setName($name);
+		$loc->setKind($kind);
+		$loc->setNotes($notes);
+		$loc->setActive(true);
+		$loc->setCreatedAt($now);
+		$loc->setUpdatedAt($now);
+		$loc->setCreatedBy($actorUid);
+		try {
+			return $this->locations->insert($loc)->toApi();
+		} catch (\Throwable $e) {
+			// Unique-index backstop for two concurrent creates of one code.
+			throw UniqueViolation::is($e) ? new ConflictException('code_exists') : $e;
+		}
+	}
+
+	/**
+	 * @param array<string, mixed> $input
+	 * @return array<string, mixed>
+	 */
+	public function update(string $actorUid, int $id, array $input): array
+	{
+		$this->access->requireOffice($actorUid);
+		$this->db->beginTransaction();
+		try {
+			// Exclusive lock: serialises against movements' shared location
+			// lock, so the zero-balance check cannot race a posting (S5).
+			$loc = $this->locations->lockById($id, true);
+			if (array_key_exists('code', $input)) {
+				$code = CodeRules::trim((string)$input['code']);
+				if (!CodeRules::isValidLocationCode($code)) {
+					throw new ValidationException('invalid_code_format');
+				}
+				$existing = $this->locations->findByCode($code);
+				if ($existing !== null && (int)$existing->getId() !== $id) {
+					throw new ConflictException('code_exists');
+				}
+				$loc->setCode($code);
+			}
+			if (array_key_exists('name', $input)) {
+				$name = CodeRules::trim((string)$input['name']);
+				if ($name === '' || mb_strlen($name) > 255) {
+					throw new ValidationException('validation_failed', '', [['field' => 'name', 'code' => 'name_required']]);
+				}
+				$loc->setName($name);
+			}
+			if (array_key_exists('kind', $input)) {
+				$kind = CodeRules::trim((string)$input['kind']);
+				if (!CodeRules::isValidLocationKind($kind)) {
+					throw new ValidationException('validation_failed', '', [['field' => 'kind', 'code' => 'validation_failed']]);
+				}
+				$loc->setKind($kind);
+			}
+			if (array_key_exists('notes', $input)) {
+				$notes = $input['notes'] === null ? null : CodeRules::trim((string)$input['notes']);
+				if ($notes !== null && mb_strlen($notes) > 10000) {
+					throw new ValidationException('validation_failed', '', [['field' => 'notes', 'code' => 'validation_failed']]);
+				}
+				$loc->setNotes($notes === '' ? null : $notes);
+			}
+			if (array_key_exists('active', $input)) {
+				$active = (bool)$input['active'];
+				if (!$active && $loc->getActive() && $this->locations->hasNonZeroBalance($id)) {
+					throw new ConflictException('location_has_stock');
+				}
+				$loc->setActive($active);
+			}
+			$loc->setUpdatedAt($this->clock->now());
+			$api = $this->locations->update($loc)->toApi();
+			$this->db->commit();
+			return $api;
+		} catch (\Throwable $e) {
+			$this->db->rollBack();
+			throw UniqueViolation::is($e) ? new ConflictException('code_exists') : $e;
+		}
+	}
+
+	public function delete(string $actorUid, int $id): void
+	{
+		$this->access->requireOffice($actorUid);
+		$this->db->beginTransaction();
+		try {
+			// Exclusive lock conflicts with the shared lock held by any
+			// in-flight movement, so the reference count is authoritative (S6).
+			$loc = $this->locations->lockById($id, true);
+			if ($this->locations->countMovementsReferencing($id) > 0) {
+				throw new ConflictException('location_has_movements');
+			}
+			$this->locations->delete($loc);
+			$this->db->commit();
+		} catch (\Throwable $e) {
+			$this->db->rollBack();
+			throw $e;
+		}
+	}
+
+	private function validateMaster(string $code, string $name, string $kind, ?string $notes): void
+	{
+		if (!CodeRules::isValidLocationCode($code)) {
+			throw new ValidationException('invalid_code_format');
+		}
+		if ($name === '' || mb_strlen($name) > 255) {
+			throw new ValidationException('validation_failed', '', [['field' => 'name', 'code' => 'name_required']]);
+		}
+		if (!CodeRules::isValidLocationKind($kind)) {
+			throw new ValidationException('validation_failed', '', [['field' => 'kind', 'code' => 'validation_failed']]);
+		}
+		if ($notes !== null && mb_strlen($notes) > 10000) {
+			throw new ValidationException('validation_failed', '', [['field' => 'notes', 'code' => 'validation_failed']]);
+		}
+	}
+}

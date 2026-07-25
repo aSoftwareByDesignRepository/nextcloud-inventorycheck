@@ -1,0 +1,89 @@
+<?xml version="1.0"?>
+<!--
+  - SPDX-FileCopyrightText: 2026 Alexander Mäule <info@software-by-design.de>
+  - SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
+	<id>inventorycheck</id>
+	<name>InventoryCheck</name>
+	<name lang="de">InventoryCheck</name>
+	<summary>Stock levels, locations, and movements — ready for QR scan</summary>
+	<summary lang="de">Bestände, Lagerorte und Buchungen — vorbereitet für QR-Scan</summary>
+	<description><![CDATA[
+# InventoryCheck
+
+InventoryCheck keeps your parts and supplies on your Nextcloud: locations, quantities, and a clear booking history. Built so a later scan app can hit the same stock in the van or on the shelf.
+
+- Locations (warehouse, shelf, van, site box)
+- Items with SKU, scan code, UoM, and reorder level
+- Append-only movements: receive, issue, transfer, adjust
+- Low-stock dashboard and movement history
+- Office / field roles, optional access restriction
+- License surface for mobile seats and scan devices
+
+## Requirements
+
+- Nextcloud 32–34
+- PHP 8.2–8.5
+- MySQL/MariaDB or PostgreSQL
+	]]></description>
+	<description lang="de"><![CDATA[
+# InventoryCheck
+
+InventoryCheck verwaltet Lagerorte, Bestände und Buchungen in Ihrer Nextcloud. Vorbereitet für eine spätere Scan-App — im Lager oder im Transporter.
+
+- Lagerorte (Lager, Regal, Transporter, Baustellenbox)
+- Artikel mit SKU, Scan-Code, Einheit und Mindestbestand
+- Append-only Buchungen: Zugang, Abgang, Umbuchung, Korrektur
+- Mindestbestand-Dashboard und Buchungshistorie
+- Büro-/Außendienst-Rollen, optionale Zugriffsbeschränkung
+- Lizenzfläche für Mobile-Sitze und Scan-Geräte
+
+## Voraussetzungen
+
+- Nextcloud 32–34
+- PHP 8.2–8.5
+- MySQL/MariaDB oder PostgreSQL
+	]]></description>
+	<version>1.0.7</version>
+	<licence>AGPL-3.0-or-later</licence>
+	<author mail="info@software-by-design.de" homepage="https://nextcloud.software-by-design.de">Alexander Mäule</author>
+	<namespace>InventoryCheck</namespace>
+	<category>organization</category>
+	<category>office</category>
+	<website>https://nextcloud.software-by-design.de</website>
+	<bugs>https://github.com/aSoftwareByDesignRepository/nextcloud-inventorycheck/issues</bugs>
+	<repository>https://github.com/aSoftwareByDesignRepository/nextcloud-inventorycheck.git</repository>
+	<dependencies>
+		<nextcloud min-version="32" max-version="34"/>
+		<php min-version="8.2" max-version="8.5"/>
+		<database>mysql</database>
+		<database>pgsql</database>
+	</dependencies>
+	<navigations>
+		<navigation>
+			<name>InventoryCheck</name>
+			<route>inventorycheck.page.dashboard</route>
+			<icon>app.svg</icon>
+			<order>20</order>
+		</navigation>
+	</navigations>
+	<commands>
+		<command>OCA\InventoryCheck\Command\RebuildBalancesCommand</command>
+		<command>OCA\InventoryCheck\Command\UpgradeBackupCommand</command>
+	</commands>
+	<repair-steps>
+		<install>
+			<step>OCA\InventoryCheck\Repair\EnsureInventoryCheckSchema</step>
+		</install>
+		<pre-migration>
+			<step>OCA\InventoryCheck\Repair\BackupBeforeUpdate</step>
+		</pre-migration>
+		<post-migration>
+			<step>OCA\InventoryCheck\Repair\EnsureInventoryCheckSchema</step>
+		</post-migration>
+		<uninstall>
+			<step>OCA\InventoryCheck\Repair\UninstallDropTables</step>
+		</uninstall>
+	</repair-steps>
+</info>

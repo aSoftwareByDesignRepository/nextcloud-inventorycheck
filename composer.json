@@ -1,0 +1,59 @@
+{
+	"name": "software-by-design/nextcloud-inventorycheck",
+	"description": "Stock levels, locations, and movements on Nextcloud",
+	"type": "project",
+	"license": "AGPL-3.0-or-later",
+	"authors": [
+		{
+			"name": "Alexander Mäule",
+			"email": "info@software-by-design.de"
+		}
+	],
+	"require": {
+		"php": ">=8.2"
+	},
+	"require-dev": {
+		"nextcloud/ocp": "^32.0 || ^33.0",
+		"phpunit/phpunit": "^9.6"
+	},
+	"autoload": {
+		"psr-4": {
+			"OCA\\InventoryCheck\\": "lib/",
+			"splitbrain\\phpQRCode\\": "lib/Vendor/splitbrain/phpQRCode/"
+		}
+	},
+	"autoload-dev": {
+		"psr-4": {
+			"OCA\\InventoryCheck\\Tests\\": "tests/",
+			"OCP\\": "vendor/nextcloud/ocp/OCP/",
+			"NCU\\": "vendor/nextcloud/ocp/NCU/"
+		}
+	},
+	"scripts": {
+		"test": "phpunit --testsuite unit",
+		"test:unit": "phpunit --testsuite unit",
+		"test:integration": "phpunit --testsuite integration",
+		"test:all": "phpunit",
+		"test:js": "node --test --test-concurrency=1 tests/js/*.test.mjs tests/js/*.e2e.test.mjs",
+		"test:a11y": "node --test --test-concurrency=1 tests/a11y/*.test.mjs",
+		"test:mutation:math": "php tests/Mutation/run-movement-math-mutations.php",
+		"test:mutation:adjust": "php tests/Mutation/run-adjust-mutations.php",
+		"test:mutation:codes": "php tests/Mutation/run-code-rules-mutations.php",
+		"test:mutation:access": "php tests/Mutation/run-access-mutations.php",
+		"test:mutation:license": "php tests/Mutation/run-license-mutations.php",
+		"test:mutation:hash": "php tests/Mutation/run-hash-secret-mutations.php",
+		"test:mutation:rank": "php tests/Mutation/run-rank-mutations.php",
+		"test:mutation:support": "php tests/Mutation/run-support-us-links-mutations.php",
+		"test:mutation:middleware": "php tests/Mutation/run-middleware-mutations.php",
+		"test:mutation:movement": "php tests/Mutation/run-movement-service-mutations.php",
+		"test:mutation:pairing": "php tests/Mutation/run-pairing-mutations.php",
+		"test:mutation:balance": "php tests/Mutation/run-balance-mutations.php",
+		"test:mutation": "composer test:mutation:math && composer test:mutation:adjust && composer test:mutation:codes && composer test:mutation:access && composer test:mutation:license && composer test:mutation:hash && composer test:mutation:rank && composer test:mutation:support && composer test:mutation:middleware && composer test:mutation:movement && composer test:mutation:pairing && composer test:mutation:balance",
+		"test:msi": "php tests/Mutation/msi-report.php",
+		"test:gauntlet": "composer test:all && composer test:js && composer test:a11y && composer test:msi"
+	},
+	"config": {
+		"optimize-autoloader": true,
+		"sort-packages": true
+	}
+}

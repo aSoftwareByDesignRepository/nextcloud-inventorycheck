@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>InventoryCheck — Item detail a11y</title>
+	<!--STYLE-->
+</head>
+<body>
+	<a class="iv-skip-link" href="#iv-main">Skip to main content</a>
+	<nav class="iv-nav" role="navigation" aria-label="InventoryCheck navigation">
+		<a href="#">Dashboard</a>
+		<a href="#" aria-current="page">Items</a>
+		<a href="#">Locations</a>
+		<a href="#">Movements</a>
+		<a href="#">Settings</a>
+	</nav>
+	<div id="iv-live-region" class="iv-sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+	<div id="iv-alert-region" class="iv-sr-only" role="alert" aria-live="assertive" aria-atomic="true"></div>
+	<main id="iv-main">
+		<header class="iv-page-header" aria-labelledby="iv-page-title">
+			<h1 id="iv-page-title">Air filter</h1>
+			<p>Balances and label</p>
+		</header>
+		<section class="iv-section" aria-labelledby="iv-meta-title">
+			<h2 id="iv-meta-title" class="iv-section__title">Item</h2>
+			<p><strong>SKU:</strong> FILTER-42</p>
+			<p><strong>Scan code:</strong> <span class="iv-label-code" id="iv-label-code">FILTER-42</span></p>
+			<button type="button" class="iv-btn">Edit</button>
+			<button type="button" class="iv-btn">Deactivate</button>
+			<a class="iv-btn" href="#">Print label</a>
+			<a class="iv-btn" href="#">Download SVG</a>
+		</section>
+		<section class="iv-section" aria-labelledby="iv-bal-title">
+			<h2 id="iv-bal-title" class="iv-section__title">Balances by location</h2>
+			<table class="iv-table">
+				<thead>
+					<tr>
+						<th scope="col">Location</th>
+						<th scope="col">On hand</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td data-label="Location">Warehouse (WH)</td>
+						<td data-label="On hand"><span data-iv-balance="1:1">7</span></td>
+					</tr>
+					<tr>
+						<td data-label="Location">Van (VAN-1)</td>
+						<td data-label="On hand"><span data-iv-balance="1:2">3</span></td>
+					</tr>
+				</tbody>
+			</table>
+		</section>
+		<section class="iv-section" aria-labelledby="iv-qr-title">
+			<h2 id="iv-qr-title" class="iv-section__title">Label preview</h2>
+			<figure>
+				<svg role="img" aria-labelledby="iv-qr-caption" width="120" height="120" viewBox="0 0 120 120">
+					<title id="iv-qr-caption">QR code for FILTER-42</title>
+					<rect width="120" height="120" fill="#fff" stroke="#111"/>
+					<text x="60" y="64" text-anchor="middle" font-size="12">FILTER-42</text>
+				</svg>
+				<figcaption class="iv-label-code">FILTER-42</figcaption>
+			</figure>
+		</section>
+	</main>
+</body>
+</html>

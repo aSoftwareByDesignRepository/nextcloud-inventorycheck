@@ -1,0 +1,545 @@
+/* Auto-adapted from arbeitszeitcheck/css/common/app-layout.css for InventoryCheck shell parity. Do not invent divergent layout rules here. */
+/**
+ * App layout and section styling for InventoryCheck
+ * Clear sections, simple UX, WCAG 2.1 AA friendly.
+ * Easy to identify blocks, generous spacing, readable hierarchy.
+ *
+ * Pattern: TicketCheck-style full-width layout. Uses #content.app-inventorycheck
+ * as ancestor for higher specificity so our rules win over page-specific CSS.
+ *
+ * @copyright Copyright (c) 2024, Nextcloud GmbH
+ * @license AGPL-3.0-or-later
+ */
+
+/* ===== FULL VIEWPORT LAYOUT (100% WIDTH, BELOW HEADER, SCROLLABLE) ===== */
+/* Override Nextcloud theming. Nextcloud #header is 50px; #content needs margin-top to sit below it.
+   We set --body-container-margin: 0 for full width but preserve margin-top for header clearance. */
+
+#content.app-inventorycheck {
+  --body-container-margin: 0;
+  --body-container-radius: 0;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  margin: 0 !important;
+  /* Use the Nextcloud header-height variable (set on body by NC core).
+     Fall back to 50px which is the conventional height on NC 25-32. */
+  margin-top: var(--header-height, 50px) !important;
+  padding: 0 !important;
+  overflow: hidden;
+  text-align: left;
+  /* Contain flex children; scrolling happens in #app-content */
+}
+
+/* ===== APP WRAPPER: FILL #content, ENABLE SCROLL IN CHILDREN ===== */
+#content.app-inventorycheck #inventorycheck-app,
+#content.app-inventorycheck .inventorycheck-app {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  align-self: stretch;
+  overflow: hidden;
+  text-align: left;
+}
+
+@media (min-width: 1024px) {
+  #content.app-inventorycheck #inventorycheck-app,
+  #content.app-inventorycheck .inventorycheck-app {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  #content.app-inventorycheck #app-navigation {
+    flex: 0 0 280px;
+    width: 280px;
+    min-width: 280px;
+    max-width: 280px;
+    align-self: stretch;
+  }
+
+  #content.app-inventorycheck #app-content {
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto;
+    max-width: none;
+    text-align: left;
+  }
+}
+
+/* ===== APP-CONTENT & WRAPPER (100% WIDTH, SCROLLABLE) ===== */
+/* Content area fills remaining space; scrolls when content overflows.
+   min-height: 0 is critical for flex children to allow overflow/scroll. */
+
+#content.app-inventorycheck #app-content {
+  /* Use Nextcloud theme variable directly — theme vars are on body [data-theme-X], not :root */
+  background: var(--color-main-background);
+  color: var(--color-main-text);
+  flex: 1 1 0;
+  min-height: 0;
+  /* Allow flex child to shrink; enables overflow-y: auto */
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Shell padding/max-width: #app-content-wrapper.iv-shell in app.css + page-patterns.css */
+#content.app-inventorycheck #app-content-wrapper {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  color: var(--color-main-text);
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+/* ===== BREADCRUMB - Clear navigation context ===== */
+
+.breadcrumb-container {
+  margin-bottom: var(--space-6);
+  padding: 0 var(--space-2);
+}
+
+.breadcrumb ol {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font-size: var(--inventorycheck-font-size-base);
+  line-height: var(--inventorycheck-line-height-normal);
+}
+
+.breadcrumb a {
+  color: var(--inventorycheck-color-primary);
+  text-decoration: none;
+  padding: var(--space-1) 0;
+  border-radius: var(--radius-base);
+}
+
+.breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+.breadcrumb a:focus-visible {
+  outline: 2px solid var(--inventorycheck-color-border-focus);
+  outline-offset: 2px;
+}
+
+.breadcrumb li[aria-current="page"] {
+  color: var(--inventorycheck-color-text-secondary);
+  font-weight: var(--inventorycheck-font-weight-medium);
+}
+
+.breadcrumb li:not(:last-child)::after {
+  content: '/';
+  margin-left: var(--space-2);
+  color: var(--inventorycheck-color-text-tertiary);
+  font-weight: normal;
+}
+
+/* ===== PAGE HEADER SECTION (clear hierarchy: one title + short description) ===== */
+
+.page-header-section {
+  margin-bottom: var(--space-10);
+  padding: var(--space-8) 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.page-header-section .header-text p {
+  max-width: 52ch;
+  line-height: 1.6;
+}
+
+.page-header-section .header-content {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-8);
+}
+
+.page-header-section .header-text h2 {
+  font-size: var(--inventorycheck-font-size-3xl);
+  font-weight: var(--inventorycheck-font-weight-bold);
+  line-height: var(--inventorycheck-line-height-tight);
+  color: var(--inventorycheck-color-text);
+  margin: 0 0 var(--space-3) 0;
+  letter-spacing: -0.02em;
+}
+
+.page-header-section .header-text p,
+.page-description {
+  font-size: var(--inventorycheck-font-size-lg);
+  line-height: 1.6;
+  color: var(--inventorycheck-color-text-secondary);
+  margin: 0;
+  max-width: 60ch;
+}
+
+.page-description {
+  margin-top: var(--space-1);
+}
+
+.page-header-section .header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* ===== SECTIONS (clear, easy-to-identify blocks — simple UX, WCAG 2.1 AA) ===== */
+
+#app-content-wrapper>.section {
+  margin-bottom: 0;
+  padding: var(--space-8) var(--space-8);
+  border-radius: var(--radius-2xl);
+  border: 1px solid var(--inventorycheck-color-border);
+  background-color: var(--inventorycheck-color-background-elevated);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  color: var(--color-main-text);
+  /* Generous spacing: easy to scan, even for users with low vision */
+}
+
+#app-content-wrapper>.section:focus-within {
+  outline: 2px solid var(--inventorycheck-color-border-focus);
+  outline-offset: 2px;
+}
+
+/* Section left accent: quick visual scanning (border + bar, not only color — WCAG 1.4.11) */
+#app-content-wrapper>.section:not(.page-header-section)::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: var(--space-5);
+  bottom: var(--space-5);
+  width: 5px;
+  border-radius: 0 var(--radius-full) var(--radius-full) 0;
+  background: var(--inventorycheck-color-primary);
+  opacity: 0.85;
+}
+
+/* Section title: large and bold so sections are easy to identify */
+#app-content-wrapper .section__title {
+  font-size: var(--inventorycheck-font-size-xl);
+  font-weight: var(--inventorycheck-font-weight-bold);
+  color: var(--inventorycheck-color-text);
+  margin: 0 0 var(--space-2) 0;
+  line-height: var(--inventorycheck-line-height-tight);
+  letter-spacing: var(--inventorycheck-letter-spacing-tight);
+}
+
+#app-content-wrapper>.section:last-child {
+  margin-bottom: 0;
+}
+
+/* Page header is a section but without card look */
+#app-content-wrapper>.section.page-header-section {
+  border: none;
+  box-shadow: none;
+  background: transparent;
+  padding: var(--space-4) 0;
+}
+
+#app-content-wrapper>.section.page-header-section::before {
+  display: none;
+}
+
+/* Section header: title + optional description */
+#app-content-wrapper .section-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+  padding-bottom: var(--space-4);
+  border-bottom: 2px solid var(--inventorycheck-color-border);
+}
+
+/* Title + intro only (no action row): stack for readable admin/settings pages */
+#app-content-wrapper .section-header--stacked,
+#app-content-wrapper .page-header-section .header-content {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+#app-content-wrapper .section-header--stacked h1,
+#app-content-wrapper .section-header--stacked p,
+#app-content-wrapper .page-header-section .header-text h1,
+#app-content-wrapper .page-header-section .header-text h2,
+#app-content-wrapper .page-header-section .header-text p {
+  width: 100%;
+  max-width: 65ch;
+  text-align: left;
+}
+
+#app-content-wrapper .section-header h1,
+#app-content-wrapper .section-header h2,
+#app-content-wrapper .section-header h3 {
+  font-size: var(--inventorycheck-font-size-xl);
+  font-weight: var(--inventorycheck-font-weight-bold);
+  color: var(--inventorycheck-color-text);
+  margin: 0;
+  line-height: var(--inventorycheck-line-height-tight);
+}
+
+#app-content-wrapper .section-header p {
+  font-size: var(--inventorycheck-font-size-base);
+  color: var(--inventorycheck-color-text-secondary);
+  margin: var(--space-1) 0 0 0;
+  line-height: var(--inventorycheck-line-height-relaxed);
+}
+
+/* Consistent action rhythm inside all sections */
+#app-content-wrapper .section .card-actions,
+#app-content-wrapper .section .form-actions,
+#app-content-wrapper .section .manager-scope-page__filter-actions,
+#app-content-wrapper .section .pending-approval-card__actions {
+  gap: var(--space-3);
+}
+
+/* ===== CARDS INSIDE SECTIONS ===== */
+
+#app-content-wrapper .card {
+  margin-bottom: var(--space-4);
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--inventorycheck-color-border);
+  background-color: var(--inventorycheck-color-background-elevated);
+  box-shadow: var(--shadow-sm);
+  color: var(--color-main-text);
+}
+
+#app-content-wrapper .card:last-child {
+  margin-bottom: 0;
+}
+
+#app-content-wrapper .card-header {
+  margin-bottom: var(--space-4);
+}
+
+#app-content-wrapper .card-title {
+  font-size: var(--inventorycheck-font-size-lg);
+  font-weight: var(--inventorycheck-font-weight-semibold);
+  color: var(--inventorycheck-color-text);
+  margin: 0;
+}
+
+#app-content-wrapper .card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* ===== EMPTY STATE ===== */
+
+#app-content-wrapper .empty-state {
+  text-align: center;
+  padding: var(--space-10) var(--space-6);
+}
+
+#app-content-wrapper .empty-state__title,
+#app-content-wrapper .empty-state p:first-child {
+  font-size: var(--inventorycheck-font-size-lg);
+  font-weight: var(--inventorycheck-font-weight-semibold);
+  color: var(--inventorycheck-color-text);
+  margin: 0 0 var(--space-2) 0;
+}
+
+#app-content-wrapper .empty-state__description,
+#app-content-wrapper .empty-state-description,
+#app-content-wrapper .empty-state p.empty-state-description {
+  font-size: var(--inventorycheck-font-size-base);
+  color: var(--inventorycheck-color-text-secondary);
+  margin: 0 0 var(--space-4) 0;
+  line-height: var(--inventorycheck-line-height-relaxed);
+  max-width: 40ch;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 768px) {
+  #app-content-wrapper {
+    padding:
+      calc(var(--space-4) + env(safe-area-inset-top, 0px))
+      calc(var(--space-4) + env(safe-area-inset-right, 0px))
+      calc(var(--space-12) + env(safe-area-inset-bottom, 0px))
+      calc(var(--space-4) + env(safe-area-inset-left, 0px));
+  }
+
+  #app-content-wrapper>.section {
+    padding: var(--space-5);
+    margin-bottom: var(--space-8);
+    border-radius: var(--radius-xl);
+  }
+
+  #app-content-wrapper>.section::before {
+    top: var(--space-4);
+    bottom: var(--space-4);
+    width: 4px;
+  }
+
+  .page-header-section {
+    margin-bottom: var(--space-5);
+    padding: var(--space-3) 0;
+  }
+
+  .page-header-section .header-content {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+  }
+
+  .page-header-section .header-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .page-header-section .header-actions .btn {
+    width: 100%;
+    justify-content: center;
+    min-height: 46px;
+  }
+
+  #app-content-wrapper .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+  }
+
+  #app-content-wrapper .section__title {
+    font-size: var(--inventorycheck-font-size-lg);
+    line-height: 1.35;
+  }
+
+  #app-content-wrapper .section .btn {
+    border-radius: var(--radius-base);
+  }
+
+  .settings-container {
+    gap: var(--space-5);
+  }
+
+  .setting-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-1);
+  }
+
+  .info-box {
+    padding: var(--space-3) var(--space-4);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #app-content-wrapper>.section::before {
+    transition: none;
+  }
+}
+
+/* ===== SETTINGS & SUBSECTIONS (clear, scannable blocks) ===== */
+
+.settings-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: none;
+  width: 100%;
+}
+
+/* Settings sections are iv-card blocks with the shared header/body
+   pattern (css/app.css .iv-card__*) — no divider/padding decoration here. */
+
+.setting-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.setting-item:last-child {
+  margin-bottom: 0;
+}
+
+.setting-item label {
+  font-size: var(--inventorycheck-font-size-sm);
+  font-weight: var(--inventorycheck-font-weight-medium);
+  color: var(--inventorycheck-color-text-secondary);
+  min-width: 10ch;
+}
+
+.setting-value {
+  font-size: var(--inventorycheck-font-size-base);
+  color: var(--inventorycheck-color-text);
+}
+
+/* Info box: read-only notice (e.g. "assigned by admin") — high visibility, not only color */
+.info-box {
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--inventorycheck-color-border);
+  background-color: var(--inventorycheck-color-background-secondary);
+  color: var(--inventorycheck-color-text);
+  line-height: var(--inventorycheck-line-height-relaxed);
+}
+
+.info-box h4,
+.info-box .info-box__title {
+  font-size: var(--inventorycheck-font-size-base);
+  font-weight: var(--inventorycheck-font-weight-semibold);
+  margin: 0 0 var(--space-2) 0;
+  color: var(--inventorycheck-color-text);
+}
+
+.info-box p,
+.info-box ul {
+  margin: 0 0 var(--space-2) 0;
+}
+
+.info-box ul:last-child,
+.info-box p:last-child {
+  margin-bottom: 0;
+}
+
+.info-box ul {
+  padding-left: var(--space-6);
+}
+
+/* Spacing between section content and actions */
+.settings-section .form,
+.settings-section .card-actions,
+.settings-section .form-actions {
+  margin-top: 0;
+}
+
+
+/* ===== AZ mid-desktop nav width (match arbeitszeitcheck responsive.css) ===== */
+@media (min-width: 1024px) and (max-width: 1280px) {
+  #content.app-inventorycheck #app-navigation {
+    width: 240px;
+    min-width: 240px;
+    max-width: 240px;
+    flex: 0 0 240px;
+  }
+}

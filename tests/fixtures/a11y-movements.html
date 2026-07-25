@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>InventoryCheck — Movements a11y</title>
+	<!--STYLE-->
+</head>
+<body>
+	<a class="iv-skip-link" href="#iv-main">Skip to main content</a>
+	<nav class="iv-nav" role="navigation" aria-label="InventoryCheck navigation">
+		<a href="#">Dashboard</a>
+		<a href="#">Items</a>
+		<a href="#">Locations</a>
+		<a href="#" aria-current="page">Movements</a>
+		<a href="#">Settings</a>
+	</nav>
+	<div id="iv-live-region" class="iv-sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+	<div id="iv-alert-region" class="iv-sr-only" role="alert" aria-live="assertive" aria-atomic="true"></div>
+	<main id="iv-main">
+		<header class="iv-page-header" aria-labelledby="iv-page-title">
+			<h1 id="iv-page-title">Movements</h1>
+			<p>Append-only booking history</p>
+		</header>
+		<form class="iv-filterbar" role="search" aria-label="Filter movements">
+			<div class="iv-field">
+				<label class="iv-label" for="iv-mov-kind">Kind</label>
+				<select class="iv-input" id="iv-mov-kind" aria-label="Kind">
+					<option value="">All kinds</option>
+					<option value="receive">Receive</option>
+					<option value="issue">Issue</option>
+					<option value="transfer_out">Transfer out</option>
+					<option value="adjust">Adjust</option>
+				</select>
+			</div>
+			<div class="iv-field">
+				<label class="iv-label" for="iv-mov-item">Item</label>
+				<select class="iv-input" id="iv-mov-item" aria-label="Item">
+					<option value="">All items</option>
+					<option value="1">Air filter (FILTER-42)</option>
+				</select>
+			</div>
+			<div class="iv-field">
+				<label class="iv-label" for="iv-mov-loc">Location</label>
+				<select class="iv-input" id="iv-mov-loc" aria-label="Location">
+					<option value="">All locations</option>
+					<option value="1">Warehouse (WH)</option>
+				</select>
+			</div>
+			<div class="iv-field">
+				<label class="iv-label" for="iv-mov-from">From date</label>
+				<input class="iv-input" type="date" id="iv-mov-from" aria-label="From date">
+			</div>
+			<div class="iv-field">
+				<label class="iv-label" for="iv-mov-to">To date</label>
+				<input class="iv-input" type="date" id="iv-mov-to" aria-label="To date">
+			</div>
+			<button type="submit" class="iv-btn iv-btn--primary">Apply filters</button>
+			<button type="button" class="iv-btn">Clear filters</button>
+		</form>
+		<section class="iv-section" aria-labelledby="iv-list-title">
+			<h2 id="iv-list-title" class="iv-section__title">Results</h2>
+			<table class="iv-table">
+				<thead>
+					<tr>
+						<th scope="col">Kind</th>
+						<th scope="col">Item</th>
+						<th scope="col">Location</th>
+						<th scope="col">Delta</th>
+						<th scope="col">Actions</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td data-label="Kind">Transfer out</td>
+						<td data-label="Item">Air filter</td>
+						<td data-label="Location">WH</td>
+						<td data-label="Delta">−3</td>
+						<td data-label="Actions"><button type="button" class="iv-btn">Reverse</button></td>
+					</tr>
+					<tr>
+						<td data-label="Kind">Transfer in</td>
+						<td data-label="Item">Air filter</td>
+						<td data-label="Location">VAN-1</td>
+						<td data-label="Delta">+3</td>
+						<td data-label="Actions"><span class="iv-muted">—</span></td>
+					</tr>
+				</tbody>
+			</table>
+			<nav class="iv-pagination" aria-label="Pagination">
+				<button type="button" class="iv-btn" disabled>Previous</button>
+				<p>Showing 1–2 of 2</p>
+				<button type="button" class="iv-btn" disabled>Next</button>
+			</nav>
+		</section>
+		<dialog id="iv-dialog-receive" open aria-modal="true" aria-labelledby="iv-dlg-recv-title">
+			<h2 id="iv-dlg-recv-title">Receive stock</h2>
+			<div class="iv-field">
+				<label class="iv-label" for="iv-recv-item">Item</label>
+				<select class="iv-input" id="iv-recv-item" required aria-required="true">
+					<option value="">Choose an item</option>
+					<option value="1">Air filter (FILTER-42)</option>
+				</select>
+			</div>
+			<div class="iv-field">
+				<label class="iv-label" for="iv-recv-loc">Location</label>
+				<select class="iv-input" id="iv-recv-loc" required aria-required="true">
+					<option value="">Choose a location</option>
+					<option value="1">Warehouse (WH)</option>
+				</select>
+			</div>
+			<div class="iv-field">
+				<label class="iv-label" for="iv-recv-qty">Quantity</label>
+				<input class="iv-input" id="iv-recv-qty" type="number" min="1" value="1" required aria-required="true">
+			</div>
+			<button type="button" class="iv-btn iv-btn--primary">Receive</button>
+			<button type="button" class="iv-btn">Cancel</button>
+		</dialog>
+	</main>
+</body>
+</html>

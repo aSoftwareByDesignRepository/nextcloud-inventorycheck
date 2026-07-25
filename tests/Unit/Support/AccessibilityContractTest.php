@@ -1,0 +1,101 @@
+<?php
+
+declare(strict_types=1);
+
+namespace OCA\InventoryCheck\Tests\Unit\Support;
+
+use PHPUnit\Framework\TestCase;
+
+/**
+ * AC-21 / SPEC §11.4 — executable a11y contracts (templates + CSS + JS).
+ * Complements browser axe runs; fails the build if family a11y regresses.
+ */
+final class AccessibilityContractTest extends TestCase
+{
+	private string $root;
+
+	protected function setUp(): void
+	{
+		parent::setUp();
+		$this->root = dirname(__DIR__, 3);
+	}
+
+	public function testShellHasSkipLinkLiveRegionsLangAndMainLandmark(): void
+	{
+		$src = (string)file_get_contents($this->root . '/templates/common/page-start.php');
+		self::assertStringContainsString('iv-skip-link', $src);
+		self::assertStringContainsString('href="#iv-main-content"', $src);
+		self::assertStringContainsString('role="status"', $src);
+		self::assertStringContainsString('aria-live="polite"', $src);
+		self::assertStringContainsString('role="alert"', $src);
+		self::assertStringContainsString('aria-live="assertive"', $src);
+		self::assertStringContainsString('lang="<?php p($htmlLang); ?>"', $src);
+		self::assertStringContainsString('<main id="iv-main-content"', $src);
+		self::assertStringContainsString('aria-labelledby="iv-page-title"', $src);
+		self::assertStringContainsString('id="iv-toast-region"', $src);
+		self::assertStringContainsString('role="region"', $src);
+	}
+
+	public function testNavigationIsLandmarkWithAriaLabel(): void
+	{
+		$src = (string)file_get_contents($this->root . '/templates/common/navigation.php');
+		self::assertStringContainsString('role="navigation"', $src);
+		self::assertStringContainsString('aria-label', $src);
+		self::assertStringContainsString('aria-current', $src);
+	}
+
+	public function testAccessDeniedIsAlertWithHeadingAndEmptyStateShell(): void
+	{
+		$src = (string)file_get_contents($this->root . '/templates/access-denied.php');
+		self::assertStringContainsString('role="alert"', $src);
+		self::assertStringContainsString('aria-labelledby="iv-denied-title"', $src);
+		self::assertStringContainsString('iv-empty-state', $src);
+	}
+
+	public function testEmptyStateUsesFamilyShellAndStatusRole(): void
+	{
+		$js = (string)file_get_contents($this->root . '/js/app.js');
+		self::assertStringContainsString("className: 'iv-empty iv-empty-state'", $js);
+		self::assertStringContainsString("role: 'status'", $js);
+		$css = (string)file_get_contents($this->root . '/css/app.css');
+		self::assertStringContainsString('.iv-empty-state', $css);
+	}
+
+	public function testCssFocusVisibleTouchTargetsAndResponsiveBreakpoints(): void
+	{
+		$css = (string)file_get_contents($this->root . '/css/app.css');
+		self::assertMatchesRegularExpression('/:focus-visible/', $css);
+		self::assertGreaterThanOrEqual(4, preg_match_all('/min-height:\s*44px/', $css));
+		self::assertMatchesRegularExpression('/@media\s*\(\s*max-width:\s*720px\s*\)/', $css);
+		self::assertStringContainsString('iv-skip-link', $css);
+		self::assertStringContainsString('prefers-reduced-motion', $css);
+	}
+
+	public function testJsDialogHasModalSemanticsFocusTrapAndEsc(): void
+	{
+		$js = (string)file_get_contents($this->root . '/js/app.js');
+		self::assertStringContainsString("role: 'dialog'", $js);
+		self::assertStringContainsString("'aria-modal': 'true'", $js);
+		self::assertStringContainsString('previouslyFocused', $js);
+		self::assertStringContainsString("ev.key === 'Escape'", $js);
+		self::assertStringContainsString("ev.key !== 'Tab'", $js);
+		self::assertStringContainsString('iv-dialog-overlay', $js);
+	}
+
+	public function testLabelSvgProvidesTextAlternativeA12(): void
+	{
+		$src = (string)file_get_contents($this->root . '/lib/Util/LabelSvg.php');
+		self::assertStringContainsString('id="iv-label-code"', $src);
+		self::assertStringContainsString('aria-label', $src);
+		self::assertStringContainsString('role="img"', $src);
+		$css = (string)file_get_contents($this->root . '/css/app.css');
+		self::assertMatchesRegularExpression('/@media\s+print/', $css);
+		self::assertStringContainsString('12pt', $css);
+	}
+
+	public function testNoInnerHtmlAssignmentInAppJs(): void
+	{
+		$js = (string)file_get_contents($this->root . '/js/app.js');
+		self::assertDoesNotMatchRegularExpression('/\.innerHTML\s*=/', $js);
+	}
+}

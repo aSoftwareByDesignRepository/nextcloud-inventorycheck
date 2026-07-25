@@ -1,0 +1,529 @@
+/* Adapted from arbeitszeitcheck notification-surfaces.css (iv- prefix). */
+/**
+ * Notifications: callouts, alerts, toasts, inline-notice — theme-safe (WCAG 2.1 AA).
+ * Uses NC --color-*-text / *-rgb for contrast on light, dark, and custom themes.
+ * Icon wells: semantic fill + contrasting glyph (not low-contrast outline-only).
+ */
+
+/* ── Panel accents (visible border + tint on light, dark, custom NC themes) ── */
+#app-content.iv-app .iv-callout--info:not(.iv-semantic-panel),
+.iv-nc-admin-settings .iv-callout--info,
+.modal-backdrop .iv-callout--info:not(.iv-semantic-panel),
+#app-content.iv-app .inline-notice--info,
+.modal-backdrop .inline-notice--info,
+.toast--info {
+	border-color: var(--color-primary-element, #00679e);
+	border-left-width: 5px;
+	border-left-color: var(--color-primary-element, #00679e);
+	background: var(--iv-tint-info);
+}
+
+#app-content.iv-app .iv-callout--warning:not(.iv-semantic-panel),
+.iv-nc-admin-settings .iv-callout--warning,
+.modal-backdrop .iv-callout--warning:not(.iv-semantic-panel),
+#app-content.iv-app .inline-notice--warning,
+.modal-backdrop .inline-notice--warning,
+.toast--warning,
+#app-content.iv-app .alert--warning,
+.modal-backdrop .alert--warning {
+	border-color: var(--color-warning-text, var(--color-warning, #a37200));
+	border-left-width: 5px;
+	border-left-color: var(--color-warning-text, var(--color-warning, #a37200));
+	background: var(--iv-tint-warning);
+}
+
+#app-content.iv-app .iv-callout--success:not(.iv-semantic-panel),
+.iv-nc-admin-settings .iv-callout--success,
+.modal-backdrop .iv-callout--success:not(.iv-semantic-panel),
+.toast--success,
+#app-content.iv-app .alert--success,
+.modal-backdrop .alert--success {
+	border-color: var(--color-success-text, var(--color-success, #2d7b46));
+	border-left-width: 5px;
+	border-left-color: var(--color-success-text, var(--color-success, #2d7b46));
+	background: var(--iv-tint-success);
+}
+
+#app-content.iv-app .iv-callout--danger:not(.iv-semantic-panel),
+#app-content.iv-app .iv-callout--error:not(.iv-semantic-panel),
+.iv-nc-admin-settings .iv-callout--danger,
+.iv-nc-admin-settings .iv-callout--error,
+.modal-backdrop .iv-callout--danger:not(.iv-semantic-panel),
+.modal-backdrop .iv-callout--error:not(.iv-semantic-panel),
+.toast--error,
+#app-content.iv-app .alert--error,
+.modal-backdrop .alert--error {
+	border-color: var(--color-error-text, var(--color-error, #db0606));
+	border-left-width: 5px;
+	border-left-color: var(--color-error-text, var(--color-error, #db0606));
+	background: var(--iv-tint-danger);
+}
+
+#app-content.iv-app .iv-callout--neutral:not(.iv-semantic-panel),
+.modal-backdrop .iv-callout--neutral:not(.iv-semantic-panel) {
+	border-color: var(--color-border);
+	border-left-width: 2px;
+	background: color-mix(in srgb, var(--color-main-text) 5%, var(--color-main-background));
+}
+
+/* Semantic panel panel tints: common/semantic-surfaces.css */
+
+/* ── Icon wells: pale tint + semantic stroke (same model as .iv-page-header__icon) ── */
+.iv-notif-icon-well,
+#app-content.iv-app .iv-callout__icon,
+.modal-backdrop .iv-callout__icon,
+#app-content.iv-app .alert-icon,
+.modal-backdrop .alert-icon,
+.toast-icon,
+#app-content.iv-app .inline-notice__icon,
+.modal-backdrop .inline-notice__icon,
+.iv-status-icon-well {
+	flex-shrink: 0;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: var(--iv-icon-well, 2.25rem);
+	height: var(--iv-icon-well, 2.25rem);
+	min-width: var(--iv-icon-well, 2.25rem);
+	min-height: var(--iv-icon-well, 2.25rem);
+	border-radius: var(--iv-radius-sm, 6px);
+	border: 2px solid var(--color-border);
+	background: var(--color-main-background);
+	color: var(--color-main-text);
+	box-shadow: none;
+}
+
+.iv-notif-icon-well .iv-icon,
+.iv-notif-icon-well .iv-callout__icon-svg,
+.iv-notif-icon-well svg,
+#app-content.iv-app .iv-callout__icon .iv-icon,
+#app-content.iv-app .iv-callout__icon .iv-callout__icon-svg,
+#app-content.iv-app .iv-callout__icon-svg,
+.modal-backdrop .iv-callout__icon .iv-icon,
+.modal-backdrop .iv-callout__icon .iv-callout__icon-svg,
+.modal-backdrop .iv-callout__icon-svg,
+.alert-icon .iv-icon,
+.alert-icon svg,
+.toast-icon .iv-icon,
+.toast-icon svg,
+.toast-icon .toast__icon-svg,
+#app-content.iv-app .inline-notice__icon .iv-icon,
+#app-content.iv-app .inline-notice__icon .inline-notice__glyph,
+#app-content.iv-app .inline-notice__icon svg,
+.modal-backdrop .inline-notice__icon svg {
+	width: var(--iv-icon-lg, 1.375rem);
+	height: var(--iv-icon-lg, 1.375rem);
+	min-width: var(--iv-icon-lg, 1.375rem);
+	min-height: var(--iv-icon-lg, 1.375rem);
+	color: inherit;
+	stroke: currentColor;
+	fill: none;
+	opacity: 1;
+}
+
+/* Filled accent dots in IconCatalog (info / alert) */
+.iv-notif-icon-well svg circle[fill='currentColor'],
+.iv-notif-icon-well svg [fill='currentColor'],
+#app-content.iv-app .iv-callout__icon svg circle[fill='currentColor'],
+#app-content.iv-app .iv-callout__icon svg [fill='currentColor'],
+.toast-icon svg circle[fill='currentColor'],
+.toast-icon svg [fill='currentColor'] {
+	fill: currentColor;
+	stroke: none;
+}
+
+/* Variant wells — modifier class + legacy parent selectors */
+.iv-notif-icon-well--info,
+.iv-callout.iv-callout--info > .iv-callout__icon,
+.iv-callout.iv-callout--info > .iv-notif-icon-well,
+#app-content.iv-app .iv-semantic-panel--info .iv-callout__icon,
+.iv-nc-admin-settings .iv-callout--info .iv-callout__icon,
+.modal-backdrop .iv-callout--info .iv-callout__icon,
+#app-content.iv-app .alert--info .alert-icon,
+.modal-backdrop .alert--info .alert-icon,
+#app-content.iv-app .inline-notice--info .inline-notice__icon,
+.modal-backdrop .inline-notice--info .inline-notice__icon,
+.toast--info .toast-icon {
+	background: var(--iv-tint-info);
+	border-color: var(--iv-notif-fg-info);
+	color: var(--iv-notif-fg-info);
+}
+
+.iv-notif-icon-well--warning,
+.iv-callout.iv-callout--warning > .iv-callout__icon,
+.iv-callout.iv-callout--warning > .iv-notif-icon-well,
+#app-content.iv-app .iv-semantic-panel--warning .iv-callout__icon,
+.iv-nc-admin-settings .iv-callout--warning .iv-callout__icon,
+.modal-backdrop .iv-callout--warning .iv-callout__icon,
+#app-content.iv-app .alert--warning .alert-icon,
+.modal-backdrop .alert--warning .alert-icon,
+#app-content.iv-app .inline-notice--warning .inline-notice__icon,
+.modal-backdrop .inline-notice--warning .inline-notice__icon,
+.toast--warning .toast-icon {
+	background: var(--iv-tint-warning);
+	border-color: var(--iv-notif-fg-warning);
+	color: var(--iv-notif-fg-warning);
+}
+
+.iv-notif-icon-well--success,
+.iv-callout.iv-callout--success > .iv-callout__icon,
+.iv-callout.iv-callout--success > .iv-notif-icon-well,
+#app-content.iv-app .iv-semantic-panel--success .iv-callout__icon,
+.modal-backdrop .iv-callout--success .iv-callout__icon,
+#app-content.iv-app .alert--success .alert-icon,
+.modal-backdrop .alert--success .alert-icon,
+.toast--success .toast-icon {
+	background: var(--iv-tint-success);
+	border-color: var(--iv-notif-fg-success);
+	color: var(--iv-notif-fg-success);
+}
+
+.iv-notif-icon-well--danger,
+.iv-notif-icon-well--error,
+.iv-callout.iv-callout--danger > .iv-callout__icon,
+.iv-callout.iv-callout--danger > .iv-notif-icon-well,
+.iv-callout.iv-callout--error > .iv-callout__icon,
+.iv-callout.iv-callout--error > .iv-notif-icon-well,
+.iv-nc-admin-settings .iv-callout--danger .iv-callout__icon,
+.iv-nc-admin-settings .iv-callout--error .iv-callout__icon,
+.modal-backdrop .iv-callout--danger .iv-callout__icon,
+.modal-backdrop .iv-callout--error .iv-callout__icon,
+#app-content.iv-app .alert--error .alert-icon,
+.modal-backdrop .alert--error .alert-icon,
+.toast--error .toast-icon {
+	background: var(--iv-tint-danger);
+	border-color: var(--iv-notif-fg-danger);
+	color: var(--iv-notif-fg-danger);
+}
+
+.iv-notif-icon-well--neutral,
+.iv-callout.iv-callout--neutral > .iv-callout__icon,
+.iv-callout.iv-callout--neutral > .iv-notif-icon-well,
+.modal-backdrop .iv-callout--neutral .iv-callout__icon {
+	background: color-mix(in srgb, var(--color-main-text) 8%, var(--color-main-background));
+	border-color: var(--color-border-maxcontrast, var(--color-border));
+	color: var(--color-main-text);
+}
+
+#app-content.iv-app .iv-semantic-panel--success.iv-callout.auto-break-panel--disabled .iv-callout__icon {
+	background: color-mix(in srgb, var(--color-main-text) 10%, var(--color-main-background));
+	border-color: var(--color-border);
+	color: var(--color-main-text);
+}
+
+/* Body copy: main text only (AA); hints stay maxcontrast */
+#app-content.iv-app .iv-callout__title,
+.modal-backdrop .iv-callout__title,
+#app-content.iv-app .iv-callout__text,
+.modal-backdrop .iv-callout__text,
+#app-content.iv-app .alert-message,
+.modal-backdrop .alert-message,
+.toast-title,
+.toast-message,
+#app-content.iv-app .inline-notice__title,
+.modal-backdrop .inline-notice__title,
+#app-content.iv-app .inline-notice__text,
+.modal-backdrop .inline-notice__text {
+	color: var(--color-main-text);
+}
+
+#app-content.iv-app .iv-callout__hint,
+.modal-backdrop .iv-callout__hint {
+	color: var(--color-text-maxcontrast, var(--color-main-text));
+}
+
+/* ── Responsive: stack icon + body on narrow viewports ── */
+@media (max-width: 720px) {
+	#app-content.iv-app .iv-callout,
+	.modal-backdrop .iv-callout,
+	#app-content.iv-app .alert,
+	.modal-backdrop .alert,
+	#app-content.iv-app .inline-notice,
+	.modal-backdrop .inline-notice,
+	.toast {
+		flex-wrap: wrap;
+	}
+
+	#app-content.iv-app .iv-callout__icon,
+	.modal-backdrop .iv-callout__icon,
+	.toast-icon,
+	#app-content.iv-app .alert-icon,
+	.modal-backdrop .alert-icon,
+	#app-content.iv-app .inline-notice__icon,
+	.modal-backdrop .inline-notice__icon {
+		margin-bottom: var(--iv-space-1, 0.25rem);
+	}
+}
+
+@media (prefers-contrast: more) {
+	#app-content.iv-app .iv-callout:not(.iv-semantic-panel),
+	.modal-backdrop .iv-callout:not(.iv-semantic-panel),
+	.toast,
+	#app-content.iv-app .alert,
+	.modal-backdrop .alert {
+		border-width: 3px;
+	}
+
+	#app-content.iv-app .iv-callout__icon,
+	.modal-backdrop .iv-callout__icon,
+	.toast-icon,
+	#app-content.iv-app .alert-icon,
+	.modal-backdrop .alert-icon {
+		border-width: 3px;
+	}
+
+	.iv-notif-icon-well .iv-icon,
+	.iv-notif-icon-well svg,
+	#app-content.iv-app .iv-callout__icon .iv-icon,
+	#app-content.iv-app .iv-callout__icon svg {
+		stroke-width: 3;
+	}
+}
+
+/* ── Legacy inline-notice (backward compat) ───────────────── */
+#app-content.iv-app .inline-notice-section,
+.modal-backdrop .inline-notice-section {
+	padding: 0;
+	background: transparent;
+	border: 0;
+	box-shadow: none;
+	margin-bottom: var(--iv-space-4, 1rem);
+}
+
+#app-content.iv-app .inline-notice,
+.modal-backdrop .inline-notice {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	gap: var(--iv-space-3, 0.75rem) var(--iv-space-4, 1rem);
+	padding: var(--iv-space-4, 1rem) var(--iv-space-5, 1.25rem);
+	border: 2px solid var(--color-border, var(--iv-border));
+	border-radius: var(--iv-radius-md, 8px);
+	background: var(--color-main-background, var(--iv-bg));
+	box-shadow: var(--iv-shadow-sm, 0 1px 2px rgb(0 0 0 / 8%));
+	color: var(--color-main-text, var(--iv-text));
+}
+
+#app-content.iv-app .inline-notice__content,
+.modal-backdrop .inline-notice__content {
+	flex: 1 1 12rem;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: var(--iv-space-2, 0.5rem);
+}
+
+#app-content.iv-app .inline-notice__title,
+.modal-backdrop .inline-notice__title {
+	margin: 0;
+	font-size: var(--iv-fs-lg, 1.125rem);
+	font-weight: 600;
+	line-height: var(--iv-line-tight, 1.25);
+	color: var(--color-main-text, var(--iv-text));
+}
+
+#app-content.iv-app .inline-notice__text,
+.modal-backdrop .inline-notice__text {
+	margin: 0;
+	font-size: var(--iv-fs-md, 1rem);
+	line-height: var(--iv-line-base, 1.45);
+	max-width: 65ch;
+	color: var(--color-main-text, var(--iv-text));
+}
+
+#app-content.iv-app .inline-notice__actions,
+.modal-backdrop .inline-notice__actions {
+	flex-shrink: 0;
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--iv-space-2, 0.5rem);
+	margin: 0;
+}
+
+#app-content.iv-app .inline-notice__actions .iv-btn,
+#app-content.iv-app .inline-notice__actions .btn,
+.modal-backdrop .inline-notice__actions .iv-btn,
+.modal-backdrop .inline-notice__actions .btn {
+	min-height: 44px;
+	white-space: nowrap;
+}
+
+@media (max-width: 42rem) {
+	#app-content.iv-app .inline-notice,
+	.modal-backdrop .inline-notice {
+		flex-direction: column;
+	}
+
+	#app-content.iv-app .inline-notice__actions,
+	.modal-backdrop .inline-notice__actions {
+		width: 100%;
+	}
+
+	#app-content.iv-app .inline-notice__actions .iv-btn,
+	#app-content.iv-app .inline-notice__actions .btn,
+	.modal-backdrop .inline-notice__actions .iv-btn,
+	.modal-backdrop .inline-notice__actions .btn {
+		flex: 1 1 auto;
+		justify-content: center;
+	}
+}
+
+/* ── Toast container (MC parity: bottom-right) ───────────────── */
+.toast-container {
+	position: fixed;
+	bottom: calc(var(--iv-space-5, 1.5rem) + env(safe-area-inset-bottom, 0px));
+	right: calc(var(--iv-space-5, 1.5rem) + env(safe-area-inset-right, 0px));
+	top: auto;
+	z-index: var(--z-toast, 10000);
+	display: flex;
+	flex-direction: column-reverse;
+	gap: var(--iv-space-2, 0.5rem);
+	max-width: min(24rem, calc(100vw - 2rem));
+}
+
+/* ── Toast card (left accent, MC weight) ───────────────────── */
+.toast {
+	display: flex;
+	flex-direction: row;
+	align-items: flex-start;
+	gap: var(--iv-space-3, 0.75rem);
+	padding: var(--iv-space-3, 0.75rem) var(--iv-space-4, 1rem);
+	border: 1px solid var(--iv-border, var(--color-border));
+	border-left-width: 4px;
+	border-radius: var(--iv-radius-md, 12px);
+	background: var(--iv-bg-card, var(--color-main-background));
+	box-shadow: var(--iv-shadow-md, 0 8px 24px color-mix(in srgb, var(--color-main-text) 12%, transparent));
+	color: var(--color-main-text, var(--iv-text));
+	font-weight: 600;
+	max-width: 100%;
+	opacity: 0;
+	transform: translateY(0.75rem);
+	transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.toast--show {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+@keyframes toast-slide-in {
+	from {
+		transform: translateY(0.75rem);
+		opacity: 0;
+	}
+
+	to {
+		transform: translateY(0);
+		opacity: 1;
+	}
+}
+
+.toast--removing {
+	animation: toast-slide-out 0.3s ease-in forwards;
+}
+
+@keyframes toast-slide-out {
+	from {
+		transform: translateY(0);
+		opacity: 1;
+	}
+
+	to {
+		transform: translateY(0.75rem);
+		opacity: 0;
+	}
+}
+
+.toast-content {
+	flex: 1 1 auto;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: var(--iv-space-1, 0.25rem);
+}
+
+.toast-title {
+	margin: 0;
+	font-size: var(--iv-fs-md, 1rem);
+	font-weight: 600;
+	line-height: var(--iv-line-tight, 1.25);
+	color: var(--color-main-text, var(--iv-text));
+}
+
+.toast-message {
+	margin: 0;
+	font-size: var(--iv-fs-md, 1rem);
+	line-height: var(--iv-line-base, 1.45);
+	color: var(--color-main-text, var(--iv-text));
+	max-width: 65ch;
+}
+
+.toast-close {
+	background: none;
+	border: none;
+	font-size: var(--iv-fs-lg, 1.25rem);
+	line-height: 1;
+	color: var(--color-main-text, var(--iv-text));
+	cursor: pointer;
+	padding: var(--iv-space-1, 0.25rem);
+	border-radius: var(--iv-radius-sm, 6px);
+	opacity: 0.85;
+	flex-shrink: 0;
+	min-width: 44px;
+	min-height: 44px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.toast-close:hover,
+.toast-close:focus-visible {
+	opacity: 1;
+	outline: 2px solid var(--color-primary-element, #00679e);
+	outline-offset: 2px;
+}
+
+@media (max-width: 42rem) {
+	.toast-container {
+		left: calc(var(--iv-space-4, 1rem) + env(safe-area-inset-left, 0px));
+		right: calc(var(--iv-space-4, 1rem) + env(safe-area-inset-right, 0px));
+		bottom: calc(var(--iv-space-4, 1rem) + env(safe-area-inset-bottom, 0px));
+		max-width: none;
+	}
+}
+
+@media (forced-colors: active) {
+	#app-content.iv-app .iv-callout,
+	.modal-backdrop .iv-callout,
+	#app-content.iv-app .alert,
+	.modal-backdrop .alert,
+	.toast,
+	#app-content.iv-app .inline-notice,
+	.modal-backdrop .inline-notice {
+		border: 2px solid CanvasText;
+		background: Canvas;
+		color: CanvasText;
+	}
+
+	#app-content.iv-app .iv-callout__icon,
+	.modal-backdrop .iv-callout__icon,
+	.toast-icon,
+	#app-content.iv-app .alert-icon,
+	.modal-backdrop .alert-icon,
+	#app-content.iv-app .inline-notice__icon,
+	.modal-backdrop .inline-notice__icon {
+		border: 2px solid CanvasText;
+		background: Canvas;
+		color: CanvasText;
+		box-shadow: none;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.toast,
+	.toast--removing {
+		animation: none !important;
+		transition: none !important;
+	}
+}
