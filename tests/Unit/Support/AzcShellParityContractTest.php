@@ -194,4 +194,46 @@ final class AzcShellParityContractTest extends TestCase
 		);
 	}
 
+
+	public function testFormControlsCssIsImportedAndScoped(): void
+	{
+		$appCss = (string)file_get_contents($this->root . '/css/app.css');
+		$this->assertStringContainsString('form-controls.css', $appCss);
+		$path = $this->root . '/css/common/form-controls.css';
+		$this->assertFileExists($path);
+		$css = (string)file_get_contents($path);
+		$this->assertStringContainsString('min-height: 44px', $css);
+		$this->assertStringContainsString('accent-color: var(--color-primary-element)', $css);
+		$this->assertStringContainsString('input[type="checkbox"]', $css);
+		$this->assertStringContainsString('select', $css);
+		$this->assertStringContainsString('box-shadow: 0 0 0 3px', $css);
+		$this->assertStringContainsString('[role="combobox"]', $css);
+		// Must stay scoped — never style NC global chrome
+		$this->assertStringContainsString('#content.app-', $css);
+		$this->assertDoesNotMatchRegularExpression('/^input\\s*,/m', $css);
+	}
+
+
+	public function testContentSurfacesMatchAzcCardsAndButtons(): void
+	{
+		$chrome = (string)file_get_contents($this->root . '/css/common/shell-chrome.css');
+		$this->assertStringContainsString('AZ content surfaces', $chrome);
+		$this->assertStringContainsString('-section', $chrome);
+		$this->assertStringContainsString('-filter-panel', $chrome);
+		$this->assertMatchesRegularExpression('/border-radius:\s*var\(--[a-z]+-radius-md,\s*12px\)/', $chrome);
+		$app = (string)file_get_contents($this->root . '/css/app.css');
+		$this->assertStringContainsString('AZ-PARITY-RADIUS-ENFORCER', $app);
+		// Primary buttons must use md (12px) like azc-btn — not sm.
+		$this->assertMatchesRegularExpression(
+			'/\.button[^{]*\{[^}]*border-radius:\s*var\(--[a-z]+-radius-md,\s*12px\)\s*!important/s',
+			$app
+		);
+		// Body-mounted dialogs must use lg (16px) — #content-scoped rules never apply.
+		$this->assertMatchesRegularExpression(
+			'/body\s*>\s*\.modal-backdrop\s*>\s*\.modal[^{]*\{[^}]*border-radius:\s*var\(--[a-z]+-radius-lg,\s*16px\)\s*!important/s',
+			$app,
+			'Dialogs mount on body; radius enforcer must cover modal-backdrop > .modal'
+		);
+	}
+
 }

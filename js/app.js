@@ -923,16 +923,53 @@
 			}));
 		}
 		var q = el('input', {
+			id: 'iv-items-q',
 			type: 'search',
-			className: 'iv-input',
+			className: 'iv-input form-input',
 			placeholder: tr('Search name or SKU'),
 			'aria-label': tr('Search items'),
 		});
-		var searchBar = el('div', { className: 'iv-toolbar' }, [q, btn(tr('Search'), {
-			onclick: function () { load(); },
-		})]);
-		mount.appendChild(searchBar);
-		var listHost = el('div', { id: 'iv-items-list' });
+		mount.appendChild(el('section', {
+			className: 'iv-card iv-filter-panel',
+			'aria-labelledby': 'iv-items-filter-title',
+		}, [
+			el('header', { className: 'iv-filter-panel__head' }, [
+				el('h2', { id: 'iv-items-filter-title', text: tr('Filter') }),
+				el('p', {
+					className: 'iv-filter-panel__intro',
+					text: tr('Find items by name or SKU.'),
+				}),
+			]),
+			el('div', { className: 'iv-filter-panel__body' }, [
+				el('form', {
+					className: 'iv-filter-panel__form iv-filterbar',
+					role: 'search',
+					'aria-label': tr('Search items'),
+					onsubmit: function (ev) {
+						ev.preventDefault();
+						load();
+					},
+				}, [
+					el('div', { className: 'iv-filter-grid' }, [
+						el('div', { className: 'iv-filter-field' }, [
+							el('label', { className: 'iv-filter-field__label', for: 'iv-items-q', text: tr('Search') }),
+							el('div', { className: 'iv-filter-field__control' }, [q]),
+						]),
+						el('div', { className: 'iv-filter-actions' }, [
+							btn(tr('Search'), { primary: true, type: 'submit' }),
+							btn(tr('Clear'), {
+								type: 'button',
+								onclick: function () {
+									q.value = '';
+									load();
+								},
+							}),
+						]),
+					]),
+				]),
+			]),
+		]));
+		var listHost = el('div', { id: 'iv-items-list', className: 'iv-card' });
 		mount.appendChild(listHost);
 
 		function load() {
@@ -940,8 +977,13 @@
 			api('GET', ctx.urls.api.items + '?limit=50&offset=0&q=' + encodeURIComponent(q.value || '')).then(function (res) {
 				clear(listHost);
 				setBusy(listHost, false);
+				listHost.appendChild(el('header', { className: 'iv-card__header' }, [
+					el('h2', { className: 'iv-card__title', text: tr('Items') }),
+				]));
+				var body = el('div', { className: 'iv-card__body' });
+				listHost.appendChild(body);
 				if (!res.data.length) {
-					listHost.appendChild(emptyState(
+					body.appendChild(emptyState(
 						tr('No items yet'),
 						tr('Create an item with a SKU and reorder level.'),
 						(ctx.isOffice || ctx.isAppAdmin)
@@ -950,7 +992,7 @@
 					));
 					return;
 				}
-				listHost.appendChild(tableOrCards([
+				body.appendChild(tableOrCards([
 					{ label: tr('Name'), render: function (r) {
 						return el('a', { href: entityUrl(ctx.urls.pages.items, r.id), text: r.name });
 					} },
@@ -983,9 +1025,6 @@
 				toast(err.message, true);
 			});
 		}
-		q.addEventListener('keydown', function (ev) {
-			if (ev.key === 'Enter') load();
-		});
 		load();
 	}
 
@@ -1116,32 +1155,39 @@
 				));
 				return;
 			}
-			mount.appendChild(tableOrCards([
-				{ label: tr('Name'), render: function (r) {
-					return el('a', { href: entityUrl(ctx.urls.pages.locations, r.id), text: r.name });
-				} },
-				{ label: tr('Code'), key: 'code' },
-				{ label: tr('Kind'), render: function (r) { return locationKindLabel(r.kind); } },
-				{ label: tr('Active'), render: function (r) { return r.active ? tr('Yes') : tr('No'); } },
-				{ label: tr('Actions'), render: function (r) {
-					if (!(ctx.isOffice || ctx.isAppAdmin)) {
-						return el('span', { className: 'iv-muted', text: '—' });
-					}
-					return el('div', { className: 'iv-row__actions' }, [
-						btn(tr('Edit'), {
-							onclick: function () { openLocationDialog(ctx, r); },
-						}),
-						btn(r.active ? tr('Deactivate') : tr('Reactivate'), {
-							onclick: function () {
-								api('PUT', entityUrl(ctx.urls.api.locations, r.id), { active: !r.active }).then(function () {
-									toast(r.active ? tr('Location deactivated.') : tr('Location reactivated.'));
-									renderLocations(ctx);
-								}).catch(function (err) { toast(err.message, true); });
-							},
-						}),
-					]);
-				} },
-			], res.data));
+			mount.appendChild(el('section', { className: 'iv-card', 'aria-labelledby': 'iv-locations-title' }, [
+				el('header', { className: 'iv-card__header' }, [
+					el('h2', { id: 'iv-locations-title', className: 'iv-card__title', text: tr('Locations') }),
+				]),
+				el('div', { className: 'iv-card__body' }, [
+					tableOrCards([
+						{ label: tr('Name'), render: function (r) {
+							return el('a', { href: entityUrl(ctx.urls.pages.locations, r.id), text: r.name });
+						} },
+						{ label: tr('Code'), key: 'code' },
+						{ label: tr('Kind'), render: function (r) { return locationKindLabel(r.kind); } },
+						{ label: tr('Active'), render: function (r) { return r.active ? tr('Yes') : tr('No'); } },
+						{ label: tr('Actions'), render: function (r) {
+							if (!(ctx.isOffice || ctx.isAppAdmin)) {
+								return el('span', { className: 'iv-muted', text: '—' });
+							}
+							return el('div', { className: 'iv-row__actions' }, [
+								btn(tr('Edit'), {
+									onclick: function () { openLocationDialog(ctx, r); },
+								}),
+								btn(r.active ? tr('Deactivate') : tr('Reactivate'), {
+									onclick: function () {
+										api('PUT', entityUrl(ctx.urls.api.locations, r.id), { active: !r.active }).then(function () {
+											toast(r.active ? tr('Location deactivated.') : tr('Location reactivated.'));
+											renderLocations(ctx);
+										}).catch(function (err) { toast(err.message, true); });
+									},
+								}),
+							]);
+						} },
+					], res.data),
+				]),
+			]));
 		}).catch(function (err) {
 			clear(mount);
 			toast(err.message, true);

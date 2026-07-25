@@ -72,13 +72,13 @@
 	align-items: center;
 	justify-content: center;
 	gap: var(--iv-space-2, 0.5rem);
-	min-height: 44px;
-	min-width: 44px;
-	padding: var(--iv-space-2, 0.5rem) var(--iv-space-4, 1rem);
+	min-height: 2.75rem;
+	min-width: 2.75rem;
+	padding: 0.625rem 1.15rem;
 	box-sizing: border-box;
-	border-radius: var(--iv-radius-sm, 6px);
+	border-radius: var(--iv-radius-md, 12px);
 	font-weight: 600;
-	line-height: 1.3;
+	line-height: 1.25;
 	text-decoration: none;
 	cursor: pointer;
 }
@@ -90,6 +90,84 @@
 	padding: 0.35rem 0.75rem;
 }
 /* ===== END AZ skip/btn parity ===== */
+
+/* ===== AZ content surfaces — cards/sections/buttons (match azc-card / azc-btn) ===== */
+#content.app-inventorycheck #app-content .iv-card,
+#content.app-inventorycheck #app-content .iv-section,
+#content.app-inventorycheck #app-content .iv-filter-panel {
+	background: var(--iv-bg-card, var(--color-main-background));
+	border: 1px solid var(--iv-border, var(--color-border));
+	border-radius: var(--iv-radius-md, 12px);
+	box-shadow: var(--iv-shadow-sm, 0 1px 2px color-mix(in srgb, var(--color-main-text) 8%, transparent));
+	box-sizing: border-box;
+}
+#content.app-inventorycheck #app-content .iv-card,
+#content.app-inventorycheck #app-content .iv-section {
+	padding: var(--iv-space-5, 24px);
+	margin-top: var(--iv-space-5, 24px);
+}
+#content.app-inventorycheck #app-content .iv-section:first-child,
+#content.app-inventorycheck #app-content .iv-main > .iv-section:first-of-type {
+	margin-top: 0;
+}
+#content.app-inventorycheck #app-content .iv-section__title,
+#content.app-inventorycheck #app-content .iv-card__title {
+	margin: 0 0 var(--iv-space-3, 12px);
+	font-size: var(--iv-fs-lg, 1.125rem);
+	font-weight: 600;
+	line-height: var(--iv-line-tight, 1.2);
+	color: var(--iv-text, var(--color-main-text));
+}
+#content.app-inventorycheck #app-content .iv-filter-panel {
+	padding: 0;
+	overflow: hidden;
+}
+#content.app-inventorycheck #app-content .iv-filter-panel__head,
+#content.app-inventorycheck #app-content .iv-filter-panel > header {
+	padding: var(--iv-space-5, 24px);
+	border-bottom: 1px solid var(--iv-border, var(--color-border));
+	background: var(--iv-bg-soft, color-mix(in srgb, var(--color-main-background) 96%, var(--color-main-text) 4%));
+}
+#content.app-inventorycheck #app-content .iv-filter-panel__form,
+#content.app-inventorycheck #app-content .iv-filter-panel__body,
+#content.app-inventorycheck #app-content .iv-filter-panel > form,
+#content.app-inventorycheck #app-content .iv-filter-panel > .form {
+	padding: var(--iv-space-5, 24px);
+}
+/* Buttons — AZ azc-btn uses radius-md (12px), not sm */
+#content.app-inventorycheck #app-content .iv-btn,
+#content.app-inventorycheck #app-content .button,
+#content.app-inventorycheck #app-content button.button,
+#content.app-inventorycheck #app-content a.button {
+	border-radius: var(--iv-radius-md, 12px);
+	min-height: 2.75rem;
+	padding: 0.625rem 1.15rem;
+	font-weight: 600;
+}
+#content.app-inventorycheck #app-content .iv-btn--sm,
+#content.app-inventorycheck #app-content .button.small,
+#content.app-inventorycheck #app-content .button--sm {
+	border-radius: var(--iv-radius-sm, 6px);
+	min-height: 36px;
+	padding: 0.35rem 0.75rem;
+}
+#content.app-inventorycheck #app-content .iv-table-wrap {
+	border: 1px solid var(--iv-border, var(--color-border));
+	border-radius: var(--iv-radius-md, 12px);
+	overflow: hidden;
+	background: var(--iv-bg-card, var(--color-main-background));
+}
+/* Empty states — AZ-like bordered soft panel */
+#content.app-inventorycheck #app-content .iv-empty,
+#content.app-inventorycheck #app-content .iv-empty-state {
+	border: 1px dashed var(--iv-border-strong, var(--color-border));
+	border-radius: var(--iv-radius-md, 12px);
+	padding: var(--iv-space-6, 32px) var(--iv-space-5, 24px);
+	text-align: center;
+	background: var(--iv-bg-soft, transparent);
+}
+/* ===== END AZ content surfaces ===== */
+
 
 /* ===== AZ table parity (prefix iv) =====
  * Matches arbeitszeitcheck/css/common/components.css table chrome.

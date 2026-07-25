@@ -5,6 +5,7 @@
 @import url('common/app-layout.css');
 @import url('common/page-patterns.css');
 @import url('common/shell-chrome.css');
+@import url('common/form-controls.css');
 @import url('common/dialogs.css');
 @import url('navigation.css');
 @import url('common/notification-surfaces.css');
@@ -14,7 +15,7 @@
 .iv-btn--primary,
 button.button,
 a.button {
-	border-radius: var(--iv-radius-sm, 6px) !important;
+	border-radius: var(--iv-radius-md, 12px) !important;
 }
 
 
@@ -239,7 +240,7 @@ a.button {
 	gap: 8px;
 	min-height: 44px;
 	padding: 8px 18px;
-	border-radius: var(--iv-radius-sm, 6px);
+	border-radius: var(--iv-radius-md, 12px);
 	border: 1px solid transparent;
 	font-size: 14px;
 	font-weight: 600;
@@ -308,20 +309,22 @@ a.button {
 /* ── Forms ─────────────────────────────────────────────────────────── */
 
 .iv-input {
+	/* AZ form chrome: 1px border, sm radius, 44px target */
 	width: 100%;
 	min-height: 44px;
-	padding: 8px 12px;
-	border: 2px solid var(--color-border-maxcontrast, var(--color-border-dark));
-	border-radius: var(--border-radius-large, 10px);
+	padding: var(--iv-space-2, 8px) var(--iv-space-3, 12px);
+	border: 1px solid var(--color-border, var(--iv-border));
+	border-radius: var(--iv-radius-sm, 6px);
 	background: var(--color-main-background);
 	color: var(--color-main-text);
-	font-size: 14px;
+	font-size: var(--iv-fs-md, 1rem);
 	box-sizing: border-box;
 }
 
 .iv-input:focus-visible {
 	border-color: var(--color-primary-element);
-	outline-offset: 0;
+	box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-element) 28%, transparent);
+	outline: none;
 }
 
 .iv-input[aria-invalid='true'] {
@@ -925,7 +928,7 @@ textarea.iv-input {
 	max-height: min(85vh, 720px);
 	overflow-y: auto;
 	background: var(--color-main-background);
-	border-radius: var(--border-radius-large, 10px);
+	border-radius: var(--iv-radius-lg, 16px);
 	box-shadow: 0 8px 40px rgba(0, 0, 0, 0.35);
 	padding: 24px;
 	box-sizing: border-box;
@@ -1607,21 +1610,51 @@ textarea.iv-input {
 }
 
 
-/* ===== AZ-PARITY-RADIUS-ENFORCER — ArbeitszeitCheck radii win over legacy family pills ===== */
+
+/* ===== AZ form-control enforcer (.iv-input) ===== */
+#content.app-inventorycheck #app-content .iv-input,
+#content.app-inventorycheck #app-content input.iv-input,
+#content.app-inventorycheck #app-content select.iv-input,
+#content.app-inventorycheck #app-content textarea.iv-input {
+	min-height: 44px;
+	border-radius: var(--iv-radius-sm, 6px);
+	border: 1px solid var(--color-border, var(--iv-border));
+	background: var(--color-main-background);
+	color: var(--color-main-text);
+	box-sizing: border-box;
+}
+#content.app-inventorycheck #app-content select.iv-input {
+	height: 44px;
+	padding: 0.625rem 2.5rem 0.625rem 1rem;
+	appearance: none;
+	-webkit-appearance: none;
+}
+
+/* ===== AZ-PARITY-RADIUS-ENFORCER — ArbeitszeitCheck radii (btn=md like azc-btn) ===== */
 #content.app-inventorycheck .button,
 #content.app-inventorycheck button.button,
 #content.app-inventorycheck a.button,
 #content.app-inventorycheck .iv-btn,
-#content.app-inventorycheck .iv-btn--primary,
+#content.app-inventorycheck .iv-btn--primary {
+	border-radius: var(--iv-radius-md, 12px) !important;
+}
 #content.app-inventorycheck .iv-badge,
 #content.app-inventorycheck .iv-chip,
-#content.app-inventorycheck .iv-status,
-#content.app-inventorycheck .iv-nav__link {
+#content.app-inventorycheck .iv-status {
 	border-radius: var(--iv-radius-sm, 6px) !important;
 }
 #content.app-inventorycheck .iv-card,
+#content.app-inventorycheck .iv-section,
 #content.app-inventorycheck .iv-filter-panel,
-#content.app-inventorycheck .modal,
-#content.app-inventorycheck .iv-dialog {
+#content.app-inventorycheck .iv-table-wrap,
+#content.app-inventorycheck .iv-empty,
+#content.app-inventorycheck .iv-empty-state {
 	border-radius: var(--iv-radius-md, 12px) !important;
+}
+/* Dialogs mount on body (outside #content) — must use AZ lg (16px) like azc-dialog */
+.modal.iv-dialog,
+.iv-dialog.modal,
+body > .modal-backdrop > .modal,
+body > .iv-dialog-overlay > .iv-dialog {
+	border-radius: var(--iv-radius-lg, 16px) !important;
 }

@@ -27,6 +27,9 @@ test('app.js filter panel and dialog inert lock are present', () => {
 	assert.match(src, /setAttribute\('inert'/);
 	assert.match(src, /removeAttribute\('inert'\)/);
 	assert.match(src, /document\.body\.style\.overflow/);
+	// Items list must use AZ filter-panel — not bare iv-toolbar.
+	assert.match(src, /iv-items-filter-title/);
+	assert.doesNotMatch(src, /className:\s*'iv-toolbar'/);
 });
 
 test('page templates close inventorycheck-app wrapper', () => {

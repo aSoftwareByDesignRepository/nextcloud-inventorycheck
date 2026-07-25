@@ -36,7 +36,7 @@
 .modal,
 .iv-dialog {
   background-color: var(--inventorycheck-color-modal-background, var(--iv-bg-card, var(--color-main-background)));
-  color: var(--inventorycheck-color-text-maxcontrast, var(--color-text-maxcontrast, var(--inventorycheck-color-text)));
+  color: var(--inventorycheck-color-text-maxcontrast, var(--color-text-maxcontrast, var(--inventorycheck-color-text, var(--color-main-text))));
   border: 1px solid var(--iv-border, var(--color-border));
   border-radius: var(--iv-radius-lg, 16px);
   box-shadow: var(--iv-shadow-md, 0 8px 24px color-mix(in srgb, var(--color-main-text) 12%, transparent));
@@ -82,7 +82,7 @@
     max-width: 95vw;
     max-height: 95vh;
     max-height: 95dvh;
-    margin: var(--space-2);
+    margin: var(--space-2, 0.5rem);
   }
 
   .modal--sm,
@@ -94,19 +94,19 @@
   }
 
   .modal-header {
-    padding: var(--space-3);
+    padding: var(--space-3, 0.75rem);
   }
 
   .modal-body {
-    padding: var(--space-3);
+    padding: var(--space-3, 0.75rem);
   }
 
   .modal-footer {
-    padding: var(--space-3);
+    padding: var(--space-3, 0.75rem);
   }
 
   .modal-title {
-    font-size: var(--inventorycheck-font-size-base);
+    font-size: var(--inventorycheck-font-size-base, 1rem);
   }
 
   .modal-close {
@@ -122,7 +122,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--iv-space-3, var(--space-3));
+  gap: var(--iv-space-3, var(--space-3, 0.75rem));
   padding: var(--iv-space-4, var(--space-4));
   border-bottom: 1px solid var(--iv-border, var(--inventorycheck-color-modal-border));
   background-color: transparent;
@@ -138,7 +138,7 @@
 .modal-title {
   font-size: var(--inventorycheck-font-size-lg);
   font-weight: var(--inventorycheck-font-weight-semibold);
-  color: var(--inventorycheck-color-text);
+  color: var(--inventorycheck-color-text, var(--color-main-text));
   margin: 0;
 }
 
@@ -146,10 +146,10 @@
   background: none;
   border: none;
   font-size: var(--inventorycheck-font-size-xl);
-  color: var(--inventorycheck-color-text-muted);
+  color: var(--inventorycheck-color-text-muted, var(--color-text-maxcontrast));
   cursor: pointer;
   padding: var(--space-1);
-  border-radius: var(--radius-base);
+  border-radius: var(--radius-base, 6px);
   transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
   width: 2rem;
   height: 2rem;
@@ -159,14 +159,14 @@
 }
 
 .modal-close:hover {
-  color: var(--inventorycheck-color-text);
+  color: var(--inventorycheck-color-text, var(--color-main-text));
   background-color: var(--inventorycheck-color-background-tertiary);
 }
 
 /* Modal Body */
 .modal-body {
   padding: var(--space-4);
-  color: var(--inventorycheck-color-text-maxcontrast, var(--color-text-maxcontrast, var(--inventorycheck-color-text)));
+  color: var(--inventorycheck-color-text-maxcontrast, var(--color-text-maxcontrast, var(--inventorycheck-color-text, var(--color-main-text))));
   overflow-y: auto;
   flex: 1;
 }
@@ -176,7 +176,7 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: var(--space-2);
+  gap: var(--space-2, 0.5rem);
   padding: var(--space-4);
   border-top: 1px solid var(--inventorycheck-color-modal-border);
   background-color: var(--inventorycheck-color-modal-footer-background);
@@ -203,7 +203,7 @@
 
 .alert__link {
 	display: inline-block;
-	margin-top: var(--space-2);
+	margin-top: var(--space-2, 0.5rem);
 	font-weight: var(--inventorycheck-font-weight-semibold, 600);
 	text-decoration: underline;
 	text-underline-offset: 0.15em;
@@ -222,15 +222,15 @@
 
 .alert-close {
 	position: absolute;
-	top: var(--space-3);
-	right: var(--space-3);
+	top: var(--space-3, 0.75rem);
+	right: var(--space-3, 0.75rem);
 	background: none;
 	border: none;
 	font-size: var(--inventorycheck-font-size-lg);
 	color: var(--color-main-text);
 	cursor: pointer;
 	padding: var(--space-1);
-	border-radius: var(--radius-base);
+	border-radius: var(--radius-base, 6px);
 	opacity: 0.9;
 	transition: opacity 0.15s ease-in-out;
 }
@@ -261,7 +261,7 @@
 .form--inline {
   flex-direction: row;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-3, 0.75rem);
 }
 
 /* Form Group */
@@ -291,17 +291,17 @@
 .form-group--horizontal {
   flex-direction: row;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-3, 0.75rem);
 }
 
 /* Form Label */
 .form-label,
 .form-group label {
-  font-family: var(--inventorycheck-font-family-sans);
+  font-family: var(--inventorycheck-font-family-sans, inherit);
   font-size: var(--inventorycheck-font-size-sm);
   font-weight: var(--inventorycheck-font-weight-medium);
-  color: var(--inventorycheck-color-form-label);
-  line-height: var(--inventorycheck-line-height-normal);
+  color: var(--inventorycheck-color-form-label, var(--color-main-text));
+  line-height: var(--inventorycheck-line-height-normal, 1.45);
   display: block;
   margin-bottom: var(--space-2, 0.5rem);
   margin-top: 0;
@@ -310,7 +310,7 @@
 .form-label--required::after,
 .form-group label.required::after {
   content: ' *';
-  color: var(--inventorycheck-color-form-required);
+  color: var(--inventorycheck-color-form-required, var(--color-error));
 }
 
 .form-required {
@@ -341,14 +341,14 @@
   display: block;
   width: 100%;
   min-height: 44px; /* Minimum touch target size for accessibility (WCAG 2.5.5) */
-  padding: var(--space-2) var(--space-3);
-  font-family: var(--inventorycheck-font-family-sans);
-  font-size: var(--inventorycheck-font-size-base);
-  line-height: var(--inventorycheck-line-height-normal);
-  color: var(--inventorycheck-color-text);
-  background-color: var(--inventorycheck-color-form-background);
-  border: 1px solid var(--inventorycheck-color-form-border);
-  border-radius: var(--radius-base);
+  padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
+  font-family: var(--inventorycheck-font-family-sans, inherit);
+  font-size: var(--inventorycheck-font-size-base, 1rem);
+  line-height: var(--inventorycheck-line-height-normal, 1.45);
+  color: var(--inventorycheck-color-text, var(--color-main-text));
+  background-color: var(--inventorycheck-color-form-background, var(--color-main-background));
+  border: 1px solid var(--inventorycheck-color-form-border, var(--color-border));
+  border-radius: var(--radius-base, 6px);
   transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
   box-sizing: border-box;
 }
@@ -357,8 +357,8 @@
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
-  border-color: var(--inventorycheck-color-form-border-focus);
-  box-shadow: 0 0 0 3px var(--inventorycheck-color-primary-light);
+  border-color: var(--inventorycheck-color-form-border-focus, var(--color-primary-element));
+  box-shadow: 0 0 0 3px var(--inventorycheck-color-primary-light, color-mix(in srgb, var(--color-primary-element) 28%, transparent));
   outline: none;
 }
 
@@ -366,8 +366,8 @@
 .form-group input:disabled,
 .form-group select:disabled,
 .form-group textarea:disabled {
-  background-color: var(--inventorycheck-color-background-secondary);
-  color: var(--inventorycheck-color-text-muted);
+  background-color: var(--inventorycheck-color-background-secondary, var(--color-background-dark));
+  color: var(--inventorycheck-color-text-muted, var(--color-text-maxcontrast));
   cursor: not-allowed;
 }
 
@@ -375,33 +375,33 @@
 .form-group input.error,
 .form-group select.error,
 .form-group textarea.error {
-  border-color: var(--inventorycheck-color-form-border-error);
+  border-color: var(--inventorycheck-color-form-border-error, var(--color-error));
 }
 
 .form-input--error:focus,
 .form-group input.error:focus,
 .form-group select.error:focus,
 .form-group textarea.error:focus {
-  border-color: var(--inventorycheck-color-form-border-error);
-  box-shadow: 0 0 0 3px var(--inventorycheck-color-error-light);
+  border-color: var(--inventorycheck-color-form-border-error, var(--color-error));
+  box-shadow: 0 0 0 3px var(--inventorycheck-color-error-light, color-mix(in srgb, var(--color-error) 28%, transparent));
 }
 
 .form-input--success {
-  border-color: var(--inventorycheck-color-form-border-success);
+  border-color: var(--inventorycheck-color-form-border-success, var(--color-success));
 }
 
 .form-input--success:focus {
-  border-color: var(--inventorycheck-color-form-border-success);
-  box-shadow: 0 0 0 3px var(--inventorycheck-color-success-light);
+  border-color: var(--inventorycheck-color-form-border-success, var(--color-success));
+  box-shadow: 0 0 0 3px var(--inventorycheck-color-success-light, color-mix(in srgb, var(--color-success) 28%, transparent));
 }
 
 .form-input--warning {
-  border-color: var(--inventorycheck-color-border-warning);
+  border-color: var(--inventorycheck-color-border-warning, var(--color-warning));
 }
 
 .form-input--warning:focus {
-  border-color: var(--inventorycheck-color-border-warning);
-  box-shadow: 0 0 0 3px var(--inventorycheck-color-warning-light);
+  border-color: var(--inventorycheck-color-border-warning, var(--color-warning));
+  box-shadow: 0 0 0 3px var(--inventorycheck-color-warning-light, color-mix(in srgb, var(--color-warning) 28%, transparent));
 }
 
 /* Placeholder — theme-aware (WCAG contrast in light/dark) */
@@ -464,8 +464,8 @@
 .form-select option {
   padding: 0.5rem;
   line-height: 1.4;
-  background-color: var(--inventorycheck-color-background);
-  color: var(--inventorycheck-color-text);
+  background-color: var(--inventorycheck-color-background, var(--color-main-background));
+  color: var(--inventorycheck-color-text, var(--color-main-text));
 }
 
 html[data-theme="dark"] .form-select,
@@ -480,8 +480,8 @@ body[data-theme-dark] .form-input.form-select,
 body[data-theme-dark] .form-input.form-select option,
 body[data-theme-dark-highcontrast] .form-input.form-select,
 body[data-theme-dark-highcontrast] .form-input.form-select option {
-  background-color: var(--inventorycheck-color-background);
-  color: var(--inventorycheck-color-text);
+  background-color: var(--inventorycheck-color-background, var(--color-main-background));
+  color: var(--inventorycheck-color-text, var(--color-main-text));
 }
 
 /* Form Checkbox and Radio */
@@ -489,7 +489,7 @@ body[data-theme-dark-highcontrast] .form-input.form-select option {
 .form-radio {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-2, 0.5rem);
   cursor: pointer;
   user-select: none;
 }
@@ -537,7 +537,7 @@ body[data-theme-dark-highcontrast] .form-input.form-select option {
 .empty-state__icon {
   width: 4rem;
   height: 4rem;
-  background-color: var(--inventorycheck-color-primary-light);
+  background-color: var(--inventorycheck-color-primary-light, color-mix(in srgb, var(--color-primary-element) 28%, transparent));
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -550,12 +550,12 @@ body[data-theme-dark-highcontrast] .form-input.form-select option {
 .empty-state__title {
   font-size: var(--inventorycheck-font-size-xl);
   font-weight: var(--inventorycheck-font-weight-semibold);
-  margin: 0 0 var(--space-2) 0;
-  color: var(--inventorycheck-color-text);
+  margin: 0 0 var(--space-2, 0.5rem) 0;
+  color: var(--inventorycheck-color-text, var(--color-main-text));
 }
 
 .empty-state__description {
-  font-size: var(--inventorycheck-font-size-base);
+  font-size: var(--inventorycheck-font-size-base, 1rem);
   margin: 0 0 var(--space-6) 0;
   line-height: var(--inventorycheck-line-height-relaxed);
   color: var(--inventorycheck-color-text-secondary);
@@ -583,12 +583,12 @@ body[data-theme-dark-highcontrast] .form-input.form-select option {
 
   .card-actions {
     flex-direction: column;
-    gap: var(--space-2);
+    gap: var(--space-2, 0.5rem);
   }
 
   .modal-footer {
     flex-direction: column;
-    gap: var(--space-2);
+    gap: var(--space-2, 0.5rem);
   }
 
   .toast-container {

@@ -1,0 +1,269 @@
+/**
+ * Form controls — ArbeitszeitCheck parity (prefix iv).
+ * Scoped to #content.app-inventorycheck so NC chrome is untouched.
+ * Uses Nextcloud --color-* tokens (theme-safe). WCAG 2.1 AA: 44px targets,
+ * 3px focus ring, accent-color on checkbox/radio.
+ */
+#content.app-inventorycheck {
+	--iv-form-bg: var(--color-main-background);
+	--iv-form-fg: var(--color-main-text);
+	--iv-form-border: var(--color-border, var(--iv-border, color-mix(in srgb, var(--color-main-text) 18%, transparent)));
+	--iv-form-border-focus: var(--color-primary-element, #0082c9);
+	--iv-form-ring: color-mix(in srgb, var(--color-primary-element, #0082c9) 28%, transparent);
+	--iv-form-disabled-bg: var(--color-background-dark, var(--color-background-hover));
+	--iv-form-error: var(--color-error, #db0606);
+	--iv-form-error-ring: color-mix(in srgb, var(--color-error, #db0606) 28%, transparent);
+	--iv-form-success: var(--color-success, #2d7b46);
+	--iv-form-radius: var(--iv-radius-sm, 6px);
+}
+
+/* Text fields, selects, textareas — match AZ .form-input / base input chrome */
+#content.app-inventorycheck #app-content input[type="text"]:not(.input-field__input),
+#content.app-inventorycheck #app-content input[type="search"]:not(.input-field__input),
+#content.app-inventorycheck #app-content input[type="email"],
+#content.app-inventorycheck #app-content input[type="number"],
+#content.app-inventorycheck #app-content input[type="date"],
+#content.app-inventorycheck #app-content input[type="time"],
+#content.app-inventorycheck #app-content input[type="datetime-local"],
+#content.app-inventorycheck #app-content input[type="password"],
+#content.app-inventorycheck #app-content input[type="url"],
+#content.app-inventorycheck #app-content input[type="tel"],
+#content.app-inventorycheck #app-content input:not([type]),
+#content.app-inventorycheck #app-content textarea,
+#content.app-inventorycheck #app-content select,
+#content.app-inventorycheck #app-content .form-input,
+#content.app-inventorycheck #app-content .form-select,
+#content.app-inventorycheck #app-content .form-textarea,
+#content.app-inventorycheck #app-content .iv-input,
+#content.app-inventorycheck #app-content .iv-select,
+#content.app-inventorycheck #app-content .iv-textarea {
+	display: block;
+	width: 100%;
+	max-width: 100%;
+	min-height: 44px;
+	padding: var(--iv-space-2, 0.5rem) var(--iv-space-3, 0.75rem);
+	box-sizing: border-box;
+	font-family: inherit;
+	font-size: var(--iv-fs-md, 1rem);
+	line-height: var(--iv-line-base, 1.45);
+	font-weight: 400;
+	color: var(--iv-form-fg);
+	background-color: var(--iv-form-bg);
+	border: 1px solid var(--iv-form-border);
+	border-radius: var(--iv-form-radius);
+	transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+#content.app-inventorycheck #app-content textarea,
+#content.app-inventorycheck #app-content .form-textarea,
+#content.app-inventorycheck #app-content .iv-textarea {
+	min-height: 100px;
+	resize: vertical;
+	appearance: auto;
+	-webkit-appearance: auto;
+}
+
+/* Native select: AZ chevron + 44px height */
+#content.app-inventorycheck #app-content select,
+#content.app-inventorycheck #app-content select.iv-input,
+#content.app-inventorycheck #app-content .form-select,
+#content.app-inventorycheck #app-content .iv-select {
+	height: 44px;
+	min-height: 44px;
+	padding: 0.625rem 2.5rem 0.625rem 1rem;
+	line-height: 1.5;
+	appearance: none;
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	background-color: var(--iv-form-bg);
+	background-image: var(--icon-triangle-s-dark, url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b6b6b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e"));
+	background-position: right 0.75rem center;
+	background-repeat: no-repeat;
+	background-size: 1.25em 1.25em;
+	cursor: pointer;
+}
+
+#content.app-inventorycheck #app-content select::-ms-expand,
+#content.app-inventorycheck #app-content .form-select::-ms-expand {
+	display: none;
+}
+
+#content.app-inventorycheck #app-content input:focus,
+#content.app-inventorycheck #app-content input:focus-visible,
+#content.app-inventorycheck #app-content textarea:focus,
+#content.app-inventorycheck #app-content textarea:focus-visible,
+#content.app-inventorycheck #app-content select:focus,
+#content.app-inventorycheck #app-content select:focus-visible,
+#content.app-inventorycheck #app-content .form-input:focus,
+#content.app-inventorycheck #app-content .form-input:focus-visible,
+#content.app-inventorycheck #app-content .form-select:focus,
+#content.app-inventorycheck #app-content .form-select:focus-visible,
+#content.app-inventorycheck #app-content .form-textarea:focus,
+#content.app-inventorycheck #app-content .form-textarea:focus-visible {
+	border-color: var(--iv-form-border-focus);
+	box-shadow: 0 0 0 3px var(--iv-form-ring);
+	outline: none;
+}
+
+#content.app-inventorycheck #app-content input:disabled,
+#content.app-inventorycheck #app-content textarea:disabled,
+#content.app-inventorycheck #app-content select:disabled,
+#content.app-inventorycheck #app-content .form-input:disabled,
+#content.app-inventorycheck #app-content .form-select:disabled {
+	background-color: var(--iv-form-disabled-bg);
+	color: var(--iv-muted, var(--color-text-maxcontrast));
+	cursor: not-allowed;
+	opacity: 0.85;
+}
+
+#content.app-inventorycheck #app-content input::placeholder,
+#content.app-inventorycheck #app-content textarea::placeholder,
+#content.app-inventorycheck #app-content .form-input::placeholder {
+	color: var(--color-text-maxcontrast);
+	opacity: 1;
+}
+
+/* Error / success states (AZ) */
+#content.app-inventorycheck #app-content .form-input--error,
+#content.app-inventorycheck #app-content input[aria-invalid="true"],
+#content.app-inventorycheck #app-content select[aria-invalid="true"],
+#content.app-inventorycheck #app-content textarea[aria-invalid="true"] {
+	border-color: var(--iv-form-error);
+}
+#content.app-inventorycheck #app-content .form-input--error:focus,
+#content.app-inventorycheck #app-content input[aria-invalid="true"]:focus,
+#content.app-inventorycheck #app-content select[aria-invalid="true"]:focus,
+#content.app-inventorycheck #app-content textarea[aria-invalid="true"]:focus {
+	border-color: var(--iv-form-error);
+	box-shadow: 0 0 0 3px var(--iv-form-error-ring);
+}
+
+/* Checkbox / radio — accent + touch-friendly label row */
+#content.app-inventorycheck #app-content .form-checkbox,
+#content.app-inventorycheck #app-content .form-radio,
+#content.app-inventorycheck #app-content .iv-checkbox,
+#content.app-inventorycheck #app-content label:has(> input[type="checkbox"]),
+#content.app-inventorycheck #app-content label:has(> input[type="radio"]) {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--iv-space-2, 0.5rem);
+	min-height: 44px;
+	cursor: pointer;
+	user-select: none;
+	color: var(--iv-form-fg);
+}
+
+#content.app-inventorycheck #app-content input[type="checkbox"],
+#content.app-inventorycheck #app-content input[type="radio"],
+#content.app-inventorycheck #app-content .form-checkbox input[type="checkbox"],
+#content.app-inventorycheck #app-content .form-radio input[type="radio"],
+#content.app-inventorycheck #app-content .iv-checkbox input {
+	width: 1.125rem;
+	height: 1.125rem;
+	min-width: 1.125rem;
+	min-height: 1.125rem;
+	margin: 0;
+	flex-shrink: 0;
+	cursor: pointer;
+	accent-color: var(--color-primary-element);
+	background-color: var(--iv-form-bg);
+	border: 1px solid var(--iv-form-border);
+	border-radius: 3px;
+	box-sizing: border-box;
+}
+
+#content.app-inventorycheck #app-content input[type="radio"] {
+	border-radius: 50%;
+}
+
+#content.app-inventorycheck #app-content input[type="checkbox"]:focus-visible,
+#content.app-inventorycheck #app-content input[type="radio"]:focus-visible {
+	outline: 3px solid var(--iv-form-border-focus);
+	outline-offset: 2px;
+}
+
+/* Do not restyle file / color / range / hidden / button inputs as text fields */
+#content.app-inventorycheck #app-content input[type="file"],
+#content.app-inventorycheck #app-content input[type="color"],
+#content.app-inventorycheck #app-content input[type="range"],
+#content.app-inventorycheck #app-content input[type="hidden"],
+#content.app-inventorycheck #app-content input[type="checkbox"],
+#content.app-inventorycheck #app-content input[type="radio"],
+#content.app-inventorycheck #app-content input[type="button"],
+#content.app-inventorycheck #app-content input[type="submit"],
+#content.app-inventorycheck #app-content input[type="reset"],
+#content.app-inventorycheck #app-content input[type="image"] {
+	/* checkbox/radio keep size rules above; reset text-field chrome for others */
+}
+
+#content.app-inventorycheck #app-content input[type="file"],
+#content.app-inventorycheck #app-content input[type="color"],
+#content.app-inventorycheck #app-content input[type="range"],
+#content.app-inventorycheck #app-content input[type="button"],
+#content.app-inventorycheck #app-content input[type="submit"],
+#content.app-inventorycheck #app-content input[type="reset"],
+#content.app-inventorycheck #app-content input[type="image"] {
+	width: auto;
+	min-height: 44px;
+	padding: var(--iv-space-2, 0.5rem) var(--iv-space-3, 0.75rem);
+	background-image: none;
+	appearance: auto;
+	-webkit-appearance: auto;
+}
+
+/* Filter / form labels */
+#content.app-inventorycheck #app-content .form-label,
+#content.app-inventorycheck #app-content .iv-filter-field label,
+#content.app-inventorycheck #app-content .iv-field label,
+#content.app-inventorycheck #app-content label.form-label {
+	display: block;
+	font-size: var(--iv-fs-sm, 0.875rem);
+	font-weight: 600;
+	color: var(--iv-form-fg);
+	margin-bottom: var(--iv-space-2, 0.5rem);
+}
+
+/* Combobox-ish NC / custom listboxes */
+#content.app-inventorycheck #app-content [role="combobox"],
+#content.app-inventorycheck #app-content [role="listbox"] {
+	min-height: 44px;
+	border-radius: var(--iv-form-radius);
+	border: 1px solid var(--iv-form-border);
+	box-sizing: border-box;
+}
+#content.app-inventorycheck #app-content [role="combobox"]:focus-visible,
+#content.app-inventorycheck #app-content [role="listbox"]:focus-visible {
+	border-color: var(--iv-form-border-focus);
+	box-shadow: 0 0 0 3px var(--iv-form-ring);
+	outline: none;
+}
+
+/* Narrow viewports — never overflow the pane */
+@media (max-width: 768px) {
+	#content.app-inventorycheck #app-content input[type="text"]:not(.input-field__input),
+	#content.app-inventorycheck #app-content input[type="search"]:not(.input-field__input),
+	#content.app-inventorycheck #app-content input[type="email"],
+	#content.app-inventorycheck #app-content input[type="number"],
+	#content.app-inventorycheck #app-content input[type="date"],
+	#content.app-inventorycheck #app-content input[type="time"],
+	#content.app-inventorycheck #app-content textarea,
+	#content.app-inventorycheck #app-content select,
+	#content.app-inventorycheck #app-content .form-input,
+	#content.app-inventorycheck #app-content .form-select {
+		max-width: 100%;
+		min-height: 44px;
+	}
+}
+
+/* Switches keep their own chrome (do not force square checkbox look) */
+#content.app-inventorycheck #app-content .iv-switch input[type="checkbox"],
+#content.app-inventorycheck #app-content .iv-switch__input,
+#content.app-inventorycheck #app-content input[type="checkbox"].iv-switch__input,
+#content.app-inventorycheck #app-content [role="switch"] {
+	width: auto;
+	height: auto;
+	min-width: 0;
+	min-height: 0;
+	border-radius: inherit;
+	accent-color: var(--color-primary-element);
+}
