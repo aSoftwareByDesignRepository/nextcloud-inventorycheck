@@ -7,3 +7,5 @@
 /tests/e2e/.auth/
 /tests/e2e/artifacts/
 .phpunit.result.cache
+/composer.phar
+/composer-setup.php
