@@ -33,6 +33,7 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IL10N;
+use OCP\IConfig;
 use OCP\IRequest;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -83,6 +84,7 @@ final class AppAccessMiddlewareEnvelopeTest extends TestCase
 			$this->request,
 			$url,
 			$factory,
+			$this->createMock(IConfig::class),
 		);
 
 		$this->itemController = new EnvelopeTestItemController();

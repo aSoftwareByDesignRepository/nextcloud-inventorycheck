@@ -20,6 +20,7 @@ class MovementMapper extends QBMapper
 	}
 
 	/**
+	 * @param list<int>|null $locationIdFilter null = unrestricted; empty = none visible
 	 * @return array{data: list<Movement>, total: int}
 	 */
 	public function search(
@@ -31,8 +32,9 @@ class MovementMapper extends QBMapper
 		?string $transferGroup,
 		int $limit,
 		int $offset,
+		?array $locationIdFilter = null,
 	): array {
-		$apply = function ($qb) use ($kind, $itemId, $locationId, $from, $to, $transferGroup): void {
+		$apply = function ($qb) use ($kind, $itemId, $locationId, $from, $to, $transferGroup, $locationIdFilter): void {
 			$qb->from($this->getTableName());
 			$conds = [];
 			if ($kind !== null && $kind !== '') {
@@ -41,7 +43,18 @@ class MovementMapper extends QBMapper
 			if ($itemId !== null) {
 				$conds[] = $qb->expr()->eq('item_id', $qb->createNamedParameter($itemId, \PDO::PARAM_INT));
 			}
-			if ($locationId !== null) {
+			if ($locationIdFilter !== null) {
+				if ($locationIdFilter === []) {
+					$conds[] = $qb->expr()->eq('location_id', $qb->createNamedParameter(-1, \PDO::PARAM_INT));
+				} elseif ($locationId !== null) {
+					$conds[] = $qb->expr()->eq('location_id', $qb->createNamedParameter($locationId, \PDO::PARAM_INT));
+				} else {
+					$conds[] = $qb->expr()->in(
+						'location_id',
+						$qb->createNamedParameter($locationIdFilter, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT_ARRAY),
+					);
+				}
+			} elseif ($locationId !== null) {
 				$conds[] = $qb->expr()->eq('location_id', $qb->createNamedParameter($locationId, \PDO::PARAM_INT));
 			}
 			if ($from !== null) {
@@ -72,6 +85,61 @@ class MovementMapper extends QBMapper
 			->setMaxResults($limit)->setFirstResult($offset);
 
 		return ['data' => $this->findEntities($qb), 'total' => $total];
+	}
+
+	/**
+	 * Find issue movements for a flange ref (idempotency key base: ref_type + ref_id).
+	 *
+	 * @return list<Movement>
+	 */
+	public function findByRef(string $refType, int $refId): array
+	{
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('ref_type', $qb->createNamedParameter($refType)))
+			->andWhere($qb->expr()->eq('ref_id', $qb->createNamedParameter($refId, \PDO::PARAM_INT)))
+			->andWhere($qb->expr()->eq('kind', $qb->createNamedParameter('issue')))
+			->orderBy('id', 'ASC');
+
+		return $this->findEntities($qb);
+	}
+
+	/**
+	 * Idempotency lookup for (ref_type, ref_id, item_id).
+	 */
+	public function findByRefAndItemId(string $refType, int $refId, int $itemId): ?Movement
+	{
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('ref_type', $qb->createNamedParameter($refType)))
+			->andWhere($qb->expr()->eq('ref_id', $qb->createNamedParameter($refId, \PDO::PARAM_INT)))
+			->andWhere($qb->expr()->eq('item_id', $qb->createNamedParameter($itemId, \PDO::PARAM_INT)))
+			->andWhere($qb->expr()->eq('kind', $qb->createNamedParameter('issue')))
+			->orderBy('id', 'ASC')
+			->setMaxResults(1);
+		$entities = $this->findEntities($qb);
+		return $entities[0] ?? null;
+	}
+
+	/**
+	 * Wave C2: net signed quantity across every location for a (item, lot)
+	 * pair — the serial-uniqueness invariant is "this must never exceed 1".
+	 * Transfers cancel out (equal and opposite legs), so this only moves on
+	 * receive / issue / adjust, which is exactly the C2 threat model.
+	 */
+	public function sumQtyDeltaByItemAndLot(int $itemId, string $lotCode): int
+	{
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->func()->sum('qty_delta'))
+			->from($this->getTableName())
+			->where($qb->expr()->eq('item_id', $qb->createNamedParameter($itemId, \PDO::PARAM_INT)))
+			->andWhere($qb->expr()->eq('lot_code', $qb->createNamedParameter($lotCode)));
+		$result = $qb->executeQuery();
+		$sum = $result->fetchOne();
+		$result->closeCursor();
+		return $sum === false || $sum === null ? 0 : (int)$sum;
 	}
 
 	/**

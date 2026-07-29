@@ -27,6 +27,16 @@ use OCP\AppFramework\Db\Entity;
  * @method void setUpdatedAt(int $v)
  * @method string getCreatedBy()
  * @method void setCreatedBy(string $v)
+ * @method string|null getPhotoName()
+ * @method void setPhotoName(?string $v)
+ * @method string|null getPhotoMime()
+ * @method void setPhotoMime(?string $v)
+ * @method string|null getSupplierNote()
+ * @method void setSupplierNote(?string $v)
+ * @method int|null getLastPriceMinor()
+ * @method void setLastPriceMinor(?int $v)
+ * @method string getTrackMode()
+ * @method void setTrackMode(string $v)
  */
 class Item extends Entity
 {
@@ -40,6 +50,12 @@ class Item extends Entity
 	protected int $createdAt = 0;
 	protected int $updatedAt = 0;
 	protected string $createdBy = '';
+	protected ?string $photoName = null;
+	protected ?string $photoMime = null;
+	protected ?string $supplierNote = null;
+	protected ?int $lastPriceMinor = null;
+	/** Wave C2: none|lot|serial — see {@see \OCA\InventoryCheck\Service\CodeRules::TRACK_MODES}. */
+	protected string $trackMode = 'none';
 
 	public function __construct()
 	{
@@ -53,6 +69,11 @@ class Item extends Entity
 		$this->addType('createdAt', 'integer');
 		$this->addType('updatedAt', 'integer');
 		$this->addType('createdBy', 'string');
+		$this->addType('photoName', 'string');
+		$this->addType('photoMime', 'string');
+		$this->addType('supplierNote', 'string');
+		$this->addType('lastPriceMinor', 'integer');
+		$this->addType('trackMode', 'string');
 	}
 
 	/** @return array<string, mixed> */
@@ -67,6 +88,11 @@ class Item extends Entity
 			'uom' => $this->uom,
 			'reorderLevel' => $this->reorderLevel,
 			'active' => $this->active,
+			'hasPhoto' => $this->photoName !== null && $this->photoName !== '',
+			'photoMime' => $this->photoMime,
+			'supplierNote' => $this->supplierNote,
+			'lastPriceMinor' => $this->lastPriceMinor,
+			'trackMode' => $this->trackMode,
 			'createdAt' => $this->createdAt,
 			'updatedAt' => $this->updatedAt,
 			'createdBy' => $this->createdBy,

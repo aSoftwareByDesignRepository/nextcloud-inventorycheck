@@ -64,7 +64,7 @@ final class LatencySmokeIntegrationTest extends TestCase
 		$readSamples = [];
 		for ($i = 0; $i < 20; $i++) {
 			$t0 = hrtime(true);
-			$movements->list(null, $itemId, $locId, null, null, null, 50, 0);
+			$movements->list('admin', null, $itemId, $locId, null, null, null, 50, 0);
 			$readSamples[] = (hrtime(true) - $t0) / 1e6;
 		}
 

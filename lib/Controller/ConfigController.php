@@ -7,9 +7,15 @@ namespace OCA\InventoryCheck\Controller;
 use OCA\InventoryCheck\AppInfo\Application;
 use OCA\InventoryCheck\Exception\ValidationException;
 use OCA\InventoryCheck\Service\AccessControlService;
+use OCA\InventoryCheck\Service\LocationAclService;
+use OCA\InventoryCheck\Service\LowStockNotifyService;
+use OCA\InventoryCheck\Service\LowStockService;
+use OCA\InventoryCheck\Service\QtyScale;
+use OCA\InventoryCheck\Service\QtyScaleService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IConfig;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserManager;
@@ -28,6 +34,10 @@ class ConfigController extends Controller
 		private readonly AccessControlService $access,
 		private readonly IUserManager $userManager,
 		private readonly IGroupManager $groupManager,
+		private readonly LowStockService $lowStock,
+		private readonly QtyScaleService $qtyScaleService,
+		private readonly LocationAclService $locationAcl,
+		private readonly IConfig $config,
 	) {
 		parent::__construct(Application::APP_ID, $request);
 	}
@@ -60,7 +70,73 @@ class ConfigController extends Controller
 			'officeGroups' => $isAppAdmin
 				? $this->access->getJsonIdList(AccessControlService::KEY_OFFICE_GROUP_IDS)
 				: [],
+			'lowStockNotifyUsers' => $isAppAdmin
+				? $this->access->getJsonIdList(LowStockNotifyService::KEY_NOTIFY_USER_IDS)
+				: [],
+			'lowStockNotifyGroups' => $isAppAdmin
+				? $this->access->getJsonIdList(LowStockNotifyService::KEY_NOTIFY_GROUP_IDS)
+				: [],
+			'locationReorderHintEnabled' => $this->lowStock->isPerLocationHintEnabled(),
+			'qtyScale' => QtyScale::current($this->config),
+			'locationAclEnabled' => $this->locationAcl->isEnabled(),
 		]);
+	}
+
+	/**
+	 * C1: one-way opt-in to fractional (3-decimal) quantities. Enable-only —
+	 * there is no disable endpoint, the rescale is irreversible.
+	 */
+	#[NoAdminRequired]
+	public function saveFractional(): JSONResponse
+	{
+		$uid = $this->access->currentUserId();
+		$this->access->requireAppAdmin($uid);
+		$result = $this->qtyScaleService->enableFractional();
+		return new JSONResponse(array_merge($result, ['qtyScale' => QtyScale::current($this->config)]));
+	}
+
+	/**
+	 * C3: per-location ACL. App-admin only; GET lists every assignment,
+	 * PUT replaces the full assignment for one subject (validate-then-commit).
+	 */
+	#[NoAdminRequired]
+	public function locationAcl(): JSONResponse
+	{
+		$uid = $this->access->currentUserId();
+		$this->access->requireAppAdmin($uid);
+		return new JSONResponse([
+			'enabled' => $this->locationAcl->isEnabled(),
+			'assignments' => $this->locationAcl->listAll(),
+		]);
+	}
+
+	#[NoAdminRequired]
+	public function saveLocationAcl(): JSONResponse
+	{
+		$uid = $this->access->currentUserId();
+		$this->access->requireAppAdmin($uid);
+		$p = $this->request->getParams();
+
+		if (array_key_exists('enabled', $p)) {
+			$this->locationAcl->setEnabled($this->parseBool($p['enabled'], 'enabled'));
+		}
+		if (array_key_exists('assignments', $p)) {
+			if (!is_array($p['assignments'])) {
+				throw new ValidationException('validation_failed', '', [
+					['field' => 'assignments', 'code' => 'invalid_type'],
+				]);
+			}
+			/** @var list<array<string, mixed>> $assignments */
+			$assignments = $p['assignments'];
+			$this->locationAcl->replaceAll($uid, $assignments);
+		} elseif (array_key_exists('subjectType', $p) || array_key_exists('subjectId', $p) || array_key_exists('locationIds', $p)) {
+			$subjectType = is_string($p['subjectType'] ?? null) ? $p['subjectType'] : '';
+			$subjectId = is_string($p['subjectId'] ?? null) ? $p['subjectId'] : '';
+			$locationIds = is_array($p['locationIds'] ?? null) ? $p['locationIds'] : [];
+			$this->locationAcl->setForSubject($subjectType, $subjectId, $locationIds);
+		}
+
+		return $this->locationAcl();
 	}
 
 	#[NoAdminRequired]
@@ -128,6 +204,41 @@ class ConfigController extends Controller
 		}
 		if ($allowNegative !== null) {
 			$this->access->setAllowNegativeStock($allowNegative);
+		}
+
+		return $this->index();
+	}
+
+	/**
+	 * Wave A3 / B3: low-stock notify recipients and the per-location reorder
+	 * hint toggle. App-admin only, same validate-then-commit shape as
+	 * {@see saveAccess()} / {@see saveOffice()}.
+	 */
+	#[NoAdminRequired]
+	public function saveNotify(): JSONResponse
+	{
+		$uid = $this->access->currentUserId();
+		$this->access->requireAppAdmin($uid);
+		$p = $this->request->getParams();
+
+		$notifyUsers = array_key_exists('lowStockNotifyUsers', $p)
+			? $this->validatedUserIds($p['lowStockNotifyUsers'], 'lowStockNotifyUsers')
+			: null;
+		$notifyGroups = array_key_exists('lowStockNotifyGroups', $p)
+			? $this->validatedGroupIds($p['lowStockNotifyGroups'], 'lowStockNotifyGroups')
+			: null;
+		$reorderHint = array_key_exists('locationReorderHintEnabled', $p)
+			? $this->parseBool($p['locationReorderHintEnabled'], 'locationReorderHintEnabled')
+			: null;
+
+		if ($notifyUsers !== null) {
+			$this->access->setJsonIdList(LowStockNotifyService::KEY_NOTIFY_USER_IDS, $notifyUsers);
+		}
+		if ($notifyGroups !== null) {
+			$this->access->setJsonIdList(LowStockNotifyService::KEY_NOTIFY_GROUP_IDS, $notifyGroups);
+		}
+		if ($reorderHint !== null) {
+			$this->lowStock->setPerLocationHintEnabled($reorderHint);
 		}
 
 		return $this->index();

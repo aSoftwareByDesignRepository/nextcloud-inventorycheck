@@ -43,6 +43,43 @@
 			</label>
 			<button type="button" class="iv-btn iv-btn--primary">Save access</button>
 		</section>
+		<section class="iv-section" aria-labelledby="iv-frac-title">
+			<h2 id="iv-frac-title" class="iv-section__title">Fractional quantities</h2>
+			<p class="iv-section__hint">Optional. Turn this on if you book cable metres or similar with up to three decimal places. Existing whole numbers become ×1000 storage units. This cannot be undone.</p>
+			<button type="button" class="iv-btn iv-btn--primary">Enable fractional quantities (up to 3 decimals)</button>
+		</section>
+		<section class="iv-section" aria-labelledby="iv-acl-title">
+			<h2 id="iv-acl-title" class="iv-section__title">Location access</h2>
+			<p class="iv-section__hint">Optional. When on, field users only see locations granted to them or their groups. Office and admins still see everything. With no grants, field users see none.</p>
+			<label class="iv-switch" for="iv-loc-acl">
+				<input type="checkbox" class="iv-switch__input" id="iv-loc-acl">
+				<span class="iv-switch__label">Limit field users to granted locations</span>
+			</label>
+			<div class="iv-field">
+				<label class="iv-label" for="iv-acl-subject-type">Grant to</label>
+				<select class="iv-input" id="iv-acl-subject-type">
+					<option value="user">User</option>
+					<option value="group">Group</option>
+				</select>
+			</div>
+			<div class="iv-field">
+				<label class="iv-label" for="iv-acl-subject-id">User or group id</label>
+				<input class="iv-input" id="iv-acl-subject-id" type="text" autocomplete="username">
+			</div>
+			<div class="iv-field">
+				<label class="iv-label" for="iv-acl-loc-ids">Locations to grant</label>
+				<select class="iv-input" id="iv-acl-loc-ids" multiple size="3" aria-label="Locations to grant">
+					<option value="1">Van A — VAN-A</option>
+					<option value="2">Warehouse — WH-1</option>
+				</select>
+				<p class="iv-field__hint">Hold Ctrl (or Cmd on Mac) to select several locations.</p>
+			</div>
+			<button type="button" class="iv-btn iv-btn--primary">Save location access</button>
+			<h3 class="iv-section__subtitle">Current grants</h3>
+			<div id="iv-acl-list" class="iv-stack" role="status">
+				<p class="iv-muted">No location grants yet. Field users see nothing while this is on.</p>
+			</div>
+		</section>
 		<section class="iv-section" id="iv-license" aria-labelledby="iv-license-title">
 			<h2 id="iv-license-title" class="iv-section__title">License / Mobile &amp; Scanner</h2>
 			<div class="iv-field">

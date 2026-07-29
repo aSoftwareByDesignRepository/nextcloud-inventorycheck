@@ -159,15 +159,68 @@ test('movements transfer group is clickable filter', () => {
 
 test('movements page exposes kind item location date filters and pagination', () => {
 	assert.match(appJs, /movementListQuery/);
-	assert.match(appJs, /Apply filters/);
-	assert.match(appJs, /Clear filters/);
+	assert.match(appJs, /tr\('Apply'\)/);
+	assert.match(appJs, /tr\('Clear'\)/);
 	assert.match(appJs, /Filter movements/);
 	assert.match(appJs, /iv-filterbar/);
+	assert.match(appJs, /iv-filter-panel/);
+	assert.match(appJs, /iv-filter-grid--movements/);
+	assert.match(appJs, /iv-filter-field--actions/);
+	assert.match(appJs, /iv-filter-field--dates/);
+	assert.match(appJs, /iv-date-range/);
 	assert.match(appJs, /paginationBar/);
 	assert.match(appJs, /iv-pagination/);
-	assert.match(appJs, /From date/);
-	assert.match(appJs, /To date/);
+	assert.match(appJs, /iv-mov-from/);
+	assert.match(appJs, /iv-mov-to/);
 	assert.match(appJs, /All kinds/);
+	assert.match(appJs, /form-select/);
+	assert.match(appJs, /form-input/);
+	assert.match(appJs, /iv-mov-date-error/);
+	assert.match(appJs, /resolveMasterId/);
+	assert.match(appJs, /hydrateMaps/);
+	assert.match(appJs, /SKU or name/);
+	assert.match(appJs, /Code or name/);
+	assert.match(appJs, /type: 'search'/);
+	assert.match(appJs, /iv-mov-item-dl/);
+	assert.match(appJs, /kindSelect\.addEventListener\('change'/);
+	assert.doesNotMatch(appJs, /iv-filter-grid--extended/);
+	assert.doesNotMatch(appJs, /Apply filters/);
+});
+
+test('items and locations expose AZC simple search filter panels', () => {
+	assert.match(appJs, /iv-items-filter-panel/);
+	assert.match(appJs, /iv-loc-filter-panel/);
+	assert.match(appJs, /iv-filter-grid--simple/);
+	assert.match(appJs, /iv-filter-field--search/);
+	assert.match(appJs, /No items match these filters/);
+	assert.match(appJs, /No locations match these filters/);
+	assert.match(appJs, /Search locations/);
+	assert.match(appJs, /Find locations by code or name/);
+	assert.match(appJs, /loadSeq/);
+	assert.match(appJs, /urls\.api\.locations \+ '\?limit=50&offset=0&q='/);
+});
+
+test('resolveMasterId matches sku label and unique name', async () => {
+	const { createRequire } = await import('node:module');
+	const require = createRequire(import.meta.url);
+	const IvApp = require('../../js/app.js');
+	const rows = [
+		{ id: 1, name: 'Air filter', sku: 'FILTER-42' },
+		{ id: 2, name: 'Bolt', sku: 'BOLT-1' },
+		{ id: 3, name: 'Bolt set', sku: 'BOLT-SET' },
+	];
+	assert.equal(IvApp.resolveMasterId('', rows, 'sku'), '');
+	assert.equal(IvApp.resolveMasterId('FILTER-42', rows, 'sku'), '1');
+	assert.equal(IvApp.resolveMasterId('Air filter (FILTER-42)', rows, 'sku'), '1');
+	assert.equal(IvApp.resolveMasterId('air filter', rows, 'sku'), '1');
+	assert.equal(IvApp.resolveMasterId('nope', rows, 'sku'), null);
+	assert.equal(IvApp.resolveMasterId('bolt', rows, 'sku'), null, 'ambiguous partial must fail closed');
+});
+
+test('movements transfer group uses callout not bare filter-bar', () => {
+	assert.match(appJs, /iv-filter-active/);
+	assert.match(appJs, /iv-callout--info/);
+	assert.doesNotMatch(appJs, /className:\s*'iv-filter-bar'/);
 });
 
 test('dashboard flags negative balances when negatives are disallowed', () => {
@@ -209,6 +262,9 @@ test('masters expose Edit Deactivate Reactivate without hardcoded app paths', ()
 	assert.match(appJs, /refreshAfterMutation/);
 	assert.match(appJs, /announceBalances|data-iv-balance/);
 	assert.match(appJs, /labelPrintUrl|itemLabelPrint/);
+	assert.match(appJs, /labelSvgUrl|itemLabel/);
+	assert.match(appJs, /Label preview/);
+	assert.match(appJs, /QR and barcode for \{code\}/);
 	assert.match(appJs, /movementApi\(/);
 	assert.equal(/['"`]\/apps\/inventorycheck/.test(appJs), false, 'must use ctx.urls not hardcoded /apps/inventorycheck');
 });
@@ -232,4 +288,34 @@ test('helpers still export validation helpers', async () => {
 	assert.equal(IvApp.isValidCode('FILTER-42', 64), true);
 	assert.equal(IvApp.isValidCode('BAD CODE', 64), false);
 	assert.ok(IvApp.kindMeta('transfer_out').label.length > 0);
+});
+
+test('Wave A–B UI surfaces are wired in app.js', () => {
+	assert.match(appJs, /function renderStocktake/);
+	assert.match(appJs, /api\.importDryRun/);
+	assert.match(appJs, /favouriteLocations/);
+	assert.match(appJs, /hasPhoto/);
+	assert.match(appJs, /Print labels/);
+	assert.match(appJs, /movements_datev/);
+	assert.match(appJs, /Export DATEV-style CSV/);
+	assert.match(appJs, /syncBulkBtn/);
+	assert.match(appJs, /opening_location_code/);
+	assert.doesNotMatch(appJs, /bulkBtn\.disabled/);
+	assert.match(appJs, /Prefer omit over disable/);
+	assert.doesNotMatch(appJs, /disabled:\s*offset\s*<=\s*0/);
+});
+
+test('Wave C UI surfaces are wired in app.js', () => {
+	assert.match(appJs, /configFractional/);
+	assert.match(appJs, /configLocationAcl/);
+	assert.match(appJs, /trackMode/);
+	assert.match(appJs, /lotCode/);
+	assert.match(appJs, /Fractional quantities/);
+	assert.match(appJs, /Location access/);
+	assert.match(appJs, /qtyScale === 3/);
+	assert.match(appJs, /exportCsvHref/);
+	assert.match(appJs, /lang=de/);
+	assert.match(appJs, /Locations to grant/);
+	assert.match(appJs, /selectedOptions/);
+	assert.doesNotMatch(appJs, /disabled:\s*fracEnabled/);
 });

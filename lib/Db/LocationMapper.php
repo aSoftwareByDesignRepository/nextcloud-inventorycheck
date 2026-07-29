@@ -61,14 +61,37 @@ class LocationMapper extends QBMapper
 	}
 
 	/**
+	 * @param list<int>|null $idFilter restrict to these ids (null = no filter, [] = empty result)
 	 * @return array{data: list<Location>, total: int}
 	 */
-	public function search(?bool $active, int $limit, int $offset): array
+	public function search(?bool $active, int $limit, int $offset, ?array $idFilter = null, string $q = ''): array
 	{
-		$apply = function ($qb) use ($active): void {
+		if ($idFilter === []) {
+			return ['data' => [], 'total' => 0];
+		}
+		$q = trim($q);
+		$apply = function ($qb) use ($active, $idFilter, $q): void {
 			$qb->from($this->getTableName());
+			$conds = [];
 			if ($active !== null) {
-				$qb->where($qb->expr()->eq('active', $qb->createNamedParameter($active, \PDO::PARAM_BOOL)));
+				$conds[] = $qb->expr()->eq('active', $qb->createNamedParameter($active, \PDO::PARAM_BOOL));
+			}
+			if ($idFilter !== null) {
+				$conds[] = $qb->expr()->in(
+					'id',
+					$qb->createNamedParameter($idFilter, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT_ARRAY),
+				);
+			}
+			if ($q !== '') {
+				$lower = '%' . $this->db->escapeLikeParameter(mb_strtolower($q)) . '%';
+				$prefix = $this->db->escapeLikeParameter($q) . '%';
+				$conds[] = $qb->expr()->orX(
+					$qb->expr()->like($qb->func()->lower('name'), $qb->createNamedParameter($lower)),
+					$qb->expr()->like('code', $qb->createNamedParameter($prefix)),
+				);
+			}
+			if ($conds !== []) {
+				$qb->where(...$conds);
 			}
 		};
 

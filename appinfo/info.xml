@@ -7,8 +7,8 @@
 	<id>inventorycheck</id>
 	<name>InventoryCheck</name>
 	<name lang="de">InventoryCheck</name>
-	<summary>Stock levels, locations, and movements — ready for QR scan</summary>
-	<summary lang="de">Bestände, Lagerorte und Buchungen — vorbereitet für QR-Scan</summary>
+	<summary>Stock levels, locations, and movements — ready for QR / barcode scan</summary>
+	<summary lang="de">Bestände, Lagerorte und Buchungen — vorbereitet für QR- / Barcode-Scan</summary>
 	<description><![CDATA[
 # InventoryCheck
 
@@ -45,7 +45,7 @@ InventoryCheck verwaltet Lagerorte, Bestände und Buchungen in Ihrer Nextcloud. 
 - PHP 8.2–8.5
 - MySQL/MariaDB oder PostgreSQL
 	]]></description>
-	<version>1.0.9</version>
+	<version>1.2.15</version>
 	<licence>AGPL-3.0-or-later</licence>
 	<author mail="info@software-by-design.de" homepage="https://nextcloud.software-by-design.de">Alexander Mäule</author>
 	<namespace>InventoryCheck</namespace>
@@ -72,6 +72,11 @@ InventoryCheck verwaltet Lagerorte, Bestände und Buchungen in Ihrer Nextcloud. 
 		<command>OCA\InventoryCheck\Command\RebuildBalancesCommand</command>
 		<command>OCA\InventoryCheck\Command\UpgradeBackupCommand</command>
 	</commands>
+	<activity>
+		<providers>
+			<provider>OCA\InventoryCheck\Activity\Provider</provider>
+		</providers>
+	</activity>
 	<repair-steps>
 		<install>
 			<step>OCA\InventoryCheck\Repair\EnsureInventoryCheckSchema</step>

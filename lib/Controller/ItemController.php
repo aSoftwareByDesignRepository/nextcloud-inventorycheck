@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace OCA\InventoryCheck\Controller;
 
 use OCA\InventoryCheck\AppInfo\Application;
+use OCA\InventoryCheck\Exception\NotFoundException;
+use OCA\InventoryCheck\Exception\ValidationException;
 use OCA\InventoryCheck\Service\AccessControlService;
 use OCA\InventoryCheck\Service\ItemService;
 use OCA\InventoryCheck\Service\Pagination;
+use OCA\InventoryCheck\Service\QtyScale;
+use OCA\InventoryCheck\Util\LabelSheet;
 use OCA\InventoryCheck\Util\LabelSvg;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -15,9 +19,15 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
+use OCP\IConfig;
 use OCP\IRequest;
 use OCP\IURLGenerator;
 
+/**
+ * Wave C1: reorderLevel is converted display → storage before it reaches
+ * {@see ItemService} and storage → display again on every response — the
+ * service itself only ever works in plain integer storage units.
+ */
 class ItemController extends Controller
 {
 	public function __construct(
@@ -25,6 +35,7 @@ class ItemController extends Controller
 		private readonly ItemService $items,
 		private readonly AccessControlService $access,
 		private readonly IURLGenerator $urlGenerator,
+		private readonly IConfig $config,
 	) {
 		parent::__construct(Application::APP_ID, $request);
 	}
@@ -37,19 +48,23 @@ class ItemController extends Controller
 		$activeRaw = $this->request->getParam('active');
 		$active = $activeRaw === null || $activeRaw === '' ? null : filter_var($activeRaw, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
 		$lowStock = filter_var($this->request->getParam('lowStock', '0'), FILTER_VALIDATE_BOOLEAN);
-		return new JSONResponse($this->items->list($q, $active, $lowStock, $page['limit'], $page['offset']));
+		$result = $this->items->list($this->access->currentUserId(), $q, $active, $lowStock, $page['limit'], $page['offset']);
+		$result['data'] = array_map(fn (array $i) => QtyScale::formatItem($i, $this->config), $result['data']);
+		return new JSONResponse($result);
 	}
 
 	#[NoAdminRequired]
 	public function show(int $id): JSONResponse
 	{
-		return new JSONResponse($this->items->get($id));
+		return new JSONResponse(QtyScale::formatItem($this->items->get($id), $this->config));
 	}
 
 	#[NoAdminRequired]
 	public function byCode(string $code): JSONResponse
 	{
-		return new JSONResponse($this->items->byCode(rawurldecode($code)));
+		return new JSONResponse($this->formatItemWithBalances(
+			$this->items->byCode($this->access->currentUserId(), rawurldecode($code)),
+		));
 	}
 
 	/** SVG download for archival / external printers. */
@@ -101,16 +116,69 @@ class ItemController extends Controller
 		return $response;
 	}
 
+	/**
+	 * Bulk label sheet (Wave A5) — A4 grid of ≥12 labels via {@see LabelSheet}.
+	 * Opened as a browser navigation (print window), so NoCSRFRequired like
+	 * the single-item label print view.
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function bulkLabels(): TemplateResponse
+	{
+		$idsParam = $this->request->getParam('ids', []);
+		if (is_string($idsParam)) {
+			$idsParam = explode(',', $idsParam);
+		}
+		$ids = is_array($idsParam)
+			? array_values(array_unique(array_filter(array_map('intval', $idsParam), static fn (int $id): bool => $id > 0)))
+			: [];
+		if ($ids === []) {
+			throw new ValidationException('validation_failed', '', [['field' => 'ids', 'code' => 'validation_failed']]);
+		}
+
+		$items = [];
+		foreach ($ids as $id) {
+			try {
+				$items[] = $this->items->get($id);
+			} catch (\Throwable) {
+				continue;
+			}
+		}
+		if ($items === []) {
+			throw new NotFoundException('unknown_item');
+		}
+
+		$html = LabelSheet::html(array_map(static fn (array $i): array => [
+			'scanCode' => (string)$i['scanCode'],
+			'sku' => (string)$i['sku'],
+			'name' => (string)$i['name'],
+		], $items));
+
+		$response = new TemplateResponse(
+			Application::APP_ID,
+			'label-sheet-print',
+			[
+				'labelsHtml' => $html,
+				'count' => count($items),
+				'backUrl' => $this->urlGenerator->linkToRoute('inventorycheck.page.items'),
+			],
+		);
+		$response->renderAs(TemplateResponse::RENDER_AS_BLANK);
+		return $response;
+	}
+
 	#[NoAdminRequired]
 	public function create(): JSONResponse
 	{
-		return new JSONResponse($this->items->create($this->access->currentUserId(), $this->request->getParams()));
+		$input = $this->toStorageInput($this->request->getParams());
+		return new JSONResponse(QtyScale::formatItem($this->items->create($this->access->currentUserId(), $input), $this->config));
 	}
 
 	#[NoAdminRequired]
 	public function update(int $id): JSONResponse
 	{
-		return new JSONResponse($this->items->update($this->access->currentUserId(), $id, $this->request->getParams()));
+		$input = $this->toStorageInput($this->request->getParams());
+		return new JSONResponse(QtyScale::formatItem($this->items->update($this->access->currentUserId(), $id, $input), $this->config));
 	}
 
 	#[NoAdminRequired]
@@ -118,5 +186,29 @@ class ItemController extends Controller
 	{
 		$this->items->delete($this->access->currentUserId(), $id);
 		return new JSONResponse(['ok' => true]);
+	}
+
+	/**
+	 * @param array<string, mixed> $input
+	 * @return array<string, mixed>
+	 */
+	private function toStorageInput(array $input): array
+	{
+		foreach (['reorderLevel', 'reorder_level'] as $key) {
+			if (array_key_exists($key, $input) && $input[$key] !== null && $input[$key] !== '') {
+				$input[$key] = QtyScale::toStorage($this->config, $input[$key]);
+			}
+		}
+		return $input;
+	}
+
+	/** @param array<string, mixed> $item */
+	private function formatItemWithBalances(array $item): array
+	{
+		$item = QtyScale::formatItem($item, $this->config);
+		if (isset($item['balances']) && is_array($item['balances'])) {
+			$item['balances'] = array_map(fn (array $b) => QtyScale::formatBalance($b, $this->config), $item['balances']);
+		}
+		return $item;
 	}
 }

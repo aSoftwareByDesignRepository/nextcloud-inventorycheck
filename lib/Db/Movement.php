@@ -31,6 +31,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setCreatedAt(int $v)
  * @method string getCreatedBy()
  * @method void setCreatedBy(string $v)
+ * @method string|null getLotCode()
+ * @method void setLotCode(?string $v)
  */
 class Movement extends Entity
 {
@@ -47,6 +49,8 @@ class Movement extends Entity
 	protected ?int $refId = null;
 	protected int $createdAt = 0;
 	protected string $createdBy = '';
+	/** Wave C2: lot/serial code, only set when the item's track_mode requires one. */
+	protected ?string $lotCode = null;
 
 	public function __construct()
 	{
@@ -62,6 +66,7 @@ class Movement extends Entity
 		$this->addType('refId', 'integer');
 		$this->addType('createdAt', 'integer');
 		$this->addType('createdBy', 'string');
+		$this->addType('lotCode', 'string');
 	}
 
 	/** @return array<string, mixed> */
@@ -79,6 +84,7 @@ class Movement extends Entity
 			'reason' => $this->reason,
 			'refType' => $this->refType,
 			'refId' => $this->refId,
+			'lotCode' => $this->lotCode,
 			'createdAt' => $this->createdAt,
 			'createdBy' => $this->createdBy,
 		];

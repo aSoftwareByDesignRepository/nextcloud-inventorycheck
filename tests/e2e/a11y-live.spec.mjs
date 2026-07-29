@@ -9,9 +9,10 @@ import { ensureLoggedIn, credsFromEnv, openInventory } from './helpers/auth.mjs'
  */
 const routes = [
 	{ path: '/apps/inventorycheck/', ready: '#iv-page-title, .iv-section, .iv-empty', creds: 'E2E' },
-	{ path: '/apps/inventorycheck/items', ready: '#iv-page-title, .iv-toolbar, .iv-empty', creds: 'E2E' },
-	{ path: '/apps/inventorycheck/locations', ready: '#iv-page-title, .iv-empty, .iv-row', creds: 'E2E' },
+	{ path: '/apps/inventorycheck/items', ready: '#iv-page-title, #iv-items-filter-panel, .iv-filter-panel, .iv-empty', creds: 'E2E' },
+	{ path: '/apps/inventorycheck/locations', ready: '#iv-page-title, #iv-loc-filter-panel, .iv-filter-panel, .iv-empty', creds: 'E2E' },
 	{ path: '/apps/inventorycheck/movements', ready: '#iv-page-title, .iv-filter-panel, .iv-filterbar, .iv-empty', creds: 'E2E' },
+	{ path: '/apps/inventorycheck/stocktake', ready: '#iv-page-title, .iv-section, .iv-empty, .iv-row', creds: 'E2E' },
 	{ path: '/apps/inventorycheck/settings', ready: '#iv-page-title, #iv-support-us, .iv-section', creds: 'ADMIN' },
 ]
 

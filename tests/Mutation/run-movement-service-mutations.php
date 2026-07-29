@@ -14,12 +14,12 @@ $balances = 'lib/Db/BalanceMapper.php';
 $rowLocking = 'lib/Db/RowLocking.php';
 $itemService = 'lib/Service/ItemService.php';
 
-runMutations(dirname(__DIR__, 2), 'MovementLockingProtocolTest|SpecEdgeCasesIntegrationTest|LifecycleAndRaceIntegrationTest', [
+runMutations(dirname(__DIR__, 2), 'MovementLockingProtocolTest|SpecEdgeCasesIntegrationTest|LifecycleAndRaceIntegrationTest|WaveCFeaturesIntegrationTest', [
 	[
 		'name' => 'receive-office-gate-dropped',
 		'file' => $movement,
-		'search' => "public function receive(string \$actorUid, int \$itemId, int \$locationId, int \$qty, ?string \$reason): array\n\t{\n\t\t\$this->access->requireOffice(\$actorUid);\n\t\treturn \$this->postSingle(\$actorUid, 'receive', \$itemId, \$locationId, \$qty, \$reason);",
-		'replace' => "public function receive(string \$actorUid, int \$itemId, int \$locationId, int \$qty, ?string \$reason): array\n\t{\n\t\treturn \$this->postSingle(\$actorUid, 'receive', \$itemId, \$locationId, \$qty, \$reason);",
+		'search' => "\$this->access->requireOffice(\$actorUid);\n\t\t\$this->assertLocationAccess(\$actorUid, \$locationId);\n\t\treturn \$this->postSingle(\$actorUid, 'receive', \$itemId, \$locationId, \$qty, \$reason, \$lotCode, \$notifyLowStock);",
+		'replace' => "\$this->assertLocationAccess(\$actorUid, \$locationId);\n\t\treturn \$this->postSingle(\$actorUid, 'receive', \$itemId, \$locationId, \$qty, \$reason, \$lotCode, \$notifyLowStock);",
 	],
 	[
 		'name' => 'lock-order-item-reversed',
@@ -36,14 +36,14 @@ runMutations(dirname(__DIR__, 2), 'MovementLockingProtocolTest|SpecEdgeCasesInte
 	[
 		'name' => 'entity-shared-lock-downgraded-to-plain-read',
 		'file' => $movement,
-		'search' => 'lockById($itemId, false)',
-		'replace' => 'findById($itemId)',
+		'search' => '$item = $this->items->lockById($itemId, $exclusive);',
+		'replace' => '$item = $this->items->findById($itemId);',
 	],
 	[
 		'name' => 'inactive-item-recheck-dropped',
 		'file' => $movement,
-		'search' => "\t\t\$item = \$this->items->lockById(\$itemId, false);\n\t\tif (!\$item->getActive()) {\n\t\t\tthrow new ValidationException('inactive_item');\n\t\t}\n\t\treturn \$item;",
-		'replace' => "\t\treturn \$this->items->lockById(\$itemId, false);",
+		'search' => "\t\tif (!\$item->getActive()) {\n\t\t\tthrow new ValidationException('inactive_item');\n\t\t}",
+		'replace' => "\t\tif (false) {\n\t\t\tthrow new ValidationException('inactive_item');\n\t\t}",
 	],
 	[
 		'name' => 'share-mode-suffix-dropped',
@@ -62,5 +62,11 @@ runMutations(dirname(__DIR__, 2), 'MovementLockingProtocolTest|SpecEdgeCasesInte
 		'file' => $movement,
 		'search' => "\$toLocationId === null || \$toLocationId <= 0\n\t\t\t\t? throw new ValidationException('validation_failed', '', [\n\t\t\t\t\t['field' => 'toLocationId', 'code' => 'validation_failed'],\n\t\t\t\t])\n\t\t\t\t: \$this->transfer(",
 		'replace' => "\$this->transfer(",
+	],
+	[
+		'name' => 'serial-capacity-ceiling-raised',
+		'file' => $movement,
+		'search' => 'if ($current + $incomingDelta > $unit) {',
+		'replace' => 'if ($current + $incomingDelta > $unit * 100) {',
 	],
 ]);

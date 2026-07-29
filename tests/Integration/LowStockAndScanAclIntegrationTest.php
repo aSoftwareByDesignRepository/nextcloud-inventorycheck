@@ -72,7 +72,7 @@ final class LowStockAndScanAclIntegrationTest extends TestCase
 		$this->movements->adjust($this->uid, (int)$inactive['id'], $locId, 'set', 0, null, 'clear');
 		$this->items->update($this->uid, (int)$inactive['id'], ['active' => false]);
 
-		$list = $this->lowStock->list(200, 0);
+		$list = $this->lowStock->list($this->uid, 200, 0);
 		$ids = array_map(static fn (array $r): int => (int)$r['item']['id'], $list['data']);
 		$this->assertContains((int)$below['id'], $ids);
 		$this->assertNotContains((int)$equal['id'], $ids);

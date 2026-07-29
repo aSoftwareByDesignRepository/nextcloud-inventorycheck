@@ -37,22 +37,32 @@ final class UpgradeBackupCatalog
 	/** @var list<string> */
 	public const BACKUP_TABLES = [
 		'iv_balances',
+		'iv_cc_camp',
+		'iv_cc_line',
 		'iv_items',
 		'iv_license_state',
+		'iv_loc_acl',
+		'iv_loc_fav',
 		'iv_locations',
 		'iv_mobile_seats',
 		'iv_movements',
+		'iv_notif_log',
 		'iv_scan_devices',
 	];
 
 	/** @var list<string> */
 	public const RESTORE_TABLE_ORDER = [
-		'iv_locations',
-		'iv_items',
 		'iv_balances',
-		'iv_movements',
+		'iv_cc_camp',
+		'iv_cc_line',
+		'iv_items',
 		'iv_license_state',
+		'iv_loc_acl',
+		'iv_loc_fav',
+		'iv_locations',
 		'iv_mobile_seats',
+		'iv_movements',
+		'iv_notif_log',
 		'iv_scan_devices',
 	];
 

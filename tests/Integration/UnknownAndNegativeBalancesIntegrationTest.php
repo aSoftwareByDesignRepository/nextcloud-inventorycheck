@@ -93,7 +93,7 @@ final class UnknownAndNegativeBalancesIntegrationTest extends TestCase
 		$this->movements->issue($this->uid, (int)$itemNeg['id'], $locId, 4, 'go neg');
 		$this->movements->receive($this->uid, (int)$itemPos['id'], $locId, 5, 'seed');
 
-		$neg = $this->balances->list(null, $locId, false, 50, 0, true);
+		$neg = $this->balances->list($this->uid, null, $locId, false, 50, 0, true);
 		$this->assertGreaterThanOrEqual(1, $neg['total']);
 		foreach ($neg['data'] as $row) {
 			$this->assertLessThan(0, $row['qty'], 'negative filter must exclude non-negative rows');
@@ -126,7 +126,7 @@ final class UnknownAndNegativeBalancesIntegrationTest extends TestCase
 		$this->movements->receive($this->uid, $itemId, (int)$locB['id'], 2, 'tmp');
 		$this->movements->adjust($this->uid, $itemId, (int)$locB['id'], 'set', 0, null, 'clear');
 
-		$nonZero = $this->balances->list($itemId, null, true, 50, 0, false);
+		$nonZero = $this->balances->list($this->uid, $itemId, null, true, 50, 0, false);
 		$this->assertGreaterThanOrEqual(1, $nonZero['total']);
 		foreach ($nonZero['data'] as $row) {
 			$this->assertNotSame(0, $row['qty'], 'nonZero filter must exclude qty=0 rows');
@@ -153,11 +153,11 @@ final class UnknownAndNegativeBalancesIntegrationTest extends TestCase
 		$this->movements->receive($this->uid, $itemId, $locId, 2, 'r');
 		$this->movements->issue($this->uid, $itemId, $locId, 1, 'i');
 
-		$issues = $this->movements->list('issue', $itemId, $locId, null, null, null, 50, 0);
+		$issues = $this->movements->list($this->uid, 'issue', $itemId, $locId, null, null, null, 50, 0);
 		$this->assertSame(1, $issues['total']);
 		$this->assertSame('issue', $issues['data'][0]['kind']);
 
-		$recv = $this->movements->list('receive', $itemId, null, null, null, null, 50, 0);
+		$recv = $this->movements->list($this->uid, 'receive', $itemId, null, null, null, null, 50, 0);
 		$this->assertGreaterThanOrEqual(1, $recv['total']);
 		foreach ($recv['data'] as $row) {
 			$this->assertSame('receive', $row['kind']);

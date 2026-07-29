@@ -44,8 +44,43 @@
 		}
 	}
 
-	function formatQty(n) {
+	function formatQty(n, scale) {
+		if (n === null || n === undefined || n === '') return '0';
+		if (typeof n === 'string') {
+			// Already display-formatted by the API (may include decimals).
+			return n;
+		}
+		var s = Number(scale);
+		if (s === 3) {
+			var abs = Math.abs(n);
+			var whole = Math.floor(abs / 1000);
+			var frac = abs % 1000;
+			var out = frac === 0 ? String(whole) : (whole + '.' + String(frac).padStart(3, '0')).replace(/0+$/, '').replace(/\.$/, '');
+			return n < 0 ? '-' + out : out;
+		}
 		return String(Number(n));
+	}
+
+	function qtyStep(ctx) {
+		return (ctx && ctx.qtyScale === 3) ? '0.001' : '1';
+	}
+
+	function qtyInputAttrs(ctx, opts) {
+		opts = opts || {};
+		var attrs = {
+			type: 'number',
+			max: '1000000',
+			required: opts.required === false ? undefined : '',
+			className: 'iv-input',
+			step: qtyStep(ctx),
+			value: opts.value != null ? String(opts.value) : (opts.adjust ? '0' : '1'),
+		};
+		if (!opts.adjust) {
+			attrs.min = opts.min != null ? String(opts.min) : (ctx && ctx.qtyScale === 3 ? '0.001' : '1');
+		} else {
+			attrs.min = '0';
+		}
+		return attrs;
 	}
 
 	/**
@@ -96,13 +131,53 @@
 		return Math.floor(dt.getTime() / 1000);
 	}
 
+	function masterLabel(row, codeKey) {
+		if (!row) return '';
+		return row.name + ' (' + row[codeKey] + ')';
+	}
+
+	/**
+	 * Resolve a typed Item/Location query to an id (exact SKU/code, label, or unique name).
+	 * Returns '' when empty; null when ambiguous / unknown (caller shows inline error).
+	 */
+	function resolveMasterId(query, rows, codeKey) {
+		var q = String(query || '').trim().toLowerCase();
+		if (!q) return '';
+		var exactCode = null;
+		var exactLabel = null;
+		var exactName = null;
+		var nameHits = [];
+		(rows || []).forEach(function (r) {
+			var code = String(r[codeKey] || '').toLowerCase();
+			var name = String(r.name || '').toLowerCase();
+			var label = masterLabel(r, codeKey).toLowerCase();
+			if (code === q) exactCode = r;
+			if (label === q) exactLabel = r;
+			if (name === q) {
+				exactName = r;
+				nameHits.push(r);
+			} else if (name.indexOf(q) >= 0 || code.indexOf(q) >= 0 || label.indexOf(q) >= 0) {
+				nameHits.push(r);
+			}
+		});
+		if (exactCode) return String(exactCode.id);
+		if (exactLabel) return String(exactLabel.id);
+		if (exactName && nameHits.length === 1) return String(exactName.id);
+		if (nameHits.length === 1) return String(nameHits[0].id);
+		if (nameHits.length === 0) return null;
+		return null;
+	}
+
 	var IvApp = {
 		kindMeta: kindMeta,
 		locationKindLabel: locationKindLabel,
 		formatQty: formatQty,
+		qtyStep: qtyStep,
 		canReverseMovement: canReverseMovement,
 		movementListQuery: movementListQuery,
 		dateInputToUnix: dateInputToUnix,
+		masterLabel: masterLabel,
+		resolveMasterId: resolveMasterId,
 		isValidCode: function (value, max) {
 			return typeof value === 'string'
 				&& value.length >= 1
@@ -247,6 +322,8 @@
 			isSystemAdmin: root.getAttribute('data-iv-is-system-admin') === '1',
 			isOffice: root.getAttribute('data-iv-is-office') === '1',
 			allowNegative: root.getAttribute('data-iv-allow-negative') === '1',
+			locationReorderHintEnabled: root.getAttribute('data-iv-location-reorder-hint') === '1',
+			qtyScale: Number(root.getAttribute('data-iv-qty-scale') || '0') || 0,
 			urls: urls,
 			mount: $('#iv-page-root'),
 			actions: $('#iv-page-actions'),
@@ -479,10 +556,21 @@
 		if (!ctx.allowNegative) {
 			fetches.push(api('GET', ctx.urls.api.balances + '?negative=1&limit=20&offset=0'));
 		}
+		if (ctx.locationReorderHintEnabled && ctx.urls.api.lowStockPerLocation) {
+			fetches.push(api('GET', ctx.urls.api.lowStockPerLocation + '?limit=20&offset=0'));
+		}
 		Promise.all(fetches).then(function (results) {
 			var low = results[0];
 			var mov = results[1];
-			var negatives = !ctx.allowNegative ? results[2] : { data: [] };
+			var idx = 2;
+			var negatives = { data: [] };
+			if (!ctx.allowNegative) {
+				negatives = results[idx++] || { data: [] };
+			}
+			var perLoc = { data: [] };
+			if (ctx.locationReorderHintEnabled && ctx.urls.api.lowStockPerLocation) {
+				perLoc = results[idx] || { data: [] };
+			}
 			clear(mount);
 			setBusy(mount, false);
 
@@ -561,6 +649,36 @@
 						),
 				]));
 
+				if (ctx.locationReorderHintEnabled) {
+					mount.appendChild(el('section', {
+						className: 'iv-section',
+						'aria-labelledby': 'iv-perloc-title',
+					}, [
+						el('h2', {
+							id: 'iv-perloc-title',
+							className: 'iv-section__title',
+							text: tr('Low stock by location'),
+						}),
+						el('p', {
+							className: 'iv-muted',
+							text: tr('Hints where a single location is below the item reorder level.'),
+						}),
+						(!perLoc.data || perLoc.data.length === 0)
+							? el('p', { className: 'iv-muted', text: tr('No per-location shortfalls.') })
+							: tableOrCards(
+								[
+									{ label: tr('Item'), render: function (r) { return r.item.name; } },
+									{ label: tr('Location'), render: function (r) {
+										return labelFromMap(locMap, r.locationId, 'code');
+									} },
+									{ label: tr('On hand'), render: function (r) { return formatQty(r.qty); } },
+									{ label: tr('Reorder at'), render: function (r) { return formatQty(r.reorderLevel); } },
+								],
+								perLoc.data
+							),
+					]));
+				}
+
 				mount.appendChild(el('section', { className: 'iv-section', 'aria-labelledby': 'iv-mov-title' }, [
 					el('h2', { id: 'iv-mov-title', className: 'iv-section__title', text: tr('Recent movements') }),
 					mov.data.length === 0
@@ -628,6 +746,15 @@
 		return map[kind] || ctx.urls.api.movements;
 	}
 
+	function exportCsvHref(ctx, kind) {
+		var lang = (document.documentElement.getAttribute('lang') || 'en').toLowerCase().slice(0, 2);
+		var href = ctx.urls.api.export + '?kind=' + encodeURIComponent(kind);
+		if (lang === 'de') {
+			href += '&lang=de';
+		}
+		return href;
+	}
+
 	function byCodeUrl(ctx, code) {
 		var tmpl = ctx.urls.api.itemByCode || '';
 		return tmpl.replace('__CODE__', encodeURIComponent(code));
@@ -638,7 +765,20 @@
 	}
 
 	function labelPrintUrl(ctx, id) {
-		return String(ctx.urls.api.itemLabelPrint || '').replace(/\/0(\/|$)/, '/' + id + '$1');
+		return urlWithId(ctx.urls.api.itemLabelPrint, id);
+	}
+
+	function labelSvgUrl(ctx, id) {
+		return urlWithId(ctx.urls.api.itemLabel, id);
+	}
+
+	/**
+	 * Substitute the `0` placeholder id baked into route templates generated
+	 * with `['id' => 0]` (or `lineId`/`locationId` => 0) — same trick as
+	 * {@see labelPrintUrl}, generalised for the Wave A–B endpoints.
+	 */
+	function urlWithId(tmpl, id) {
+		return String(tmpl || '').replace(/\/0(\/|$)/, '/' + id + '$1');
 	}
 
 	function fillSelect(selectEl, rows, valueKey, labelFn, placeholder) {
@@ -652,12 +792,59 @@
 		});
 	}
 
+	function fillDatalist(listEl, rows, codeKey) {
+		clear(listEl);
+		(rows || []).forEach(function (r) {
+			listEl.appendChild(el('option', {
+				value: masterLabel(r, codeKey),
+			}));
+		});
+	}
+
+	/** Fetch missing item/location rows so the table never shows raw #id stubs. */
+	function hydrateMaps(ctx, itemMap, locMap, movements) {
+		var missingItems = {};
+		var missingLocs = {};
+		(movements || []).forEach(function (r) {
+			if (r.itemId && !itemMap[String(r.itemId)]) missingItems[String(r.itemId)] = true;
+			if (r.locationId && !locMap[String(r.locationId)]) missingLocs[String(r.locationId)] = true;
+		});
+		var jobs = [];
+		Object.keys(missingItems).slice(0, 40).forEach(function (id) {
+			jobs.push(
+				api('GET', entityUrl(ctx.urls.api.items, id)).then(function (row) {
+					if (row && row.id != null) itemMap[String(row.id)] = row;
+				}).catch(function () { /* keep #id fallback */ })
+			);
+		});
+		Object.keys(missingLocs).slice(0, 40).forEach(function (id) {
+			jobs.push(
+				api('GET', entityUrl(ctx.urls.api.locations, id)).then(function (row) {
+					if (row && row.id != null) locMap[String(row.id)] = row;
+				}).catch(function () { /* keep #id fallback */ })
+			);
+		});
+		return jobs.length ? Promise.all(jobs) : Promise.resolve();
+	}
+
 	function loadMasters(ctx) {
 		return Promise.all([
 			api('GET', ctx.urls.api.items + '?limit=200&offset=0&active=1'),
 			api('GET', ctx.urls.api.locations + '?limit=200&offset=0&active=1'),
+			api('GET', ctx.urls.api.favouriteLocations).catch(function () { return { data: [] }; }),
 		]).then(function (res) {
-			return { items: res[0].data || [], locations: res[1].data || [] };
+			var favIds = (res[2].data || []).map(function (f) { return Number(f.id); });
+			var locations = (res[1].data || []).slice().sort(function (a, b) {
+				var af = favIds.indexOf(Number(a.id)) >= 0 ? 0 : 1;
+				var bf = favIds.indexOf(Number(b.id)) >= 0 ? 0 : 1;
+				if (af !== bf) return af - bf;
+				return String(a.name).localeCompare(String(b.name));
+			});
+			return {
+				items: res[0].data || [],
+				locations: locations,
+				favouriteIds: favIds,
+			};
 		});
 	}
 
@@ -706,17 +893,16 @@
 			autocomplete: 'off',
 			spellcheck: 'false',
 		});
-		var qtyAttrs = {
-			type: 'number',
-			max: '1000000',
-			required: '',
+		var qty = el('input', qtyInputAttrs(ctx, { adjust: !!opts.adjust }));
+		var lotCode = el('input', {
+			type: 'text',
 			className: 'iv-input',
-			value: opts.adjust ? '0' : '1',
-		};
-		if (!opts.adjust) {
-			qtyAttrs.min = '1';
-		}
-		var qty = el('input', qtyAttrs);
+			maxlength: '64',
+			placeholder: tr('Lot / serial (when required)'),
+			'aria-label': tr('Lot or serial number'),
+			autocomplete: 'off',
+			spellcheck: 'false',
+		});
 		var reason = el('input', { type: 'text', maxlength: '512', className: 'iv-input' });
 		var hint = el('p', {
 			className: 'iv-field__hint',
@@ -741,11 +927,13 @@
 				return r.name + ' — ' + r.sku;
 			}, tr('Choose an item'));
 			fillSelect(locSelect, masters.locations, 'id', function (r) {
-				return r.name + ' — ' + r.code;
+				var star = (masters.favouriteIds || []).indexOf(Number(r.id)) >= 0 ? '★ ' : '';
+				return star + r.name + ' — ' + r.code;
 			}, tr('Choose a location'));
 			if (toSelect) {
 				fillSelect(toSelect, masters.locations, 'id', function (r) {
-					return r.name + ' — ' + r.code;
+					var star = (masters.favouriteIds || []).indexOf(Number(r.id)) >= 0 ? '★ ' : '';
+					return star + r.name + ' — ' + r.code;
 				}, tr('Choose destination'));
 			}
 
@@ -759,6 +947,11 @@
 				fields.push(field(tr('To location'), toSelect, { name: 'toLocationId' }));
 			}
 			fields.push(field(opts.adjust ? tr('New quantity') : tr('Quantity'), qty, { name: opts.adjust ? 'qty' : 'qty' }));
+			fields.push(field(tr('Lot / serial (optional)'), lotCode, { name: 'lotCode' }));
+			fields.push(el('p', {
+				className: 'iv-field__hint',
+				text: tr('Required when the item tracks lots or serial numbers. Serial items always use quantity 1.'),
+			}));
 			fields.push(field(tr('Reason (optional)'), reason, { name: 'reason' }));
 
 			if (opts.prefill) {
@@ -766,7 +959,26 @@
 				if (opts.prefill.locationId) locSelect.value = String(opts.prefill.locationId);
 				if (opts.prefill.toLocationId && toSelect) toSelect.value = String(opts.prefill.toLocationId);
 				if (opts.prefill.qty != null) qty.value = String(opts.prefill.qty);
+				if (opts.prefill.lotCode) lotCode.value = String(opts.prefill.lotCode);
 				if (opts.prefill.reason) reason.value = opts.prefill.reason;
+			}
+			// Wave B4: default from favourites when no prefill location.
+			if ((!opts.prefill || !opts.prefill.locationId) && masters.favouriteIds && masters.favouriteIds.length) {
+				locSelect.value = String(masters.favouriteIds[0]);
+			}
+			if (toSelect && (!opts.prefill || !opts.prefill.toLocationId) && masters.favouriteIds && masters.favouriteIds.length > 1) {
+				var dest = masters.favouriteIds.find(function (id) {
+					return String(id) !== String(locSelect.value);
+				});
+				if (dest) toSelect.value = String(dest);
+			}
+
+			function qtyPayload() {
+				return qty.value.trim();
+			}
+			function lotPayload() {
+				var v = lotCode.value.trim();
+				return v === '' ? null : v;
 			}
 
 			dialog(opts.title, fields, function () {
@@ -784,7 +996,8 @@
 						itemId: itemId,
 						fromLocationId: locationId,
 						toLocationId: toLocationId,
-						qty: Number(qty.value),
+						qty: qtyPayload(),
+						lotCode: lotPayload(),
 						reason: reason.value || null,
 					}).then(function (result) {
 						toast(tr('Stock transferred.'));
@@ -798,7 +1011,8 @@
 							itemId: itemId,
 							locationId: locationId,
 							mode: 'delta',
-							qtyDelta: Number(opts.prefill.qtyDelta),
+							qtyDelta: opts.prefill.qtyDelta,
+							lotCode: lotPayload(),
 							reason: reason.value || null,
 						}).then(function (result) {
 							toast(tr('Stock adjusted.'));
@@ -809,7 +1023,8 @@
 						itemId: itemId,
 						locationId: locationId,
 						mode: 'set',
-						qty: Number(qty.value),
+						qty: qtyPayload(),
+						lotCode: lotPayload(),
 						reason: reason.value || null,
 					}).then(function (result) {
 						toast(tr('Stock adjusted.'));
@@ -819,10 +1034,11 @@
 				return api('POST', movementApi(ctx, opts.path), {
 					itemId: itemId,
 					locationId: locationId,
-					qty: Number(qty.value),
+					qty: qtyPayload(),
+					lotCode: lotPayload(),
 					reason: reason.value || null,
 				}).then(function (result) {
-					toast(opts.okToast);
+					toast(opts.okToast || tr('Stock updated.'));
 					refreshAfterMutation(ctx, result);
 				});
 			}, opts.confirm);
@@ -920,8 +1136,120 @@
 		}
 	}
 
+	/** Wave A2: dry-run then commit CSV import, both against the pasted/loaded text. */
+	function openImportDialog(ctx) {
+		var fileInput = el('input', {
+			type: 'file',
+			accept: '.csv,text/csv',
+			className: 'iv-input',
+			'aria-label': tr('CSV file'),
+		});
+		var csvText = el('textarea', {
+			className: 'iv-input',
+			rows: '6',
+			placeholder: tr('Paste CSV here, or choose a file above.'),
+		});
+		var skipErrors = el('input', {
+			type: 'checkbox',
+			className: 'iv-switch__input',
+			id: 'iv-import-skip',
+		});
+		var resultBox = el('div', { className: 'iv-import-result', 'aria-live': 'polite' });
+
+		function readSelectedCsv() {
+			if (fileInput.files && fileInput.files[0]) {
+				return fileInput.files[0].text();
+			}
+			return Promise.resolve(csvText.value || '');
+		}
+
+		function runDryRun() {
+			clear(resultBox);
+			resultBox.appendChild(el('p', { className: 'iv-muted', text: tr('Checking…') }));
+			readSelectedCsv().then(function (text) {
+				if (!text.trim()) {
+					clear(resultBox);
+					resultBox.appendChild(el('p', { className: 'iv-muted', text: tr('Choose a file or paste CSV text first.') }));
+					return;
+				}
+				return api('POST', ctx.urls.api.importDryRun, { csv: text }).then(function (report) {
+					clear(resultBox);
+					resultBox.appendChild(el('p', {
+						text: tr('{ok} row(s) look fine.', { ok: String(report.ok) }),
+					}));
+					if (report.errors && report.errors.length) {
+						resultBox.appendChild(el('ul', { className: 'iv-import-errors' }, report.errors.slice(0, 20).map(function (e) {
+							return el('li', { text: tr('Line {line}: {message}', { line: String(e.line), message: e.message || e.code }) });
+						})));
+					}
+				});
+			}).catch(function (err) {
+				clear(resultBox);
+				resultBox.appendChild(el('p', { className: 'iv-muted', text: err.message || tr('Could not check the file.') }));
+			});
+		}
+
+		dialog(tr('Import items from CSV'), [
+			el('p', {
+				className: 'iv-field__hint',
+				text: tr('Columns: sku, scan_code, name, description, uom, reorder_level, active, supplier_note, last_price_minor, opening_location_code, opening_qty. German headers also work.'),
+			}),
+			field(tr('CSV file'), fileInput, { name: 'file' }),
+			field(tr('Or paste CSV text'), csvText, { name: 'csv' }),
+			btn(tr('Check for errors'), { onclick: runDryRun }),
+			resultBox,
+			el('label', { className: 'iv-switch', for: 'iv-import-skip' }, [
+				skipErrors,
+				el('span', { className: 'iv-switch__label', text: tr('Skip rows with errors instead of stopping') }),
+			]),
+		], function () {
+			return readSelectedCsv().then(function (text) {
+				if (!text.trim()) {
+					return Promise.reject(new ApiError('validation_failed', tr('Choose a file or paste CSV text.')));
+				}
+				return api('POST', ctx.urls.api.importCommit, { csv: text, skipErrors: skipErrors.checked }).then(function (report) {
+					toast(tr('Imported: {created} new, {received} received, {skipped} skipped.', {
+						created: String(report.created),
+						received: String(report.received),
+						skipped: String(report.skipped),
+					}));
+					renderItems(ctx);
+				});
+			});
+		}, tr('Import'));
+	}
+
 	function renderItems(ctx) {
 		var mount = ctx.mount;
+		var selected = {};
+		var bulkBtn = null;
+		function syncBulkBtn() {
+			var count = Object.keys(selected).length;
+			if (count === 0) {
+				if (bulkBtn && bulkBtn.parentNode) {
+					bulkBtn.parentNode.removeChild(bulkBtn);
+				}
+				bulkBtn = null;
+				return;
+			}
+			if (!bulkBtn) {
+				bulkBtn = btn(tr('Print labels ({count})', { count: String(count) }), {
+					onclick: function () {
+						var ids = Object.keys(selected);
+						if (!ids.length) return;
+						window.open(ctx.urls.api.itemBulkLabels + '?ids=' + ids.join(','), '_blank', 'noopener');
+					},
+				});
+				// Prefer omit over disable: insert after New item when present.
+				if (ctx.actions.firstChild && ctx.actions.firstChild.nextSibling) {
+					ctx.actions.insertBefore(bulkBtn, ctx.actions.firstChild.nextSibling);
+				} else {
+					ctx.actions.appendChild(bulkBtn);
+				}
+			} else {
+				bulkBtn.textContent = tr('Print labels ({count})', { count: String(count) });
+			}
+		}
 		setBusy(mount, true);
 		clear(mount);
 		if (ctx.isOffice) {
@@ -930,24 +1258,64 @@
 				primary: true,
 				onclick: function () { openItemDialog(ctx, null); },
 			}));
+			ctx.actions.appendChild(el('a', {
+				href: exportCsvHref(ctx, 'items'),
+				className: 'button',
+				text: tr('Export CSV'),
+			}));
+			ctx.actions.appendChild(btn(tr('Import CSV'), {
+				onclick: function () { openImportDialog(ctx); },
+			}));
 		}
 		var q = el('input', {
 			id: 'iv-items-q',
 			type: 'search',
 			className: 'iv-input form-input',
 			placeholder: tr('Search name or SKU'),
-			'aria-label': tr('Search items'),
+			autocomplete: 'off',
 		});
+		var listHost = el('div', { id: 'iv-items-list', className: 'iv-card' });
+		var filterActiveHost = el('div', { id: 'iv-items-filter-active' });
+		var loadSeq = 0;
+
+		function appliedQuery() {
+			return (q.value || '').trim();
+		}
+
+		function syncFilterActive() {
+			clear(filterActiveHost);
+			var term = appliedQuery();
+			if (!term) return;
+			filterActiveHost.appendChild(el('div', {
+				className: 'iv-callout iv-callout--info iv-filter-active',
+				role: 'status',
+			}, [
+				el('p', {
+					className: 'iv-callout__text',
+					text: tr('Search') + ': ' + term,
+				}),
+				btn(tr('Clear'), {
+					onclick: function () {
+						q.value = '';
+						load();
+					},
+				}),
+			]));
+		}
+
 		mount.appendChild(el('section', {
+			id: 'iv-items-filter-panel',
 			className: 'iv-card iv-filter-panel',
 			'aria-labelledby': 'iv-items-filter-title',
 		}, [
 			el('header', { className: 'iv-filter-panel__head' }, [
-				el('h2', { id: 'iv-items-filter-title', text: tr('Filter') }),
-				el('p', {
-					className: 'iv-filter-panel__intro',
-					text: tr('Find items by name or SKU.'),
-				}),
+				el('div', { className: 'iv-filter-panel__head-text' }, [
+					el('h2', { id: 'iv-items-filter-title', text: tr('Filter') }),
+					el('p', {
+						className: 'iv-filter-panel__intro',
+						text: tr('Find items by name or SKU.'),
+					}),
+				]),
 			]),
 			el('div', { className: 'iv-filter-panel__body' }, [
 				el('form', {
@@ -959,31 +1327,42 @@
 						load();
 					},
 				}, [
-					el('div', { className: 'iv-filter-grid' }, [
-						el('div', { className: 'iv-filter-field' }, [
+					el('div', {
+						className: 'iv-filter-grid iv-filter-grid--simple',
+						role: 'group',
+						'aria-label': tr('Filter options'),
+					}, [
+						el('div', { className: 'iv-filter-field iv-filter-field--search' }, [
 							el('label', { className: 'iv-filter-field__label', for: 'iv-items-q', text: tr('Search') }),
 							el('div', { className: 'iv-filter-field__control' }, [q]),
 						]),
-						el('div', { className: 'iv-filter-actions' }, [
-							btn(tr('Search'), { primary: true, type: 'submit' }),
-							btn(tr('Clear'), {
-								type: 'button',
-								onclick: function () {
-									q.value = '';
-									load();
-								},
-							}),
+						el('div', { className: 'iv-filter-field iv-filter-field--actions' }, [
+							el('span', { className: 'iv-filter-field__label iv-sr-only', text: tr('Actions') }),
+							el('div', { className: 'iv-filter-field__control iv-filter-field__control--actions' }, [
+								btn(tr('Search'), { primary: true, type: 'submit' }),
+								btn(tr('Clear'), {
+									type: 'button',
+									onclick: function () {
+										q.value = '';
+										load();
+									},
+								}),
+							]),
 						]),
 					]),
 				]),
 			]),
 		]));
-		var listHost = el('div', { id: 'iv-items-list', className: 'iv-card' });
+		mount.appendChild(filterActiveHost);
 		mount.appendChild(listHost);
 
 		function load() {
+			var seq = ++loadSeq;
+			var term = appliedQuery();
+			syncFilterActive();
 			setBusy(listHost, true);
-			api('GET', ctx.urls.api.items + '?limit=50&offset=0&q=' + encodeURIComponent(q.value || '')).then(function (res) {
+			api('GET', ctx.urls.api.items + '?limit=50&offset=0&q=' + encodeURIComponent(term)).then(function (res) {
+				if (seq !== loadSeq) return;
 				clear(listHost);
 				setBusy(listHost, false);
 				listHost.appendChild(el('header', { className: 'iv-card__header' }, [
@@ -993,15 +1372,43 @@
 				listHost.appendChild(body);
 				if (!res.data.length) {
 					body.appendChild(emptyState(
-						tr('No items yet'),
-						tr('Create an item with a SKU and reorder level.'),
-						(ctx.isOffice || ctx.isAppAdmin)
-							? btn(tr('New item'), { primary: true, onclick: function () { openItemDialog(ctx, null); } })
-							: null
+						term ? tr('No items match these filters') : tr('No items yet'),
+						term
+							? tr('Clear the search or try another name or SKU.')
+							: tr('Create an item with a SKU and reorder level.'),
+						term
+							? btn(tr('Clear'), {
+								primary: true,
+								onclick: function () {
+									q.value = '';
+									load();
+								},
+							})
+							: ((ctx.isOffice || ctx.isAppAdmin)
+								? btn(tr('New item'), { primary: true, onclick: function () { openItemDialog(ctx, null); } })
+								: null)
 					));
 					return;
 				}
-				body.appendChild(tableOrCards([
+				var columns = [];
+				if (ctx.isOffice) {
+					columns.push({ label: tr('Select'), render: function (r) {
+						return el('input', {
+							type: 'checkbox',
+							'aria-label': tr('Select {name} for bulk labels', { name: r.name }),
+							checked: selected[r.id] ? '' : null,
+							onchange: function (ev) {
+								if (ev.target.checked) {
+									selected[r.id] = true;
+								} else {
+									delete selected[r.id];
+								}
+								syncBulkBtn();
+							},
+						});
+					} });
+				}
+				columns.push(
 					{ label: tr('Name'), render: function (r) {
 						return el('a', { href: entityUrl(ctx.urls.pages.items, r.id), text: r.name });
 					} },
@@ -1028,8 +1435,10 @@
 							}),
 						]);
 					} },
-				], res.data));
+				);
+				body.appendChild(tableOrCards(columns, res.data));
 			}).catch(function (err) {
+				if (seq !== loadSeq) return;
 				clear(listHost);
 				toast(err.message, true);
 			});
@@ -1042,13 +1451,39 @@
 		var scan = el('input', { type: 'text', className: 'iv-input', maxlength: '128', value: existing ? existing.scanCode : '' });
 		var name = el('input', { type: 'text', className: 'iv-input', maxlength: '255', value: existing ? existing.name : '', required: '' });
 		var uom = el('input', { type: 'text', className: 'iv-input', maxlength: '32', value: existing ? existing.uom : 'pcs' });
-		var reorder = el('input', { type: 'number', className: 'iv-input', min: '0', max: '1000000', value: existing ? String(existing.reorderLevel) : '0' });
+		var reorder = el('input', qtyInputAttrs(ctx, {
+			adjust: true,
+			value: existing ? existing.reorderLevel : '0',
+			required: false,
+		}));
+		reorder.removeAttribute('required');
+		var trackMode = el('select', { className: 'iv-input', 'aria-label': tr('Tracking mode') }, [
+			el('option', { value: 'none', text: tr('No lot / serial tracking') }),
+			el('option', { value: 'lot', text: tr('Lot / batch tracking') }),
+			el('option', { value: 'serial', text: tr('Serial number tracking') }),
+		]);
+		trackMode.value = existing && existing.trackMode ? existing.trackMode : 'none';
+		var supplierNote = el('input', {
+			type: 'text', className: 'iv-input', maxlength: '255',
+			value: existing && existing.supplierNote ? existing.supplierNote : '',
+		});
+		var lastPrice = el('input', {
+			type: 'number', className: 'iv-input', min: '0', step: '1',
+			value: existing && existing.lastPriceMinor != null ? String(existing.lastPriceMinor) : '',
+		});
 		dialog(existing ? tr('Edit item') : tr('New item'), [
 			field(tr('SKU'), sku, { name: 'sku' }),
 			field(tr('Scan code (optional)'), scan, { name: 'scanCode' }),
 			field(tr('Name'), name, { name: 'name' }),
 			field(tr('Unit'), uom, { name: 'uom' }),
 			field(tr('Reorder level'), reorder, { name: 'reorderLevel' }),
+			field(tr('Tracking mode'), trackMode, { name: 'trackMode' }),
+			el('p', {
+				className: 'iv-field__hint',
+				text: tr('Lot and serial tracking require a code on every stock movement. Serial items always move one unit at a time.'),
+			}),
+			field(tr('Supplier note (optional)'), supplierNote, { name: 'supplierNote' }),
+			field(tr('Last price in cents (optional)'), lastPrice, { name: 'lastPriceMinor' }),
 			existing ? el('p', {
 				className: 'iv-field__hint',
 				text: tr('Changing SKU or scan code does not update already printed labels.'),
@@ -1059,7 +1494,10 @@
 				scanCode: scan.value.trim(),
 				name: name.value.trim(),
 				uom: uom.value.trim() || 'pcs',
-				reorderLevel: Number(reorder.value),
+				reorderLevel: reorder.value.trim(),
+				trackMode: trackMode.value,
+				supplierNote: supplierNote.value.trim() || null,
+				lastPriceMinor: lastPrice.value.trim() === '' ? null : Number(lastPrice.value),
 			};
 			if (existing) {
 				return api('PUT', entityUrl(ctx.urls.api.items, existing.id), body).then(function () {
@@ -1073,6 +1511,65 @@
 				renderItems(ctx);
 			});
 		});
+	}
+
+	/** Wave A4: one primary item photo. Office may upload/replace/remove; everyone may view. */
+	function renderItemPhoto(ctx, host, item, id) {
+		clear(host);
+		if (item.hasPhoto) {
+			host.appendChild(el('img', {
+				className: 'iv-item-photo__img',
+				src: urlWithId(ctx.urls.api.itemPhoto, id) + '?v=' + String(item.updatedAt || Date.now()),
+				alt: item.name,
+				loading: 'lazy',
+			}));
+		} else {
+			host.appendChild(el('p', { className: 'iv-muted', text: tr('No photo yet.') }));
+		}
+		if (!(ctx.isOffice || ctx.isAppAdmin)) {
+			return;
+		}
+		var fileInput = el('input', {
+			type: 'file',
+			accept: 'image/jpeg,image/png,image/webp',
+			'aria-label': tr('Upload photo'),
+			onchange: function () {
+				if (!fileInput.files || !fileInput.files[0]) return;
+				var fd = new FormData();
+				fd.append('file', fileInput.files[0]);
+				fetch(urlWithId(ctx.urls.api.itemPhotoUpload, id), {
+					method: 'POST',
+					credentials: 'same-origin',
+					headers: { requesttoken: requestToken() },
+					body: fd,
+				}).then(function (res) {
+					return res.json().catch(function () { return {}; }).then(function (data) {
+						if (!res.ok) {
+							var err = (data && data.error) || {};
+							throw new ApiError(err.code, err.message, err.details, res.status);
+						}
+						return data;
+					});
+				}).then(function (updated) {
+					toast(tr('Photo uploaded.'));
+					renderItemPhoto(ctx, host, updated, id);
+				}).catch(function (err) {
+					toast(err.message || tr('Could not upload the photo.'), true);
+				});
+			},
+		});
+		var actions = [fileInput];
+		if (item.hasPhoto) {
+			actions.push(btn(tr('Remove photo'), {
+				onclick: function () {
+					api('DELETE', urlWithId(ctx.urls.api.itemPhotoDelete, id)).then(function (updated) {
+						toast(tr('Photo removed.'));
+						renderItemPhoto(ctx, host, updated, id);
+					}).catch(function (err) { toast(err.message, true); });
+				},
+			}));
+		}
+		host.appendChild(el('div', { className: 'iv-item-photo__actions' }, actions));
 	}
 
 	function renderItemDetail(ctx) {
@@ -1110,9 +1607,66 @@
 				rel: 'noopener noreferrer',
 				text: tr('Print label'),
 			}));
-			mount.appendChild(el('section', { className: 'iv-section' }, [
+			var infoKids = [
 				el('h2', { className: 'iv-section__title', text: item.name }),
 				el('p', { className: 'iv-muted', text: tr('SKU') + ': ' + item.sku + ' · ' + tr('Scan code') + ': ' + item.scanCode }),
+			];
+			if (item.supplierNote) {
+				infoKids.push(el('p', { className: 'iv-muted', text: tr('Supplier note') + ': ' + item.supplierNote }));
+			}
+			if (item.trackMode && item.trackMode !== 'none') {
+				infoKids.push(el('p', {
+					className: 'iv-muted',
+					text: tr('Tracking mode') + ': ' + (item.trackMode === 'serial'
+						? tr('Serial number tracking')
+						: tr('Lot / batch tracking')),
+				}));
+			}
+			if (item.lastPriceMinor != null) {
+				infoKids.push(el('p', { className: 'iv-muted', text: tr('Last price') + ': ' + (Number(item.lastPriceMinor) / 100).toFixed(2) }));
+			}
+			var photoHost = el('div', { className: 'iv-item-photo' });
+			infoKids.push(photoHost);
+			mount.appendChild(el('section', { className: 'iv-section' }, infoKids));
+			renderItemPhoto(ctx, photoHost, item, id);
+			mount.appendChild(el('section', {
+				className: 'iv-section',
+				'aria-labelledby': 'iv-qr-title',
+			}, [
+				el('h2', { id: 'iv-qr-title', className: 'iv-section__title', text: tr('Label preview') }),
+				el('p', {
+					className: 'iv-muted',
+					text: tr('QR and Code 128 encode the scan code. Print a sticker, or paste the code into a movement form with a wedge scanner.'),
+				}),
+				el('figure', { className: 'iv-label-preview' }, [
+					el('img', {
+						className: 'iv-label-preview__img',
+						src: labelSvgUrl(ctx, id) + '?v=' + String(item.updatedAt || item.scanCode || id),
+						alt: tr('QR and barcode for {code}', { code: item.scanCode }),
+						width: '320',
+						height: '400',
+					}),
+					el('figcaption', {
+						className: 'iv-label-code',
+						id: 'iv-label-code',
+						text: item.scanCode,
+					}),
+				]),
+				el('p', { className: 'iv-actions iv-actions--inline' }, [
+					el('a', {
+						href: labelPrintUrl(ctx, id),
+						className: 'button',
+						target: '_blank',
+						rel: 'noopener noreferrer',
+						text: tr('Print label'),
+					}),
+					el('a', {
+						href: labelSvgUrl(ctx, id),
+						className: 'button',
+						download: 'label-' + id + '.svg',
+						text: tr('Download SVG'),
+					}),
+				]),
 			]));
 			mount.appendChild(el('section', { className: 'iv-section', 'aria-labelledby': 'iv-bal-title' }, [
 				el('h2', { id: 'iv-bal-title', className: 'iv-section__title', text: tr('Balances by location') }),
@@ -1143,7 +1697,7 @@
 
 	function renderLocations(ctx) {
 		var mount = ctx.mount;
-		setBusy(mount, true);
+		clear(mount);
 		if (ctx.isOffice) {
 			clear(ctx.actions);
 			ctx.actions.appendChild(btn(tr('New location'), {
@@ -1151,24 +1705,134 @@
 				onclick: function () { openLocationDialog(ctx); },
 			}));
 		}
-		api('GET', ctx.urls.api.locations + '?limit=50&offset=0').then(function (res) {
-			clear(mount);
-			setBusy(mount, false);
-			if (!res.data.length) {
-				mount.appendChild(emptyState(
-					tr('No locations yet'),
-					tr('Add a warehouse or van to hold stock.'),
-					(ctx.isOffice || ctx.isAppAdmin)
-						? btn(tr('New location'), { primary: true, onclick: function () { openLocationDialog(ctx); } })
-						: null
-				));
-				return;
-			}
-			mount.appendChild(el('section', { className: 'iv-card', 'aria-labelledby': 'iv-locations-title' }, [
-				el('header', { className: 'iv-card__header' }, [
-					el('h2', { id: 'iv-locations-title', className: 'iv-card__title', text: tr('Locations') }),
+
+		var q = el('input', {
+			id: 'iv-loc-q',
+			type: 'search',
+			className: 'iv-input form-input',
+			placeholder: tr('Code or name'),
+			autocomplete: 'off',
+		});
+		var listHost = el('div', { id: 'iv-locations-list', className: 'iv-card' });
+		var filterActiveHost = el('div', { id: 'iv-loc-filter-active' });
+		var loadSeq = 0;
+
+		function appliedQuery() {
+			return (q.value || '').trim();
+		}
+
+		function syncFilterActive() {
+			clear(filterActiveHost);
+			var term = appliedQuery();
+			if (!term) return;
+			filterActiveHost.appendChild(el('div', {
+				className: 'iv-callout iv-callout--info iv-filter-active',
+				role: 'status',
+			}, [
+				el('p', {
+					className: 'iv-callout__text',
+					text: tr('Search') + ': ' + term,
+				}),
+				btn(tr('Clear'), {
+					onclick: function () {
+						q.value = '';
+						load();
+					},
+				}),
+			]));
+		}
+
+		mount.appendChild(el('section', {
+			id: 'iv-loc-filter-panel',
+			className: 'iv-card iv-filter-panel',
+			'aria-labelledby': 'iv-loc-filter-title',
+		}, [
+			el('header', { className: 'iv-filter-panel__head' }, [
+				el('div', { className: 'iv-filter-panel__head-text' }, [
+					el('h2', { id: 'iv-loc-filter-title', text: tr('Filter') }),
+					el('p', {
+						className: 'iv-filter-panel__intro',
+						text: tr('Find locations by code or name.'),
+					}),
 				]),
-				el('div', { className: 'iv-card__body' }, [
+			]),
+			el('div', { className: 'iv-filter-panel__body' }, [
+				el('form', {
+					className: 'iv-filter-panel__form iv-filterbar',
+					role: 'search',
+					'aria-label': tr('Search locations'),
+					onsubmit: function (ev) {
+						ev.preventDefault();
+						load();
+					},
+				}, [
+					el('div', {
+						className: 'iv-filter-grid iv-filter-grid--simple',
+						role: 'group',
+						'aria-label': tr('Filter options'),
+					}, [
+						el('div', { className: 'iv-filter-field iv-filter-field--search' }, [
+							el('label', { className: 'iv-filter-field__label', for: 'iv-loc-q', text: tr('Search') }),
+							el('div', { className: 'iv-filter-field__control' }, [q]),
+						]),
+						el('div', { className: 'iv-filter-field iv-filter-field--actions' }, [
+							el('span', { className: 'iv-filter-field__label iv-sr-only', text: tr('Actions') }),
+							el('div', { className: 'iv-filter-field__control iv-filter-field__control--actions' }, [
+								btn(tr('Search'), { primary: true, type: 'submit' }),
+								btn(tr('Clear'), {
+									type: 'button',
+									onclick: function () {
+										q.value = '';
+										load();
+									},
+								}),
+							]),
+						]),
+					]),
+				]),
+			]),
+		]));
+		mount.appendChild(filterActiveHost);
+		mount.appendChild(listHost);
+
+		function load() {
+			var seq = ++loadSeq;
+			var term = appliedQuery();
+			syncFilterActive();
+			setBusy(listHost, true);
+			api('GET', ctx.urls.api.locations + '?limit=50&offset=0&q=' + encodeURIComponent(term)).then(function (res) {
+				if (seq !== loadSeq) return;
+				clear(listHost);
+				setBusy(listHost, false);
+				if (!res.data.length) {
+					listHost.appendChild(el('header', { className: 'iv-card__header' }, [
+						el('h2', { id: 'iv-locations-title', className: 'iv-card__title', text: tr('Locations') }),
+					]));
+					var emptyBody = el('div', { className: 'iv-card__body' });
+					listHost.appendChild(emptyBody);
+					emptyBody.appendChild(emptyState(
+						term ? tr('No locations match these filters') : tr('No locations yet'),
+						term
+							? tr('Clear the search or try another code or name.')
+							: tr('Add a warehouse or van to hold stock.'),
+						term
+							? btn(tr('Clear'), {
+								primary: true,
+								onclick: function () {
+									q.value = '';
+									load();
+								},
+							})
+							: ((ctx.isOffice || ctx.isAppAdmin)
+								? btn(tr('New location'), { primary: true, onclick: function () { openLocationDialog(ctx); } })
+								: null)
+					));
+					return;
+				}
+				listHost.appendChild(el('header', { className: 'iv-card__header' }, [
+					el('h2', { id: 'iv-locations-title', className: 'iv-card__title', text: tr('Locations') }),
+				]));
+				listHost.appendChild(el('div', { className: 'iv-card__body' }, [
 					tableOrCards([
 						{ label: tr('Name'), render: function (r) {
 							return el('a', { href: entityUrl(ctx.urls.pages.locations, r.id), text: r.name });
@@ -1195,12 +1859,14 @@
 							]);
 						} },
 					], res.data),
-				]),
-			]));
-		}).catch(function (err) {
-			clear(mount);
-			toast(err.message, true);
-		});
+				]));
+			}).catch(function (err) {
+				if (seq !== loadSeq) return;
+				clear(listHost);
+				toast(err.message, true);
+			});
+		}
+		load();
 	}
 
 	function openLocationDialog(ctx, existing) {
@@ -1251,10 +1917,13 @@
 			api('GET', entityUrl(ctx.urls.api.locations, id)),
 			api('GET', ctx.urls.api.balances + '?locationId=' + id + '&nonZero=1&limit=50&offset=0'),
 			api('GET', ctx.urls.api.items + '?limit=200&offset=0&active=1'),
+			api('GET', ctx.urls.api.favouriteLocations),
 		]).then(function (results) {
 			var loc = results[0];
 			var bals = results[1];
 			var itemMap = indexById(results[2].data);
+			var favourites = results[3].data || [];
+			var isFavourite = favourites.some(function (f) { return Number(f.id) === id; });
 			clear(mount);
 			clear(ctx.actions);
 			if (ctx.isOffice || ctx.isAppAdmin) {
@@ -1270,6 +1939,17 @@
 					},
 				}));
 			}
+			ctx.actions.appendChild(btn(isFavourite ? tr('★ Remove from favourites') : tr('☆ Add to favourites'), {
+				onclick: function () {
+					var call = isFavourite
+						? api('DELETE', urlWithId(ctx.urls.api.favouriteLocationRemove, id))
+						: api('POST', ctx.urls.api.favouriteLocations, { locationId: id });
+					call.then(function () {
+						toast(isFavourite ? tr('Removed from favourites.') : tr('Added to favourites.'));
+						renderLocationDetail(ctx);
+					}).catch(function (err) { toast(err.message, true); });
+				},
+			}));
 			mount.appendChild(el('h2', { className: 'iv-section__title', text: loc.name }));
 			mount.appendChild(el('p', { className: 'iv-muted', text: loc.code + ' · ' + locationKindLabel(loc.kind) }));
 			mount.appendChild(bals.data.length === 0
@@ -1296,36 +1976,33 @@
 		var pages = Math.max(1, Math.ceil(total / limit));
 		var from = total === 0 ? 0 : offset + 1;
 		var to = Math.min(offset + limit, total);
+		var kids = [];
+		// Prefer omit over disable (plan §7): no dead Previous/Next buttons.
+		if (offset > 0) {
+			kids.push(btn(tr('Previous'), {
+				onclick: function () { onPage(Math.max(0, offset - limit)); },
+			}));
+		}
+		kids.push(el('p', {
+			className: 'iv-pagination__info',
+			text: tr('Showing {from}–{to} of {total}', {
+				from: String(from),
+				to: String(to),
+				total: String(total),
+			}) + (pages > 1 ? ' · ' + tr('Page {page} of {pages}', {
+				page: String(page),
+				pages: String(pages),
+			}) : ''),
+		}));
+		if (offset + limit < total) {
+			kids.push(btn(tr('Next'), {
+				onclick: function () { onPage(offset + limit); },
+			}));
+		}
 		return el('nav', {
 			className: 'iv-pagination',
 			'aria-label': tr('Pagination'),
-		}, [
-			btn(tr('Previous'), {
-				disabled: offset <= 0,
-				onclick: function () {
-					if (offset <= 0) return;
-					onPage(Math.max(0, offset - limit));
-				},
-			}),
-			el('p', {
-				className: 'iv-pagination__info',
-				text: tr('Showing {from}–{to} of {total}', {
-					from: String(from),
-					to: String(to),
-					total: String(total),
-				}) + (pages > 1 ? ' · ' + tr('Page {page} of {pages}', {
-					page: String(page),
-					pages: String(pages),
-				}) : ''),
-			}),
-			btn(tr('Next'), {
-				disabled: offset + limit >= total,
-				onclick: function () {
-					if (offset + limit >= total) return;
-					onPage(offset + limit);
-				},
-			}),
-		]);
+		}, kids);
 	}
 
 	function renderMovements(ctx, filters) {
@@ -1333,7 +2010,9 @@
 		var state = Object.assign({
 			kind: '',
 			itemId: '',
+			itemQuery: '',
 			locationId: '',
+			locationQuery: '',
 			fromDate: '',
 			toDate: '',
 			transferGroup: null,
@@ -1341,6 +2020,19 @@
 			offset: 0,
 		}, filters || {});
 		setBusy(mount, true);
+		clear(ctx.actions);
+		if (ctx.isOffice || ctx.isAppAdmin) {
+			ctx.actions.appendChild(el('a', {
+				href: exportCsvHref(ctx, 'movements'),
+				className: 'button',
+				text: tr('Export CSV'),
+			}));
+			ctx.actions.appendChild(el('a', {
+				href: exportCsvHref(ctx, 'movements_datev'),
+				className: 'button',
+				text: tr('Export DATEV-style CSV'),
+			}));
+		}
 		var fromUnix = dateInputToUnix(state.fromDate, false);
 		var toUnix = dateInputToUnix(state.toDate, true);
 		var query = movementListQuery({
@@ -1355,21 +2047,32 @@
 		});
 		Promise.all([
 			api('GET', ctx.urls.api.movements + '?' + query),
-			api('GET', ctx.urls.api.items + '?limit=200&offset=0'),
-			api('GET', ctx.urls.api.locations + '?limit=200&offset=0'),
+			loadMasters(ctx),
 		]).then(function (results) {
 			var res = results[0];
-			var items = results[1].data || [];
-			var locations = results[2].data || [];
+			var masters = results[1];
+			var items = masters.items || [];
+			var locations = masters.locations || [];
 			var itemMap = indexById(items);
 			var locMap = indexById(locations);
+			// Enrich labels in the background — never block the filter paint on N+1 GETs.
+			hydrateMaps(ctx, itemMap, locMap, res.data || []).then(function () {
+				if (!mount.querySelector('#iv-mov-filter-panel')) return;
+				mount.querySelectorAll('[data-iv-label-item]').forEach(function (node) {
+					var id = node.getAttribute('data-iv-label-item');
+					node.textContent = labelFromMap(itemMap, id, 'sku');
+				});
+				mount.querySelectorAll('[data-iv-label-loc]').forEach(function (node) {
+					var id = node.getAttribute('data-iv-label-loc');
+					node.textContent = labelFromMap(locMap, id, 'code');
+				});
+			});
 			clear(mount);
 			setBusy(mount, false);
 
 			var kindSelect = el('select', {
-				className: 'iv-input',
+				className: 'iv-input form-select',
 				id: 'iv-mov-kind',
-				'aria-label': tr('Kind'),
 			});
 			[
 				{ v: '', t: tr('All kinds') },
@@ -1385,44 +2088,71 @@
 					selected: state.kind === o.v ? '' : null,
 				}));
 			});
-			var itemSelect = el('select', {
-				className: 'iv-input',
+
+			var itemQuery = '';
+			if (state.itemId && itemMap[String(state.itemId)]) {
+				itemQuery = masterLabel(itemMap[String(state.itemId)], 'sku');
+			} else if (state.itemQuery) {
+				itemQuery = state.itemQuery;
+			}
+			var locQuery = '';
+			if (state.locationId && locMap[String(state.locationId)]) {
+				locQuery = masterLabel(locMap[String(state.locationId)], 'code');
+			} else if (state.locationQuery) {
+				locQuery = state.locationQuery;
+			}
+
+			var itemInput = el('input', {
+				type: 'search',
+				className: 'iv-input form-input',
 				id: 'iv-mov-item',
-				'aria-label': tr('Item'),
+				value: itemQuery,
+				placeholder: tr('SKU or name'),
+				autocomplete: 'off',
+				list: 'iv-mov-item-dl',
 			});
-			fillSelect(itemSelect, items, 'id', function (r) {
-				return r.name + ' (' + r.sku + ')';
-			}, tr('All items'));
-			if (state.itemId) itemSelect.value = String(state.itemId);
-			var locSelect = el('select', {
-				className: 'iv-input',
+			var itemList = el('datalist', { id: 'iv-mov-item-dl' });
+			fillDatalist(itemList, items, 'sku');
+
+			var locInput = el('input', {
+				type: 'search',
+				className: 'iv-input form-input',
 				id: 'iv-mov-loc',
-				'aria-label': tr('Location'),
+				value: locQuery,
+				placeholder: tr('Code or name'),
+				autocomplete: 'off',
+				list: 'iv-mov-loc-dl',
 			});
-			fillSelect(locSelect, locations, 'id', function (r) {
-				return r.name + ' (' + r.code + ')';
-			}, tr('All locations'));
-			if (state.locationId) locSelect.value = String(state.locationId);
+			var locList = el('datalist', { id: 'iv-mov-loc-dl' });
+			fillDatalist(locList, locations, 'code');
+
 			var fromInput = el('input', {
 				type: 'date',
-				className: 'iv-input',
+				className: 'iv-input form-input',
 				id: 'iv-mov-from',
 				value: state.fromDate || '',
-				'aria-label': tr('From date'),
 			});
 			var toInput = el('input', {
 				type: 'date',
-				className: 'iv-input',
+				className: 'iv-input form-input',
 				id: 'iv-mov-to',
 				value: state.toDate || '',
-				'aria-label': tr('To date'),
+			});
+
+			var filterError = el('p', {
+				id: 'iv-mov-date-error',
+				className: 'iv-callout iv-callout--danger iv-filter-feedback',
+				role: 'alert',
+				hidden: '',
 			});
 
 			function readFilters(extra) {
 				return Object.assign({
 					kind: kindSelect.value || '',
-					itemId: itemSelect.value || '',
-					locationId: locSelect.value || '',
+					itemId: state.itemId || '',
+					itemQuery: itemInput.value || '',
+					locationId: state.locationId || '',
+					locationQuery: locInput.value || '',
 					fromDate: fromInput.value || '',
 					toDate: toInput.value || '',
 					transferGroup: state.transferGroup,
@@ -1431,89 +2161,219 @@
 				}, extra || {});
 			}
 
+			function dateRangeInvalid() {
+				return !!(fromInput.value && toInput.value && fromInput.value > toInput.value);
+			}
+
+			function showFilterError(msg) {
+				filterError.hidden = !msg;
+				filterError.textContent = msg || '';
+			}
+
+			function syncDateValidity() {
+				var bad = dateRangeInvalid();
+				fromInput.setAttribute('aria-invalid', bad ? 'true' : 'false');
+				toInput.setAttribute('aria-invalid', bad ? 'true' : 'false');
+				if (bad) {
+					showFilterError(tr('"From" must be on or before "To".'));
+				} else if (filterError.textContent === tr('"From" must be on or before "To".')) {
+					showFilterError('');
+				}
+				return !bad;
+			}
+
+			function applyFilters() {
+				if (!syncDateValidity()) {
+					fromInput.focus();
+					return;
+				}
+				var nextItemId = '';
+				var itemText = (itemInput.value || '').trim();
+				if (itemText) {
+					var resolvedItem = resolveMasterId(itemText, items, 'sku');
+					if (resolvedItem === null) {
+						itemInput.setAttribute('aria-invalid', 'true');
+						showFilterError(tr('No matching item — pick a suggestion or clear the field.'));
+						itemInput.focus();
+						return;
+					}
+					nextItemId = resolvedItem;
+				}
+				itemInput.setAttribute('aria-invalid', 'false');
+
+				var nextLocId = '';
+				var locText = (locInput.value || '').trim();
+				if (locText) {
+					var resolvedLoc = resolveMasterId(locText, locations, 'code');
+					if (resolvedLoc === null) {
+						locInput.setAttribute('aria-invalid', 'true');
+						showFilterError(tr('No matching location — pick a suggestion or clear the field.'));
+						locInput.focus();
+						return;
+					}
+					nextLocId = resolvedLoc;
+				}
+				locInput.setAttribute('aria-invalid', 'false');
+				showFilterError('');
+
+				renderMovements(ctx, readFilters({
+					itemId: nextItemId,
+					itemQuery: itemText,
+					locationId: nextLocId,
+					locationQuery: locText,
+				}));
+			}
+
+			fromInput.setAttribute('aria-describedby', 'iv-mov-date-error');
+			toInput.setAttribute('aria-describedby', 'iv-mov-date-error');
+			itemInput.setAttribute('aria-describedby', 'iv-mov-date-error');
+			locInput.setAttribute('aria-describedby', 'iv-mov-date-error');
+			fromInput.addEventListener('change', syncDateValidity);
+			toInput.addEventListener('change', syncDateValidity);
+			// Kind is a closed list — apply immediately (one less click).
+			kindSelect.addEventListener('change', function () {
+				applyFilters();
+			});
+
 			mount.appendChild(el('section', {
+				id: 'iv-mov-filter-panel',
 				className: 'iv-card iv-filter-panel',
 				'aria-labelledby': 'iv-mov-filter-title',
 			}, [
 				el('header', { className: 'iv-filter-panel__head' }, [
-					el('h2', { id: 'iv-mov-filter-title', text: tr('Filter') }),
-					el('p', {
-						className: 'iv-filter-panel__intro',
-						text: tr('Narrow bookings by kind, item, location, or date.'),
-					}),
+					el('div', { className: 'iv-filter-panel__head-text' }, [
+						el('h2', { id: 'iv-mov-filter-title', text: tr('Filter') }),
+						el('p', {
+							className: 'iv-filter-panel__intro',
+							text: tr('Narrow the list by kind, item, location, or date, then click Apply.'),
+						}),
+					]),
 				]),
 				el('div', { className: 'iv-filter-panel__body' }, [
 					el('form', {
 						className: 'iv-filter-panel__form iv-filterbar',
 						role: 'search',
 						'aria-label': tr('Filter movements'),
+						novalidate: '',
 						onsubmit: function (ev) {
 							ev.preventDefault();
-							renderMovements(ctx, readFilters());
+							applyFilters();
 						},
 					}, [
-						el('div', { className: 'iv-filter-grid iv-filter-grid--extended' }, [
-							el('div', { className: 'iv-filter-field' }, [
+						el('div', {
+							className: 'iv-filter-grid iv-filter-grid--movements',
+							role: 'group',
+							'aria-label': tr('Filter options'),
+						}, [
+							el('div', { className: 'iv-filter-field iv-filter-field--kind' }, [
 								el('label', { className: 'iv-filter-field__label', for: 'iv-mov-kind', text: tr('Kind') }),
 								el('div', { className: 'iv-filter-field__control' }, [kindSelect]),
 							]),
-							el('div', { className: 'iv-filter-field' }, [
+							el('div', { className: 'iv-filter-field iv-filter-field--item' }, [
 								el('label', { className: 'iv-filter-field__label', for: 'iv-mov-item', text: tr('Item') }),
-								el('div', { className: 'iv-filter-field__control' }, [itemSelect]),
+								el('div', { className: 'iv-filter-field__control' }, [itemInput, itemList]),
 							]),
-							el('div', { className: 'iv-filter-field' }, [
+							el('div', { className: 'iv-filter-field iv-filter-field--location' }, [
 								el('label', { className: 'iv-filter-field__label', for: 'iv-mov-loc', text: tr('Location') }),
-								el('div', { className: 'iv-filter-field__control' }, [locSelect]),
+								el('div', { className: 'iv-filter-field__control' }, [locInput, locList]),
 							]),
-							el('div', { className: 'iv-filter-field iv-filter-field--dates' }, [
-								el('span', { className: 'iv-filter-field__label', text: tr('Date range') }),
+							el('div', { className: 'iv-filter-field iv-filter-field--actions' }, [
+								el('span', { className: 'iv-filter-field__label iv-sr-only', text: tr('Actions') }),
+								el('div', { className: 'iv-filter-field__control iv-filter-field__control--actions' }, [
+									btn(tr('Apply'), { primary: true, type: 'submit' }),
+									btn(tr('Clear'), {
+										type: 'button',
+										onclick: function () { renderMovements(ctx, null); },
+									}),
+								]),
+							]),
+							el('div', {
+								className: 'iv-filter-field iv-filter-field--dates',
+								role: 'group',
+								'aria-labelledby': 'iv-mov-date-range-label',
+							}, [
+								el('span', {
+									id: 'iv-mov-date-range-label',
+									className: 'iv-filter-field__label',
+									text: tr('Date range'),
+								}),
 								el('div', { className: 'iv-filter-field__control' }, [
 									el('div', { className: 'iv-date-range' }, [
 										el('div', { className: 'iv-date-range__part' }, [
-											el('label', { className: 'iv-date-range__sublabel', for: 'iv-mov-from', text: tr('From') }),
+											el('label', {
+												className: 'iv-date-range__sublabel iv-sr-only',
+												for: 'iv-mov-from',
+												text: tr('From'),
+											}),
 											fromInput,
 										]),
-										el('span', { className: 'iv-date-range__sep', text: '–' }),
+										el('span', {
+											className: 'iv-date-range__sep',
+											'aria-hidden': 'true',
+											text: tr('to'),
+										}),
 										el('div', { className: 'iv-date-range__part' }, [
-											el('label', { className: 'iv-date-range__sublabel', for: 'iv-mov-to', text: tr('To') }),
+											el('label', {
+												className: 'iv-date-range__sublabel iv-sr-only',
+												for: 'iv-mov-to',
+												text: tr('To'),
+											}),
 											toInput,
 										]),
 									]),
 								]),
 							]),
-							el('div', { className: 'iv-filter-actions' }, [
-								btn(tr('Apply filters'), { primary: true, type: 'submit' }),
-								btn(tr('Clear filters'), {
-									type: 'button',
-									onclick: function () { renderMovements(ctx, null); },
-								}),
-							]),
 						]),
+						filterError,
 					]),
 				]),
 			]));
+			syncDateValidity();
 
-			if (state.transferGroup) {
-				mount.appendChild(el('div', { className: 'iv-filter-bar' }, [
+			var filtersActive = !!(
+				state.kind
+				|| state.itemId
+				|| state.locationId
+				|| state.fromDate
+				|| state.toDate
+				|| state.transferGroup
+			);
+			if (filtersActive) {
+				var chips = [];
+				if (state.kind) chips.push(tr('Kind') + ': ' + (kindSelect.options[kindSelect.selectedIndex] || {}).text);
+				if (state.itemId) chips.push(tr('Item') + ': ' + (itemQuery || ('#' + state.itemId)));
+				if (state.locationId) chips.push(tr('Location') + ': ' + (locQuery || ('#' + state.locationId)));
+				if (state.fromDate || state.toDate) {
+					chips.push(tr('From') + ' ' + (state.fromDate || '…') + ' → ' + (state.toDate || '…'));
+				}
+				if (state.transferGroup) {
+					chips.push(tr('Showing transfer group') + ': ' + state.transferGroup);
+				}
+				mount.appendChild(el('div', {
+					className: 'iv-callout iv-callout--info iv-filter-active',
+					role: 'status',
+				}, [
 					el('p', {
-						className: 'iv-muted',
-						text: tr('Showing transfer group') + ': ' + state.transferGroup,
+						className: 'iv-callout__text',
+						text: chips.join(' · '),
 					}),
-					btn(tr('Clear filter'), {
-						onclick: function () {
-							renderMovements(ctx, readFilters({ transferGroup: null }));
-						},
+					btn(tr('Clear'), {
+						onclick: function () { renderMovements(ctx, null); },
 					}),
 				]));
 			}
 
 			if (!res.data.length) {
 				mount.appendChild(emptyState(
-					tr('No movements yet'),
-					tr('Bookings appear here after receive, issue, transfer, or adjust.'),
-					(ctx.isOffice || ctx.isAppAdmin)
-						? btn(tr('Receive stock'), { primary: true, onclick: function () { openReceiveDialog(ctx); } })
-						: btn(tr('Issue stock'), { primary: true, onclick: function () { openIssueDialog(ctx); } })
+					filtersActive ? tr('No movements match these filters') : tr('No movements yet'),
+					filtersActive
+						? tr('Clear filters or widen the date range.')
+						: tr('Bookings appear here after receive, issue, transfer, or adjust.'),
+					filtersActive
+						? btn(tr('Clear'), { primary: true, onclick: function () { renderMovements(ctx, null); } })
+						: ((ctx.isOffice || ctx.isAppAdmin)
+							? btn(tr('Receive stock'), { primary: true, onclick: function () { openReceiveDialog(ctx); } })
+							: btn(tr('Issue stock'), { primary: true, onclick: function () { openIssueDialog(ctx); } }))
 				));
 				return;
 			}
@@ -1523,10 +2383,16 @@
 					return el('span', { className: 'iv-badge ' + m.badge, text: m.label });
 				} },
 				{ label: tr('Item'), render: function (r) {
-					return labelFromMap(itemMap, r.itemId, 'sku');
+					return el('span', {
+						'data-iv-label-item': String(r.itemId),
+						text: labelFromMap(itemMap, r.itemId, 'sku'),
+					});
 				} },
 				{ label: tr('Location'), render: function (r) {
-					return labelFromMap(locMap, r.locationId, 'code');
+					return el('span', {
+						'data-iv-label-loc': String(r.locationId),
+						text: labelFromMap(locMap, r.locationId, 'code'),
+					});
 				} },
 				{ label: tr('Delta'), key: 'qtyDelta' },
 				{ label: tr('After'), key: 'qtyAfter' },
@@ -1559,7 +2425,11 @@
 				} },
 			], res.data));
 			mount.appendChild(paginationBar(res.total, state.limit, state.offset, function (nextOffset) {
-				renderMovements(ctx, readFilters({ offset: nextOffset }));
+				renderMovements(ctx, readFilters({
+					itemId: state.itemId || '',
+					locationId: state.locationId || '',
+					offset: nextOffset,
+				}));
 			}));
 		}).catch(function (err) {
 			clear(mount);
@@ -1578,9 +2448,13 @@
 		Promise.all([
 			api('GET', ctx.urls.api.config),
 			api('GET', ctx.urls.api.license),
+			api('GET', ctx.urls.api.flangeStatus),
+			api('GET', ctx.urls.api.locations + '?limit=200&offset=0&active=1'),
 		]).then(function (results) {
 			var cfg = results[0];
 			var lic = results[1];
+			var flange = results[2];
+			var flangeLocations = results[3].data || [];
 			clear(mount);
 			setBusy(mount, false);
 
@@ -1698,6 +2572,257 @@
 							allowNegativeStock: neg.checked,
 						}).then(function () {
 							toast(tr('Office settings saved.'));
+						}).catch(function (err) {
+							applyFieldErrors(mount, err && err.details, err && err.message);
+							toast(err.message, true);
+						});
+					},
+				}),
+			]));
+
+			var notifyUsers = el('textarea', {
+				className: 'iv-input',
+				rows: '3',
+				id: 'iv-notify-users',
+				text: (cfg.lowStockNotifyUsers || []).join('\n'),
+			});
+			var notifyGroups = el('textarea', {
+				className: 'iv-input',
+				rows: '2',
+				id: 'iv-notify-groups',
+				text: (cfg.lowStockNotifyGroups || []).join('\n'),
+			});
+			var reorderHint = el('input', {
+				type: 'checkbox',
+				className: 'iv-switch__input',
+				id: 'iv-reorder-hint',
+				checked: cfg.locationReorderHintEnabled ? '' : null,
+			});
+			mount.appendChild(el('section', { className: 'iv-section', 'aria-labelledby': 'iv-notify-title' }, [
+				el('h2', { id: 'iv-notify-title', className: 'iv-section__title', text: tr('Low stock notifications') }),
+				el('p', {
+					className: 'iv-section__hint',
+					text: tr('These users and groups get a notification the first time an item drops below its reorder level (at most once a day per item).'),
+				}),
+				field(tr('Notify users (one per line)'), notifyUsers, { name: 'lowStockNotifyUsers' }),
+				field(tr('Notify groups (one per line)'), notifyGroups, { name: 'lowStockNotifyGroups' }),
+				el('label', { className: 'iv-switch', for: 'iv-reorder-hint' }, [
+					reorderHint,
+					el('span', {
+						className: 'iv-switch__label',
+						text: tr('Also show low-stock hints per location, not just the total across all locations'),
+					}),
+				]),
+				btn(tr('Save notification settings'), {
+					primary: true,
+					onclick: function () {
+						clearFieldErrors(mount);
+						return api('POST', ctx.urls.api.configNotify, {
+							lowStockNotifyUsers: lines(notifyUsers),
+							lowStockNotifyGroups: lines(notifyGroups),
+							locationReorderHintEnabled: reorderHint.checked,
+						}).then(function () {
+							toast(tr('Notification settings saved.'));
+						}).catch(function (err) {
+							applyFieldErrors(mount, err && err.details, err && err.message);
+							toast(err.message, true);
+						});
+					},
+				}),
+			]));
+
+			var fracEnabled = Number(cfg.qtyScale) === 3;
+			var fracKids = [
+				el('h2', { id: 'iv-frac-title', className: 'iv-section__title', text: tr('Fractional quantities') }),
+				el('p', {
+					className: 'iv-section__hint',
+					text: tr('Optional. Turn this on if you book cable metres or similar with up to three decimal places. Existing whole numbers become ×1000 storage units. This cannot be undone.'),
+				}),
+			];
+			if (fracEnabled) {
+				fracKids.push(el('p', {
+					className: 'iv-muted',
+					role: 'status',
+					text: tr('Fractional quantities are on (up to 3 decimal places). This cannot be turned off.'),
+				}));
+			} else {
+				fracKids.push(btn(tr('Enable fractional quantities (up to 3 decimals)'), {
+					primary: true,
+					onclick: function () {
+						if (!ctx.urls.api.configFractional) return;
+						if (!window.confirm(tr('This permanently switches every quantity to milli-units (×1000). You cannot turn it off later. Continue?'))) {
+							return;
+						}
+						clearFieldErrors(mount);
+						api('POST', ctx.urls.api.configFractional, {}).then(function (res) {
+							toast(tr('Fractional quantities enabled. Reload the page to use decimal steps.'));
+							if (res && res.qtyScale != null) {
+								ctx.qtyScale = Number(res.qtyScale) || 3;
+							}
+							renderSettings(ctx);
+						}).catch(function (err) {
+							applyFieldErrors(mount, err && err.details, err && err.message);
+							toast(err.message, true);
+						});
+					},
+				}));
+			}
+			mount.appendChild(el('section', { className: 'iv-section', 'aria-labelledby': 'iv-frac-title' }, fracKids));
+
+			var aclEnabled = el('input', {
+				type: 'checkbox',
+				className: 'iv-switch__input',
+				id: 'iv-loc-acl',
+				checked: cfg.locationAclEnabled ? '' : null,
+			});
+			var aclSubjectType = el('select', { className: 'iv-input', id: 'iv-acl-subject-type' }, [
+				el('option', { value: 'user', text: tr('User') }),
+				el('option', { value: 'group', text: tr('Group') }),
+			]);
+			var aclSubjectId = el('input', {
+				type: 'text',
+				className: 'iv-input',
+				id: 'iv-acl-subject-id',
+				placeholder: tr('User id or group id'),
+				'aria-label': tr('User id or group id'),
+			});
+			var aclLocationSelect = el('select', {
+				className: 'iv-input',
+				id: 'iv-acl-loc-ids',
+				multiple: '',
+				size: String(Math.min(8, Math.max(3, flangeLocations.length || 3))),
+				'aria-label': tr('Locations to grant'),
+			});
+			flangeLocations.forEach(function (loc) {
+				aclLocationSelect.appendChild(el('option', {
+					value: String(loc.id),
+					text: loc.name + ' — ' + loc.code,
+				}));
+			});
+			var aclListHost = el('div', { className: 'iv-stack', id: 'iv-acl-list', role: 'status' });
+			var locLabelById = {};
+			flangeLocations.forEach(function (loc) {
+				locLabelById[String(loc.id)] = loc.name + ' — ' + loc.code;
+			});
+
+			function renderAclAssignments(payload) {
+				clear(aclListHost);
+				var rows = (payload && payload.assignments) || [];
+				if (!rows.length) {
+					aclListHost.appendChild(el('p', { className: 'iv-muted', text: tr('No location grants yet. Field users see nothing while this is on.') }));
+					return;
+				}
+				rows.forEach(function (r) {
+					var locLabel = locLabelById[String(r.locationId)] || ('#' + r.locationId);
+					aclListHost.appendChild(el('p', {
+						text: r.subjectType + ':' + r.subjectId + ' → ' + locLabel,
+					}));
+				});
+			}
+
+			function loadAcl() {
+				if (!ctx.urls.api.configLocationAcl) return Promise.resolve();
+				return api('GET', ctx.urls.api.configLocationAcl).then(renderAclAssignments).catch(function (err) {
+					toast(err.message, true);
+				});
+			}
+			loadAcl();
+
+			mount.appendChild(el('section', { className: 'iv-section', 'aria-labelledby': 'iv-acl-title' }, [
+				el('h2', { id: 'iv-acl-title', className: 'iv-section__title', text: tr('Location access') }),
+				el('p', {
+					className: 'iv-section__hint',
+					text: tr('Optional. When on, field users only see locations granted to them or their groups. Office and admins still see everything. With no grants, field users see none.'),
+				}),
+				el('label', { className: 'iv-switch', for: 'iv-loc-acl' }, [
+					aclEnabled,
+					el('span', { className: 'iv-switch__label', text: tr('Limit field users to granted locations') }),
+				]),
+				field(tr('Grant to'), aclSubjectType, { name: 'subjectType' }),
+				field(tr('User or group id'), aclSubjectId, { name: 'subjectId' }),
+				field(tr('Locations to grant'), aclLocationSelect, { name: 'locationIds' }),
+				el('p', {
+					className: 'iv-field__hint',
+					text: tr('Hold Ctrl (or Cmd on Mac) to select several locations.'),
+				}),
+				btn(tr('Save location access'), {
+					primary: true,
+					onclick: function () {
+						if (!ctx.urls.api.configLocationAcl) return;
+						clearFieldErrors(mount);
+						var ids = Array.prototype.slice.call(aclLocationSelect.selectedOptions).map(function (o) {
+							return Number(o.value);
+						}).filter(function (n) { return n > 0; });
+						return api('PUT', ctx.urls.api.configLocationAcl, {
+							enabled: aclEnabled.checked,
+							subjectType: aclSubjectType.value,
+							subjectId: aclSubjectId.value.trim(),
+							locationIds: ids,
+						}).then(function (payload) {
+							toast(tr('Location access saved.'));
+							renderAclAssignments(payload);
+						}).catch(function (err) {
+							applyFieldErrors(mount, err && err.details, err && err.message);
+							toast(err.message, true);
+						});
+					},
+				}),
+				el('h3', { className: 'iv-section__subtitle', text: tr('Current grants') }),
+				aclListHost,
+			]));
+
+			var maintToggle = el('input', {
+				type: 'checkbox',
+				className: 'iv-switch__input',
+				id: 'iv-flange-maint',
+				checked: flange.maintFlangeEnabled ? '' : null,
+			});
+			var projectToggle = el('input', {
+				type: 'checkbox',
+				className: 'iv-switch__input',
+				id: 'iv-flange-project',
+				checked: flange.projectFlangeEnabled ? '' : null,
+			});
+			var defaultLocSelect = el('select', { className: 'iv-input', id: 'iv-flange-default-loc' });
+			fillSelect(defaultLocSelect, flangeLocations, 'id', function (r) {
+				return r.name + ' — ' + r.code;
+			}, tr('No default location'));
+			if (flange.defaultIssueLocationId) defaultLocSelect.value = String(flange.defaultIssueLocationId);
+			mount.appendChild(el('section', { className: 'iv-section', 'aria-labelledby': 'iv-flange-title' }, [
+				el('h2', { id: 'iv-flange-title', className: 'iv-section__title', text: tr('Connections to other Check apps') }),
+				el('p', {
+					className: 'iv-section__hint',
+					text: tr('MaintenanceCheck and ProjectCheck can ask InventoryCheck to issue stock automatically for their work. Nothing changes unless you turn this on.'),
+				}),
+				el('label', { className: 'iv-switch', for: 'iv-flange-maint' }, [
+					maintToggle,
+					el('span', {
+						className: 'iv-switch__label',
+						text: flange.maintenanceCheckEnabled
+							? tr('Let MaintenanceCheck issue stock for work orders')
+							: tr('Let MaintenanceCheck issue stock for work orders (MaintenanceCheck is not installed yet)'),
+					}),
+				]),
+				el('label', { className: 'iv-switch', for: 'iv-flange-project' }, [
+					projectToggle,
+					el('span', {
+						className: 'iv-switch__label',
+						text: flange.projectCheckEnabled
+							? tr('Let ProjectCheck issue stock for projects')
+							: tr('Let ProjectCheck issue stock for projects (ProjectCheck is not installed yet)'),
+					}),
+				]),
+				field(tr('Default issue location'), defaultLocSelect, { name: 'defaultIssueLocationId' }),
+				btn(tr('Save connection settings'), {
+					primary: true,
+					onclick: function () {
+						clearFieldErrors(mount);
+						return api('POST', ctx.urls.api.flangeSettings, {
+							maintFlangeEnabled: maintToggle.checked,
+							projectFlangeEnabled: projectToggle.checked,
+							defaultIssueLocationId: defaultLocSelect.value || null,
+						}).then(function () {
+							toast(tr('Connection settings saved.'));
 						}).catch(function (err) {
 							applyFieldErrors(mount, err && err.details, err && err.message);
 							toast(err.message, true);
@@ -1909,6 +3034,273 @@
 		});
 	}
 
+	// ── Stocktake / cycle counts (Wave B1) ─────────────────────────────
+
+	function cycleStatusMeta(status) {
+		switch (status) {
+			case 'open': return { label: tr('Open'), badge: 'iv-badge--neutral' };
+			case 'counting': return { label: tr('Counting'), badge: 'iv-badge--scheduled' };
+			case 'closed': return { label: tr('Closed'), badge: 'iv-badge--done' };
+			default: return { label: String(status || ''), badge: '' };
+		}
+	}
+
+	function stocktakeDetailUrl(ctx, id) {
+		return urlWithId(ctx.urls.pages.stocktakeCampaign, id);
+	}
+
+	function openNewCampaignDialog(ctx) {
+		var locSelect = el('select', { required: '', className: 'iv-input', 'aria-required': 'true' });
+		var name = el('input', { type: 'text', className: 'iv-input', maxlength: '255', required: '' });
+		loadMasters(ctx).then(function (masters) {
+			fillSelect(locSelect, masters.locations, 'id', function (r) {
+				return r.name + ' — ' + r.code;
+			}, tr('Choose a location'));
+			var today = new Date();
+			name.value = tr('Stocktake {date}', { date: today.toISOString().slice(0, 10) });
+			dialog(tr('New stocktake'), [
+				field(tr('Location'), locSelect, { name: 'locationId' }),
+				field(tr('Name'), name, { name: 'name' }),
+				el('p', {
+					className: 'iv-field__hint',
+					text: tr('This takes a snapshot of the current system quantity for every active item at this location.'),
+				}),
+			], function () {
+				var locationId = Number(locSelect.value);
+				if (!locationId) {
+					return Promise.reject(new ApiError('validation_failed', tr('Choose a location.')));
+				}
+				return api('POST', ctx.urls.api.cycleCounts, {
+					locationId: locationId,
+					name: name.value.trim(),
+				}).then(function (campaign) {
+					toast(tr('Stocktake created.'));
+					window.location.href = stocktakeDetailUrl(ctx, campaign.id);
+				});
+			}, tr('Create'));
+		}).catch(function (err) {
+			toast(err.message || tr('Could not load locations.'), true);
+		});
+	}
+
+	function renderStocktakeList(ctx) {
+		var mount = ctx.mount;
+		setBusy(mount, true);
+		clear(mount);
+		clear(ctx.actions);
+		if (ctx.isOffice || ctx.isAppAdmin) {
+			ctx.actions.appendChild(btn(tr('New stocktake'), {
+				primary: true,
+				onclick: function () { openNewCampaignDialog(ctx); },
+			}));
+		}
+		Promise.all([
+			api('GET', ctx.urls.api.cycleCounts + '?limit=50&offset=0'),
+			api('GET', ctx.urls.api.locations + '?limit=200&offset=0'),
+		]).then(function (results) {
+			var res = results[0];
+			var locMap = indexById(results[1].data);
+			clear(mount);
+			setBusy(mount, false);
+			if (!res.data.length) {
+				mount.appendChild(emptyState(
+					tr('No stocktakes yet'),
+					tr('Start a cycle count to compare system stock with what is actually on the shelf.'),
+					(ctx.isOffice || ctx.isAppAdmin)
+						? btn(tr('New stocktake'), { primary: true, onclick: function () { openNewCampaignDialog(ctx); } })
+						: null
+				));
+				return;
+			}
+			mount.appendChild(tableOrCards([
+				{ label: tr('Name'), render: function (r) {
+					return el('a', { href: stocktakeDetailUrl(ctx, r.id), text: r.name });
+				} },
+				{ label: tr('Location'), render: function (r) {
+					return labelFromMap(locMap, r.locationId, 'code');
+				} },
+				{ label: tr('Status'), render: function (r) {
+					var m = cycleStatusMeta(r.status);
+					return el('span', { className: 'iv-badge ' + m.badge, text: m.label });
+				} },
+			], res.data));
+		}).catch(function (err) {
+			clear(mount);
+			toast(err.message, true);
+		});
+	}
+
+	function renderStocktakeDetail(ctx) {
+		var mount = ctx.mount;
+		var id = Number(ctx.entityId);
+		setBusy(mount, true);
+		clear(mount);
+		Promise.all([
+			api('GET', entityUrl(ctx.urls.api.cycleCounts, id)),
+			api('GET', ctx.urls.api.locations + '?limit=200&offset=0'),
+			api('GET', ctx.urls.api.items + '?limit=200&offset=0'),
+		]).then(function (results) {
+			var campaign = results[0];
+			var locMap = indexById(results[1].data);
+			var itemMap = indexById(results[2].data);
+			clear(mount);
+			setBusy(mount, false);
+			clear(ctx.actions);
+			var canOperate = ctx.isOffice || ctx.isAppAdmin;
+
+			if (canOperate && campaign.status === 'open') {
+				ctx.actions.appendChild(btn(tr('Start counting'), {
+					primary: true,
+					onclick: function () {
+						api('POST', urlWithId(ctx.urls.api.cycleCountStart, id)).then(function () {
+							toast(tr('Counting started.'));
+							renderStocktakeDetail(ctx);
+						}).catch(function (err) { toast(err.message, true); });
+					},
+				}));
+			}
+			if (canOperate && campaign.status === 'counting') {
+				ctx.actions.appendChild(btn(tr('Close stocktake'), {
+					primary: true,
+					onclick: function () { openCloseCampaignDialog(ctx, campaign); },
+				}));
+			}
+
+			var meta = cycleStatusMeta(campaign.status);
+			mount.appendChild(el('section', { className: 'iv-section' }, [
+				el('h2', { className: 'iv-section__title', text: campaign.name }),
+				el('p', { className: 'iv-muted' }, [
+					labelFromMap(locMap, campaign.locationId, 'code') + ' · ',
+					el('span', { className: 'iv-badge ' + meta.badge, text: meta.label }),
+				]),
+			]));
+
+			if (!campaign.lines || !campaign.lines.length) {
+				mount.appendChild(el('p', { className: 'iv-muted', text: tr('No active items to count.') }));
+				return;
+			}
+
+			var countedSoFar = campaign.lines.filter(function (l) { return l.qtyCounted != null; }).length;
+			var conflictCount = campaign.lines.filter(function (l) { return l.conflict; }).length;
+			mount.appendChild(el('p', {
+				className: 'iv-muted',
+				text: tr('Counted {done} of {total}.', { done: String(countedSoFar), total: String(campaign.lines.length) }),
+			}));
+			if (conflictCount > 0) {
+				mount.appendChild(el('p', {
+					className: 'iv-section__hint',
+					role: 'status',
+					text: tr('{count} line(s) changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities.', { count: String(conflictCount) }),
+				}));
+			}
+
+			mount.appendChild(tableOrCards([
+				{ label: tr('Item'), render: function (r) {
+					return labelFromMap(itemMap, r.itemId, 'sku');
+				} },
+				{ label: tr('System qty'), key: 'systemQty' },
+				{ label: tr('Live qty'), render: function (r) {
+					return document.createTextNode(formatQty(r.currentQty != null ? r.currentQty : r.systemQty));
+				} },
+				{ label: tr('Status'), render: function (r) {
+					if (!r.conflict) {
+						return el('span', { className: 'iv-muted', text: tr('OK') });
+					}
+					return el('span', {
+						className: 'iv-badge iv-badge--warning',
+						text: tr('Changed since snapshot'),
+					});
+				} },
+				{ label: tr('Counted qty'), render: function (r) {
+					if (campaign.status !== 'counting' || !canOperate) {
+						return r.qtyCounted == null
+							? el('span', { className: 'iv-muted', text: tr('Not counted') })
+							: document.createTextNode(formatQty(r.qtyCounted));
+					}
+					var input = el('input', {
+						type: 'number',
+						min: '0',
+						max: '1000000',
+						step: qtyStep(ctx),
+						className: 'iv-input',
+						style: 'max-width:8rem',
+						value: r.qtyCounted != null ? String(r.qtyCounted) : '',
+						'aria-label': tr('Counted quantity'),
+					});
+					var save = btn(tr('Save'), {
+						onclick: function () {
+							if (input.value.trim() === '') {
+								toast(tr('Enter a quantity of zero or more.'), true);
+								return;
+							}
+							api('PUT', urlWithId(ctx.urls.api.cycleCountSetCount, r.id), { qtyCounted: input.value.trim() }).then(function () {
+								toast(tr('Count saved.'));
+								renderStocktakeDetail(ctx);
+							}).catch(function (err) { toast(err.message, true); });
+						},
+					});
+					return el('div', { className: 'iv-row__actions' }, [input, save]);
+				} },
+			], campaign.lines));
+		}).catch(function (err) {
+			clear(mount);
+			toast(err.message, true);
+		});
+	}
+
+	function openCloseCampaignDialog(ctx, campaign) {
+		var uncounted = (campaign.lines || []).filter(function (l) { return l.qtyCounted == null; }).length;
+		var conflicts = (campaign.lines || []).filter(function (l) { return l.conflict; }).length;
+		var abandon = el('input', { type: 'checkbox', className: 'iv-switch__input', id: 'iv-abandon-uncounted' });
+		var ackConflicts = el('input', { type: 'checkbox', className: 'iv-switch__input', id: 'iv-ack-conflicts' });
+		var body = [
+			el('p', { text: tr('Closing posts one stock adjustment per counted line so on-hand quantities match what was counted.') }),
+		];
+		if (conflicts > 0) {
+			body.push(el('p', {
+				className: 'iv-section__hint',
+				role: 'status',
+				text: tr('{count} line(s) changed after this stocktake started. Closing with the counted quantities will overwrite those later movements.', { count: String(conflicts) }),
+			}));
+			body.push(el('label', { className: 'iv-switch', for: 'iv-ack-conflicts' }, [
+				ackConflicts,
+				el('span', { className: 'iv-switch__label', text: tr('I reviewed the conflicts and accept the counted quantities') }),
+			]));
+		}
+		if (uncounted > 0) {
+			body.push(el('p', {
+				className: 'iv-muted',
+				text: tr('{count} item(s) were never counted.', { count: String(uncounted) }),
+			}));
+			body.push(el('label', { className: 'iv-switch', for: 'iv-abandon-uncounted' }, [
+				abandon,
+				el('span', { className: 'iv-switch__label', text: tr('Close anyway and leave uncounted items unchanged') }),
+			]));
+		}
+		dialog(tr('Close stocktake'), body, function () {
+			if (uncounted > 0 && !abandon.checked) {
+				return Promise.reject(new ApiError('count_incomplete', tr('Count every item, or choose to leave uncounted items unchanged.')));
+			}
+			if (conflicts > 0 && !ackConflicts.checked) {
+				return Promise.reject(new ApiError('count_conflict', tr('Review conflict lines, then confirm you accept the counted quantities.')));
+			}
+			var qs = '?abandonUncounted=' + (abandon.checked ? '1' : '0')
+				+ '&acknowledgeConflicts=' + (ackConflicts.checked ? '1' : '0');
+			return api('POST', urlWithId(ctx.urls.api.cycleCountClose, campaign.id) + qs, {}).then(function () {
+				toast(tr('Stocktake closed.'));
+				renderStocktakeDetail(ctx);
+			});
+		}, tr('Close'));
+	}
+
+	function renderStocktake(ctx) {
+		if (ctx.entityId) {
+			renderStocktakeDetail(ctx);
+		} else {
+			renderStocktakeList(ctx);
+		}
+	}
+
 	function boot() {
 		var ctx = readShell();
 		if (!ctx || !ctx.mount) return;
@@ -1919,6 +3311,7 @@
 			case 'locations': renderLocations(ctx); break;
 			case 'location-detail': renderLocationDetail(ctx); break;
 			case 'movements': renderMovements(ctx); break;
+			case 'stocktake': renderStocktake(ctx); break;
 			case 'settings': renderSettings(ctx); break;
 			default:
 				clear(ctx.mount);

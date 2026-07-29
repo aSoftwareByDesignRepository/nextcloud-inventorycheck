@@ -9,6 +9,9 @@ use OCA\InventoryCheck\Controller\ConfigController;
 use OCA\InventoryCheck\Exception\ValidationException;
 use OCA\InventoryCheck\Middleware\AppAccessMiddleware;
 use OCA\InventoryCheck\Service\AccessControlService;
+use OCA\InventoryCheck\Service\LocationAclService;
+use OCA\InventoryCheck\Service\LowStockService;
+use OCA\InventoryCheck\Service\QtyScaleService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IConfig;
@@ -116,6 +119,10 @@ final class ConfigIdValidationIntegrationTest extends TestCase
 			Server::get(AccessControlService::class),
 			Server::get(IUserManager::class),
 			Server::get(IGroupManager::class),
+			Server::get(LowStockService::class),
+			Server::get(QtyScaleService::class),
+			Server::get(LocationAclService::class),
+			Server::get(IConfig::class),
 		);
 	}
 

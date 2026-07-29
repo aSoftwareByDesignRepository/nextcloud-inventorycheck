@@ -63,7 +63,7 @@ final class SpecEdgeCasesIntegrationTest extends TestCase
 		$xfer = $this->movements->transfer($this->uid, $itemId, (int)$a['id'], (int)$b['id'], 4, null);
 		$group = (string)$xfer['movements'][0]['transferGroup'];
 
-		$list = $this->movements->list(null, null, null, null, null, $group, 50, 0);
+		$list = $this->movements->list($this->uid, null, null, null, null, null, $group, 50, 0);
 		$this->assertSame(2, $list['total']);
 		$this->assertCount(2, $list['data']);
 		$kinds = array_column($list['data'], 'kind');

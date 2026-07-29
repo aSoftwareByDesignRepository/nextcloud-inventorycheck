@@ -15,7 +15,7 @@ final class L10nParityContractTest extends TestCase
 	{
 		$root = dirname(__DIR__, 3);
 		$js = (string)file_get_contents($root . '/js/app.js');
-		preg_match_all("/\\btr\\('((?:\\\\'|[^'])*)'\\)/", $js, $m);
+		preg_match_all("/\\btr\\('((?:\\\\'|[^'])*)'(?:\\s*,|\\))/", $js, $m);
 		$keys = array_values(array_unique(array_map(
 			static fn (string $k): string => str_replace("\\'", "'", $k),
 			$m[1],

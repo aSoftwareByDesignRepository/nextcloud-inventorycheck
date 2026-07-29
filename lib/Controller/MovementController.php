@@ -8,17 +8,26 @@ use OCA\InventoryCheck\AppInfo\Application;
 use OCA\InventoryCheck\Service\AccessControlService;
 use OCA\InventoryCheck\Service\MovementService;
 use OCA\InventoryCheck\Service\Pagination;
+use OCA\InventoryCheck\Service\QtyScale;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IConfig;
 use OCP\IRequest;
 
+/**
+ * Wave C1: request qty fields are converted display → storage here (the one
+ * boundary every movement passes through), and response bodies are
+ * converted storage → display in {@see toDisplay()} — {@see MovementService}
+ * itself only ever sees/returns plain integer storage units.
+ */
 class MovementController extends Controller
 {
 	public function __construct(
 		IRequest $request,
 		private readonly MovementService $movements,
 		private readonly AccessControlService $access,
+		private readonly IConfig $config,
 	) {
 		parent::__construct(Application::APP_ID, $request);
 	}
@@ -31,7 +40,8 @@ class MovementController extends Controller
 		$to = $this->request->getParam('to');
 		$itemId = $this->request->getParam('itemId');
 		$locationId = $this->request->getParam('locationId');
-		return new JSONResponse($this->movements->list(
+		$result = $this->movements->list(
+			$this->access->currentUserId(),
 			$this->request->getParam('kind'),
 			$itemId !== null && $itemId !== '' ? (int)$itemId : null,
 			$locationId !== null && $locationId !== '' ? (int)$locationId : null,
@@ -40,33 +50,37 @@ class MovementController extends Controller
 			$this->request->getParam('transferGroup'),
 			$page['limit'],
 			$page['offset'],
-		));
+		);
+		$result['data'] = array_map(fn (array $m) => QtyScale::formatMovement($m, $this->config), $result['data']);
+		return new JSONResponse($result);
 	}
 
 	#[NoAdminRequired]
 	public function receive(): JSONResponse
 	{
 		$p = $this->request->getParams();
-		return new JSONResponse($this->movements->receive(
+		return new JSONResponse($this->toDisplay($this->movements->receive(
 			$this->access->currentUserId(),
 			(int)($p['itemId'] ?? 0),
 			(int)($p['locationId'] ?? 0),
-			(int)($p['qty'] ?? 0),
+			$this->toStorageQty($p['qty'] ?? 0),
 			isset($p['reason']) ? (string)$p['reason'] : null,
-		));
+			$this->lotCodeParam($p),
+		)));
 	}
 
 	#[NoAdminRequired]
 	public function issue(): JSONResponse
 	{
 		$p = $this->request->getParams();
-		return new JSONResponse($this->movements->issue(
+		return new JSONResponse($this->toDisplay($this->movements->issue(
 			$this->access->currentUserId(),
 			(int)($p['itemId'] ?? 0),
 			(int)($p['locationId'] ?? 0),
-			(int)($p['qty'] ?? 0),
+			$this->toStorageQty($p['qty'] ?? 0),
 			isset($p['reason']) ? (string)$p['reason'] : null,
-		));
+			$this->lotCodeParam($p),
+		)));
 	}
 
 	#[NoAdminRequired]
@@ -74,29 +88,31 @@ class MovementController extends Controller
 	{
 		$p = $this->request->getParams();
 		$from = (int)($p['fromLocationId'] ?? $p['locationId'] ?? 0);
-		return new JSONResponse($this->movements->transfer(
+		return new JSONResponse($this->toDisplay($this->movements->transfer(
 			$this->access->currentUserId(),
 			(int)($p['itemId'] ?? 0),
 			$from,
 			(int)($p['toLocationId'] ?? 0),
-			(int)($p['qty'] ?? 0),
+			$this->toStorageQty($p['qty'] ?? 0),
 			isset($p['reason']) ? (string)$p['reason'] : null,
-		));
+			$this->lotCodeParam($p),
+		)));
 	}
 
 	#[NoAdminRequired]
 	public function adjust(): JSONResponse
 	{
 		$p = $this->request->getParams();
-		return new JSONResponse($this->movements->adjust(
+		return new JSONResponse($this->toDisplay($this->movements->adjust(
 			$this->access->currentUserId(),
 			(int)($p['itemId'] ?? 0),
 			(int)($p['locationId'] ?? 0),
 			(string)($p['mode'] ?? ''),
-			isset($p['qty']) ? (int)$p['qty'] : null,
-			isset($p['qtyDelta']) ? (int)$p['qtyDelta'] : null,
+			isset($p['qty']) ? $this->toStorageQty($p['qty']) : null,
+			isset($p['qtyDelta']) ? $this->toStorageQty($p['qtyDelta']) : null,
 			isset($p['reason']) ? (string)$p['reason'] : null,
-		));
+			$this->lotCodeParam($p),
+		)));
 	}
 
 	#[NoAdminRequired]
@@ -104,16 +120,42 @@ class MovementController extends Controller
 	{
 		$p = $this->request->getParams();
 		$uid = $this->access->currentUserId();
-		return new JSONResponse($this->movements->scan(
+		return new JSONResponse($this->toDisplay($this->movements->scan(
 			$uid,
 			(string)($p['code'] ?? ''),
 			(string)($p['kind'] ?? ''),
 			(int)($p['locationId'] ?? 0),
 			isset($p['toLocationId']) ? (int)$p['toLocationId'] : null,
-			isset($p['qty']) ? (int)$p['qty'] : null,
-			isset($p['qtyDelta']) ? (int)$p['qtyDelta'] : null,
+			isset($p['qty']) ? $this->toStorageQty($p['qty']) : null,
+			isset($p['qtyDelta']) ? $this->toStorageQty($p['qtyDelta']) : null,
 			isset($p['reason']) ? (string)$p['reason'] : null,
 			$this->access->isOffice($uid),
-		));
+			$this->lotCodeParam($p),
+		)));
+	}
+
+	private function toStorageQty(mixed $raw): int
+	{
+		return QtyScale::toStorage($this->config, $raw);
+	}
+
+	/** @param array<string, mixed> $p */
+	private function lotCodeParam(array $p): ?string
+	{
+		if (!isset($p['lotCode']) || $p['lotCode'] === '') {
+			return null;
+		}
+		return (string)$p['lotCode'];
+	}
+
+	/**
+	 * @param array{movements: list<array<string, mixed>>, balances: list<array<string, mixed>>} $result
+	 * @return array{movements: list<array<string, mixed>>, balances: list<array<string, mixed>>}
+	 */
+	private function toDisplay(array $result): array
+	{
+		$result['movements'] = array_map(fn (array $m) => QtyScale::formatMovement($m, $this->config), $result['movements']);
+		$result['balances'] = array_map(fn (array $b) => QtyScale::formatBalance($b, $this->config), $result['balances']);
+		return $result;
 	}
 }

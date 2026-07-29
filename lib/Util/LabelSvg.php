@@ -7,12 +7,15 @@ namespace OCA\InventoryCheck\Util;
 use splitbrain\phpQRCode\QRCode;
 
 /**
- * Printable item label: real QR of scan_code + selectable text alternative (SPEC A12).
+ * Printable item label: QR + Code 128 of scan_code + selectable text (SPEC A12 / Wave A5).
+ *
+ * Both symbologies encode the same plain-string payload so phone cameras (QR)
+ * and wedge/laser scanners (Code 128) resolve via the same S8 by-code path.
  */
 final class LabelSvg
 {
 	/**
-	 * Build a standalone SVG label (QR + human-readable code + optional name).
+	 * Build a standalone SVG label (QR + Code 128 + human-readable code + name).
 	 */
 	public static function forItem(string $scanCode, string $sku, string $name): string
 	{
@@ -33,33 +36,40 @@ final class LabelSvg
 		$escSku = htmlspecialchars($sku, ENT_QUOTES | ENT_XML1, 'UTF-8');
 		$escName = htmlspecialchars(mb_substr($name, 0, 64), ENT_QUOTES | ENT_XML1, 'UTF-8');
 
-		// Fit QR into a 200×200 box with quiet zone; leave room for text below.
-		$target = 200.0;
+		// Compact QR so Code 128 + ≥12 pt text still fit on A4 3×4 tiles.
+		$target = 168.0;
 		$scale = $target / max(1, $matrix);
 		$tx = (320.0 - $target) / 2.0;
-		$ty = 24.0;
+		$ty = 16.0;
+
+		$barcode = Code128Svg::barsGroup($scanCode, 20.0, 196.0, 280.0, 44.0);
 
 		return '<?xml version="1.0" encoding="UTF-8"?>'
-			. '<svg xmlns="http://www.w3.org/2000/svg" width="320" height="360" viewBox="0 0 320 360"'
+			. '<svg xmlns="http://www.w3.org/2000/svg" width="320" height="400" viewBox="0 0 320 400"'
 			. ' role="img" aria-label="' . $escCode . '">'
-			. '<title>' . $escCode . '</title>'
-			. '<rect width="320" height="360" fill="#ffffff"/>'
-			. '<g transform="translate(' . $tx . ' ' . $ty . ') scale(' . $scale . ')" fill="#111111">'
+			. '<title>QR and barcode for ' . $escCode . '</title>'
+			. '<rect width="320" height="400" fill="#ffffff"/>'
+			. '<g id="iv-label-qr" transform="translate(' . $tx . ' ' . $ty . ') scale(' . $scale . ')" fill="#111111">'
 			. $inner
 			. '</g>'
-			. '<text x="160" y="250" text-anchor="middle" fill="#111111"'
+			. $barcode
+			. '<text x="160" y="268" text-anchor="middle" fill="#111111"'
 			. ' font-family="DejaVu Sans, Liberation Sans, Arial, sans-serif" font-size="14">'
 			. $escName
 			. '</text>'
-			. '<text x="160" y="278" text-anchor="middle" fill="#333333"'
-			. ' font-family="DejaVu Sans Mono, Liberation Mono, monospace" font-size="13">'
+			. '<text x="160" y="292" text-anchor="middle" fill="#333333"'
+			. ' font-family="DejaVu Sans Mono, Liberation Mono, monospace" font-size="12">'
 			. 'SKU ' . $escSku
 			. '</text>'
-			. '<text id="iv-label-code" x="160" y="312" text-anchor="middle" fill="#111111"'
+			. '<text id="iv-label-code" x="160" y="322" text-anchor="middle" fill="#111111"'
 			. ' font-family="DejaVu Sans Mono, Liberation Mono, monospace" font-size="16" font-weight="700">'
 			. $escCode
 			. '</text>'
-			. '<text x="160" y="340" text-anchor="middle" fill="#555555"'
+			. '<text x="160" y="348" text-anchor="middle" fill="#555555"'
+			. ' font-family="DejaVu Sans, Liberation Sans, Arial, sans-serif" font-size="11">'
+			. 'QR · Code 128'
+			. '</text>'
+			. '<text x="160" y="372" text-anchor="middle" fill="#555555"'
 			. ' font-family="DejaVu Sans, Liberation Sans, Arial, sans-serif" font-size="11">'
 			. 'InventoryCheck'
 			. '</text>'

@@ -128,11 +128,39 @@ final class ValidationContractsIntegrationTest extends TestCase
 		$svc = (string)file_get_contents(
 			dirname(__DIR__, 2) . '/lib/Service/MovementService.php',
 		);
-		// S16: columns exist but v1 always writes NULL — never caller input.
-		$this->assertStringContainsString('setRefType(null)', $svc);
-		$this->assertStringContainsString('setRefId(null)', $svc);
-		$this->assertDoesNotMatchRegularExpression('/setRefType\(\s*\$/', $svc);
-		$this->assertDoesNotMatchRegularExpression('/setRefId\(\s*\$/', $svc);
+		// S16: ref_type/ref_id columns exist but every public movement path
+		// (receive/issue/transfer/adjust/scan) writes NULL by omitting the
+		// insertMovement() ref args, which default to null. Only the
+		// server-only issueWithRef() flange path (Wave B2) — never exposed
+		// via MovementController — forwards real ref values, and it
+		// validates them itself before writing.
+		$this->assertStringContainsString('?string $refType = null', $svc);
+		$this->assertStringContainsString('?int $refId = null', $svc);
+		$this->assertSame(
+			2,
+			substr_count($svc, '$refType, $refId'),
+			'the $refType/$refId pair (closure capture + insertMovement call) must appear only inside issueWithRef()',
+		);
+
+		$issueWithRefStart = strpos($svc, 'function issueWithRef(');
+		$this->assertNotFalse($issueWithRefStart, 'issueWithRef() must exist');
+		// Skip past nested/anonymous closures (e.g. `function () use (`) and only
+		// match the next top-level class method, which is indented by a single tab.
+		$nextMethod = preg_match(
+			'/\n\t(?:public|private|protected) function /',
+			$svc,
+			$matches,
+			PREG_OFFSET_CAPTURE,
+			$issueWithRefStart + strlen('function issueWithRef('),
+		) ? $matches[0][1] : false;
+		$issueWithRefBody = $nextMethod !== false
+			? substr($svc, $issueWithRefStart, $nextMethod - $issueWithRefStart)
+			: substr($svc, $issueWithRefStart);
+		$this->assertSame(
+			2,
+			substr_count($issueWithRefBody, '$refType, $refId'),
+			'both $refType/$refId occurrences must be confined to issueWithRef()',
+		);
 	}
 
 	public function testInsertedMovementPersistsNullRefColumns(): void

@@ -33,6 +33,7 @@ $isDashboard = $activeNavId === 'dashboard';
 $isItems = $activeNavId === 'items';
 $isLocations = $activeNavId === 'locations';
 $isMovements = $activeNavId === 'movements';
+$isStocktake = $activeNavId === 'stocktake';
 $isSettings = $activeNavId === 'settings';
 $isAdmin = $isSettings;
 ?>
@@ -86,6 +87,16 @@ $isAdmin = $isSettings;
 					<span><?php p($l->t('Movements')); ?></span>
 				</a>
 			</li>
+			<?php if ($isOffice): ?>
+				<li class="<?php p($isStocktake ? 'active' : ''); ?>" <?php if ($isStocktake): ?>aria-current="page"<?php endif; ?>>
+					<a href="<?php p((string)($navUrls['stocktake'] ?? '#')); ?>"
+						title="<?php p($l->t('Stocktake: Cycle counts and Inventur campaigns')); ?>"
+						aria-label="<?php p($l->t('Go to stocktake')); ?>">
+						<span class="iv-nav__icon" aria-hidden="true"><?php print_unescaped($ivNavIcon('clipboard-list')); ?></span>
+						<span><?php p($l->t('Stocktake')); ?></span>
+					</a>
+				</li>
+			<?php endif; ?>
 			<?php if ($isAppAdmin): ?>
 				<li class="nav-section-divider" role="separator" aria-hidden="true"></li>
 				<li class="nav-item-has-children <?php p($isAdmin ? 'is-open' : ''); ?>">

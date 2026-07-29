@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace OCA\InventoryCheck\Service;
 
 use OCA\InventoryCheck\Db\BalanceMapper;
+use OCA\InventoryCheck\Db\CycleLineMapper;
 use OCA\InventoryCheck\Db\Item;
 use OCA\InventoryCheck\Db\ItemMapper;
 use OCA\InventoryCheck\Db\UniqueViolation;
 use OCA\InventoryCheck\Exception\ConflictException;
 use OCA\InventoryCheck\Exception\NotFoundException;
 use OCA\InventoryCheck\Exception\ValidationException;
+use OCP\IConfig;
 use OCP\IDBConnection;
 use OCP\Lock\ILockingProvider;
 use OCP\Lock\LockedException;
@@ -31,15 +33,18 @@ class ItemService
 		private readonly AccessControlService $access,
 		private readonly Clock $clock,
 		private readonly ILockingProvider $locking,
+		private readonly LocationAclService $locationAcl,
+		private readonly IConfig $config,
+		private readonly CycleLineMapper $cycleLines,
 	) {
 	}
 
 	/** @return array{data: list<array<string, mixed>>, total: int, limit: int, offset: int} */
-	public function list(string $q, ?bool $active, bool $lowStock, int $limit, int $offset): array
+	public function list(string $actorUid, string $q, ?bool $active, bool $lowStock, int $limit, int $offset): array
 	{
 		$idFilter = null;
 		if ($lowStock) {
-			$idFilter = $this->lowStockItemIds();
+			$idFilter = $this->lowStockItemIds($actorUid);
 			if ($idFilter === []) {
 				return ['data' => [], 'total' => 0, 'limit' => $limit, 'offset' => $offset];
 			}
@@ -54,13 +59,15 @@ class ItemService
 	}
 
 	/**
-	 * S10 predicate over all active items — ids currently below reorder level.
+	 * S10 predicate over active items — ids currently below reorder level.
+	 * Wave C3: sum only over locations the actor may see.
 	 *
 	 * @return list<int>
 	 */
-	private function lowStockItemIds(): array
+	private function lowStockItemIds(string $actorUid): array
 	{
-		$sums = $this->balances->sumQtyByItem();
+		$visible = $this->locationAcl->visibleLocationIds($actorUid);
+		$sums = $this->balances->sumQtyByItem($visible);
 		$all = $this->items->search('', true, 100000, 0);
 		$ids = [];
 		foreach ($all['data'] as $item) {
@@ -79,10 +86,12 @@ class ItemService
 	}
 
 	/**
-	 * S8 by-code with per-location balances.
+	 * S8 by-code with per-location balances (Wave C3: balances filtered to
+	 * locations the actor may see — never leak hidden van stock via scan).
+	 *
 	 * @return array<string, mixed>
 	 */
-	public function byCode(string $code): array
+	public function byCode(string $actorUid, string $code): array
 	{
 		$code = CodeRules::trim($code);
 		$item = $this->items->resolveByCode($code);
@@ -90,7 +99,8 @@ class ItemService
 			throw new NotFoundException('code_not_found');
 		}
 		$api = $item->toApi();
-		$bal = $this->balances->search((int)$item->getId(), null, false, 200, 0);
+		$visible = $this->locationAcl->visibleLocationIds($actorUid);
+		$bal = $this->balances->search((int)$item->getId(), null, false, 200, 0, false, $visible);
 		$api['balances'] = array_map(static fn ($b) => $b->toApi(), $bal['data']);
 		return $api;
 	}
@@ -118,8 +128,11 @@ class ItemService
 		}
 		$reorder = isset($input['reorderLevel']) ? (int)$input['reorderLevel'] : (isset($input['reorder_level']) ? (int)$input['reorder_level'] : 0);
 		$this->validateItemFields($sku, $scan, $name, $uom, $desc, $reorder);
+		$trackMode = $this->parseTrackMode($input, 'none');
+		$supplierNote = $this->parseSupplierNote($input);
+		$lastPriceMinor = $this->parseLastPriceMinor($input);
 
-		return $this->withCodesLock(function () use ($actorUid, $sku, $scan, $name, $uom, $desc, $reorder): array {
+		return $this->withCodesLock(function () use ($actorUid, $sku, $scan, $name, $uom, $desc, $reorder, $trackMode, $supplierNote, $lastPriceMinor): array {
 			if (CodeRules::conflictsWithOthers(null, $sku, $scan, $this->items->allCodePairs())) {
 				throw new ConflictException('code_exists');
 			}
@@ -135,6 +148,9 @@ class ItemService
 			$item->setCreatedAt($now);
 			$item->setUpdatedAt($now);
 			$item->setCreatedBy($actorUid);
+			$item->setTrackMode($trackMode);
+			$item->setSupplierNote($supplierNote);
+			$item->setLastPriceMinor($lastPriceMinor);
 			try {
 				return $this->items->insert($item)->toApi();
 			} catch (\Throwable $e) {
@@ -168,6 +184,9 @@ class ItemService
 			$item = $this->items->lockById($id, true);
 			if ($this->items->countMovementsReferencing($id) > 0) {
 				throw new ConflictException('item_has_movements');
+			}
+			if ($this->cycleLines->countOpenCampaignsForItem($id) > 0) {
+				throw new ConflictException('item_in_open_stocktake');
 			}
 			$this->items->delete($item);
 			$this->db->commit();
@@ -217,7 +236,7 @@ class ItemService
 			}
 			if (array_key_exists('reorderLevel', $input) || array_key_exists('reorder_level', $input)) {
 				$reorder = (int)($input['reorderLevel'] ?? $input['reorder_level']);
-				if ($reorder < 0 || $reorder > 1000000) {
+				if ($reorder < 0 || $reorder > QtyScale::maxStorage($this->config)) {
 					throw new ValidationException('validation_failed', '', [['field' => 'reorderLevel', 'code' => 'validation_failed']]);
 				}
 				$item->setReorderLevel($reorder);
@@ -234,10 +253,24 @@ class ItemService
 			}
 			if (array_key_exists('active', $input)) {
 				$active = (bool)$input['active'];
-				if (!$active && $item->getActive() && $this->items->hasNonZeroBalance($id)) {
-					throw new ConflictException('item_has_stock');
+				if (!$active && $item->getActive()) {
+					if ($this->items->hasNonZeroBalance($id)) {
+						throw new ConflictException('item_has_stock');
+					}
+					if ($this->cycleLines->countOpenCampaignsForItem($id) > 0) {
+						throw new ConflictException('item_in_open_stocktake');
+					}
 				}
 				$item->setActive($active);
+			}
+			if (array_key_exists('trackMode', $input) || array_key_exists('track_mode', $input)) {
+				$item->setTrackMode($this->parseTrackMode($input, $item->getTrackMode()));
+			}
+			if (array_key_exists('supplierNote', $input) || array_key_exists('supplier_note', $input)) {
+				$item->setSupplierNote($this->parseSupplierNote($input));
+			}
+			if (array_key_exists('lastPriceMinor', $input) || array_key_exists('last_price_minor', $input)) {
+				$item->setLastPriceMinor($this->parseLastPriceMinor($input));
 			}
 			$item->setUpdatedAt($this->clock->now());
 			$api = $this->items->update($item)->toApi();
@@ -247,6 +280,68 @@ class ItemService
 			$this->db->rollBack();
 			throw UniqueViolation::is($e) ? new ConflictException('code_exists') : $e;
 		}
+	}
+
+	/**
+	 * @param array<string, mixed> $input
+	 */
+	private function parseSupplierNote(array $input): ?string
+	{
+		if (!array_key_exists('supplierNote', $input) && !array_key_exists('supplier_note', $input)) {
+			return null;
+		}
+		$raw = $input['supplierNote'] ?? $input['supplier_note'];
+		if ($raw === null) {
+			return null;
+		}
+		$note = CodeRules::trim((string)$raw);
+		if ($note === '') {
+			return null;
+		}
+		if (mb_strlen($note) > 255) {
+			throw new ValidationException('validation_failed', '', [['field' => 'supplierNote', 'code' => 'validation_failed']]);
+		}
+		return $note;
+	}
+
+	/**
+	 * @param array<string, mixed> $input
+	 */
+	private function parseLastPriceMinor(array $input): ?int
+	{
+		if (!array_key_exists('lastPriceMinor', $input) && !array_key_exists('last_price_minor', $input)) {
+			return null;
+		}
+		$raw = $input['lastPriceMinor'] ?? $input['last_price_minor'];
+		if ($raw === null || $raw === '') {
+			return null;
+		}
+		if (!is_numeric($raw)) {
+			throw new ValidationException('validation_failed', '', [['field' => 'lastPriceMinor', 'code' => 'validation_failed']]);
+		}
+		$value = (int)$raw;
+		if ($value < 0 || $value > 100_000_000) {
+			throw new ValidationException('validation_failed', '', [['field' => 'lastPriceMinor', 'code' => 'validation_failed']]);
+		}
+		return $value;
+	}
+
+	/**
+	 * @param array<string, mixed> $input
+	 */
+	private function parseTrackMode(array $input, string $default): string
+	{
+		if (!array_key_exists('trackMode', $input) && !array_key_exists('track_mode', $input)) {
+			return $default;
+		}
+		$raw = CodeRules::trim((string)($input['trackMode'] ?? $input['track_mode']));
+		if ($raw === '') {
+			$raw = 'none';
+		}
+		if (!CodeRules::isValidTrackMode($raw)) {
+			throw new ValidationException('validation_failed', '', [['field' => 'trackMode', 'code' => 'validation_failed']]);
+		}
+		return $raw;
 	}
 
 	private function validateItemFields(string $sku, string $scan, string $name, string $uom, ?string $desc, int $reorder): void
@@ -263,7 +358,7 @@ class ItemService
 		if ($desc !== null && mb_strlen($desc) > 10000) {
 			throw new ValidationException('validation_failed', '', [['field' => 'description', 'code' => 'validation_failed']]);
 		}
-		if ($reorder < 0 || $reorder > 1000000) {
+		if ($reorder < 0 || $reorder > QtyScale::maxStorage($this->config)) {
 			throw new ValidationException('validation_failed', '', [['field' => 'reorderLevel', 'code' => 'validation_failed']]);
 		}
 	}

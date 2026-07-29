@@ -26,11 +26,16 @@ final class UninstallDropTablesTest extends TestCase
 		self::assertSame($uninstall, $backup);
 	}
 
-	public function testUninstallListsAllSevenTables(): void
+	public function testUninstallListsAllTwelveTables(): void
 	{
-		self::assertCount(7, UninstallDropTables::TABLES);
+		self::assertCount(12, UninstallDropTables::TABLES);
 		self::assertContains('iv_movements', UninstallDropTables::TABLES);
 		self::assertContains('iv_scan_devices', UninstallDropTables::TABLES);
+		self::assertContains('iv_notif_log', UninstallDropTables::TABLES);
+		self::assertContains('iv_cc_camp', UninstallDropTables::TABLES);
+		self::assertContains('iv_cc_line', UninstallDropTables::TABLES);
+		self::assertContains('iv_loc_fav', UninstallDropTables::TABLES);
+		self::assertContains('iv_loc_acl', UninstallDropTables::TABLES);
 	}
 
 	public function testRepairStepNameIsDescriptive(): void

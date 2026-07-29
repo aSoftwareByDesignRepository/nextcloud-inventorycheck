@@ -29,13 +29,14 @@ class LocationController extends Controller
 		$page = Pagination::parse($this->request->getParam('limit'), $this->request->getParam('offset'));
 		$activeRaw = $this->request->getParam('active');
 		$active = $activeRaw === null || $activeRaw === '' ? null : filter_var($activeRaw, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
-		return new JSONResponse($this->locations->list($active, $page['limit'], $page['offset']));
+		$q = trim((string)$this->request->getParam('q', ''));
+		return new JSONResponse($this->locations->list($this->access->currentUserId(), $active, $page['limit'], $page['offset'], $q));
 	}
 
 	#[NoAdminRequired]
 	public function show(int $id): JSONResponse
 	{
-		return new JSONResponse($this->locations->get($id));
+		return new JSONResponse($this->locations->get($this->access->currentUserId(), $id));
 	}
 
 	#[NoAdminRequired]

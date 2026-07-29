@@ -13,10 +13,12 @@ use OCA\InventoryCheck\Exception\NotFoundException;
 use OCA\InventoryCheck\Exception\PermissionDeniedException;
 use OCA\InventoryCheck\Exception\ValidationException;
 use OCA\InventoryCheck\Service\AccessControlService;
+use OCA\InventoryCheck\Service\QtyScale;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Middleware;
+use OCP\IConfig;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IURLGenerator;
@@ -33,6 +35,7 @@ class AppAccessMiddleware extends Middleware
 		private readonly IRequest $request,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly IFactory $l10nFactory,
+		private readonly IConfig $config,
 	) {
 	}
 
@@ -88,7 +91,8 @@ class AppAccessMiddleware extends Middleware
 			// Use plain %s placeholders — IL10N::t() does not accept a plural count
 			// (that is n()). Passing qty as %n previously rendered the default
 			// plural form (count=1) and shoved the qty into the location slot.
-			$qty = (string)$exception->getAvailableQty();
+			// Wave C1: show display qty (not milli storage ints).
+			$qty = (string)QtyScale::toDisplay($this->config, $exception->getAvailableQty());
 			$msg = $exception->getLocationLabel() !== ''
 				? $l->t('Only %s left in %s.', [$qty, $exception->getLocationLabel()])
 				: $l->t('Not enough stock at this location (available: %s).', [$qty]);
@@ -111,6 +115,8 @@ class AppAccessMiddleware extends Middleware
 			], Http::STATUS_UNPROCESSABLE_ENTITY);
 		}
 		if ($exception instanceof MobileGateException) {
+			// SPEC §9.1 rung 1 / AC-17: unauthenticated mobile callers are 401,
+			// never 402 (402 is reserved for license/seat/device entitlement misses).
 			if ($exception->getErrorCode() === 'auth_required') {
 				return $this->envelope(
 					'auth_required',
@@ -192,8 +198,13 @@ class AppAccessMiddleware extends Middleware
 			'location_has_stock' => $l->t('This location still has stock. Move or adjust it to zero before deactivating.'),
 			'item_has_movements' => $l->t('This item has movement history and cannot be deleted. Deactivate it instead.'),
 			'location_has_movements' => $l->t('This location has movement history and cannot be deleted. Deactivate it instead.'),
+			'item_in_open_stocktake' => $l->t('This item is on an open stocktake. Close or finish that stocktake first.'),
+			'location_in_open_stocktake' => $l->t('This location has an open stocktake. Close or finish that stocktake first.'),
 			'seat_limit_reached' => $l->t('All licensed seats are assigned. Remove a seat or upgrade the license.'),
 			'device_limit_reached' => $l->t('All licensed device slots are used. Remove a device or upgrade the license.'),
+			'campaign_not_open' => $l->t('This cycle count has already been started or closed.'),
+			'campaign_not_counting' => $l->t('This cycle count is not open for counting right now.'),
+			'line_already_posted' => $l->t('This line was already posted and cannot be counted again.'),
 			default => $l->t('The action conflicts with the current state. Reload and try again.'),
 		};
 	}
@@ -212,6 +223,13 @@ class AppAccessMiddleware extends Middleware
 			'unknown_user' => $l->t('This Nextcloud user does not exist.'),
 			'unknown_group' => $l->t('This Nextcloud group does not exist.'),
 			'invalid_pair_code' => $l->t('This pairing code is invalid or expired.'),
+			'photo_too_large' => $l->t('The photo is too large. Maximum size is 2 MB.'),
+			'photo_type_invalid' => $l->t('Only JPEG, PNG, or WebP photos are allowed.'),
+			'upload_failed' => $l->t('The upload failed. Please try again.'),
+			'count_incomplete' => $l->t('Every line must be counted before closing, or choose to abandon uncounted lines.'),
+			'count_conflict' => $l->t('Stock changed after this stocktake started. Review conflict lines, then close again and confirm you accept the counted quantities.'),
+			'track_mode_changed' => $l->t('An item on this stocktake was switched to lot or serial tracking. Remove it from the count or set tracking back to none, then try again.'),
+			'favourite_limit' => $l->t('You already have the maximum number of favourite locations.'),
 			default => $l->t('Please check the highlighted fields.'),
 		};
 	}

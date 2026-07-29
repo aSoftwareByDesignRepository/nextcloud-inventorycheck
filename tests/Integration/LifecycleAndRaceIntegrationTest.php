@@ -63,18 +63,18 @@ final class LifecycleAndRaceIntegrationTest extends TestCase
 		]);
 		$this->movements->receive($this->uid, (int)$item['id'], (int)$loc['id'], 2, null);
 
-		$byScan = $this->items->byCode('BYSCAN-' . $suffix);
+		$byScan = $this->items->byCode($this->uid, 'BYSCAN-' . $suffix);
 		$this->assertSame((int)$item['id'], (int)$byScan['id']);
 		$this->assertNotEmpty($byScan['balances']);
 
-		$bySku = $this->items->byCode('BYSKU-' . $suffix);
+		$bySku = $this->items->byCode($this->uid, 'BYSKU-' . $suffix);
 		$this->assertSame((int)$item['id'], (int)$bySku['id']);
 
 		$this->movements->adjust($this->uid, (int)$item['id'], (int)$loc['id'], 'set', 0, null, 'zero');
 		$this->items->update($this->uid, (int)$item['id'], ['active' => false]);
 
 		$this->expectException(NotFoundException::class);
-		$this->items->byCode('BYSCAN-' . $suffix);
+		$this->items->byCode($this->uid, 'BYSCAN-' . $suffix);
 	}
 
 	public function testDuplicateAndCrossFieldCodesConflict(): void
@@ -196,11 +196,11 @@ final class LifecycleAndRaceIntegrationTest extends TestCase
 		$this->movements->receive($this->uid, $itemId, (int)$loc['id'], 4, null);
 
 		// Fetch the full low-stock result set (prior test leftovers can fill page 1).
-		$first = $this->lowStock->list(200, 0);
+		$first = $this->lowStock->list($this->uid, 200, 0);
 		$total = (int)$first['total'];
 		$ids = array_map(static fn (array $r): int => (int)$r['item']['id'], $first['data']);
 		for ($offset = 200; $offset < $total; $offset += 200) {
-			$page = $this->lowStock->list(200, $offset);
+			$page = $this->lowStock->list($this->uid, 200, $offset);
 			foreach ($page['data'] as $row) {
 				$ids[] = (int)$row['item']['id'];
 			}
@@ -208,11 +208,11 @@ final class LifecycleAndRaceIntegrationTest extends TestCase
 		$this->assertContains($itemId, $ids);
 
 		// SPEC §7.3: GET /api/items?lowStock= filters the item list the same way.
-		$filtered = $this->items->list('', null, true, 200, 0);
+		$filtered = $this->items->list($this->uid, '', null, true, 200, 0);
 		$filteredIds = array_map(static fn (array $r): int => (int)$r['id'], $filtered['data']);
 		$filteredTotal = (int)$filtered['total'];
 		for ($offset = 200; $offset < $filteredTotal; $offset += 200) {
-			$page = $this->items->list('', null, true, 200, $offset);
+			$page = $this->items->list($this->uid, '', null, true, 200, $offset);
 			foreach ($page['data'] as $row) {
 				$filteredIds[] = (int)$row['id'];
 			}
@@ -221,7 +221,7 @@ final class LifecycleAndRaceIntegrationTest extends TestCase
 
 		// Replenish above the reorder level → drops off the filtered list.
 		$this->movements->receive($this->uid, $itemId, (int)$loc['id'], 10, null);
-		$refreshed = $this->items->list('', null, true, max(200, $filteredTotal), 0);
+		$refreshed = $this->items->list($this->uid, '', null, true, max(200, $filteredTotal), 0);
 		$refreshedIds = array_map(static fn (array $r): int => (int)$r['id'], $refreshed['data']);
 		$this->assertNotContains($itemId, $refreshedIds);
 	}

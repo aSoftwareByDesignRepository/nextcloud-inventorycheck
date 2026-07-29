@@ -27,6 +27,7 @@ class LicenseService
 {
 	public const MOBILE_APP_STATUS = 'coming_soon';
 
+	private const LICENSE_LOCK = 'inventorycheck/license_apply';
 	private const SEAT_LOCK = 'inventorycheck/seat_assign';
 	private const DEVICE_LOCK = 'inventorycheck/device_create';
 
@@ -73,43 +74,45 @@ class LicenseService
 	/** @return array<string, mixed> */
 	public function apply(string $uid, string $wireKey): array
 	{
-		$error = Iv2Codec::classifyError($wireKey);
-		if ($error !== '') {
-			$message = match ($error) {
-				Iv2Codec::ERROR_INVALID_FORMAT => 'The key does not have the expected IV2.<payload>.<signature> shape.',
-				Iv2Codec::ERROR_INVALID_SIGNATURE => 'The signature does not match — the key was altered or not issued for this product.',
-				default => 'The key payload failed validation for InventoryCheck.',
-			};
-			throw new ValidationException('license_invalid', $message);
-		}
+		return $this->withExclusiveLock(self::LICENSE_LOCK, 'license_busy', function () use ($uid, $wireKey): array {
+			$error = Iv2Codec::classifyError($wireKey);
+			if ($error !== '') {
+				$message = match ($error) {
+					Iv2Codec::ERROR_INVALID_FORMAT => 'The key does not have the expected IV2.<payload>.<signature> shape.',
+					Iv2Codec::ERROR_INVALID_SIGNATURE => 'The signature does not match — the key was altered or not issued for this product.',
+					default => 'The key payload failed validation for InventoryCheck.',
+				};
+				throw new ValidationException('license_invalid', $message);
+			}
 
-		/** @var array{payload: array<string, mixed>, payloadB64: string, signatureB64: string} $verified */
-		$verified = Iv2Codec::parseAndVerify($wireKey);
-		$payload = $verified['payload'];
+			/** @var array{payload: array<string, mixed>, payloadB64: string, signatureB64: string} $verified */
+			$verified = Iv2Codec::parseAndVerify($wireKey);
+			$payload = $verified['payload'];
 
-		$state = new LicenseState();
-		$state->setCustomerId((string)$payload['customerId']);
-		$state->setIssuedAt((string)$payload['issuedAt']);
-		$state->setValidUntil((string)$payload['validUntil']);
-		$state->setMobileSeats((int)$payload['mobileSeats']);
-		$state->setScanDevices((int)$payload['scanDevices']);
-		$state->setBundle(($payload['bundle'] ?? false) === true);
-		$state->setPayloadB64($verified['payloadB64']);
-		$state->setSignatureB64($verified['signatureB64']);
-		$state->setAppliedAt($this->clock->now());
-		$state->setAppliedBy($uid);
+			$state = new LicenseState();
+			$state->setCustomerId((string)$payload['customerId']);
+			$state->setIssuedAt((string)$payload['issuedAt']);
+			$state->setValidUntil((string)$payload['validUntil']);
+			$state->setMobileSeats((int)$payload['mobileSeats']);
+			$state->setScanDevices((int)$payload['scanDevices']);
+			$state->setBundle(($payload['bundle'] ?? false) === true);
+			$state->setPayloadB64($verified['payloadB64']);
+			$state->setSignatureB64($verified['signatureB64']);
+			$state->setAppliedAt($this->clock->now());
+			$state->setAppliedBy($uid);
 
-		$this->db->beginTransaction();
-		try {
-			$this->licenseState->deleteAll();
-			$this->licenseState->insert($state);
-			$this->db->commit();
-		} catch (\Throwable $e) {
-			$this->db->rollBack();
-			throw $e;
-		}
+			$this->db->beginTransaction();
+			try {
+				$this->licenseState->deleteAll();
+				$this->licenseState->insert($state);
+				$this->db->commit();
+			} catch (\Throwable $e) {
+				$this->db->rollBack();
+				throw $e;
+			}
 
-		return $this->status();
+			return $this->status();
+		});
 	}
 
 	/** @return array<string, mixed> */

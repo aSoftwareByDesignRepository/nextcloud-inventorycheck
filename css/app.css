@@ -287,7 +287,7 @@ a.button {
 
 .iv-btn--danger {
 	background: var(--color-error);
-	color: var(--color-error-text, #fff);
+	color: var(--color-error-text);
 }
 
 .iv-btn--danger:hover:not(:disabled) {
@@ -295,15 +295,9 @@ a.button {
 }
 
 .iv-btn--compact {
-	min-height: 36px;
-	padding: 4px 14px;
-	font-size: 13px;
-}
-
-@media (pointer: coarse) {
-	.iv-btn--compact {
-		min-height: 44px;
-	}
+	min-height: var(--iv-touch, 44px);
+	padding: var(--iv-space-1) var(--iv-space-3);
+	font-size: var(--iv-fs-sm);
 }
 
 /* ── Forms ─────────────────────────────────────────────────────────── */
@@ -469,7 +463,8 @@ textarea.iv-input {
 	max-width: 420px;
 }
 
-.iv-filterbar {
+/* Legacy filterbar chrome — only for standalone bars outside AZ panels */
+.iv-filterbar:not(.iv-filter-panel__form) {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 12px;
@@ -480,13 +475,201 @@ textarea.iv-input {
 	border-radius: var(--border-radius-large, 10px);
 }
 
-.iv-filterbar .iv-field {
+.iv-filterbar:not(.iv-filter-panel__form) .iv-field {
 	margin-bottom: 0;
 	flex: 0 1 180px;
 }
 
 .iv-filterbar__switch {
 	flex: 0 0 auto;
+}
+
+/* AZ filter panel form: never inherit legacy filterbar padding/background */
+#app-content.iv-app .iv-filter-panel .iv-filter-panel__form.iv-filterbar,
+#app-content.iv-app .iv-filter-panel form.iv-filterbar {
+	display: flex;
+	flex-direction: column;
+	gap: var(--iv-space-3, 12px);
+	padding: 0;
+	margin: 0;
+	background: transparent;
+	border-radius: 0;
+	align-items: stretch;
+}
+
+.iv-filter-active {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--iv-space-3, 12px);
+	margin: 0 0 var(--iv-space-4, 16px);
+}
+
+/*
+ * Simple search filters (Items / Locations) — AZC time-entries rhythm:
+ * one search field + actions. Inlined for NC @import cache-bust.
+ */
+#app-content.iv-app .iv-filter-grid.iv-filter-grid--simple {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) max-content;
+	grid-template-rows: auto;
+	grid-template-areas: 'search actions';
+	column-gap: var(--iv-space-4, 16px);
+	row-gap: var(--iv-space-4, 16px);
+	align-items: end;
+	width: 100%;
+}
+#app-content.iv-app .iv-filter-grid--simple .iv-filter-field--search { grid-area: search; }
+#app-content.iv-app .iv-filter-grid--simple .iv-filter-field--actions { grid-area: actions; }
+#app-content.iv-app .iv-filter-grid--simple > .iv-filter-field {
+	display: flex;
+	flex-direction: column;
+	gap: var(--iv-space-2, 8px);
+	min-width: 0;
+}
+#app-content.iv-app .iv-filter-grid--simple .iv-filter-field--actions .iv-filter-field__control--actions {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: nowrap;
+	align-items: center;
+	gap: var(--iv-space-2, 8px);
+	min-height: 44px;
+	margin-top: 0;
+}
+#app-content.iv-app .iv-filter-grid--simple .iv-filter-field__control--actions .iv-btn,
+#app-content.iv-app .iv-filter-grid--simple .iv-filter-field__control--actions .btn,
+#app-content.iv-app .iv-filter-grid--simple .iv-filter-field__control--actions .button {
+	flex: 0 0 auto;
+	white-space: nowrap;
+}
+@media (max-width: 768px) {
+	#app-content.iv-app .iv-filter-grid.iv-filter-grid--simple {
+		grid-template-columns: 1fr;
+		grid-template-areas:
+			'search'
+			'actions';
+	}
+	#app-content.iv-app .iv-filter-grid--simple .iv-filter-field--actions .iv-filter-field__control--actions {
+		margin-top: 0;
+		width: 100%;
+		flex-wrap: wrap;
+	}
+	#app-content.iv-app .iv-filter-grid--simple .iv-filter-field__control--actions .iv-btn,
+	#app-content.iv-app .iv-filter-grid--simple .iv-filter-field__control--actions .btn,
+	#app-content.iv-app .iv-filter-grid--simple .iv-filter-field__control--actions .button {
+		flex: 1 1 auto;
+	}
+}
+
+/*
+ * Movements filter — AZC manager-scope layout (inlined for NC @import cache-bust).
+ * Mirrors css/common/page-patterns.css; keep both in sync.
+ */
+#app-content.iv-app .iv-filter-grid.iv-filter-grid--movements {
+	display: grid;
+	grid-template-columns:
+		minmax(0, 1.1fr)
+		minmax(0, 1.45fr)
+		minmax(0, 1.15fr)
+		max-content;
+	grid-template-rows: auto;
+	grid-template-areas:
+		'kind item location actions'
+		'dates dates dates dates';
+	column-gap: var(--iv-space-4, 16px);
+	row-gap: var(--iv-space-4, 16px);
+	align-items: stretch;
+	width: 100%;
+}
+#app-content.iv-app .iv-filter-grid--movements .iv-filter-field--kind { grid-area: kind; }
+#app-content.iv-app .iv-filter-grid--movements .iv-filter-field--item { grid-area: item; }
+#app-content.iv-app .iv-filter-grid--movements .iv-filter-field--location { grid-area: location; }
+#app-content.iv-app .iv-filter-grid--movements .iv-filter-field--actions { grid-area: actions; }
+#app-content.iv-app .iv-filter-grid--movements .iv-filter-field--dates { grid-area: dates; }
+#app-content.iv-app .iv-filter-grid--movements > .iv-filter-field {
+	display: grid;
+	grid-template-rows: auto minmax(44px, auto);
+	gap: var(--iv-space-2, 8px);
+	min-width: 0;
+}
+#app-content.iv-app .iv-filter-grid--movements > .iv-filter-field--dates {
+	grid-template-rows: auto auto;
+}
+#app-content.iv-app .iv-filter-grid--movements .iv-filter-field--actions .iv-filter-field__control--actions {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: nowrap;
+	align-items: center;
+	gap: var(--iv-space-2, 8px);
+	min-height: 44px;
+	margin-top: calc((var(--iv-fs-sm, 0.875rem) * var(--iv-line-tight, 1.25)) + var(--iv-space-2, 0.5rem));
+}
+#app-content.iv-app .iv-filter-grid--movements .iv-filter-field__control--actions .iv-btn,
+#app-content.iv-app .iv-filter-grid--movements .iv-filter-field__control--actions .btn,
+#app-content.iv-app .iv-filter-grid--movements .iv-filter-field__control--actions .button {
+	flex: 0 0 auto;
+	white-space: nowrap;
+}
+#app-content.iv-app .iv-filter-grid--movements .iv-date-range {
+	display: flex;
+	flex-wrap: nowrap;
+	align-items: center;
+	gap: var(--iv-space-2, 8px) var(--iv-space-3, 12px);
+	width: 100%;
+	max-width: 32rem;
+}
+#app-content.iv-app .iv-filter-grid--movements .iv-date-range__part {
+	display: block;
+	flex: 1 1 0;
+	min-width: 9.5rem;
+	max-width: 14rem;
+}
+#app-content.iv-app .iv-filter-grid--movements .iv-date-range__sep {
+	flex: 0 0 auto;
+	white-space: nowrap;
+	color: var(--iv-muted, var(--color-text-maxcontrast));
+	font-size: var(--iv-fs-sm, 0.875rem);
+	font-weight: 500;
+}
+@media (max-width: 1200px) {
+	#app-content.iv-app .iv-filter-grid.iv-filter-grid--movements {
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		grid-template-areas:
+			'kind item'
+			'location actions'
+			'dates dates';
+	}
+}
+@media (max-width: 900px) {
+	#app-content.iv-app .iv-filter-grid--movements .iv-date-range {
+		flex-wrap: wrap;
+		max-width: none;
+	}
+}
+@media (max-width: 768px) {
+	#app-content.iv-app .iv-filter-grid.iv-filter-grid--movements {
+		grid-template-columns: 1fr;
+		grid-template-areas:
+			'kind'
+			'item'
+			'location'
+			'dates'
+			'actions';
+	}
+	#app-content.iv-app .iv-filter-grid--movements .iv-filter-field--actions .iv-filter-field__control--actions {
+		margin-top: 0;
+		width: 100%;
+	}
+	#app-content.iv-app .iv-filter-grid--movements .iv-filter-field__control--actions .iv-btn,
+	#app-content.iv-app .iv-filter-grid--movements .iv-filter-field__control--actions .btn,
+	#app-content.iv-app .iv-filter-grid--movements .iv-filter-field__control--actions .button {
+		flex: 1 1 auto;
+	}
+	#app-content.iv-app .iv-filter-grid--movements .iv-date-range__part {
+		max-width: none;
+		flex: 1 1 9.5rem;
+	}
 }
 
 /* ── Cards & listings ─────────────────────────────────────────────── */
@@ -591,26 +774,30 @@ textarea.iv-input {
 }
 
 .iv-badge--overdue {
-	background: var(--color-error);
-	color: var(--color-error-text, #fff);
+	background: var(--iv-tint-danger);
+	color: var(--color-error-text, var(--color-error));
+	border: 1px solid color-mix(in srgb, var(--color-error-text, var(--color-error)) 40%, transparent);
 }
 
 .iv-badge--today {
-	background: var(--color-warning);
-	color: var(--color-warning-text, #222);
+	background: var(--iv-tint-warning);
+	color: var(--color-warning-text, var(--color-warning));
+	border: 1px solid color-mix(in srgb, var(--color-warning-text, var(--color-warning)) 40%, transparent);
 }
 
 .iv-badge--scheduled {
-	background: var(--color-primary-element-light);
-	color: var(--color-primary-element-light-text, var(--color-main-text));
+	background: var(--iv-tint-info);
+	color: var(--color-primary-element);
+	border: 1px solid color-mix(in srgb, var(--color-primary-element) 40%, transparent);
 }
 
 .iv-badge--done {
-	background: var(--color-success);
-	color: var(--color-success-text, #fff);
+	background: var(--iv-tint-success);
+	color: var(--color-success-text, var(--color-success));
+	border: 1px solid color-mix(in srgb, var(--color-success-text, var(--color-success)) 40%, transparent);
 }
 
-.iv-badge--skipped {
+.iv-badge--paused {
 	background: var(--color-background-darker, var(--color-background-dark));
 }
 
@@ -620,13 +807,25 @@ textarea.iv-input {
 }
 
 .iv-badge--warning {
-	background: var(--color-warning);
-	color: var(--color-warning-text, #222);
+	background: var(--iv-tint-warning);
+	color: var(--color-warning-text, var(--color-warning));
+	border: 1px solid color-mix(in srgb, var(--color-warning-text, var(--color-warning)) 40%, transparent);
 }
 
 .iv-badge--success {
-	background: var(--color-success);
-	color: var(--color-success-text, #fff);
+	background: var(--iv-tint-success);
+	color: var(--color-success-text, var(--color-success));
+	border: 1px solid color-mix(in srgb, var(--color-success-text, var(--color-success)) 40%, transparent);
+}
+
+.iv-badge::before {
+	content: '';
+	display: inline-block;
+	width: 0.5rem;
+	height: 0.5rem;
+	border-radius: 50%;
+	background: currentColor;
+	flex-shrink: 0;
 }
 
 /* ── Due board ─────────────────────────────────────────────────────── */
@@ -786,10 +985,28 @@ textarea.iv-input {
 	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 	gap: 12px 24px;
 	margin: 0;
+	padding: 0;
 }
 
 .iv-detail__grid > div {
 	min-width: 0;
+}
+
+/*
+ * Neutralise Nextcloud core apps.css definition-list chrome
+ * (dt { width: 130px; text-align: end } / inline-block + padding).
+ */
+#app-content.iv-app .iv-detail__grid dt,
+#app-content.iv-app .iv-detail__grid dd,
+.iv-app .iv-detail__grid dt,
+.iv-app .iv-detail__grid dd {
+	display: block;
+	float: none;
+	width: auto;
+	max-width: 100%;
+	padding: 0;
+	text-align: start;
+	white-space: normal;
 }
 
 .iv-detail__grid dt {
@@ -834,7 +1051,7 @@ textarea.iv-input {
 	place-items: center;
 	border-radius: var(--border-radius-large, 10px);
 	background: var(--color-primary-element-light, var(--color-background-hover));
-	color: var(--color-primary-element, #0082c9);
+	color: var(--color-primary-element);
 	margin: 0;
 }
 
@@ -920,8 +1137,11 @@ textarea.iv-input {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	padding: 16px;
-	background: rgba(0, 0, 0, 0.45);
+	padding: max(var(--iv-space-4), env(safe-area-inset-top, 0px))
+		max(var(--iv-space-4), env(safe-area-inset-right, 0px))
+		max(var(--iv-space-4), env(safe-area-inset-bottom, 0px))
+		max(var(--iv-space-4), env(safe-area-inset-left, 0px));
+	background: var(--iv-scrim, color-mix(in srgb, var(--color-main-text) 45%, transparent));
 	box-sizing: border-box;
 }
 
@@ -929,10 +1149,11 @@ textarea.iv-input {
 	width: min(560px, 100%);
 	max-height: min(85vh, 720px);
 	overflow-y: auto;
-	background: var(--color-main-background);
+	background: var(--iv-bg-card, var(--color-main-background));
+	color: var(--iv-text, var(--color-main-text));
 	border-radius: var(--iv-radius-lg, 16px);
-	box-shadow: 0 8px 40px rgba(0, 0, 0, 0.35);
-	padding: 24px;
+	box-shadow: var(--iv-shadow-lg, 0 1rem 3rem color-mix(in srgb, var(--color-main-text) 28%, transparent));
+	padding: var(--iv-space-5);
 	box-sizing: border-box;
 }
 
@@ -979,8 +1200,9 @@ textarea.iv-input {
 }
 
 .iv-dialog__hint--warning {
-	background: var(--color-warning);
-	color: var(--color-warning-text, #222);
+	background: var(--iv-tint-warning, var(--color-warning));
+	color: var(--color-warning-text, var(--color-warning));
+	border: 1px solid var(--color-warning-text, var(--color-warning));
 }
 
 .iv-dialog__error {
@@ -989,8 +1211,9 @@ textarea.iv-input {
 	font-size: 13.5px;
 	font-weight: 600;
 	border-radius: var(--border-radius-large, 10px);
-	background: var(--color-error);
-	color: var(--color-error-text, #fff);
+	background: var(--iv-tint-danger, var(--color-error));
+	color: var(--color-error-text, var(--color-error));
+	border: 1px solid var(--color-error-text, var(--color-error));
 }
 
 .iv-dialog__actions {
@@ -1005,27 +1228,27 @@ textarea.iv-input {
 
 .iv-toast-region {
 	position: fixed;
-	top: 60px;
-	inset-inline-end: 16px;
+	top: calc(var(--header-height, 50px) + var(--iv-space-3));
+	inset-inline-end: max(var(--iv-space-4), env(safe-area-inset-right, 0px));
 	z-index: 10010;
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
-	max-width: min(380px, calc(100vw - 32px));
+	gap: var(--iv-space-2);
+	max-width: min(380px, calc(100vw - 32px - env(safe-area-inset-right, 0px)));
 }
 
 .iv-toast {
 	display: flex;
-	gap: 10px;
+	gap: var(--iv-space-3);
 	align-items: flex-start;
-	padding: 12px 14px;
-	border-radius: var(--border-radius-large, 10px);
-	background: var(--color-main-background);
-	color: var(--color-main-text);
-	border: 1px solid var(--color-border);
+	padding: var(--iv-space-3) var(--iv-space-4);
+	border-radius: var(--border-radius-large, var(--iv-radius-md));
+	background: var(--iv-bg-card, var(--color-main-background));
+	color: var(--iv-text, var(--color-main-text));
+	border: 1px solid var(--iv-border, var(--color-border));
 	border-inline-start: 4px solid var(--color-primary-element);
-	box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
-	font-size: 14px;
+	box-shadow: var(--iv-shadow-md);
+	font-size: var(--iv-fs-sm);
 }
 
 .iv-toast--success {
@@ -1044,17 +1267,27 @@ textarea.iv-input {
 
 .iv-toast__close {
 	flex-shrink: 0;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
 	background: transparent;
 	border: none;
 	cursor: pointer;
-	padding: 2px;
-	min-height: 24px;
+	padding: 0;
+	min-height: var(--iv-touch, 44px);
+	min-width: var(--iv-touch, 44px);
 	color: var(--color-text-maxcontrast);
-	border-radius: 4px;
+	border-radius: var(--iv-radius-sm);
 }
 
 .iv-toast__close:hover {
 	color: var(--color-main-text);
+	background: var(--color-background-hover);
+}
+
+.iv-toast__close:focus-visible {
+	outline: 2px solid var(--color-primary-element);
+	outline-offset: 2px;
 }
 
 /* ── Settings ─────────────────────────────────────────────────────── */
@@ -1083,26 +1316,35 @@ textarea.iv-input {
 }
 
 .iv-chip--over-limit {
-	background: var(--color-warning);
-	color: var(--color-warning-text, #222);
+	background: var(--iv-tint-warning, var(--color-warning));
+	color: var(--color-warning-text, var(--color-warning));
+	border: 1px solid var(--color-warning-text, var(--color-warning));
 }
 
 .iv-chip__remove {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	width: 22px;
-	height: 22px;
+	min-width: var(--iv-touch, 44px);
+	min-height: var(--iv-touch, 44px);
+	width: var(--iv-touch, 44px);
+	height: var(--iv-touch, 44px);
 	border: none;
 	border-radius: 50%;
 	background: transparent;
 	color: inherit;
 	cursor: pointer;
 	padding: 0;
+	margin-inline-start: calc(var(--iv-space-1) * -1);
 }
 
 .iv-chip__remove:hover {
-	background: rgba(0, 0, 0, 0.15);
+	background: var(--iv-press, color-mix(in srgb, var(--color-main-text) 15%, transparent));
+}
+
+.iv-chip__remove:focus-visible {
+	outline: 2px solid var(--color-primary-element);
+	outline-offset: 2px;
 }
 
 .iv-license-status {
@@ -1186,14 +1428,14 @@ textarea.iv-input {
 /* Brief highlight after a successful movement (balance refresh). */
 .iv-flash {
 	animation: iv-flash-pulse 1.2s ease-out;
-	outline: 2px solid var(--color-primary-element, #006aa3);
+	outline: 2px solid var(--color-primary-element);
 	outline-offset: 2px;
 	border-radius: var(--border-radius, 6px);
 }
 
 @keyframes iv-flash-pulse {
 	0% {
-		background-color: color-mix(in srgb, var(--color-primary-element, #006aa3) 28%, transparent);
+		background-color: color-mix(in srgb, var(--color-primary-element) 28%, transparent);
 	}
 
 	100% {
@@ -1208,7 +1450,7 @@ textarea.iv-input {
 
 	.iv-flash {
 		animation: none;
-		outline: 2px solid var(--color-primary-element, #006aa3);
+		outline: 2px solid var(--color-primary-element);
 	}
 
 	.iv-btn,
@@ -1234,7 +1476,7 @@ textarea.iv-input {
 		flex-direction: column;
 	}
 
-	.iv-filterbar .iv-field {
+	.iv-filterbar:not(.iv-filter-panel__form) .iv-field {
 		flex: 1 1 100%;
 	}
 
@@ -1611,6 +1853,40 @@ textarea.iv-input {
 	}
 }
 
+/* Item detail — QR + Code 128 preview (same payload as print / by-code) */
+.iv-label-preview {
+	margin: 0.75rem 0 0;
+	max-width: 20rem;
+}
+.iv-label-preview__img {
+	display: block;
+	width: 100%;
+	max-width: 20rem;
+	height: auto;
+	/* Intentional light canvas for scannability — see --iv-qr-canvas in tokens.css */
+	background: var(--iv-qr-canvas);
+	border: 1px solid var(--iv-border, var(--color-border));
+	border-radius: var(--iv-radius-sm, 6px);
+}
+.iv-label-preview .iv-label-code,
+.iv-label-preview figcaption {
+	margin-top: 0.5rem;
+	font-family: ui-monospace, 'Cascadia Code', 'DejaVu Sans Mono', monospace;
+	font-size: 1rem;
+	font-weight: 700;
+	word-break: break-all;
+}
+.iv-actions--inline {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.75rem;
+	margin-top: 0.75rem;
+}
+.iv-actions--inline .button {
+	min-height: 44px;
+	min-width: 44px;
+}
+
 
 
 /* ===== AZ form-control enforcer (.iv-input) ===== */
@@ -1660,3 +1936,103 @@ body > .modal-backdrop > .modal,
 body > .iv-dialog-overlay > .iv-dialog {
 	border-radius: var(--iv-radius-lg, 16px) !important;
 }
+
+
+/* ── Theme adaptability & forced-colors ── */
+@media (prefers-contrast: more) {
+	#content.app-inventorycheck #app-content.iv-app .iv-card,
+	#content.app-inventorycheck #app-content.iv-app .iv-section,
+	#content.app-inventorycheck #app-content.iv-app .iv-filter-panel,
+	#content.app-inventorycheck #app-content.iv-app .iv-row,
+	.iv-dialog {
+		border-width: 2px;
+		border-color: var(--iv-border-strong);
+	}
+
+	#content.app-inventorycheck #app-content.iv-app .iv-btn,
+	#content.app-inventorycheck #app-content.iv-app .button,
+	.iv-dialog .iv-btn,
+	.iv-dialog .button {
+		border-width: 2px;
+	}
+
+	*:focus-visible {
+		outline-width: 3px;
+	}
+}
+
+@media (forced-colors: active) {
+	#content.app-inventorycheck #app-content.iv-app .iv-card,
+	#content.app-inventorycheck #app-content.iv-app .iv-section,
+	#content.app-inventorycheck #app-content.iv-app .iv-badge,
+	#content.app-inventorycheck #app-content.iv-app .iv-chip,
+	.iv-dialog,
+	.iv-toast {
+		forced-color-adjust: none;
+		border: 1px solid CanvasText;
+		background: Canvas;
+		color: CanvasText;
+	}
+
+	#content.app-inventorycheck #app-content.iv-app .iv-btn--primary,
+	.iv-btn--primary {
+		background: Highlight;
+		color: HighlightText;
+		border-color: Highlight;
+	}
+
+	.iv-dialog-overlay,
+	.modal-backdrop.iv-dialog-overlay {
+		background: CanvasText;
+		opacity: 0.45;
+	}
+
+	*:focus-visible {
+		outline: 3px solid Highlight;
+	}
+}
+
+/* Mobile: prevent page-level horizontal scroll; tables scroll inside wrappers */
+@media (max-width: 768px) {
+	#content.app-inventorycheck,
+	#content.app-inventorycheck #app-content.iv-app,
+	#content.app-inventorycheck #app-content-wrapper.iv-shell {
+		overflow-x: clip;
+		max-width: 100%;
+	}
+
+	#content.app-inventorycheck #app-content.iv-app .iv-page-header__actions,
+	#content.app-inventorycheck #app-content.iv-app .iv-toolbar,
+	#content.app-inventorycheck #app-content.iv-app .iv-dialog__actions {
+		width: 100%;
+	}
+
+	#content.app-inventorycheck #app-content.iv-app .iv-page-header__actions .iv-btn,
+	#content.app-inventorycheck #app-content.iv-app .iv-page-header__actions .button,
+	#content.app-inventorycheck #app-content.iv-app .iv-toolbar .iv-btn,
+	#content.app-inventorycheck #app-content.iv-app .iv-toolbar .button {
+		flex: 1 1 auto;
+		min-width: min(100%, 11rem);
+	}
+}
+
+/* ── Touch-target enforcer (NC .button overrides) ── */
+#content.app-inventorycheck #app-content.iv-app .iv-page-header__actions .button,
+#content.app-inventorycheck #app-content.iv-app .iv-page-header__actions .iv-btn,
+#content.app-inventorycheck #app-content.iv-app .iv-page-header__actions a.button,
+#content.app-inventorycheck #app-content.iv-app .iv-toolbar .button,
+#content.app-inventorycheck #app-content.iv-app .iv-toolbar .iv-btn,
+#content.app-inventorycheck #app-content.iv-app .iv-toolbar a.button,
+#content.app-inventorycheck #app-content.iv-app .iv-dialog__actions .button,
+#content.app-inventorycheck #app-content.iv-app .iv-dialog__actions .iv-btn,
+body > .iv-dialog-overlay .iv-dialog .button,
+body > .iv-dialog-overlay .iv-dialog .iv-btn,
+body > .modal-backdrop.iv-dialog-overlay .button,
+body > .modal-backdrop.iv-dialog-overlay .iv-btn {
+	box-sizing: border-box;
+	min-height: var(--iv-touch, 44px) !important;
+	min-width: var(--iv-touch, 44px);
+	height: auto !important;
+	padding-block: max(0.5rem, calc((var(--iv-touch, 44px) - 1.25em) / 2));
+}
+

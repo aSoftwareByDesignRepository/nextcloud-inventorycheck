@@ -338,8 +338,150 @@ test('UJ movements: filter bar and pagination landmarks', async ({ page }) => {
 
 	await ensureLoggedIn(page, 'E2E')
 	await openInventory(page, '/apps/inventorycheck/movements')
-	await expect(page.locator('.iv-filterbar, [role="search"]').first()).toBeVisible({ timeout: 30_000 })
-	await expect(page.getByLabel(/Kind|Art/i).or(page.locator('#iv-mov-kind')).first()).toBeVisible()
+	const panel = page.locator('#iv-mov-filter-panel')
+	await expect(panel).toBeVisible({ timeout: 30_000 })
+	await expect(panel.locator('.iv-filter-grid--movements')).toBeVisible()
+	await expect(panel.locator('.iv-filter-field--kind')).toBeVisible()
+	await expect(panel.locator('.iv-filter-field--item')).toBeVisible()
+	await expect(panel.locator('.iv-filter-field--location')).toBeVisible()
+	await expect(panel.locator('.iv-filter-field--dates')).toBeVisible()
+	await expect(panel.locator('.iv-date-range')).toBeVisible()
+	await expect(page.locator('#iv-mov-kind')).toBeVisible()
+	await expect(page.locator('#iv-mov-item')).toBeVisible()
+	await expect(page.locator('#iv-mov-loc')).toBeVisible()
+	await expect(page.locator('#iv-mov-from')).toBeVisible()
+	await expect(page.locator('#iv-mov-to')).toBeVisible()
+	await expect(page.locator('#iv-mov-date-range-label')).toBeVisible()
+	await expect(page.getByRole('button', { name: /^(Apply|Anwenden)$/i })).toBeVisible()
+	await expect(page.getByRole('button', { name: /^(Clear|Zurücksetzen|Leeren)$/i }).first()).toBeVisible()
+
+	// AZC manager layout: criteria row then full-width date range (dates below kind).
+	const layout = await page.evaluate(() => {
+		const kind = document.querySelector('#iv-mov-filter-panel .iv-filter-field--kind')
+		const dates = document.querySelector('#iv-mov-filter-panel .iv-filter-field--dates')
+		const actions = document.querySelector('#iv-mov-filter-panel .iv-filter-field--actions')
+		const grid = document.querySelector('#iv-mov-filter-panel .iv-filter-grid--movements')
+		if (!kind || !dates || !actions || !grid) return null
+		const kr = kind.getBoundingClientRect()
+		const dr = dates.getBoundingClientRect()
+		const ar = actions.getBoundingClientRect()
+		const label = kind.querySelector('.iv-filter-field__label')
+		const control = kind.querySelector('.iv-filter-field__control')
+		const gap = label && control
+			? Math.round(control.getBoundingClientRect().top - label.getBoundingClientRect().bottom)
+			: null
+		return {
+			gap,
+			datesBelowKind: Math.round(dr.top - kr.bottom) >= 8,
+			actionsSameRowAsKind: Math.abs(Math.round(ar.top - kr.top)) <= 24,
+			areas: getComputedStyle(grid).gridTemplateAreas,
+		}
+	})
+	expect(layout).not.toBeNull()
+	expect(layout.gap).toBeGreaterThanOrEqual(0)
+	expect(layout.gap).toBeLessThanOrEqual(24)
+	expect(layout.datesBelowKind).toBe(true)
+	expect(layout.actionsSameRowAsKind).toBe(true)
+	expect(layout.areas).toMatch(/kind/)
+	expect(layout.areas).toMatch(/dates/)
+
+	// Actions column must fit Apply + Clear side-by-side (AZC manager parity).
+	const actionBox = await page.locator('#iv-mov-filter-panel .iv-filter-field--actions .iv-filter-field__control--actions').boundingBox()
+	expect(actionBox).toBeTruthy()
+	expect(actionBox.width).toBeGreaterThanOrEqual(160)
+	const datesBox = await page.locator('#iv-mov-filter-panel .iv-filter-field--dates').boundingBox()
+	const kindBox = await page.locator('#iv-mov-filter-panel .iv-filter-field--kind').boundingBox()
+	expect(datesBox.width).toBeGreaterThan(kindBox.width + 80)
+
+	// Invalid date range is blocked with inline alert.
+	await page.locator('#iv-mov-from').fill('2026-07-20')
+	await page.locator('#iv-mov-to').fill('2026-07-10')
+	await page.getByRole('button', { name: /^(Apply|Anwenden)$/i }).click()
+	await expect(page.locator('#iv-mov-date-error')).toBeVisible()
+	await expect(page.locator('#iv-mov-from')).toHaveAttribute('aria-invalid', 'true')
+
+	await page.getByRole('button', { name: /^(Clear|Zurücksetzen|Leeren)$/i }).first().click()
+	await expect(page.locator('#iv-mov-from')).toHaveValue('')
+	await expect(page.locator('#iv-mov-date-error')).toBeHidden()
+
+	await axeMain(page)
+})
+
+test('UJ items: simple search filter and empty match state', async ({ page }) => {
+	test.skip(!credsFromEnv('E2E') && !credsFromEnv('ADMIN'), 'Requires NC_E2E_* or NC_ADMIN_*')
+
+	await ensureLoggedIn(page, 'E2E')
+	await openInventory(page, '/apps/inventorycheck/items')
+	const panel = page.locator('#iv-items-filter-panel')
+	await expect(panel).toBeVisible({ timeout: 30_000 })
+	await expect(panel.locator('.iv-filter-grid--simple')).toBeVisible()
+	await expect(page.locator('#iv-items-q')).toBeVisible()
+
+	const layout = await page.evaluate(() => {
+		const grid = document.querySelector('#iv-items-filter-panel .iv-filter-grid--simple')
+		const search = document.querySelector('#iv-items-filter-panel .iv-filter-field--search')
+		const actions = document.querySelector('#iv-items-filter-panel .iv-filter-field--actions')
+		const input = document.querySelector('#iv-items-q')
+		const btn = document.querySelector('#iv-items-filter-panel .iv-filter-field--actions button')
+		if (!grid || !search || !actions || !input || !btn) return null
+		const sr = search.getBoundingClientRect()
+		const ar = actions.getBoundingClientRect()
+		const ir = input.getBoundingClientRect()
+		const br = btn.getBoundingClientRect()
+		return {
+			areas: getComputedStyle(grid).gridTemplateAreas,
+			bottomsAligned: Math.abs(Math.round(ar.bottom - sr.bottom)) <= 12,
+			inputBtnDelta: Math.abs(Math.round(br.top - ir.top)),
+			actionsW: Math.round(ar.width),
+		}
+	})
+	expect(layout).not.toBeNull()
+	expect(layout.areas).toMatch(/search/)
+	expect(layout.bottomsAligned).toBe(true)
+	expect(layout.actionsW).toBeGreaterThanOrEqual(160)
+	expect(layout.inputBtnDelta).toBeLessThanOrEqual(12)
+
+	await page.locator('#iv-items-q').fill('zzzz-no-such-sku-iv-filter')
+	await page.getByRole('button', { name: /^(Search|Suchen)$/i }).click()
+	await expect(page.getByText(/No items match these filters|Keine Artikel passen/i)).toBeVisible({ timeout: 15_000 })
+	await expect(page.locator('#iv-items-filter-active')).toBeVisible()
+	await page.getByRole('button', { name: /^(Clear|Zurücksetzen|Leeren)$/i }).first().click()
+	await expect(page.locator('#iv-items-q')).toHaveValue('')
+	await axeMain(page)
+})
+
+test('UJ locations: simple search filter and API q', async ({ page }) => {
+	test.skip(!credsFromEnv('E2E') && !credsFromEnv('ADMIN'), 'Requires NC_E2E_* or NC_ADMIN_*')
+
+	await ensureLoggedIn(page, 'E2E')
+	const tag = marker()
+	const created = await api(page, 'POST', '/index.php/apps/inventorycheck/api/locations', {
+		code: `Q-${tag}`.slice(0, 64),
+		name: `Queryable ${tag}`,
+		kind: 'warehouse',
+	})
+	expectOk(created, 'create location for search')
+
+	const filtered = await api(
+		page,
+		'GET',
+		`/index.php/apps/inventorycheck/api/locations?q=${encodeURIComponent(tag)}&limit=20&offset=0`,
+	)
+	expectOk(filtered, 'locations?q=')
+	expect((filtered.data?.data || []).some((r) => String(r.name || '').includes(tag))).toBe(true)
+
+	await openInventory(page, '/apps/inventorycheck/locations')
+	const panel = page.locator('#iv-loc-filter-panel')
+	await expect(panel).toBeVisible({ timeout: 30_000 })
+	await expect(panel.locator('.iv-filter-grid--simple')).toBeVisible()
+	await page.locator('#iv-loc-q').fill(tag)
+	await page.getByRole('button', { name: /^(Search|Suchen)$/i }).click()
+	await expect(page.getByText(new RegExp(`Queryable ${tag}`))).toBeVisible({ timeout: 15_000 })
+
+	await page.locator('#iv-loc-q').fill('zzzz-no-such-location-iv')
+	await page.getByRole('button', { name: /^(Search|Suchen)$/i }).click()
+	await expect(page.getByText(/No locations match these filters|Keine Orte passen/i)).toBeVisible({ timeout: 15_000 })
+	await axeMain(page)
 })
 
 test('320px reflow: nav and main usable', async ({ page }, testInfo) => {

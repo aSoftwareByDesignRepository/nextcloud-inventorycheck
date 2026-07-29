@@ -147,6 +147,7 @@ final class PermissionMatrixIntegrationTest extends TestCase
 			$request,
 			Server::get(\OCP\IURLGenerator::class),
 			Server::get(\OCP\L10N\IFactory::class),
+			Server::get(\OCP\IConfig::class),
 		);
 	}
 
@@ -161,6 +162,7 @@ final class PermissionMatrixIntegrationTest extends TestCase
 			$request,
 			Server::get(\OCP\IURLGenerator::class),
 			Server::get(\OCP\L10N\IFactory::class),
+			Server::get(\OCP\IConfig::class),
 		);
 	}
 

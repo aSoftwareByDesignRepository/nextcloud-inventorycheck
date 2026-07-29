@@ -1,8 +1,10 @@
 /* Auto-adapted from arbeitszeitcheck/css/common/tokens.css for InventoryCheck shell parity. Do not invent divergent layout rules here. */
 /*
  * InventoryCheck design tokens (--iv-*).
- * Colors derive from Nextcloud theme variables; no raw hex in feature CSS.
- * Spacing/typography on :root; theme colors on body (NC sets --color-* on body).
+ * Colors derive from Nextcloud theme variables; no raw hex in feature CSS
+ * except the intentional QR/label scan canvas (--iv-qr-canvas).
+ * Spacing/typography on :root; theme colors on body + app surfaces
+ * (NC sets --color-* on body / [data-theme-*]).
  */
 :root {
 	--iv-space-1: 4px;
@@ -40,16 +42,45 @@
 	--iv-icon-stroke: 2;
 
 	--iv-tab-num: tabular-nums;
+	--iv-touch: 44px;
+
+	/*
+	 * QR / barcode canvas must stay light for scannability in every theme.
+	 * This is the only intentional non-theme surface in InventoryCheck feature CSS.
+	 */
+	--iv-qr-canvas: #ffffff;
+
+	/* Alias scale for shared common/* CSS ported from AZC (uses --space-*) */
+	--space-1: var(--iv-space-1);
+	--space-2: var(--iv-space-2);
+	--space-3: var(--iv-space-3);
+	--space-4: var(--iv-space-4);
+	--space-5: var(--iv-space-5);
+	--space-6: var(--iv-space-6);
+	--space-7: var(--iv-space-7);
+	--space-8: var(--iv-space-8);
+	--space-12: var(--iv-space-7);
 }
 
-/* Theme-bound tokens — must follow body [data-theme-*] where NC defines --color-* */
-body {
+/*
+ * Theme-dependent tokens MUST resolve where Nextcloud sets --color-* (body /
+ * [data-theme-*]) and on themed app surfaces. Resolving color-mix only on
+ * :root can fall back to light surfaces while text inherits dark-theme ink.
+ */
+body,
+#app-content.iv-app,
+.iv-app,
+.iv-dialog,
+.iv-dialog-overlay,
+.iv-toast-region,
+.modal-backdrop.iv-dialog-overlay {
 	/* Fixed overlays (panels, backdrops, mobile nav) sit below NC #header, not under the profile menu */
 	--iv-overlay-top: var(--header-height, 50px);
 	--iv-overlay-height: calc(100dvh - var(--header-height, 50px));
 
 	--iv-bg-soft: color-mix(in srgb, var(--color-main-background) 96%, var(--color-main-text) 4%);
 	--iv-bg-card: var(--color-main-background);
+	--iv-bg-stripe: color-mix(in srgb, var(--color-main-background) 92%, var(--color-main-text) 8%);
 	--iv-text: var(--color-main-text);
 	--iv-muted: var(--color-text-maxcontrast);
 	--iv-border: color-mix(in srgb, var(--color-main-text) 12%, transparent);
@@ -64,12 +95,42 @@ body {
 	/*
 	 * Notification icon wells — pale tint + semantic stroke (see .iv-page-header__icon).
 	 * NC *-text tokens are tuned per theme for contrast on main-background.
+	 * Fallbacks omitted: Nextcloud always provides these on authenticated pages.
 	 */
-	--iv-notif-fg-info: var(--color-primary-element, #00679e);
-	--iv-notif-fg-warning: var(--color-warning-text, var(--color-warning, #a37200));
-	--iv-notif-fg-success: var(--color-success-text, var(--color-success, #2d7b46));
-	--iv-notif-fg-danger: var(--color-error-text, var(--color-error, #db0606));
+	--iv-notif-fg-info: var(--color-primary-element);
+	--iv-notif-fg-warning: var(--color-warning-text, var(--color-warning));
+	--iv-notif-fg-success: var(--color-success-text, var(--color-success));
+	--iv-notif-fg-danger: var(--color-error-text, var(--color-error));
 
 	--iv-shadow-sm: 0 1px 2px color-mix(in srgb, var(--color-main-text) 8%, transparent);
 	--iv-shadow-md: 0 8px 24px color-mix(in srgb, var(--color-main-text) 12%, transparent);
+	--iv-shadow-lg: 0 1rem 3rem color-mix(in srgb, var(--color-main-text) 28%, transparent);
+
+	/* Overlay scrims — theme ink, never hardcoded #000 */
+	--iv-scrim: color-mix(in srgb, var(--color-main-text) 45%, transparent);
+	--iv-scrim-strong: color-mix(in srgb, var(--color-main-text) 55%, transparent);
+	--iv-press: color-mix(in srgb, var(--color-main-text) 15%, transparent);
+
+	/* Accent alias for components that mirror primary branding */
+	--iv-accent: var(--color-primary-element);
+}
+
+@media (prefers-contrast: more) {
+	:root {
+		--iv-icon-stroke: 2.25;
+	}
+
+	body,
+	#app-content.iv-app,
+	.iv-app,
+	.iv-dialog,
+	.iv-dialog-overlay,
+	.iv-toast-region,
+	.modal-backdrop.iv-dialog-overlay {
+		--iv-border: color-mix(in srgb, var(--color-main-text) 28%, transparent);
+		--iv-border-strong: color-mix(in srgb, var(--color-main-text) 40%, transparent);
+		--iv-shadow-sm: 0 0 0 1px var(--iv-border-strong);
+		--iv-shadow-md: 0 0 0 1px var(--iv-border-strong);
+		--iv-shadow-lg: 0 0 0 2px var(--iv-border-strong);
+	}
 }

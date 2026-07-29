@@ -64,11 +64,33 @@ final class AccessibilityContractTest extends TestCase
 	public function testCssFocusVisibleTouchTargetsAndResponsiveBreakpoints(): void
 	{
 		$css = (string)file_get_contents($this->root . '/css/app.css');
+		$tokens = (string)file_get_contents($this->root . '/css/common/tokens.css');
 		self::assertMatchesRegularExpression('/:focus-visible/', $css);
-		self::assertGreaterThanOrEqual(4, preg_match_all('/min-height:\s*44px/', $css));
+		self::assertGreaterThanOrEqual(4, preg_match_all('/min-height:\s*(?:var\(--iv-touch,\s*)?44px/', $css . $tokens));
 		self::assertMatchesRegularExpression('/@media\s*\(\s*max-width:\s*720px\s*\)/', $css);
 		self::assertStringContainsString('iv-skip-link', $css);
 		self::assertStringContainsString('prefers-reduced-motion', $css);
+		self::assertStringContainsString('--iv-scrim', $tokens);
+		self::assertStringContainsString('--iv-touch: 44px', $tokens);
+		self::assertStringContainsString('--iv-qr-canvas', $tokens);
+		self::assertStringContainsString('var(--iv-scrim', $css);
+		self::assertStringContainsString('forced-colors: active', $css);
+		self::assertStringContainsString('prefers-contrast: more', $css);
+		self::assertDoesNotMatchRegularExpression('/rgba\(\s*0\s*,\s*0\s*,\s*0/', $css);
+	}
+
+	public function testDetailGridNeutralisesNextcloudCoreDtChrome(): void
+	{
+		$css = (string)file_get_contents($this->root . '/css/app.css');
+		self::assertMatchesRegularExpression(
+			'/\.iv-detail__grid\s+dt[^{]*\{[^}]*text-align:\s*start/s',
+			$css,
+			'Detail grids must force text-align: start against core dt end-align',
+		);
+		self::assertMatchesRegularExpression(
+			'/\.iv-detail__grid\s+dt[^{]*\{[^}]*width:\s*auto/s',
+			$css,
+		);
 	}
 
 	public function testJsDialogHasModalSemanticsFocusTrapAndEsc(): void
@@ -86,11 +108,19 @@ final class AccessibilityContractTest extends TestCase
 	{
 		$src = (string)file_get_contents($this->root . '/lib/Util/LabelSvg.php');
 		self::assertStringContainsString('id="iv-label-code"', $src);
+		self::assertStringContainsString('Code128Svg::barsGroup', $src);
 		self::assertStringContainsString('aria-label', $src);
 		self::assertStringContainsString('role="img"', $src);
+		$barcode = (string)file_get_contents($this->root . '/lib/Util/Code128Svg.php');
+		self::assertStringContainsString("id = 'iv-label-barcode'", $barcode);
+		self::assertStringContainsString('code128b', $barcode);
 		$css = (string)file_get_contents($this->root . '/css/app.css');
 		self::assertMatchesRegularExpression('/@media\s+print/', $css);
 		self::assertStringContainsString('12pt', $css);
+		self::assertStringContainsString('iv-label-preview', $css);
+		$js = (string)file_get_contents($this->root . '/js/app.js');
+		self::assertStringContainsString("tr('Label preview')", $js);
+		self::assertStringContainsString('labelSvgUrl', $js);
 	}
 
 	public function testNoInnerHtmlAssignmentInAppJs(): void

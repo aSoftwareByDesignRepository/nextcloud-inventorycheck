@@ -22,6 +22,9 @@ $isOffice = !empty($_['isOffice']);
 $mobileAppStatus = (string)$_['mobileAppStatus'];
 $urlsJson = (string)$_['urlsJson'];
 $allowNegativeStock = !empty($_['allowNegativeStock']);
+$locationReorderHintEnabled = !empty($_['locationReorderHintEnabled']);
+$qtyScale = (int)($_['qtyScale'] ?? 0);
+$locationAclEnabled = !empty($_['locationAclEnabled']);
 $timezone = (string)($_['timezone'] ?? 'UTC');
 $roleLabel = (string)($_['roleLabel'] ?? ($isAppAdmin ? $l->t('Administrator') : ($isOffice ? $l->t('Office') : $l->t('Field'))));
 $htmlLang = str_replace('_', '-', $l->getLanguageCode());
@@ -33,6 +36,7 @@ $pageIcons = [
 	'locations' => 'map-pin',
 	'location-detail' => 'map-pin',
 	'movements' => 'history',
+	'stocktake' => 'clipboard-list',
 	'settings' => 'settings',
 	'access-denied' => 'shield',
 ];
@@ -52,6 +56,9 @@ require __DIR__ . '/navigation.php';
 	data-iv-is-system-admin="<?php p($isSystemAdmin ? '1' : '0'); ?>"
 	data-iv-is-office="<?php p($isOffice ? '1' : '0'); ?>"
 	data-iv-allow-negative="<?php p($allowNegativeStock ? '1' : '0'); ?>"
+	data-iv-location-reorder-hint="<?php p($locationReorderHintEnabled ? '1' : '0'); ?>"
+	data-iv-qty-scale="<?php p((string)$qtyScale); ?>"
+	data-iv-location-acl="<?php p($locationAclEnabled ? '1' : '0'); ?>"
 	data-iv-mobile-app-status="<?php p($mobileAppStatus); ?>"
 	data-iv-timezone="<?php p($timezone); ?>"
 	data-iv-urls="<?php p($urlsJson); ?>">

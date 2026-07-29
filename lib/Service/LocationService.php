@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace OCA\InventoryCheck\Service;
 
+use OCA\InventoryCheck\Db\CycleCampaignMapper;
 use OCA\InventoryCheck\Db\Location;
 use OCA\InventoryCheck\Db\LocationMapper;
 use OCA\InventoryCheck\Db\UniqueViolation;
 use OCA\InventoryCheck\Exception\ConflictException;
+use OCA\InventoryCheck\Exception\NotFoundException;
 use OCA\InventoryCheck\Exception\ValidationException;
 use OCP\IDBConnection;
 
@@ -18,13 +20,22 @@ class LocationService
 		private readonly LocationMapper $locations,
 		private readonly AccessControlService $access,
 		private readonly Clock $clock,
+		private readonly LocationAclService $locationAcl,
+		private readonly CycleCampaignMapper $cycleCampaigns,
 	) {
 	}
 
-	/** @return array{data: list<array<string, mixed>>, total: int, limit: int, offset: int} */
-	public function list(?bool $active, int $limit, int $offset): array
+	/**
+	 * C3: field users only ever see locations {@see LocationAclService} grants
+	 * them (directly or via group) once the toggle is on — office/admins and
+	 * the disabled-by-default case are unrestricted (`$visible === null`).
+	 *
+	 * @return array{data: list<array<string, mixed>>, total: int, limit: int, offset: int}
+	 */
+	public function list(string $actorUid, ?bool $active, int $limit, int $offset, string $q = ''): array
 	{
-		$result = $this->locations->search($active, $limit, $offset);
+		$visible = $this->locationAcl->visibleLocationIds($actorUid);
+		$result = $this->locations->search($active, $limit, $offset, $visible, $q);
 		return [
 			'data' => array_map(static fn (Location $l) => $l->toApi(), $result['data']),
 			'total' => $result['total'],
@@ -33,9 +44,18 @@ class LocationService
 		];
 	}
 
-	/** @return array<string, mixed> */
-	public function get(int $id): array
+	/**
+	 * Unknown-or-not-visible → the same {@see NotFoundException}, so an IDOR
+	 * probe for a location outside a field user's ACL cannot be distinguished
+	 * from a location that simply does not exist.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function get(string $actorUid, int $id): array
 	{
+		if (!$this->locationAcl->canAccessLocation($actorUid, $id)) {
+			throw new NotFoundException('unknown_location');
+		}
 		return $this->locations->findById($id)->toApi();
 	}
 
@@ -124,8 +144,13 @@ class LocationService
 			}
 			if (array_key_exists('active', $input)) {
 				$active = (bool)$input['active'];
-				if (!$active && $loc->getActive() && $this->locations->hasNonZeroBalance($id)) {
-					throw new ConflictException('location_has_stock');
+				if (!$active && $loc->getActive()) {
+					if ($this->locations->hasNonZeroBalance($id)) {
+						throw new ConflictException('location_has_stock');
+					}
+					if ($this->cycleCampaigns->countOpenForLocation($id) > 0) {
+						throw new ConflictException('location_in_open_stocktake');
+					}
 				}
 				$loc->setActive($active);
 			}
@@ -149,6 +174,9 @@ class LocationService
 			$loc = $this->locations->lockById($id, true);
 			if ($this->locations->countMovementsReferencing($id) > 0) {
 				throw new ConflictException('location_has_movements');
+			}
+			if ($this->cycleCampaigns->countOpenForLocation($id) > 0) {
+				throw new ConflictException('location_in_open_stocktake');
 			}
 			$this->locations->delete($loc);
 			$this->db->commit();

@@ -72,8 +72,9 @@
 	align-items: center;
 	justify-content: center;
 	gap: var(--iv-space-2, 0.5rem);
-	min-height: 2.75rem;
-	min-width: 2.75rem;
+	min-height: var(--iv-touch, 44px) !important;
+	min-width: var(--iv-touch, 44px);
+	height: auto !important;
 	padding: 0.625rem 1.15rem;
 	box-sizing: border-box;
 	border-radius: var(--iv-radius-md, 12px);
@@ -85,9 +86,9 @@
 #content.app-inventorycheck .iv-btn--sm,
 #content.app-inventorycheck .button.small,
 #content.app-inventorycheck .button--sm {
-	min-height: 36px;
-	min-width: 36px;
-	padding: 0.35rem 0.75rem;
+	min-height: var(--iv-touch, 44px);
+	min-width: var(--iv-touch, 44px);
+	padding: var(--iv-space-2) var(--iv-space-3);
 }
 /* ===== END AZ skip/btn parity ===== */
 
@@ -124,15 +125,30 @@
 }
 #content.app-inventorycheck #app-content .iv-filter-panel__head,
 #content.app-inventorycheck #app-content .iv-filter-panel > header {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: var(--iv-space-3, 12px) var(--iv-space-4, 16px);
 	padding: var(--iv-space-5, 24px);
 	border-bottom: 1px solid var(--iv-border, var(--color-border));
 	background: var(--iv-bg-soft, color-mix(in srgb, var(--color-main-background) 96%, var(--color-main-text) 4%));
 }
+#content.app-inventorycheck #app-content .iv-filter-panel__head h2,
+#content.app-inventorycheck #app-content .iv-filter-panel > header h2 {
+	margin: 0;
+}
+#content.app-inventorycheck #app-content .iv-filter-panel__intro {
+	margin: var(--iv-space-2, 8px) 0 0;
+}
+/* Body owns padding (AZC azc-card__body). Form itself stays flush. */
+#content.app-inventorycheck #app-content .iv-filter-panel__body {
+	padding: var(--iv-space-5, 24px);
+}
 #content.app-inventorycheck #app-content .iv-filter-panel__form,
-#content.app-inventorycheck #app-content .iv-filter-panel__body,
 #content.app-inventorycheck #app-content .iv-filter-panel > form,
 #content.app-inventorycheck #app-content .iv-filter-panel > .form {
-	padding: var(--iv-space-5, 24px);
+	padding: 0;
 }
 /* Buttons — AZ azc-btn uses radius-md (12px), not sm */
 #content.app-inventorycheck #app-content .iv-btn,
@@ -140,7 +156,7 @@
 #content.app-inventorycheck #app-content button.button,
 #content.app-inventorycheck #app-content a.button {
 	border-radius: var(--iv-radius-md, 12px);
-	min-height: 2.75rem;
+	min-height: var(--iv-touch, 44px) !important;
 	padding: 0.625rem 1.15rem;
 	font-weight: 600;
 }
@@ -148,8 +164,9 @@
 #content.app-inventorycheck #app-content .button.small,
 #content.app-inventorycheck #app-content .button--sm {
 	border-radius: var(--iv-radius-sm, 6px);
-	min-height: 36px;
-	padding: 0.35rem 0.75rem;
+	min-height: var(--iv-touch, 44px);
+	min-width: var(--iv-touch, 44px);
+	padding: var(--iv-space-2) var(--iv-space-3);
 }
 #content.app-inventorycheck #app-content .iv-table-wrap {
 	border: 1px solid var(--iv-border, var(--color-border));
@@ -266,10 +283,16 @@
 	align-items: stretch;
 	text-align: left;
 	width: 100%;
-	max-width: none;
+	max-width: 100%;
+	min-width: 0;
 	margin: 0;
-	padding: var(--iv-space-5) var(--iv-space-5) var(--iv-space-7);
+	padding:
+		calc(var(--iv-space-5) + env(safe-area-inset-top, 0px))
+		calc(var(--iv-space-5) + env(safe-area-inset-right, 0px))
+		calc(var(--iv-space-7) + env(safe-area-inset-bottom, 0px))
+		calc(var(--iv-space-5) + env(safe-area-inset-left, 0px));
 	box-sizing: border-box;
+	overflow-x: clip;
 }
 #app-content.iv-app--dashboard .iv-dashboard-alerts .iv-callout {
 	margin: 0;
@@ -371,9 +394,11 @@
 }
 .iv-page-header__main {
 	display: grid;
-	grid-template-columns: 56px 1fr auto;
+	grid-template-columns: 56px minmax(0, 1fr) auto;
 	gap: var(--iv-space-4);
 	align-items: start;
+	min-width: 0;
+	width: 100%;
 }
 .iv-page-header__icon {
 	display: flex;
@@ -472,14 +497,14 @@
 }
 .iv-btn--secondary,
 .iv-app .btn--secondary {
-	background: var(--color-background-dark, #f5f5f5);
+	background: var(--color-background-dark, var(--iv-bg-soft));
 	color: var(--iv-text);
 	border-color: var(--iv-border);
 }
 .iv-btn--danger,
 .iv-app .btn--danger {
-	background: var(--color-error, #cc4646);
-	color: var(--color-primary-text, #fff);
+	background: var(--color-error);
+	color: var(--color-error-text);
 }
 .iv-btn--ghost {
 	background: transparent;
@@ -592,3 +617,63 @@
 	margin-bottom: 0;
 }
 
+
+
+/* ── Responsive page header (AZC parity) ── */
+@media (max-width: 767px) {
+	#app-content.iv-app .iv-page-header__main,
+	.iv-page-header__main {
+		grid-template-columns: 48px minmax(0, 1fr);
+	}
+
+	#app-content.iv-app .iv-page-header__icon,
+	.iv-page-header__icon {
+		width: 48px;
+		height: 48px;
+	}
+
+	#app-content.iv-app .iv-page-header__icon-svg,
+	.iv-page-header__icon-svg {
+		width: 24px;
+		height: 24px;
+	}
+
+	#app-content.iv-app .iv-page-header__actions,
+	.iv-page-header__actions {
+		grid-column: 1 / -1;
+		justify-content: flex-start;
+		width: 100%;
+		max-width: 100%;
+	}
+
+	#app-content.iv-app .iv-page-header__actions .iv-btn,
+	#app-content.iv-app .iv-page-header__actions .button,
+	#app-content.iv-app .iv-page-header__actions a.button {
+		flex: 1 1 auto;
+		min-width: min(100%, 10rem);
+		max-width: 100%;
+	}
+
+	#app-content.iv-app .iv-page-header__text h1 {
+		font-size: var(--iv-fs-xl);
+		overflow-wrap: anywhere;
+	}
+
+	#app-content.iv-app .iv-page-header__lead {
+		max-width: 100%;
+	}
+}
+
+@media (max-width: 480px) {
+	#app-content.iv-app #app-content-wrapper.iv-shell {
+		padding-inline: calc(var(--iv-space-3) + env(safe-area-inset-left, 0px))
+			calc(var(--iv-space-3) + env(safe-area-inset-right, 0px));
+	}
+
+	#app-content.iv-app .iv-page-header__actions .iv-btn,
+	#app-content.iv-app .iv-page-header__actions .button,
+	#app-content.iv-app .iv-page-header__actions a.button {
+		flex: 1 1 100%;
+		min-width: 0;
+	}
+}

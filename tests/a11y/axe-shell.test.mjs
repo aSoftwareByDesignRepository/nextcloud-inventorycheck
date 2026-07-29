@@ -22,6 +22,7 @@ const requiredSurfaces = [
 	'a11y-item-detail.html',
 	'a11y-movements.html',
 	'a11y-settings.html',
+	'a11y-stocktake.html',
 ];
 
 function loadFixture(name) {
@@ -87,6 +88,12 @@ test('settings fixture exposes license seats devices and support', () => {
 	assert.match(html, /One-time pairing code/);
 	assert.match(html, /data-support-us="1"/);
 	assert.match(html, /Allow negative stock/);
+	assert.match(html, /id="iv-frac-title"/);
+	assert.match(html, /Fractional quantities/);
+	assert.match(html, /id="iv-acl-title"/);
+	assert.match(html, /Location access/);
+	assert.match(html, /id="iv-acl-loc-ids"/);
+	assert.match(html, /multiple/);
 });
 
 test('dashboard fixture flags negative balances with text not color alone', () => {
@@ -100,6 +107,8 @@ test('item detail fixture keeps selectable label code for A12', () => {
 	const html = loadFixture('a11y-item-detail.html');
 	assert.match(html, /id="iv-label-code"/);
 	assert.match(html, /iv-label-code/);
-	assert.match(html, /QR code for FILTER-42/);
+	assert.match(html, /QR and barcode for FILTER-42/);
+	assert.match(html, /data-symbology="code128b"/);
 	assert.match(html, /Print label/);
+	assert.match(html, /Download SVG/);
 });

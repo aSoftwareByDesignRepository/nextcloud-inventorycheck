@@ -76,12 +76,29 @@ final class MovementLockingProtocolTest extends TestCase
 		self::assertNotFalse($src);
 		// Active checks must be locking reads inside the open transaction,
 		// not unlocked pre-checks (S5/S6 TOCTOU).
-		self::assertSame(3, substr_count($src, '$this->lockActiveItem('), 'receive/issue, transfer, adjust');
-		self::assertSame(3, substr_count($src, '$this->lockActiveLocations('), 'receive/issue, transfer, adjust');
-		self::assertStringContainsString('lockById($itemId, false)', $src);
+		self::assertSame(4, substr_count($src, '$this->lockActiveItemForMovement('), 'receive/issue, transfer, adjust, issueWithRef');
+		self::assertSame(4, substr_count($src, '$this->lockActiveLocations('), 'receive/issue, transfer, adjust, issueWithRef');
 		self::assertStringContainsString('lockById($id, false)', $src);
 		self::assertStringContainsString('sort($ids)', $src);
 		self::assertStringNotContainsString('requireActiveItem', $src);
+	}
+
+	/**
+	 * Wave C2: a serial-tracked item must take an EXCLUSIVE item-row lock
+	 * (not the usual shared lock) so two concurrent receives of the same
+	 * serial number can never both pass the net-quantity check.
+	 */
+	public function testSerialItemsTakeExclusiveLockNonSerialTakeShared(): void
+	{
+		$src = file_get_contents(dirname(__DIR__, 3) . '/lib/Service/MovementService.php');
+		self::assertNotFalse($src);
+		self::assertStringContainsString("getTrackMode() === 'serial'", $src);
+		self::assertStringContainsString('lockById($itemId, $exclusive)', $src);
+		self::assertStringContainsString('lockById($itemId, true)', $src);
+		self::assertStringContainsString("throw new ValidationException('inactive_item')", $src);
+		self::assertStringContainsString('if (!$item->getActive())', $src);
+		self::assertStringContainsString('checkSerialCapacity', $src);
+		self::assertStringContainsString('sumQtyDeltaByItemAndLot', $src);
 	}
 
 	public function testDeactivateAndDeletePathsTakeExclusiveEntityLocks(): void

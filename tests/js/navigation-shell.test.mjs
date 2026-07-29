@@ -32,6 +32,15 @@ test('app.js filter panel and dialog inert lock are present', () => {
 	assert.doesNotMatch(src, /className:\s*'iv-toolbar'/);
 });
 
+test('app.js stocktake conflict gate is present (UC-C2)', () => {
+	const src = readFileSync(join(root, 'js/app.js'), 'utf8');
+	assert.match(src, /Changed since snapshot/);
+	assert.match(src, /acknowledgeConflicts/);
+	assert.match(src, /I reviewed the conflicts and accept the counted quantities/);
+	assert.match(src, /count_conflict/);
+	assert.match(src, /Live qty/);
+});
+
 test('page templates close inventorycheck-app wrapper', () => {
 	const end = readFileSync(join(root, 'templates/common/page-end.php'), 'utf8');
 	assert.match(end, /inventorycheck-app/);

@@ -1,0 +1,17 @@
+{
+    "seedLabel": "inventorycheck-iv2-test-signing-v1",
+    "publicKeyB64": "dXRQySeXngzX5zMmsiPTU3fMmtufkUs-Jg9ZL-f2Bc0",
+    "payload": {
+        "v": 2,
+        "product": "inventorycheck",
+        "customerId": "test",
+        "issuedAt": "2026-06-10",
+        "validUntil": "2027-12-31",
+        "mobileSeats": 5,
+        "scanDevices": 2,
+        "bundle": true
+    },
+    "payloadB64": "eyJ2IjoyLCJwcm9kdWN0IjoiaW52ZW50b3J5Y2hlY2siLCJjdXN0b21lcklkIjoidGVzdCIsImlzc3VlZEF0IjoiMjAyNi0wNi0xMCIsInZhbGlkVW50aWwiOiIyMDI3LTEyLTMxIiwibW9iaWxlU2VhdHMiOjUsInNjYW5EZXZpY2VzIjoyLCJidW5kbGUiOnRydWV9",
+    "signatureB64": "AiWTitIXwR3-Q37HMeDd07mcwNgSijHBjUM9Vu2ltkScNYO1yHa4Oxxlr5QKsNXCGHAwdvWWU-rx4Cl3nNaQDg",
+    "wireKey": "IV2.eyJ2IjoyLCJwcm9kdWN0IjoiaW52ZW50b3J5Y2hlY2siLCJjdXN0b21lcklkIjoidGVzdCIsImlzc3VlZEF0IjoiMjAyNi0wNi0xMCIsInZhbGlkVW50aWwiOiIyMDI3LTEyLTMxIiwibW9iaWxlU2VhdHMiOjUsInNjYW5EZXZpY2VzIjoyLCJidW5kbGUiOnRydWV9.AiWTitIXwR3-Q37HMeDd07mcwNgSijHBjUM9Vu2ltkScNYO1yHa4Oxxlr5QKsNXCGHAwdvWWU-rx4Cl3nNaQDg"
+}

@@ -8,7 +8,9 @@ namespace OCA\InventoryCheck\Config;
  * Embedded vendor Ed25519 public key for IV2 verification.
  * Same key family as AZC2/PC2/MN2 (SbdLicenseOps).
  *
- * Optional override: IV_VENDOR_PUBLIC_KEY_B64 (PHPUnit fixture key only).
+ * Env override is allowed only under PHPUnit or when
+ * IV_ALLOW_VENDOR_KEY_OVERRIDE=1 — a compromised env must not swap the trust
+ * anchor on a live Nextcloud instance.
  */
 final class VendorPublicKey
 {
@@ -22,11 +24,21 @@ final class VendorPublicKey
 
 	public static function publicKeyB64(): string
 	{
-		$fromEnv = getenv('IV_VENDOR_PUBLIC_KEY_B64');
-		if (is_string($fromEnv) && trim($fromEnv) !== '') {
-			return trim($fromEnv);
+		if (self::envOverrideAllowed()) {
+			$fromEnv = getenv('IV_VENDOR_PUBLIC_KEY_B64');
+			if (is_string($fromEnv) && trim($fromEnv) !== '') {
+				return trim($fromEnv);
+			}
 		}
 		return self::DEFAULT_PUBLIC_KEY_B64;
+	}
+
+	public static function envOverrideAllowed(): bool
+	{
+		if (defined('PHPUNIT_COMPOSER_INSTALL') || defined('PHPUNIT_RUNNING') || defined('PHPUNIT_RUN')) {
+			return true;
+		}
+		return getenv('IV_ALLOW_VENDOR_KEY_OVERRIDE') === '1';
 	}
 
 	public static function bytes(): string

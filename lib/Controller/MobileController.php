@@ -16,11 +16,13 @@ use OCA\InventoryCheck\Service\LocationService;
 use OCA\InventoryCheck\Service\MobileGateService;
 use OCA\InventoryCheck\Service\MovementService;
 use OCA\InventoryCheck\Service\Pagination;
+use OCA\InventoryCheck\Service\QtyScale;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IConfig;
 use OCP\IRequest;
 use OCP\IUserSession;
 
@@ -44,6 +46,7 @@ class MobileController extends Controller
 		private readonly MovementService $movements,
 		private readonly AccessControlService $access,
 		private readonly IUserSession $userSession,
+		private readonly IConfig $config,
 	) {
 		parent::__construct(Application::APP_ID, $request);
 	}
@@ -70,7 +73,17 @@ class MobileController extends Controller
 	{
 		[$uid, $device] = $this->resolveCaller(true);
 		$this->gate->assertGate($uid, $device);
-		return new JSONResponse($this->items->byCode(rawurldecode($code)));
+		$item = QtyScale::formatItem(
+			$this->items->byCode($uid ?? ('device:' . (int)$device->getId()), rawurldecode($code)),
+			$this->config,
+		);
+		if (isset($item['balances']) && is_array($item['balances'])) {
+			$item['balances'] = array_map(
+				fn (array $b) => QtyScale::formatBalance($b, $this->config),
+				$item['balances'],
+			);
+		}
+		return new JSONResponse($item);
 	}
 
 	#[PublicPage]
@@ -81,7 +94,9 @@ class MobileController extends Controller
 		[$uid, $device] = $this->resolveCaller(true);
 		$this->gate->assertGate($uid, $device);
 		$page = Pagination::parse($this->request->getParam('limit'), $this->request->getParam('offset'));
-		return new JSONResponse($this->locations->list(true, $page['limit'], $page['offset']));
+		// Device tokens (no uid) stay unrestricted; session-backed mobile
+		// users honour Wave C3 location ACL like the web app.
+		return new JSONResponse($this->locations->list($uid ?? '', true, $page['limit'], $page['offset']));
 	}
 
 	#[PublicPage]
@@ -94,13 +109,19 @@ class MobileController extends Controller
 		$page = Pagination::parse($this->request->getParam('limit'), $this->request->getParam('offset'));
 		$itemId = $this->request->getParam('itemId');
 		$locationId = $this->request->getParam('locationId');
-		return new JSONResponse($this->balances->list(
+		$result = $this->balances->list(
+			$uid ?? '',
 			$itemId !== null && $itemId !== '' ? (int)$itemId : null,
 			$locationId !== null && $locationId !== '' ? (int)$locationId : null,
 			filter_var($this->request->getParam('nonZero', '0'), FILTER_VALIDATE_BOOLEAN),
 			$page['limit'],
 			$page['offset'],
-		));
+		);
+		$result['data'] = array_map(
+			fn (array $b) => QtyScale::formatBalance($b, $this->config),
+			$result['data'],
+		);
+		return new JSONResponse($result);
 	}
 
 	#[PublicPage]
@@ -111,9 +132,15 @@ class MobileController extends Controller
 		[$uid, $device] = $this->resolveCaller(true);
 		$this->gate->assertGate($uid, $device);
 		$page = Pagination::parse($this->request->getParam('limit'), $this->request->getParam('offset'));
-		return new JSONResponse($this->movements->list(
+		$result = $this->movements->list(
+			$uid ?? '',
 			null, null, null, null, null, null, $page['limit'], $page['offset'],
-		));
+		);
+		$result['data'] = array_map(
+			fn (array $m) => QtyScale::formatMovement($m, $this->config),
+			$result['data'],
+		);
+		return new JSONResponse($result);
 	}
 
 	#[PublicPage]
@@ -126,17 +153,31 @@ class MobileController extends Controller
 		$p = $this->request->getParams();
 		$asOffice = $device === null && $uid !== null && $this->access->isOffice($uid);
 		$actor = $uid ?? ('device:' . (int)$device->getId());
-		return new JSONResponse($this->movements->scan(
+		$lotCode = null;
+		if (isset($p['lotCode']) && $p['lotCode'] !== '') {
+			$lotCode = (string)$p['lotCode'];
+		}
+		$result = $this->movements->scan(
 			$actor,
 			(string)($p['code'] ?? ''),
 			(string)($p['kind'] ?? ''),
 			(int)($p['locationId'] ?? 0),
 			isset($p['toLocationId']) ? (int)$p['toLocationId'] : null,
-			isset($p['qty']) ? (int)$p['qty'] : null,
-			isset($p['qtyDelta']) ? (int)$p['qtyDelta'] : null,
+			isset($p['qty']) ? QtyScale::toStorage($this->config, $p['qty']) : null,
+			isset($p['qtyDelta']) ? QtyScale::toStorage($this->config, $p['qtyDelta']) : null,
 			isset($p['reason']) ? (string)$p['reason'] : null,
 			$asOffice,
-		));
+			$lotCode,
+		);
+		$result['movements'] = array_map(
+			fn (array $m) => QtyScale::formatMovement($m, $this->config),
+			$result['movements'],
+		);
+		$result['balances'] = array_map(
+			fn (array $b) => QtyScale::formatBalance($b, $this->config),
+			$result['balances'],
+		);
+		return new JSONResponse($result);
 	}
 
 	#[PublicPage]

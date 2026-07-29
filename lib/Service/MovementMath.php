@@ -18,9 +18,13 @@ final class MovementMath
 	public const BALANCE_MIN = -2_000_000_000;
 	public const BALANCE_MAX = 2_000_000_000;
 
-	public static function isValidMovementQty(int $qty): bool
+	/**
+	 * @param int $max Absolute storage-unit ceiling (defaults to display max = 1e6;
+	 *                 under qty_scale=3 pass {@see QtyScale::maxStorage}).
+	 */
+	public static function isValidMovementQty(int $qty, int $max = self::QTY_MAX): bool
 	{
-		return $qty >= self::QTY_MIN && $qty <= self::QTY_MAX;
+		return $qty >= self::QTY_MIN && $qty <= $max;
 	}
 
 	public static function isValidBalance(int $qtyAfter): bool

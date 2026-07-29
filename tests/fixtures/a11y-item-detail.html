@@ -54,14 +54,20 @@
 		</section>
 		<section class="iv-section" aria-labelledby="iv-qr-title">
 			<h2 id="iv-qr-title" class="iv-section__title">Label preview</h2>
-			<figure>
-				<svg role="img" aria-labelledby="iv-qr-caption" width="120" height="120" viewBox="0 0 120 120">
-					<title id="iv-qr-caption">QR code for FILTER-42</title>
-					<rect width="120" height="120" fill="#fff" stroke="#111"/>
-					<text x="60" y="64" text-anchor="middle" font-size="12">FILTER-42</text>
+			<p class="iv-muted">QR and Code 128 encode the scan code. Print a sticker, or paste the code into a movement form with a wedge scanner.</p>
+			<figure class="iv-label-preview">
+				<svg role="img" aria-labelledby="iv-qr-caption" width="160" height="200" viewBox="0 0 160 200">
+					<title id="iv-qr-caption">QR and barcode for FILTER-42</title>
+					<rect width="160" height="200" fill="#fff" stroke="#111"/>
+					<g id="iv-label-barcode" data-symbology="code128b" data-payload="FILTER-42"></g>
+					<text x="80" y="120" text-anchor="middle" font-size="12">FILTER-42</text>
 				</svg>
-				<figcaption class="iv-label-code">FILTER-42</figcaption>
+				<figcaption class="iv-label-code" id="iv-label-code">FILTER-42</figcaption>
 			</figure>
+			<p class="iv-actions iv-actions--inline">
+				<a class="button" href="#">Print label</a>
+				<a class="button" href="#">Download SVG</a>
+			</p>
 		</section>
 	</main>
 </body>

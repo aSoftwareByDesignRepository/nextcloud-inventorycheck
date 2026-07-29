@@ -22,42 +22,74 @@
 			<h1 id="iv-page-title">Movements</h1>
 			<p>Append-only booking history</p>
 		</header>
-		<form class="iv-filterbar" role="search" aria-label="Filter movements">
-			<div class="iv-field">
-				<label class="iv-label" for="iv-mov-kind">Kind</label>
-				<select class="iv-input" id="iv-mov-kind" aria-label="Kind">
-					<option value="">All kinds</option>
-					<option value="receive">Receive</option>
-					<option value="issue">Issue</option>
-					<option value="transfer_out">Transfer out</option>
-					<option value="adjust">Adjust</option>
-				</select>
+		<section id="iv-mov-filter-panel" class="iv-card iv-filter-panel" aria-labelledby="iv-mov-filter-title">
+			<header class="iv-filter-panel__head">
+				<div class="iv-filter-panel__head-text">
+					<h2 id="iv-mov-filter-title">Filter</h2>
+					<p class="iv-filter-panel__intro">Narrow the list by kind, item, location, or date, then click Apply.</p>
+				</div>
+			</header>
+			<div class="iv-filter-panel__body">
+				<form class="iv-filter-panel__form iv-filterbar" role="search" aria-label="Filter movements" novalidate>
+					<div class="iv-filter-grid iv-filter-grid--movements" role="group" aria-label="Filter options">
+						<div class="iv-filter-field iv-filter-field--kind">
+							<label class="iv-filter-field__label" for="iv-mov-kind">Kind</label>
+							<div class="iv-filter-field__control">
+								<select class="iv-input form-select" id="iv-mov-kind">
+									<option value="">All kinds</option>
+									<option value="receive">Receive</option>
+									<option value="issue">Issue</option>
+									<option value="transfer_out">Transfer out</option>
+									<option value="adjust">Adjust</option>
+								</select>
+							</div>
+						</div>
+						<div class="iv-filter-field iv-filter-field--item">
+							<label class="iv-filter-field__label" for="iv-mov-item">Item</label>
+							<div class="iv-filter-field__control">
+								<input class="iv-input form-input" type="search" id="iv-mov-item" list="iv-mov-item-dl" placeholder="SKU or name" autocomplete="off" aria-describedby="iv-mov-date-error">
+								<datalist id="iv-mov-item-dl">
+									<option value="Air filter (FILTER-42)"></option>
+								</datalist>
+							</div>
+						</div>
+						<div class="iv-filter-field iv-filter-field--location">
+							<label class="iv-filter-field__label" for="iv-mov-loc">Location</label>
+							<div class="iv-filter-field__control">
+								<input class="iv-input form-input" type="search" id="iv-mov-loc" list="iv-mov-loc-dl" placeholder="Code or name" autocomplete="off" aria-describedby="iv-mov-date-error">
+								<datalist id="iv-mov-loc-dl">
+									<option value="Warehouse (WH)"></option>
+								</datalist>
+							</div>
+						</div>
+						<div class="iv-filter-field iv-filter-field--actions">
+							<span class="iv-filter-field__label iv-sr-only">Actions</span>
+							<div class="iv-filter-field__control iv-filter-field__control--actions">
+								<button type="submit" class="iv-btn iv-btn--primary">Apply</button>
+								<button type="button" class="iv-btn">Clear</button>
+							</div>
+						</div>
+						<div class="iv-filter-field iv-filter-field--dates" role="group" aria-labelledby="iv-mov-date-range-label">
+							<span id="iv-mov-date-range-label" class="iv-filter-field__label">Date range</span>
+							<div class="iv-filter-field__control">
+								<div class="iv-date-range">
+									<div class="iv-date-range__part">
+										<label class="iv-date-range__sublabel iv-sr-only" for="iv-mov-from">From</label>
+										<input class="iv-input form-input" type="date" id="iv-mov-from" aria-describedby="iv-mov-date-error">
+									</div>
+									<span class="iv-date-range__sep" aria-hidden="true">to</span>
+									<div class="iv-date-range__part">
+										<label class="iv-date-range__sublabel iv-sr-only" for="iv-mov-to">To</label>
+										<input class="iv-input form-input" type="date" id="iv-mov-to" aria-describedby="iv-mov-date-error">
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<p id="iv-mov-date-error" class="iv-callout iv-callout--danger iv-filter-feedback" role="alert" hidden></p>
+				</form>
 			</div>
-			<div class="iv-field">
-				<label class="iv-label" for="iv-mov-item">Item</label>
-				<select class="iv-input" id="iv-mov-item" aria-label="Item">
-					<option value="">All items</option>
-					<option value="1">Air filter (FILTER-42)</option>
-				</select>
-			</div>
-			<div class="iv-field">
-				<label class="iv-label" for="iv-mov-loc">Location</label>
-				<select class="iv-input" id="iv-mov-loc" aria-label="Location">
-					<option value="">All locations</option>
-					<option value="1">Warehouse (WH)</option>
-				</select>
-			</div>
-			<div class="iv-field">
-				<label class="iv-label" for="iv-mov-from">From date</label>
-				<input class="iv-input" type="date" id="iv-mov-from" aria-label="From date">
-			</div>
-			<div class="iv-field">
-				<label class="iv-label" for="iv-mov-to">To date</label>
-				<input class="iv-input" type="date" id="iv-mov-to" aria-label="To date">
-			</div>
-			<button type="submit" class="iv-btn iv-btn--primary">Apply filters</button>
-			<button type="button" class="iv-btn">Clear filters</button>
-		</form>
+		</section>
 		<section class="iv-section" aria-labelledby="iv-list-title">
 			<h2 id="iv-list-title" class="iv-section__title">Results</h2>
 			<table class="iv-table">
@@ -73,14 +105,14 @@
 				<tbody>
 					<tr>
 						<td data-label="Kind">Transfer out</td>
-						<td data-label="Item">Air filter</td>
-						<td data-label="Location">WH</td>
+						<td data-label="Item">Air filter (FILTER-42)</td>
+						<td data-label="Location">Warehouse (WH)</td>
 						<td data-label="Delta">−3</td>
 						<td data-label="Actions"><button type="button" class="iv-btn">Reverse</button></td>
 					</tr>
 					<tr>
 						<td data-label="Kind">Transfer in</td>
-						<td data-label="Item">Air filter</td>
+						<td data-label="Item">Air filter (FILTER-42)</td>
 						<td data-label="Location">VAN-1</td>
 						<td data-label="Delta">+3</td>
 						<td data-label="Actions"><span class="iv-muted">—</span></td>
@@ -88,9 +120,7 @@
 				</tbody>
 			</table>
 			<nav class="iv-pagination" aria-label="Pagination">
-				<button type="button" class="iv-btn" disabled>Previous</button>
-				<p>Showing 1–2 of 2</p>
-				<button type="button" class="iv-btn" disabled>Next</button>
+				<p class="iv-pagination__info">Showing 1–2 of 2</p>
 			</nav>
 		</section>
 		<dialog id="iv-dialog-receive" open aria-modal="true" aria-labelledby="iv-dlg-recv-title">

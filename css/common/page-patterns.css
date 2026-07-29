@@ -70,7 +70,13 @@
 }
 
 #app-content.iv-app .iv-filter-panel__head {
-	margin-bottom: var(--iv-space-4);
+	/* Card chrome (shell-chrome) already separates head/body — no extra gap. */
+	margin-bottom: 0;
+}
+
+#app-content.iv-app .iv-filter-panel__head-text {
+	flex: 1 1 14rem;
+	min-width: 0;
 }
 
 #app-content.iv-app .iv-filter-panel__head h2 {
@@ -92,6 +98,8 @@
 	display: flex;
 	flex-direction: column;
 	gap: var(--iv-space-3);
+	margin: 0;
+	align-items: stretch;
 }
 
 #app-content.iv-app .iv-filter-grid {
@@ -107,6 +115,36 @@
 	align-items: stretch;
 }
 
+/* Items / Locations: search + actions (AZC time-entries rhythm). */
+#app-content.iv-app .iv-filter-grid.iv-filter-grid--simple {
+	grid-template-columns: minmax(0, 1fr) max-content;
+	grid-template-rows: auto;
+	grid-template-areas: 'search actions';
+	column-gap: var(--iv-space-4);
+	row-gap: var(--iv-space-4);
+	align-items: end;
+}
+
+#app-content.iv-app .iv-filter-grid--simple .iv-filter-field--search { grid-area: search; }
+#app-content.iv-app .iv-filter-grid--simple .iv-filter-field--actions { grid-area: actions; }
+
+#app-content.iv-app .iv-filter-grid--simple > .iv-filter-field {
+	display: flex;
+	flex-direction: column;
+	gap: var(--iv-space-2);
+	min-width: 0;
+}
+
+#app-content.iv-app .iv-filter-grid--simple .iv-filter-field--actions .iv-filter-field__control--actions {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: nowrap;
+	align-items: center;
+	gap: var(--iv-space-2);
+	min-height: 44px;
+	margin-top: 0;
+}
+
 #app-content.iv-app .iv-filter-grid--extended {
 	grid-template-columns:
 		minmax(0, 1fr)
@@ -114,6 +152,38 @@
 		minmax(0, 0.85fr)
 		minmax(0, 0.85fr)
 		auto;
+}
+
+/* Movements: AZC manager-scope pattern (criteria + actions / date range).
+ * Named areas isolate from global subgrid; see also app.css (cache-bust).
+ */
+#app-content.iv-app .iv-filter-grid.iv-filter-grid--movements {
+	grid-template-columns:
+		minmax(0, 1.1fr)
+		minmax(0, 1.45fr)
+		minmax(0, 1.15fr)
+		max-content;
+	grid-template-rows: auto;
+	grid-template-areas:
+		'kind item location actions'
+		'dates dates dates dates';
+	column-gap: var(--iv-space-4);
+	row-gap: var(--iv-space-4);
+	align-items: stretch;
+}
+
+#app-content.iv-app .iv-filter-grid--movements .iv-filter-field--kind { grid-area: kind; }
+#app-content.iv-app .iv-filter-grid--movements .iv-filter-field--item { grid-area: item; }
+#app-content.iv-app .iv-filter-grid--movements .iv-filter-field--location { grid-area: location; }
+#app-content.iv-app .iv-filter-grid--movements .iv-filter-field--actions { grid-area: actions; }
+#app-content.iv-app .iv-filter-grid--movements .iv-filter-field--dates { grid-area: dates; }
+
+#app-content.iv-app .iv-filter-field__control > .iv-input,
+#app-content.iv-app .iv-filter-field__control > .form-input,
+#app-content.iv-app .iv-filter-field__control > .form-select {
+	width: 100%;
+	max-width: 100%;
+	box-sizing: border-box;
 }
 
 #app-content.iv-app .iv-filter-grid--record {
@@ -131,6 +201,18 @@
 	grid-row: span 2;
 	gap: var(--iv-space-2);
 	min-width: 0;
+}
+
+/* Movements fields: break out of parent subgrid (AZC manager-scope). */
+#app-content.iv-app .iv-filter-grid--movements > .iv-filter-field {
+	display: grid;
+	grid-template-rows: auto minmax(44px, auto);
+	gap: var(--iv-space-2);
+	min-width: 0;
+}
+
+#app-content.iv-app .iv-filter-grid--movements > .iv-filter-field--dates {
+	grid-template-rows: auto auto;
 }
 
 #app-content.iv-app .iv-filter-field__label {
@@ -151,19 +233,32 @@
 	min-height: 0;
 }
 
+#app-content.iv-app .iv-filter-grid--movements .iv-filter-field--actions .iv-filter-field__control--actions {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: flex-start;
+	gap: var(--iv-space-2);
+	min-height: 44px;
+	/* Align with sibling controls when Actions label is screen-reader-only */
+	margin-top: calc((var(--iv-fs-sm, 0.875rem) * var(--iv-line-tight, 1.25)) + var(--iv-space-2, 0.5rem));
+}
+
 #app-content.iv-app .iv-date-range {
 	display: flex;
-	flex-wrap: wrap;
-	align-items: flex-end;
+	flex-wrap: nowrap;
+	align-items: center;
 	gap: var(--iv-space-2) var(--iv-space-3);
+	width: 100%;
+	max-width: 32rem;
 }
 
 #app-content.iv-app .iv-date-range__part {
-	display: flex;
-	flex-direction: column;
-	gap: var(--iv-space-1);
-	min-width: 0;
-	flex: 1 1 8rem;
+	display: block;
+	flex: 1 1 0;
+	min-width: 9.5rem;
+	max-width: 14rem;
 }
 
 #app-content.iv-app .iv-date-range__sublabel {
@@ -173,10 +268,14 @@
 }
 
 #app-content.iv-app .iv-date-range__sep {
-	align-self: flex-end;
-	padding-bottom: 0.65rem;
+	flex: 0 0 auto;
+	align-self: center;
+	padding: 0;
+	margin: 0;
+	white-space: nowrap;
 	color: var(--iv-muted);
 	font-size: var(--iv-fs-sm);
+	font-weight: 500;
 }
 
 #app-content.iv-app .iv-filter-actions {
@@ -186,6 +285,23 @@
 	gap: var(--iv-space-2);
 	grid-row: span 2;
 	align-self: end;
+}
+
+/* AZC time-entries: actions live in a filter-field with spacer label for subgrid align */
+#app-content.iv-app .iv-filter-field__control--actions {
+	flex-direction: row;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: flex-start;
+	gap: var(--iv-space-2);
+}
+
+#app-content.iv-app .iv-filter-feedback {
+	margin: var(--iv-space-3) 0 0;
+}
+
+#app-content.iv-app .iv-filter-feedback[hidden] {
+	display: none !important;
 }
 
 #app-content.iv-app .iv-filter-field__control .form-input[aria-invalid='true'],
@@ -199,6 +315,21 @@
 	#app-content.iv-app .iv-filter-grid--record {
 		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 	}
+
+	#app-content.iv-app .iv-filter-grid.iv-filter-grid--movements {
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		grid-template-areas:
+			'kind item'
+			'location actions'
+			'dates dates';
+	}
+}
+
+@media (max-width: 900px) {
+	#app-content.iv-app .iv-date-range {
+		flex-wrap: wrap;
+		max-width: none;
+	}
 }
 
 @media (max-width: 768px) {
@@ -209,21 +340,51 @@
 		grid-template-rows: auto;
 	}
 
+	#app-content.iv-app .iv-filter-grid.iv-filter-grid--simple {
+		grid-template-columns: 1fr;
+		grid-template-areas:
+			'search'
+			'actions';
+	}
+
+	#app-content.iv-app .iv-filter-grid.iv-filter-grid--movements {
+		grid-template-columns: 1fr;
+		grid-template-areas:
+			'kind'
+			'item'
+			'location'
+			'dates'
+			'actions';
+	}
+
 	#app-content.iv-app .iv-filter-field {
 		grid-row: auto;
 		display: flex;
 		flex-direction: column;
 	}
 
-	#app-content.iv-app .iv-filter-actions {
+	#app-content.iv-app .iv-filter-actions,
+	#app-content.iv-app .iv-filter-field--actions .iv-filter-field__control--actions {
 		grid-row: auto;
 		width: 100%;
 		justify-content: stretch;
 	}
 
+	#app-content.iv-app .iv-filter-grid--movements .iv-filter-field--actions .iv-filter-field__control--actions,
+	#app-content.iv-app .iv-filter-grid--simple .iv-filter-field--actions .iv-filter-field__control--actions {
+		margin-top: 0;
+	}
+
 	#app-content.iv-app .iv-filter-actions .iv-btn,
-	#app-content.iv-app .iv-filter-actions .btn {
+	#app-content.iv-app .iv-filter-actions .btn,
+	#app-content.iv-app .iv-filter-field__control--actions .iv-btn,
+	#app-content.iv-app .iv-filter-field__control--actions .btn {
 		flex: 1 1 auto;
+	}
+
+	#app-content.iv-app .iv-date-range__part {
+		max-width: none;
+		flex: 1 1 9.5rem;
 	}
 }
 
@@ -294,7 +455,7 @@
 #inventorycheck-personal-settings .settings-hint {
 	max-width: 60ch;
 	line-height: var(--iv-line-base, 1.5);
-	color: var(--color-text-maxcontrast, var(--iv-muted, #666));
+	color: var(--color-text-maxcontrast, var(--iv-muted));
 }
 
 #inventorycheck-personal-settings .settings-subheading {

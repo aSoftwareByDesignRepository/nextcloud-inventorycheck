@@ -19,6 +19,10 @@ final class CodeRules
 	public const PATTERN_SKU = '/^[A-Za-z0-9._\\/-]{1,64}$/';
 	public const PATTERN_SCAN = '/^[A-Za-z0-9._\\/-]{1,128}$/';
 	public const PATTERN_LOC = '/^[A-Za-z0-9._\\/-]{1,64}$/';
+	public const PATTERN_LOT = '/^[A-Za-z0-9._\\/-]{1,64}$/';
+
+	/** @var list<string> Wave C2 item tracking modes. */
+	public const TRACK_MODES = ['none', 'lot', 'serial'];
 
 	public static function trim(string $value): string
 	{
@@ -38,6 +42,17 @@ final class CodeRules
 	public static function isValidLocationCode(string $value): bool
 	{
 		return $value !== '' && preg_match(self::PATTERN_LOC, $value) === 1;
+	}
+
+	/** Wave C2: lot/serial code — same charset as SKU/location codes, 1–64 chars. */
+	public static function isValidLotCode(string $value): bool
+	{
+		return $value !== '' && preg_match(self::PATTERN_LOT, $value) === 1;
+	}
+
+	public static function isValidTrackMode(string $value): bool
+	{
+		return in_array($value, self::TRACK_MODES, true);
 	}
 
 	/**

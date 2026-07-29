@@ -38,7 +38,7 @@ final class QueryValidationIntegrationTest extends TestCase
 	{
 		$this->expectException(ValidationException::class);
 		try {
-			$this->movements->list(null, null, null, 200, 100, null, 50, 0);
+			$this->movements->list($this->uid, null, null, null, 200, 100, null, 50, 0);
 		} catch (ValidationException $e) {
 			$this->assertSame('invalid_query', $e->getErrorCode());
 			throw $e;
@@ -67,7 +67,7 @@ final class QueryValidationIntegrationTest extends TestCase
 		usleep(1100000); // ensure created_at differs on second-resolution clocks
 		$this->movements->receive($this->uid, $itemId, $locId, 1, 'second');
 
-		$list = $this->movements->list(null, $itemId, $locId, null, null, null, 50, 0);
+		$list = $this->movements->list($this->uid, null, $itemId, $locId, null, null, null, 50, 0);
 		$this->assertGreaterThanOrEqual(2, $list['total']);
 		$first = $list['data'][0];
 		$second = $list['data'][1];
@@ -80,5 +80,36 @@ final class QueryValidationIntegrationTest extends TestCase
 			$this->assertGreaterThan((int)$second['id'], (int)$first['id'], 'id DESC tie-break');
 		}
 		$this->assertSame('second', $first['reason']);
+	}
+
+	public function testLocationListHonoursSearchQuery(): void
+	{
+		$suffix = bin2hex(random_bytes(3));
+		$code = 'LQ-' . $suffix;
+		$name = 'Queryable Loc ' . $suffix;
+		$this->locations->create($this->uid, [
+			'code' => $code,
+			'name' => $name,
+			'kind' => 'warehouse',
+		]);
+		$this->locations->create($this->uid, [
+			'code' => 'ZZ-' . $suffix,
+			'name' => 'Other Loc ' . $suffix,
+			'kind' => 'van',
+		]);
+
+		$byCode = $this->locations->list($this->uid, null, 50, 0, $code);
+		$this->assertGreaterThanOrEqual(1, $byCode['total']);
+		$this->assertTrue(
+			array_reduce($byCode['data'], static fn (bool $ok, array $row): bool => $ok || ($row['code'] ?? '') === $code, false),
+			'code prefix search must return the seeded location',
+		);
+
+		$byName = $this->locations->list($this->uid, null, 50, 0, $suffix);
+		$this->assertGreaterThanOrEqual(2, $byName['total']);
+
+		$miss = $this->locations->list($this->uid, null, 50, 0, 'no-such-location-' . $suffix);
+		$this->assertSame(0, $miss['total']);
+		$this->assertSame([], $miss['data']);
 	}
 }

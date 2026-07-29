@@ -114,6 +114,7 @@ class BalanceMapper extends QBMapper
 	}
 
 	/**
+	 * @param list<int>|null $locationIdFilter restrict to these locations (null = no filter, [] = empty result)
 	 * @return array{data: list<Balance>, total: int}
 	 */
 	public function search(
@@ -123,8 +124,12 @@ class BalanceMapper extends QBMapper
 		int $limit,
 		int $offset,
 		bool $negativeOnly = false,
+		?array $locationIdFilter = null,
 	): array {
-		$apply = function ($qb) use ($itemId, $locationId, $nonZero, $negativeOnly): void {
+		if ($locationIdFilter === []) {
+			return ['data' => [], 'total' => 0];
+		}
+		$apply = function ($qb) use ($itemId, $locationId, $nonZero, $negativeOnly, $locationIdFilter): void {
 			$qb->from($this->getTableName());
 			$conds = [];
 			if ($itemId !== null) {
@@ -132,6 +137,12 @@ class BalanceMapper extends QBMapper
 			}
 			if ($locationId !== null) {
 				$conds[] = $qb->expr()->eq('location_id', $qb->createNamedParameter($locationId, \PDO::PARAM_INT));
+			}
+			if ($locationIdFilter !== null) {
+				$conds[] = $qb->expr()->in(
+					'location_id',
+					$qb->createNamedParameter($locationIdFilter, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT_ARRAY),
+				);
 			}
 			if ($negativeOnly) {
 				$conds[] = $qb->expr()->lt('qty', $qb->createNamedParameter(0, \PDO::PARAM_INT));
@@ -165,18 +176,47 @@ class BalanceMapper extends QBMapper
 
 	/**
 	 * @return array<int, int> item_id → SUM(qty)
+	 * @param list<int>|null $locationIds null = all locations; empty = no rows
 	 */
-	public function sumQtyByItem(): array
+	public function sumQtyByItem(?array $locationIds = null): array
 	{
+		if ($locationIds !== null && $locationIds === []) {
+			return [];
+		}
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('item_id')
 			->selectAlias($qb->func()->sum('qty'), 'total')
 			->from($this->getTableName())
 			->groupBy('item_id');
+		if ($locationIds !== null) {
+			$qb->where($qb->expr()->in(
+				'location_id',
+				$qb->createNamedParameter($locationIds, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT_ARRAY),
+			));
+		}
 		$result = $qb->executeQuery();
 		$out = [];
 		while ($row = $result->fetch()) {
 			$out[(int)$row['item_id']] = (int)$row['total'];
+		}
+		$result->closeCursor();
+		return $out;
+	}
+
+	/**
+	 * Wave B3 per-location reorder hints (S10 evaluated per location instead
+	 * of the item-wide sum).
+	 *
+	 * @return array<int, array<int, int>> item_id → (location_id → qty)
+	 */
+	public function sumQtyByItemAndLocation(): array
+	{
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('item_id', 'location_id', 'qty')->from($this->getTableName());
+		$result = $qb->executeQuery();
+		$out = [];
+		while ($row = $result->fetch()) {
+			$out[(int)$row['item_id']][(int)$row['location_id']] = (int)$row['qty'];
 		}
 		$result->closeCursor();
 		return $out;

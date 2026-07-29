@@ -88,8 +88,8 @@
 	display: none;
 }
 
-#content.app-inventorycheck #app-content input:focus,
-#content.app-inventorycheck #app-content input:focus-visible,
+#content.app-inventorycheck #app-content input:not([type="checkbox"]):not([type="radio"]):focus,
+#content.app-inventorycheck #app-content input:not([type="checkbox"]):not([type="radio"]):focus-visible,
 #content.app-inventorycheck #app-content textarea:focus,
 #content.app-inventorycheck #app-content textarea:focus-visible,
 #content.app-inventorycheck #app-content select:focus,
@@ -162,7 +162,10 @@
 	height: 1.125rem;
 	min-width: 1.125rem;
 	min-height: 1.125rem;
+	max-width: 1.125rem;
+	max-height: 1.125rem;
 	margin: 0;
+	padding: 0;
 	flex-shrink: 0;
 	cursor: pointer;
 	accent-color: var(--color-primary-element);
@@ -170,6 +173,9 @@
 	border: 1px solid var(--iv-form-border);
 	border-radius: 3px;
 	box-sizing: border-box;
+	color-scheme: inherit;
+	appearance: auto;
+	-webkit-appearance: auto;
 }
 
 #content.app-inventorycheck #app-content input[type="radio"] {

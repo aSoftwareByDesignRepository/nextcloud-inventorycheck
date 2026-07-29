@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>InventoryCheck — Stocktake a11y</title>
+	<!--STYLE-->
+</head>
+<body>
+	<a class="iv-skip-link" href="#iv-main">Skip to main content</a>
+	<nav class="iv-nav" role="navigation" aria-label="InventoryCheck navigation">
+		<a href="#">Dashboard</a>
+		<a href="#">Items</a>
+		<a href="#">Locations</a>
+		<a href="#">Movements</a>
+		<a href="#" aria-current="page">Stocktake</a>
+		<a href="#">Settings</a>
+	</nav>
+	<div id="iv-live-region" class="iv-sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+	<div id="iv-alert-region" class="iv-sr-only" role="alert" aria-live="assertive" aria-atomic="true"></div>
+	<main id="iv-main">
+		<header class="iv-page-header" aria-labelledby="iv-page-title">
+			<h1 id="iv-page-title">Stocktake</h1>
+			<p>Count shelves and close when quantities match</p>
+			<div class="iv-page-header__actions">
+				<button type="button" class="iv-btn iv-btn--primary">Close stocktake</button>
+			</div>
+		</header>
+		<section class="iv-section" aria-labelledby="iv-cc-title">
+			<h2 id="iv-cc-title" class="iv-section__title">WH-1 · Spring inventur</h2>
+			<p class="iv-muted">Counting · Counted 1 of 2.</p>
+			<p class="iv-section__hint" role="status">1 line(s) changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities.</p>
+			<table class="iv-table">
+				<thead>
+					<tr>
+						<th scope="col">Item</th>
+						<th scope="col">System qty</th>
+						<th scope="col">Live qty</th>
+						<th scope="col">Status</th>
+						<th scope="col">Counted qty</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td data-label="Item">FILTER-42</td>
+						<td data-label="System qty">10</td>
+						<td data-label="Live qty">12</td>
+						<td data-label="Status"><span class="iv-badge iv-badge--warning">Changed since snapshot</span></td>
+						<td data-label="Counted qty">
+							<label class="iv-sr-only" for="iv-count-1">Counted quantity</label>
+							<input id="iv-count-1" class="iv-input" type="number" min="0" value="10" aria-label="Counted quantity">
+							<button type="button" class="iv-btn">Save</button>
+						</td>
+					</tr>
+					<tr>
+						<td data-label="Item">SEAL-7</td>
+						<td data-label="System qty">4</td>
+						<td data-label="Live qty">4</td>
+						<td data-label="Status"><span class="iv-muted">OK</span></td>
+						<td data-label="Counted qty"><span class="iv-muted">Not counted</span></td>
+					</tr>
+				</tbody>
+			</table>
+		</section>
+	</main>
+</body>
+</html>

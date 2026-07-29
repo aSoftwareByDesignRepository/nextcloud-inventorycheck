@@ -19,6 +19,15 @@ test('isValidCode charset', () => {
 test('formatQty', () => {
 	assert.equal(IvApp.formatQty(12), '12');
 	assert.equal(IvApp.formatQty(-4), '-4');
+	assert.equal(IvApp.formatQty('1.5'), '1.5');
+	assert.equal(IvApp.formatQty(1500, 3), '1.5');
+	assert.equal(IvApp.formatQty(1000, 3), '1');
+	assert.equal(IvApp.formatQty(-1250, 3), '-1.25');
+});
+
+test('qtyStep', () => {
+	assert.equal(IvApp.qtyStep({ qtyScale: 0 }), '1');
+	assert.equal(IvApp.qtyStep({ qtyScale: 3 }), '0.001');
 });
 
 test('locationKindLabel', () => {

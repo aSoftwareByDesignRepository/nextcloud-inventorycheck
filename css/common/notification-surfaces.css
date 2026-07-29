@@ -301,7 +301,7 @@
 	border: 2px solid var(--color-border, var(--iv-border));
 	border-radius: var(--iv-radius-md, 8px);
 	background: var(--color-main-background, var(--iv-bg));
-	box-shadow: var(--iv-shadow-sm, 0 1px 2px rgb(0 0 0 / 8%));
+	box-shadow: var(--iv-shadow-sm);
 	color: var(--color-main-text, var(--iv-text));
 }
 

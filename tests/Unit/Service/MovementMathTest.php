@@ -11,11 +11,12 @@ final class MovementMathTest extends TestCase
 {
 	public function testValidMovementQtyBounds(): void
 	{
-		$this->assertFalse(MovementMath::isValidMovementQty(0));
-		$this->assertTrue(MovementMath::isValidMovementQty(1));
 		$this->assertTrue(MovementMath::isValidMovementQty(1_000_000));
+		$this->assertTrue(MovementMath::isValidMovementQty(1_000_001, 1_000_000_000));
 		$this->assertFalse(MovementMath::isValidMovementQty(1_000_001));
 		$this->assertFalse(MovementMath::isValidMovementQty(-1));
+		$this->assertFalse(MovementMath::isValidMovementQty(0));
+		$this->assertTrue(MovementMath::isValidMovementQty(1));
 	}
 
 	public function testBalanceBounds(): void

@@ -13,6 +13,7 @@ use OCA\InventoryCheck\Service\AccessControlService;
 use OCA\InventoryCheck\Service\Clock;
 use OCA\InventoryCheck\Service\LicenseService;
 use OCA\InventoryCheck\Service\MobileGateService;
+use OCP\IConfig;
 use PHPUnit\Framework\TestCase;
 
 final class MobileGateServiceTest extends TestCase
@@ -20,6 +21,7 @@ final class MobileGateServiceTest extends TestCase
 	private LicenseService $license;
 	private AccessControlService $access;
 	private Clock $clock;
+	private IConfig $config;
 	private MobileGateService $gate;
 
 	protected function setUp(): void
@@ -28,8 +30,10 @@ final class MobileGateServiceTest extends TestCase
 		$this->license = $this->createMock(LicenseService::class);
 		$this->access = $this->createMock(AccessControlService::class);
 		$this->clock = $this->createMock(Clock::class);
+		$this->config = $this->createMock(IConfig::class);
+		$this->config->method('getAppValue')->willReturn('0');
 		$this->clock->method('todayYmd')->willReturn('2026-07-24');
-		$this->gate = new MobileGateService($this->license, $this->access, $this->clock);
+		$this->gate = new MobileGateService($this->license, $this->access, $this->clock, $this->config);
 	}
 
 	public function testAssertGateMissingLicense(): void
@@ -96,6 +100,11 @@ final class MobileGateServiceTest extends TestCase
 		$this->assertTrue($boot['seatWithinLimit']);
 		$this->assertFalse($boot['devicePaired']);
 		$this->assertSame(LicenseService::MOBILE_APP_STATUS, $boot['mobileAppStatus']);
+		$this->assertSame(1, $boot['companionApi']);
+		$this->assertTrue($boot['capabilities']['csv']);
+		$this->assertTrue($boot['capabilities']['photos']);
+		$this->assertTrue($boot['capabilities']['cycleCount']);
+		$this->assertTrue($boot['capabilities']['bulkLabels']);
 	}
 
 	private function validState(int $seats, int $devices): LicenseState

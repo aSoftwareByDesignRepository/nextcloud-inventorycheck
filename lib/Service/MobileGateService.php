@@ -7,16 +7,22 @@ namespace OCA\InventoryCheck\Service;
 use OCA\InventoryCheck\Db\ScanDevice;
 use OCA\InventoryCheck\Exception\MobileGateException;
 use OCA\InventoryCheck\License\Iv2Codec;
+use OCP\IConfig;
 
 /**
  * SPEC §9.1 gate ladder for mobile/device callers.
  */
 class MobileGateService
 {
+	/** Wave C1: companion API bumps to 2 once fractional (qty_scale=3) is enabled. */
+	private const COMPANION_API_BASE = 1;
+	private const COMPANION_API_FRACTIONAL = 2;
+
 	public function __construct(
 		private readonly LicenseService $license,
 		private readonly AccessControlService $access,
 		private readonly Clock $clock,
+		private readonly IConfig $config,
 	) {
 	}
 
@@ -50,12 +56,21 @@ class MobileGateService
 				$seatWithinLimit = SeatRank::isWithinLimit($rankInput, (int)$seat->getId(), $limit);
 			}
 		}
+		$qtyScale = QtyScale::current($this->config);
 		return [
 			'licensing' => $licensing,
 			'seatAssigned' => $seatAssigned,
 			'seatWithinLimit' => $seatWithinLimit,
 			'devicePaired' => $device !== null,
 			'mobileAppStatus' => LicenseService::MOBILE_APP_STATUS,
+			'companionApi' => $qtyScale === QtyScale::SCALE_MILLI ? self::COMPANION_API_FRACTIONAL : self::COMPANION_API_BASE,
+			'capabilities' => [
+				'csv' => true,
+				'photos' => true,
+				'cycleCount' => true,
+				'bulkLabels' => true,
+				'qtyScale' => $qtyScale,
+			],
 			'user' => $userId,
 		];
 	}

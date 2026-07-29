@@ -24,6 +24,7 @@ final class AdjustSemantics
 		?int $qty,
 		?int $qtyDelta,
 		bool $allowNegative,
+		int $maxMovementQty = MovementMath::QTY_MAX,
 	): array {
 		$mode = strtolower(trim($mode));
 		if ($mode === 'set') {
@@ -48,7 +49,7 @@ final class AdjustSemantics
 			}
 			// Absolute magnitude must obey S1 movement qty bounds when non-zero.
 			$abs = abs($qtyDelta);
-			if ($abs !== 0 && !MovementMath::isValidMovementQty($abs)) {
+			if ($abs !== 0 && !MovementMath::isValidMovementQty($abs, $maxMovementQty)) {
 				throw new ValidationException('invalid_qty');
 			}
 			$delta = $qtyDelta;

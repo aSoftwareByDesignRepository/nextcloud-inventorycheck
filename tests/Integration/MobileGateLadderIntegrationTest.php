@@ -131,6 +131,7 @@ final class MobileGateLadderIntegrationTest extends TestCase
 			$request,
 			Server::get(\OCP\IURLGenerator::class),
 			Server::get(\OCP\L10N\IFactory::class),
+			Server::get(\OCP\IConfig::class),
 		);
 	}
 
@@ -168,6 +169,7 @@ final class MobileGateLadderIntegrationTest extends TestCase
 			Server::get(\OCA\InventoryCheck\Service\MovementService::class),
 			Server::get(AccessControlService::class),
 			Server::get(IUserSession::class),
+			Server::get(IConfig::class),
 		);
 	}
 
@@ -189,6 +191,7 @@ final class MobileGateLadderIntegrationTest extends TestCase
 			Server::get(\OCA\InventoryCheck\Service\MovementService::class),
 			Server::get(AccessControlService::class),
 			Server::get(IUserSession::class),
+			Server::get(IConfig::class),
 		);
 	}
 
@@ -245,6 +248,7 @@ final class MobileGateLadderIntegrationTest extends TestCase
 			Server::get(\OCA\InventoryCheck\Service\MovementService::class),
 			Server::get(AccessControlService::class),
 			Server::get(IUserSession::class),
+			Server::get(IConfig::class),
 		);
 		try {
 			$controller->bootstrap();
@@ -272,6 +276,7 @@ final class MobileGateLadderIntegrationTest extends TestCase
 			Server::get(\OCA\InventoryCheck\Service\MovementService::class),
 			Server::get(AccessControlService::class),
 			Server::get(IUserSession::class),
+			Server::get(IConfig::class),
 		);
 		$response = $this->invoke($controller, 'bootstrap', static fn () => $controller->bootstrap());
 		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
@@ -301,6 +306,7 @@ final class MobileGateLadderIntegrationTest extends TestCase
 			Server::get(\OCA\InventoryCheck\Service\MovementService::class),
 			Server::get(AccessControlService::class),
 			Server::get(IUserSession::class),
+			Server::get(IConfig::class),
 		);
 		$response = $this->invoke($controller, 'bootstrap', static fn () => $controller->bootstrap());
 		$this->assertSame(402, $response->getStatus());

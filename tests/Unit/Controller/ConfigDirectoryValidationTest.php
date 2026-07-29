@@ -7,6 +7,10 @@ namespace OCA\InventoryCheck\Tests\Unit\Controller;
 use OCA\InventoryCheck\Controller\ConfigController;
 use OCA\InventoryCheck\Exception\ValidationException;
 use OCA\InventoryCheck\Service\AccessControlService;
+use OCA\InventoryCheck\Service\LocationAclService;
+use OCA\InventoryCheck\Service\LowStockService;
+use OCA\InventoryCheck\Service\QtyScaleService;
+use OCP\IConfig;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserManager;
@@ -26,6 +30,14 @@ final class ConfigDirectoryValidationTest extends TestCase
 	private IUserManager $users;
 	/** @var IGroupManager&MockObject */
 	private IGroupManager $groups;
+	/** @var LowStockService&MockObject */
+	private LowStockService $lowStock;
+	/** @var QtyScaleService&MockObject */
+	private QtyScaleService $qtyScaleService;
+	/** @var LocationAclService&MockObject */
+	private LocationAclService $locationAcl;
+	/** @var IConfig&MockObject */
+	private IConfig $config;
 
 	private ConfigController $controller;
 
@@ -36,11 +48,20 @@ final class ConfigDirectoryValidationTest extends TestCase
 		$this->access = $this->createMock(AccessControlService::class);
 		$this->users = $this->createMock(IUserManager::class);
 		$this->groups = $this->createMock(IGroupManager::class);
+		$this->lowStock = $this->createMock(LowStockService::class);
+		$this->lowStock->method('isPerLocationHintEnabled')->willReturn(false);
+		$this->qtyScaleService = $this->createMock(QtyScaleService::class);
+		$this->locationAcl = $this->createMock(LocationAclService::class);
+		$this->config = $this->createMock(IConfig::class);
 		$this->controller = new ConfigController(
 			$this->request,
 			$this->access,
 			$this->users,
 			$this->groups,
+			$this->lowStock,
+			$this->qtyScaleService,
+			$this->locationAcl,
+			$this->config,
 		);
 	}
 
