@@ -8,10 +8,12 @@ use OCA\InventoryCheck\AppInfo\Application;
 use OCA\InventoryCheck\Exception\ValidationException;
 use OCA\InventoryCheck\Service\AccessControlService;
 use OCA\InventoryCheck\Service\LocationAclService;
+use OCA\InventoryCheck\Service\LocationScanPolicy;
 use OCA\InventoryCheck\Service\LowStockNotifyService;
 use OCA\InventoryCheck\Service\LowStockService;
 use OCA\InventoryCheck\Service\QtyScale;
 use OCA\InventoryCheck\Service\QtyScaleService;
+use OCA\InventoryCheck\Service\ReasonCodes;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
@@ -79,6 +81,8 @@ class ConfigController extends Controller
 			'locationReorderHintEnabled' => $this->lowStock->isPerLocationHintEnabled(),
 			'qtyScale' => QtyScale::current($this->config),
 			'locationAclEnabled' => $this->locationAcl->isEnabled(),
+			'requireAdjustReason' => ReasonCodes::isRequired($this->config),
+			'requireLocationScan' => LocationScanPolicy::isRequired($this->config),
 		]);
 	}
 
@@ -93,6 +97,29 @@ class ConfigController extends Controller
 		$this->access->requireAppAdmin($uid);
 		$result = $this->qtyScaleService->enableFractional();
 		return new JSONResponse(array_merge($result, ['qtyScale' => QtyScale::current($this->config)]));
+	}
+
+	/** Wave D3/D8 policies */
+	#[NoAdminRequired]
+	public function saveWaveD(): JSONResponse
+	{
+		$uid = $this->access->currentUserId();
+		$this->access->requireAppAdmin($uid);
+		$p = $this->request->getParams();
+		if (array_key_exists('requireAdjustReason', $p)) {
+			ReasonCodes::setRequired($this->config, $this->parseBool($p['requireAdjustReason'], 'requireAdjustReason'));
+		}
+		if (array_key_exists('requireLocationScan', $p)) {
+			LocationScanPolicy::setRequired($this->config, $this->parseBool($p['requireLocationScan'], 'requireLocationScan'));
+		}
+		return $this->index();
+	}
+
+	/** Wave D3 catalog — any app user (P2) */
+	#[NoAdminRequired]
+	public function reasonCodes(): JSONResponse
+	{
+		return new JSONResponse(['data' => ReasonCodes::catalog()]);
 	}
 
 	/**
@@ -156,10 +183,21 @@ class ConfigController extends Controller
 		$allowedGroups = array_key_exists('allowedGroups', $p)
 			? $this->validatedGroupIds($p['allowedGroups'], 'allowedGroups')
 			: null;
-		// L0 only — L1 payloads that include appAdmins are ignored (no escalation).
+		// Dedicated App Admins (portfolio §2.1) may rewrite the list; self-lockout is blocked.
 		$appAdmins = null;
-		if (array_key_exists('appAdmins', $p) && $this->access->isSystemAdmin($uid)) {
+		if (array_key_exists('appAdmins', $p) && $this->access->isAppAdmin($uid)) {
 			$appAdmins = $this->validatedUserIds($p['appAdmins'], 'appAdmins');
+			if (
+				!$this->access->isSystemAdmin($uid)
+				&& !in_array($uid, $appAdmins, true)
+				&& $appAdmins === []
+			) {
+				throw new ValidationException(
+					'validation_failed',
+					'You cannot remove your own app administrator access without assigning another administrator first.',
+					[['field' => 'appAdmins', 'code' => 'cannot_remove_self']],
+				);
+			}
 		}
 
 		// Phase 2 — commit only after all validations succeeded.

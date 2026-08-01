@@ -15,10 +15,15 @@ return [
 		['name' => 'page#settings', 'url' => '/settings', 'verb' => 'GET'],
 
 		['name' => 'location#index', 'url' => '/api/locations', 'verb' => 'GET'],
+		['name' => 'location#byCode', 'url' => '/api/locations/by-code/{code}', 'verb' => 'GET', 'requirements' => ['code' => '[^/]+']],
 		['name' => 'location#show', 'url' => '/api/locations/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
 		['name' => 'location#create', 'url' => '/api/locations', 'verb' => 'POST'],
 		['name' => 'location#update', 'url' => '/api/locations/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\\d+']],
 		['name' => 'location#destroy', 'url' => '/api/locations/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\\d+']],
+		['name' => 'location#label', 'url' => '/api/locations/{id}/label.svg', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+		['name' => 'location#labelAlias', 'url' => '/api/locations/{id}/label', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+		['name' => 'location#labelPrint', 'url' => '/locations/{id}/label', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+		['name' => 'location#bulkLabels', 'url' => '/api/locations/labels', 'verb' => 'GET'],
 
 		['name' => 'item#index', 'url' => '/api/items', 'verb' => 'GET'],
 		['name' => 'item#byCode', 'url' => '/api/items/by-code/{code}', 'verb' => 'GET', 'requirements' => ['code' => '[^/]+']],
@@ -73,8 +78,13 @@ return [
 		['name' => 'config#saveOffice', 'url' => '/api/config/office', 'verb' => 'POST'],
 		['name' => 'config#saveNotify', 'url' => '/api/config/notify', 'verb' => 'POST'],
 		['name' => 'config#saveFractional', 'url' => '/api/config/fractional', 'verb' => 'POST'],
+		['name' => 'config#saveWaveD', 'url' => '/api/config/wave-d', 'verb' => 'POST'],
+		['name' => 'config#reasonCodes', 'url' => '/api/reason-codes', 'verb' => 'GET'],
 		['name' => 'config#locationAcl', 'url' => '/api/config/location-acl', 'verb' => 'GET'],
 		['name' => 'config#saveLocationAcl', 'url' => '/api/config/location-acl', 'verb' => 'PUT'],
+
+		['name' => 'directory#searchUsers', 'url' => '/api/directory/users', 'verb' => 'GET'],
+		['name' => 'directory#searchGroups', 'url' => '/api/directory/groups', 'verb' => 'GET'],
 
 		['name' => 'license#show', 'url' => '/api/license', 'verb' => 'GET'],
 		['name' => 'license#apply', 'url' => '/api/license', 'verb' => 'POST'],
@@ -89,10 +99,17 @@ return [
 
 		['name' => 'mobile#bootstrap', 'url' => '/mobile/v1/bootstrap', 'verb' => 'GET'],
 		['name' => 'mobile#byCode', 'url' => '/mobile/v1/items/by-code/{code}', 'verb' => 'GET', 'requirements' => ['code' => '[^/]+']],
+		['name' => 'mobile#locationByCode', 'url' => '/mobile/v1/locations/by-code/{code}', 'verb' => 'GET', 'requirements' => ['code' => '[^/]+']],
 		['name' => 'mobile#locations', 'url' => '/mobile/v1/locations', 'verb' => 'GET'],
 		['name' => 'mobile#balances', 'url' => '/mobile/v1/balances', 'verb' => 'GET'],
 		['name' => 'mobile#movements', 'url' => '/mobile/v1/movements', 'verb' => 'GET'],
 		['name' => 'mobile#scan', 'url' => '/mobile/v1/movements/scan', 'verb' => 'POST'],
 		['name' => 'mobile#pairDevice', 'url' => '/mobile/v1/devices/pair', 'verb' => 'POST'],
+		['name' => 'mobile#favourites', 'url' => '/mobile/v1/favourites/locations', 'verb' => 'GET'],
+		['name' => 'mobile#addFavourite', 'url' => '/mobile/v1/favourites/locations', 'verb' => 'POST'],
+		['name' => 'mobile#removeFavourite', 'url' => '/mobile/v1/favourites/locations/{locationId}', 'verb' => 'DELETE', 'requirements' => ['locationId' => '\\d+']],
+		['name' => 'mobile#cycleCounts', 'url' => '/mobile/v1/cycle-counts', 'verb' => 'GET'],
+		['name' => 'mobile#cycleCountShow', 'url' => '/mobile/v1/cycle-counts/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+		['name' => 'mobile#cycleCountSetCount', 'url' => '/mobile/v1/cycle-counts/lines/{lineId}', 'verb' => 'PUT', 'requirements' => ['lineId' => '\\d+']],
 	],
 ];

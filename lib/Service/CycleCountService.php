@@ -163,9 +163,12 @@ class CycleCountService
 	}
 
 	/** @return array<string, mixed> */
+	/**
+	 * Submit a counted qty for a line. Any app user with location ACL may count
+	 * (companion P2 inventur counters); create/start/close remain office-only.
+	 */
 	public function setCount(string $actorUid, int $lineId, int $qtyCounted): array
 	{
-		$this->access->requireOffice($actorUid);
 		if (!CycleCountSemantics::isQtyCountedValid($qtyCounted)) {
 			throw new ValidationException('validation_failed', '', [['field' => 'qtyCounted', 'code' => 'validation_failed']]);
 		}
@@ -175,6 +178,7 @@ class CycleCountService
 			// Otherwise setCount vs close ABBA-deadlocks on the same inventur.
 			$peek = $this->lines->findById($lineId);
 			$camp = $this->campaigns->lockById($peek->getCampaignId(), true);
+			$this->locationAcl->assertCanAccess($actorUid, (int)$camp->getLocationId());
 			$line = $this->lines->lockById($lineId, true);
 			if ((int)$line->getCampaignId() !== (int)$camp->getId()) {
 				throw new ConflictException('campaign_not_counting');
@@ -325,6 +329,7 @@ class CycleCountService
 					'Cycle count #' . $campaignId,
 					null,
 					false, // defer low-stock notify until after inventur TX commits
+					'inventur',
 				);
 				$movId = (int)($result['movements'][0]['id'] ?? 0);
 				$locked->setPostedMovId($movId > 0 ? $movId : null);

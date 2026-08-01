@@ -60,6 +60,24 @@ class LocationService
 	}
 
 	/**
+	 * Wave D2: resolve by location.code (exact). Inactive / miss / ACL → code_not_found.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function byCode(string $actorUid, string $code): array
+	{
+		$code = CodeRules::trim($code);
+		$loc = $this->locations->findByCode($code);
+		if ($loc === null || !$loc->getActive()) {
+			throw new NotFoundException('code_not_found');
+		}
+		if (!$this->locationAcl->canAccessLocation($actorUid, (int)$loc->getId())) {
+			throw new NotFoundException('code_not_found');
+		}
+		return $loc->toApi();
+	}
+
+	/**
 	 * @param array<string, mixed> $input
 	 * @return array<string, mixed>
 	 */

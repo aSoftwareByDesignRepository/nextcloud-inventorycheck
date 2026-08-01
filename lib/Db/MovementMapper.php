@@ -33,8 +33,9 @@ class MovementMapper extends QBMapper
 		int $limit,
 		int $offset,
 		?array $locationIdFilter = null,
+		?string $reasonCode = null,
 	): array {
-		$apply = function ($qb) use ($kind, $itemId, $locationId, $from, $to, $transferGroup, $locationIdFilter): void {
+		$apply = function ($qb) use ($kind, $itemId, $locationId, $from, $to, $transferGroup, $locationIdFilter, $reasonCode): void {
 			$qb->from($this->getTableName());
 			$conds = [];
 			if ($kind !== null && $kind !== '') {
@@ -65,6 +66,9 @@ class MovementMapper extends QBMapper
 			}
 			if ($transferGroup !== null && $transferGroup !== '') {
 				$conds[] = $qb->expr()->eq('transfer_group', $qb->createNamedParameter($transferGroup));
+			}
+			if ($reasonCode !== null && $reasonCode !== '') {
+				$conds[] = $qb->expr()->eq('reason_code', $qb->createNamedParameter($reasonCode));
 			}
 			if ($conds !== []) {
 				$qb->where(...$conds);

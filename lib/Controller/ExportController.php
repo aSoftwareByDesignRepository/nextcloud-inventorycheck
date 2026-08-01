@@ -40,6 +40,7 @@ class ExportController extends Controller
 		$from = $this->request->getParam('from');
 		$to = $this->request->getParam('to');
 		$lang = (string)$this->request->getParam('lang', 'en');
+		$reasonCode = $this->request->getParam('reasonCode');
 		$result = $this->export->export(
 			$uid,
 			(string)$this->request->getParam('kind', ''),
@@ -48,6 +49,7 @@ class ExportController extends Controller
 			$from !== null && $from !== '' ? (int)$from : null,
 			$to !== null && $to !== '' ? (int)$to : null,
 			$lang,
+			$reasonCode !== null && $reasonCode !== '' ? (string)$reasonCode : null,
 		);
 		return new DataDownloadResponse($result['body'], $result['filename'], $result['contentType']);
 	}

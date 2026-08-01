@@ -37,6 +37,10 @@ use OCP\AppFramework\Db\Entity;
  * @method void setLastPriceMinor(?int $v)
  * @method string getTrackMode()
  * @method void setTrackMode(string $v)
+ * @method int|null getTargetStock()
+ * @method void setTargetStock(?int $v)
+ * @method int|null getDefaultLocationId()
+ * @method void setDefaultLocationId(?int $v)
  */
 class Item extends Entity
 {
@@ -56,6 +60,10 @@ class Item extends Entity
 	protected ?int $lastPriceMinor = null;
 	/** Wave C2: none|lot|serial — see {@see \OCA\InventoryCheck\Service\CodeRules::TRACK_MODES}. */
 	protected string $trackMode = 'none';
+	/** Wave D4: optional order-up-to level (storage units). */
+	protected ?int $targetStock = null;
+	/** Wave D7: optional putaway / receive default location. */
+	protected ?int $defaultLocationId = null;
 
 	public function __construct()
 	{
@@ -74,6 +82,8 @@ class Item extends Entity
 		$this->addType('supplierNote', 'string');
 		$this->addType('lastPriceMinor', 'integer');
 		$this->addType('trackMode', 'string');
+		$this->addType('targetStock', 'integer');
+		$this->addType('defaultLocationId', 'integer');
 	}
 
 	/** @return array<string, mixed> */
@@ -87,6 +97,8 @@ class Item extends Entity
 			'description' => $this->description,
 			'uom' => $this->uom,
 			'reorderLevel' => $this->reorderLevel,
+			'targetStock' => $this->targetStock,
+			'defaultLocationId' => $this->defaultLocationId,
 			'active' => $this->active,
 			'hasPhoto' => $this->photoName !== null && $this->photoName !== '',
 			'photoMime' => $this->photoMime,

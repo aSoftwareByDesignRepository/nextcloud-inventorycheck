@@ -17,6 +17,10 @@ class MobileGateService
 	/** Wave C1: companion API bumps to 2 once fractional (qty_scale=3) is enabled. */
 	private const COMPANION_API_BASE = 1;
 	private const COMPANION_API_FRACTIONAL = 2;
+	/** Wave D: location by-code, reason codes, location-scan policy. */
+	private const COMPANION_API_WAVE_D = 3;
+	/** Mobile favourites + cycle-count endpoints for companion P1/P2. */
+	private const COMPANION_API_MOBILE_STOCKTAKE = 4;
 
 	public function __construct(
 		private readonly LicenseService $license,
@@ -57,21 +61,33 @@ class MobileGateService
 			}
 		}
 		$qtyScale = QtyScale::current($this->config);
+		$companionApi = self::COMPANION_API_MOBILE_STOCKTAKE;
+		if ($qtyScale === QtyScale::SCALE_MILLI && $companionApi < self::COMPANION_API_FRACTIONAL) {
+			$companionApi = self::COMPANION_API_FRACTIONAL;
+		}
+		$isOffice = $userId !== null && $userId !== '' && $this->access->isOffice($userId);
 		return [
 			'licensing' => $licensing,
 			'seatAssigned' => $seatAssigned,
 			'seatWithinLimit' => $seatWithinLimit,
 			'devicePaired' => $device !== null,
 			'mobileAppStatus' => LicenseService::MOBILE_APP_STATUS,
-			'companionApi' => $qtyScale === QtyScale::SCALE_MILLI ? self::COMPANION_API_FRACTIONAL : self::COMPANION_API_BASE,
+			'companionApi' => $companionApi,
+			'requireAdjustReason' => ReasonCodes::isRequired($this->config),
+			'requireLocationScan' => LocationScanPolicy::isRequired($this->config),
 			'capabilities' => [
 				'csv' => true,
 				'photos' => true,
 				'cycleCount' => true,
 				'bulkLabels' => true,
+				'locationByCode' => true,
+				'reasonCodes' => true,
+				'favourites' => true,
 				'qtyScale' => $qtyScale,
 			],
+			'reasonCodes' => ReasonCodes::catalog(),
 			'user' => $userId,
+			'isOffice' => $isOffice,
 		];
 	}
 

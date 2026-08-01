@@ -122,6 +122,11 @@ final class Csv
 			'created_at' => 'Erstellt_Am',
 			'created_by' => 'Erstellt_Von',
 			'movement_id' => 'Buchungs_ID',
+			'target_stock' => 'Zielbestand',
+			'suggested_qty' => 'Vorschlagsmenge',
+			'on_hand' => 'Bestand',
+			'reason_code' => 'Grundcode',
+			'default_location_id' => 'Standard_Lagerort_ID',
 		];
 		return array_map(static fn (string $h): string => $map[$h] ?? $h, $headers);
 	}

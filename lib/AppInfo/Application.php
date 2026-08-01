@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace OCA\InventoryCheck\AppInfo;
 
+use OCA\InventoryCheck\Listener\UserDeletedListener;
+use OCP\User\Events\UserDeletedEvent;
 use OCA\InventoryCheck\Command\RebuildBalancesCommand;
 use OCA\InventoryCheck\Db\BalanceMapper;
 use OCA\InventoryCheck\Db\CycleCampaignMapper;
@@ -29,6 +31,7 @@ use OCA\InventoryCheck\Service\CsvExportService;
 use OCA\InventoryCheck\Service\CsvImportService;
 use OCA\InventoryCheck\Service\CycleCountService;
 use OCA\InventoryCheck\Service\DevicePairingService;
+use OCA\InventoryCheck\Service\DirectoryOptionsService;
 use OCA\InventoryCheck\Service\FlangeService;
 use OCA\InventoryCheck\Service\ItemPhotoService;
 use OCA\InventoryCheck\Service\ItemService;
@@ -72,6 +75,7 @@ class Application extends App implements IBootstrap
 
 	public function register(IRegistrationContext $context): void
 	{
+		$context->registerEventListener(UserDeletedEvent::class, UserDeletedListener::class);
 		$context->registerService(LocationMapper::class, static fn ($c) => new LocationMapper($c->get(IDBConnection::class)));
 		$context->registerService(ItemMapper::class, static fn ($c) => new ItemMapper($c->get(IDBConnection::class)));
 		$context->registerService(BalanceMapper::class, static fn ($c) => new BalanceMapper($c->get(IDBConnection::class)));
@@ -91,6 +95,12 @@ class Application extends App implements IBootstrap
 				$c->get(IConfig::class),
 				$c->get(IGroupManager::class),
 				$c->get(IUserSession::class),
+			);
+		});
+		$context->registerService(DirectoryOptionsService::class, static function ($c): DirectoryOptionsService {
+			return new DirectoryOptionsService(
+				$c->get(IUserManager::class),
+				$c->get(IGroupManager::class),
 			);
 		});
 		$context->registerService(LocationAclService::class, static function ($c): LocationAclService {

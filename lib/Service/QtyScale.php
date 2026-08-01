@@ -110,6 +110,9 @@ final class QtyScale
 		if (array_key_exists('reorderLevel', $item) && is_int($item['reorderLevel'])) {
 			$item['reorderLevel'] = self::toDisplay($config, $item['reorderLevel']);
 		}
+		if (array_key_exists('targetStock', $item) && is_int($item['targetStock'])) {
+			$item['targetStock'] = self::toDisplay($config, $item['targetStock']);
+		}
 		return $item;
 	}
 
@@ -136,7 +139,7 @@ final class QtyScale
 	/** @param array<string, mixed> $row */
 	public static function formatLowStock(array $row, IConfig $config): array
 	{
-		foreach (['totalQty', 'qty', 'reorderLevel'] as $key) {
+		foreach (['totalQty', 'qty', 'reorderLevel', 'suggestedQty', 'targetStock'] as $key) {
 			if (array_key_exists($key, $row) && is_int($row[$key])) {
 				$row[$key] = self::toDisplay($config, $row[$key]);
 			}

@@ -43,6 +43,8 @@ class LowStockService
 				'item' => $item->toApi(),
 				'totalQty' => $total,
 				'reorderLevel' => $item->getReorderLevel(),
+				'targetStock' => $item->getTargetStock(),
+				'suggestedQty' => SuggestedOrder::qty($total, $item->getReorderLevel(), $item->getTargetStock()),
 				'deficit' => LowStockQuery::deficit($total, $item->getReorderLevel()),
 			];
 		}

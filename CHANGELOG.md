@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.3.0 — 2026-08-01
+
+- **Wave D (warehouse / buyer / auditor hygiene):**
+  - **D2:** `GET /api/locations/by-code/{code}` + mobile twin — exact location code resolve (ACL-safe).
+  - **D1:** Location labels (QR + Code 128) + bulk A4 sheet (`/api/locations/labels`).
+  - **D3:** Adjust reason codes (`inventur|damage|loss|found|correction|other`); `reason_code` on movements; `require_adjust_reason` (ensurer seeds on); `GET /api/reason-codes`.
+  - **D4/D5:** Item `target_stock` + create/update validation; low-stock `suggestedQty`; CSV export kind `reorder`.
+  - **D6:** CSV export kind `variance` (adjust movements).
+  - **D7:** Item `default_location_id` + create/update (active location FK).
+  - **D8:** `require_location_scan` + scan `locationCode` confirm (`location_code_mismatch`).
+  - **D9:** `companionApi` → **3**; bootstrap exposes reason catalog + policy flags.
+- **Inventur:** cycle-count close posts adjusts with reason code `inventur`.
+- **Tests:** ReasonCodes, SuggestedOrder, location LabelSvg, MobileGate companionApi=3.
+
+## 1.2.15 — 2026-07-31
+
+- **Licensing:** IV2 license apply/remove, mobile seats, and scanner device pairing (`/api/license/*`) with `Iv2Codec` verification against the vendor public key.
+- **Companion APIs:** mobile gate/bootstrap hardening; device actors stay usable under location ACL; seat and device management for Track L clients.
+- **Shell / UX:** ArbeitszeitCheck-aligned chrome (tokens, navigation, page patterns); Support & Us in Settings; stocktake and label-sheet templates.
+- **Validation:** config directory saves reject unknown user/group ids; expanded shell/e2e and license golden-fixture coverage.
+- **Release:** sync `appinfo/version` with `info.xml` for the ready4upload production archive gate.
+
 ## 1.2.12 — 2026-07-26
 
 - **Labels:** every printable label now includes **QR + Code 128** of the same `scan_code` (phone cameras and wedge/laser scanners).

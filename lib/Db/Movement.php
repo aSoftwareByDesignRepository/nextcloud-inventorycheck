@@ -33,6 +33,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setCreatedBy(string $v)
  * @method string|null getLotCode()
  * @method void setLotCode(?string $v)
+ * @method string|null getReasonCode()
+ * @method void setReasonCode(?string $v)
  */
 class Movement extends Entity
 {
@@ -51,6 +53,8 @@ class Movement extends Entity
 	protected string $createdBy = '';
 	/** Wave C2: lot/serial code, only set when the item's track_mode requires one. */
 	protected ?string $lotCode = null;
+	/** Wave D3: adjust reason taxonomy code (nullable for non-adjust / legacy). */
+	protected ?string $reasonCode = null;
 
 	public function __construct()
 	{
@@ -67,6 +71,7 @@ class Movement extends Entity
 		$this->addType('createdAt', 'integer');
 		$this->addType('createdBy', 'string');
 		$this->addType('lotCode', 'string');
+		$this->addType('reasonCode', 'string');
 	}
 
 	/** @return array<string, mixed> */
@@ -82,6 +87,7 @@ class Movement extends Entity
 			'transferGroup' => $this->transferGroup,
 			'counterpartyLocId' => $this->counterpartyLocId,
 			'reason' => $this->reason,
+			'reasonCode' => $this->reasonCode,
 			'refType' => $this->refType,
 			'refId' => $this->refId,
 			'lotCode' => $this->lotCode,

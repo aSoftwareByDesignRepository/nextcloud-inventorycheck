@@ -230,6 +230,7 @@ class AppAccessMiddleware extends Middleware
 			'count_conflict' => $l->t('Stock changed after this stocktake started. Review conflict lines, then close again and confirm you accept the counted quantities.'),
 			'track_mode_changed' => $l->t('An item on this stocktake was switched to lot or serial tracking. Remove it from the count or set tracking back to none, then try again.'),
 			'favourite_limit' => $l->t('You already have the maximum number of favourite locations.'),
+			'location_code_mismatch' => $l->t('The scanned location code does not match the selected location.'),
 			default => $l->t('Please check the highlighted fields.'),
 		};
 	}

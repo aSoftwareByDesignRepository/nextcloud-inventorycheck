@@ -174,6 +174,28 @@ class AccessControlService
 		);
 	}
 
+	
+	/**
+	 * Portfolio §2.1 / user lifecycle: strip deleted UIDs from app-admin and allow lists.
+	 * Idempotent — missing uid is a no-op.
+	 */
+	public function purgeUser(string $userId): void
+	{
+		if ($userId === '') {
+			return;
+		}
+		foreach ([self::KEY_APP_ADMINS, self::KEY_ACCESS_ALLOWED_USER_IDS] as $key) {
+			$ids = $this->getJsonIdList($key);
+			$filtered = array_values(array_filter(
+				$ids,
+				static fn (string $id): bool => $id !== $userId,
+			));
+			if ($filtered !== $ids) {
+				$this->setJsonIdList($key, $filtered);
+			}
+		}
+	}
+
 	public function setAccessRestrictionEnabled(bool $enabled): void
 	{
 		$this->config->setAppValue(Application::APP_ID, self::KEY_ACCESS_RESTRICTION, $enabled ? '1' : '0');

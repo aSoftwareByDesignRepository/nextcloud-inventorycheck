@@ -6,6 +6,7 @@ namespace OCA\InventoryCheck\Repair;
 
 use OC\DB\Connection;
 use OC\DB\MigrationService;
+use OCA\InventoryCheck\Service\ReasonCodes;
 use OCP\IConfig;
 use OCP\IDBConnection;
 use OCP\Migration\IOutput;
@@ -69,11 +70,20 @@ final class EnsureInventoryCheckSchema implements IRepairStep
 		}
 
 		$seeded = $this->seedDemo();
+		$this->seedWaveDDefaults();
 		$output->info(sprintf(
 			'InventoryCheck: all %d tables are present; seeded %d demo row(s).',
 			count(UninstallDropTables::TABLES),
 			$seeded,
 		));
+	}
+
+	/** Wave D3: require_adjust_reason = on for installs that never set the key. */
+	private function seedWaveDDefaults(): void
+	{
+		if ($this->config->getAppValue(UninstallDropTables::APP_ID, ReasonCodes::KEY_REQUIRE_ADJUST_REASON, '') === '') {
+			$this->config->setAppValue(UninstallDropTables::APP_ID, ReasonCodes::KEY_REQUIRE_ADJUST_REASON, '1');
+		}
 	}
 
 	private function seedDemo(): int

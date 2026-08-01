@@ -81,7 +81,7 @@ test('movements fixture exposes filter form and receive dialog', () => {
 test('settings fixture exposes license seats devices and support', () => {
 	const html = loadFixture('a11y-settings.html');
 	assert.match(html, /id="iv-license"/);
-	assert.match(html, /id="iv-app-admins"/);
+	assert.match(html, /data-iv-field="appAdmins"/);
 	assert.match(html, /Delegated app administrators/);
 	assert.match(html, /Assign seat/);
 	assert.match(html, /Create device slot/);
@@ -94,6 +94,24 @@ test('settings fixture exposes license seats devices and support', () => {
 	assert.match(html, /Location access/);
 	assert.match(html, /id="iv-acl-loc-ids"/);
 	assert.match(html, /multiple/);
+});
+
+test('settings fixture uses directory pickers, never raw id text inputs, for allow-lists/app-admins/ACL subject/seat uid', () => {
+	const html = loadFixture('a11y-settings.html');
+	assert.doesNotMatch(html, /one per line/);
+	assert.doesNotMatch(html, /Nextcloud user id/);
+	assert.doesNotMatch(html, /User or group id/);
+	assert.doesNotMatch(html, /<textarea[^>]*id="iv-allowed-users"/);
+	assert.doesNotMatch(html, /<textarea[^>]*id="iv-app-admins"/);
+	assert.doesNotMatch(html, /<input[^>]*id="iv-acl-subject-id"[^>]*type="text"/);
+	assert.doesNotMatch(html, /<input[^>]*id="iv-seat-uid"[^>]*type="text"/);
+	assert.match(html, /data-iv-field="allowedUsers"/);
+	assert.match(html, /data-iv-field="subjectId"/);
+	assert.match(html, /data-iv-field="uid"/);
+	const pickerCount = (html.match(/class="iv-picker"/g) || []).length;
+	assert.equal(pickerCount, 4, 'expected 4 directory pickers: allowedUsers, appAdmins, ACL subject, seat uid');
+	assert.match(html, /role="combobox"/);
+	assert.match(html, /role="listbox"/);
 });
 
 test('dashboard fixture flags negative balances with text not color alone', () => {

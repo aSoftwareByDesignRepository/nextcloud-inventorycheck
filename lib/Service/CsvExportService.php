@@ -42,6 +42,7 @@ class CsvExportService
 		?int $from,
 		?int $to,
 		string $lang = 'en',
+		?string $reasonCode = null,
 	): array {
 		$kind = strtolower(trim($kind));
 		return match ($kind) {
@@ -50,10 +51,99 @@ class CsvExportService
 			'balances' => $this->exportBalances($itemId, $locationId, $lang),
 			'movements' => $this->exportMovements($actorUid, $itemId, $locationId, $from, $to, false, $lang),
 			'movements_datev' => $this->exportMovements($actorUid, $itemId, $locationId, $from, $to, true, $lang),
+			'reorder' => $this->exportReorder($actorUid, $lang),
+			'variance' => $this->exportVariance($actorUid, $itemId, $locationId, $from, $to, $lang, $reasonCode),
 			default => throw new ValidationException('validation_failed', '', [
 				['field' => 'kind', 'code' => 'validation_failed'],
 			]),
 		};
+	}
+
+	/** Wave D5 — office+ */
+	private function exportReorder(string $actorUid, string $lang): array
+	{
+		if (!$this->access->isOffice($actorUid)) {
+			throw new PermissionDeniedException();
+		}
+		$sums = $this->balances->sumQtyByItem(null);
+		$all = $this->items->search('', true, Csv::MAX_EXPORT_ROWS, 0);
+		$rows = [];
+		foreach ($all['data'] as $item) {
+			$total = $sums[(int)$item->getId()] ?? 0;
+			if (!LowStockQuery::isLowStock(true, $item->getReorderLevel(), $total)) {
+				continue;
+			}
+			$suggested = SuggestedOrder::qty($total, $item->getReorderLevel(), $item->getTargetStock());
+			$api = QtyScale::formatItem($item->toApi(), $this->config);
+			$rows[] = [
+				$api['sku'],
+				$api['name'],
+				QtyScale::toDisplay($this->config, $total),
+				$api['reorderLevel'],
+				$api['targetStock'] ?? '',
+				QtyScale::toDisplay($this->config, $suggested),
+				$api['supplierNote'] ?? '',
+				$api['uom'],
+			];
+		}
+		$this->assertExportFits(count($rows));
+		$headers = Csv::localizeHeaders(
+			['sku', 'name', 'on_hand', 'reorder_level', 'target_stock', 'suggested_qty', 'supplier_note', 'uom'],
+			$lang,
+		);
+		$body = Csv::line($headers);
+		foreach ($rows as $row) {
+			$body .= Csv::line($row);
+		}
+		return $this->pack('inventorycheck-reorder.csv', $body);
+	}
+
+	/** Wave D6 — office+ adjust movements */
+	private function exportVariance(
+		string $actorUid,
+		?int $itemId,
+		?int $locationId,
+		?int $from,
+		?int $to,
+		string $lang,
+		?string $reasonCode = null,
+	): array {
+		if (!$this->access->isOffice($actorUid)) {
+			throw new PermissionDeniedException();
+		}
+		$result = $this->movements->search(
+			'adjust',
+			$itemId,
+			$locationId,
+			$from,
+			$to,
+			null,
+			Csv::MAX_EXPORT_ROWS,
+			0,
+			null,
+			$reasonCode,
+		);
+		$this->assertExportFits($result['total']);
+		$headers = Csv::localizeHeaders(
+			['id', 'item_id', 'location_id', 'qty_delta', 'qty_after', 'reason_code', 'reason', 'created_at', 'created_by'],
+			$lang,
+		);
+		$body = Csv::line($headers);
+		foreach ($result['data'] as $mov) {
+			$api = QtyScale::formatMovement($mov->toApi(), $this->config);
+			$body .= Csv::line([
+				$api['id'],
+				$api['itemId'],
+				$api['locationId'],
+				$api['qtyDelta'],
+				$api['qtyAfter'],
+				$api['reasonCode'] ?? '',
+				$api['reason'] ?? '',
+				$api['createdAt'],
+				$api['createdBy'],
+			]);
+		}
+		return $this->pack('inventorycheck-variance.csv', $body);
 	}
 
 	/** @return array{filename: string, body: string, contentType: string} */

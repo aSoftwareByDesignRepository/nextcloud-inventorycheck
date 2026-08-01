@@ -2437,6 +2437,289 @@
 		});
 	}
 
+	function announce(message) {
+		var live = $('#iv-live-region');
+		if (!live) return;
+		live.textContent = '';
+		window.setTimeout(function () { live.textContent = message; }, 10);
+	}
+
+	var pickerIdSeq = 0;
+	function nextPickerId(prefix) {
+		pickerIdSeq += 1;
+		return prefix + '-' + pickerIdSeq;
+	}
+
+	function pickerItemLabel(item) {
+		return item.displayName === item.id ? item.id : (item.displayName + ' (' + item.id + ')');
+	}
+
+	/**
+	 * Search + pick + chips control for Nextcloud user/group ids.
+	 * Portfolio rule (planning/check-productivity-suite/ACCESS-AND-DIRECTORY-PICKERS.md
+	 * §1 "Never ask humans to type raw IDs"): this is the *only* way settings
+	 * collect a uid/gid — there is no free-text fallback. The server still
+	 * re-validates every id on save regardless of what this widget sends.
+	 *
+	 * opts.multi=true (default): chips accumulate, each with a remove button.
+	 * opts.multi=false: picking replaces the single current selection (used
+	 * for the per-location ACL subject and mobile seat assignment).
+	 * opts.kind: fixed 'user' | 'group'. opts.kindFn(): overrides opts.kind
+	 * per-call for controls whose target type changes at runtime (ACL subject
+	 * type dropdown).
+	 */
+	function createIdPicker(opts) {
+		opts = opts || {};
+		var multi = opts.multi !== false;
+		var disabled = !!opts.disabled;
+		var state = (opts.initialIds || []).map(function (id) {
+			return { id: String(id), displayName: String(id) };
+		});
+		var searchId = nextPickerId('iv-pk-search');
+		var resultsId = nextPickerId('iv-pk-results');
+		var timer = null;
+
+		function currentKind() {
+			return typeof opts.kindFn === 'function' ? opts.kindFn() : (opts.kind || 'user');
+		}
+
+		function searchUrlFor(kind) {
+			return (opts.searchUrls || {})[kind] || '';
+		}
+
+		function dedupeById(items) {
+			var seen = {};
+			var out = [];
+			items.forEach(function (it) {
+				if (!it || !it.id || seen[it.id]) return;
+				seen[it.id] = true;
+				out.push(it);
+			});
+			return out;
+		}
+
+		var chipsList = el('ul', { className: 'iv-chips iv-picker__chips' });
+		var searchInput = el('input', {
+			type: 'search',
+			className: 'iv-input',
+			id: searchId,
+			autocomplete: 'off',
+			spellcheck: 'false',
+			role: 'combobox',
+			'aria-expanded': 'false',
+			'aria-controls': resultsId,
+			'aria-autocomplete': 'list',
+			placeholder: tr('Search by name…'),
+			disabled: disabled ? '' : null,
+		});
+		var resultsList = el('ul', {
+			className: 'iv-picker__results',
+			id: resultsId,
+			role: 'listbox',
+			hidden: '',
+		});
+
+		function renderChips() {
+			clear(chipsList);
+			if (!state.length) {
+				chipsList.appendChild(el('li', { className: 'iv-muted iv-picker__empty-chip', text: opts.emptyLabel || tr('None selected') }));
+				return;
+			}
+			state.forEach(function (item) {
+				var label = pickerItemLabel(item);
+				var kids = [el('span', { text: label })];
+				if (!disabled) {
+					kids.push(el('button', {
+						type: 'button',
+						className: 'iv-chip__remove',
+						'aria-label': tr('Remove {name}', { name: label }),
+						text: '\u00d7',
+						onclick: function () {
+							state = state.filter(function (s) { return s.id !== item.id; });
+							renderChips();
+							announce(tr('Removed {name}.', { name: label }));
+							if (opts.onChange) opts.onChange(getIds());
+						},
+					}));
+				}
+				chipsList.appendChild(el('li', { className: 'iv-chip' }, kids));
+			});
+		}
+
+		function closeResults() {
+			clear(resultsList);
+			resultsList.hidden = true;
+			searchInput.setAttribute('aria-expanded', 'false');
+		}
+
+		function showResultsMessage(text) {
+			clear(resultsList);
+			resultsList.hidden = false;
+			searchInput.setAttribute('aria-expanded', 'true');
+			resultsList.appendChild(el('li', { className: 'iv-picker__empty', 'aria-disabled': 'true', text: text }));
+		}
+
+		function focusOption(optionEls, index) {
+			optionEls.forEach(function (node, i) {
+				node.tabIndex = i === index ? 0 : -1;
+				node.setAttribute('aria-selected', i === index ? 'true' : 'false');
+			});
+			if (optionEls[index]) optionEls[index].focus();
+		}
+
+		function pick(item) {
+			var label = pickerItemLabel(item);
+			if (multi) {
+				state = dedupeById(state.concat([item]));
+			} else {
+				state = [item];
+			}
+			renderChips();
+			searchInput.value = '';
+			closeResults();
+			searchInput.focus();
+			announce(tr('Added {name}.', { name: label }));
+			if (opts.onChange) opts.onChange(getIds());
+		}
+
+		function renderResults(items) {
+			clear(resultsList);
+			if (!items.length) {
+				showResultsMessage(tr('No matches. Keep typing to refine your search.'));
+				return;
+			}
+			resultsList.hidden = false;
+			searchInput.setAttribute('aria-expanded', 'true');
+			items.forEach(function (item, index) {
+				var li = el('li', {
+					role: 'option',
+					tabindex: index === 0 ? '0' : '-1',
+					'aria-selected': index === 0 ? 'true' : 'false',
+					text: pickerItemLabel(item),
+				});
+				li.addEventListener('click', function () { pick(item); });
+				li.addEventListener('keydown', function (event) {
+					if (event.key === 'Enter' || event.key === ' ') {
+						event.preventDefault();
+						pick(item);
+						return;
+					}
+					if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+					event.preventDefault();
+					var optionEls = Array.prototype.slice.call(resultsList.querySelectorAll('[role="option"]'));
+					var idx = optionEls.indexOf(li);
+					var nextIdx = event.key === 'ArrowDown'
+						? Math.min(idx + 1, optionEls.length - 1)
+						: Math.max(idx - 1, 0);
+					focusOption(optionEls, nextIdx);
+				});
+				resultsList.appendChild(li);
+			});
+		}
+
+		function runSearch(q) {
+			var kind = currentKind();
+			var url = searchUrlFor(kind);
+			if (!url) {
+				// No directory search configured for this kind — never fall back
+				// to a free-text id field; surface the gap instead.
+				showResultsMessage(tr('Search is not available right now.'));
+				return Promise.resolve([]);
+			}
+			showResultsMessage(tr('Searching…'));
+			return api('GET', url + '?q=' + encodeURIComponent(q)).then(function (res) {
+				var raw = (kind === 'group' ? (res && res.groups) : (res && res.users)) || [];
+				var items = raw.map(function (it) {
+					return { id: String(it.id), displayName: String(it.displayName || it.id) };
+				});
+				if (searchInput.value.trim() === q) {
+					renderResults(items);
+				}
+				return items;
+			}).catch(function (err) {
+				if (searchInput.value.trim() === q) {
+					showResultsMessage(tr('Could not load results. Try again.'));
+				}
+				toast(err.message, true);
+				return [];
+			});
+		}
+
+		searchInput.addEventListener('input', function () {
+			if (disabled) return;
+			if (timer) window.clearTimeout(timer);
+			var q = searchInput.value.trim();
+			if (q.length < 2) {
+				if (q.length === 0) {
+					closeResults();
+				} else {
+					showResultsMessage(tr('Type at least 2 characters to search.'));
+				}
+				return;
+			}
+			timer = window.setTimeout(function () { runSearch(q); }, 250);
+		});
+		searchInput.addEventListener('keydown', function (event) {
+			if (event.key !== 'ArrowDown') return;
+			var first = resultsList.querySelector('[role="option"]');
+			if (first) {
+				event.preventDefault();
+				first.focus();
+			}
+		});
+		searchInput.addEventListener('blur', function () {
+			// Delay so a click on a result (which also blurs the input) still
+			// registers before the listbox is torn down.
+			window.setTimeout(function () {
+				if (!resultsList.contains(document.activeElement)) closeResults();
+			}, 150);
+		});
+
+		renderChips();
+
+		var wrap = el('div', { className: 'iv-picker' }, [searchInput, resultsList, chipsList]);
+
+		function getIds() { return state.map(function (s) { return s.id; }); }
+
+		return {
+			root: wrap,
+			searchInput: searchInput,
+			getIds: getIds,
+			getId: function () { return state.length ? state[0].id : ''; },
+			reset: function (ids) {
+				state = (ids || []).map(function (id) { return { id: String(id), displayName: String(id) }; });
+				renderChips();
+			},
+		};
+	}
+
+	/**
+	 * Field wrapper for a picker (mirrors field()'s label/error contract so
+	 * applyFieldErrors()/clearFieldErrors() keep working for unknown_user /
+	 * unknown_group server responses).
+	 */
+	function pickerField(labelText, picker, opts) {
+		opts = opts || {};
+		var id = picker.searchInput.getAttribute('id');
+		var errId = id + '-err';
+		var err = el('p', { className: 'iv-field__error', id: errId, hidden: '', role: 'alert' });
+		picker.searchInput.setAttribute(
+			'aria-describedby',
+			[picker.searchInput.getAttribute('aria-describedby'), errId].filter(Boolean).join(' ').trim()
+		);
+		var wrap = el('div', {
+			className: 'iv-field',
+			'data-iv-field': opts.name || id,
+		}, [
+			el('label', { className: 'iv-field__label', for: id, text: labelText }),
+			picker.root,
+			err,
+		]);
+		wrap._ivInput = picker.searchInput;
+		wrap._ivError = err;
+		return wrap;
+	}
+
 	function renderSettings(ctx) {
 		var mount = ctx.mount;
 		if (!ctx.isAppAdmin) {
@@ -2470,45 +2753,34 @@
 				checked: cfg.allowNegativeStock ? '' : null,
 				id: 'iv-allow-negative',
 			});
-			var officeUsers = el('textarea', {
-				className: 'iv-input',
-				rows: '3',
-				id: 'iv-office-users',
-				text: (cfg.officeUsers || []).join('\n'),
+			var directoryUrls = { user: ctx.urls.api.directorySearchUsers, group: ctx.urls.api.directorySearchGroups };
+			var officeUsersPicker = createIdPicker({
+				kind: 'user',
+				searchUrls: directoryUrls,
+				initialIds: cfg.officeUsers || [],
 			});
-			var officeGroups = el('textarea', {
-				className: 'iv-input',
-				rows: '2',
-				id: 'iv-office-groups',
-				text: (cfg.officeGroups || []).join('\n'),
+			var officeGroupsPicker = createIdPicker({
+				kind: 'group',
+				searchUrls: directoryUrls,
+				initialIds: cfg.officeGroups || [],
 			});
-			var allowedUsers = el('textarea', {
-				className: 'iv-input',
-				rows: '3',
-				id: 'iv-allowed-users',
-				text: (cfg.allowedUsers || []).join('\n'),
+			var allowedUsersPicker = createIdPicker({
+				kind: 'user',
+				searchUrls: directoryUrls,
+				initialIds: cfg.allowedUsers || [],
 			});
-			var allowedGroups = el('textarea', {
-				className: 'iv-input',
-				rows: '2',
-				id: 'iv-allowed-groups',
-				text: (cfg.allowedGroups || []).join('\n'),
+			var allowedGroupsPicker = createIdPicker({
+				kind: 'group',
+				searchUrls: directoryUrls,
+				initialIds: cfg.allowedGroups || [],
 			});
-			var appAdmins = el('textarea', {
-				className: 'iv-input',
-				rows: '3',
-				id: 'iv-app-admins',
-				text: (cfg.appAdmins || []).join('\n'),
-				'aria-describedby': 'iv-app-admins-hint',
+			var canEditAppAdmins = !!(ctx.isAppAdmin || ctx.isSystemAdmin || cfg.isSystemAdmin || cfg.isAppAdmin);
+			var appAdminsPicker = createIdPicker({
+				kind: 'user',
+				searchUrls: directoryUrls,
+				initialIds: cfg.appAdmins || [],
+				disabled: !canEditAppAdmins,
 			});
-			var canEditAppAdmins = !!(ctx.isSystemAdmin || cfg.isSystemAdmin);
-			if (!canEditAppAdmins) {
-				appAdmins.setAttribute('readonly', '');
-			}
-
-			function lines(ta) {
-				return ta.value.split(/\n+/).map(function (s) { return s.trim(); }).filter(Boolean);
-			}
 
 			var accessKids = [
 				el('h2', { id: 'iv-access-title', className: 'iv-section__title', text: tr('Access') }),
@@ -2520,14 +2792,14 @@
 					restriction,
 					el('span', { className: 'iv-switch__label', text: tr('Restrict access to allow-listed users and groups') }),
 				]),
-				field(tr('Allowed users (one per line)'), allowedUsers, { name: 'allowedUsers' }),
-				field(tr('Allowed groups (one per line)'), allowedGroups, { name: 'allowedGroups' }),
-				field(tr('Delegated app administrators'), appAdmins, { name: 'appAdmins' }),
+				pickerField(tr('Allowed users'), allowedUsersPicker, { name: 'allowedUsers' }),
+				pickerField(tr('Allowed groups'), allowedGroupsPicker, { name: 'allowedGroups' }),
+				pickerField(tr('Delegated app administrators'), appAdminsPicker, { name: 'appAdmins' }),
 				el('p', {
 					className: 'iv-field__hint',
 					id: 'iv-app-admins-hint',
 					text: canEditAppAdmins
-						? tr('Nextcloud user IDs who may change access policy, office lists, and the license (in addition to system administrators).')
+						? tr('Search and pick colleagues who may change access policy, office lists, and the license (in addition to system administrators). Never type a raw user id.')
 						: tr('Only Nextcloud system administrators can change the app administrator list.'),
 				}),
 				btn(tr('Save access'), {
@@ -2535,11 +2807,11 @@
 					onclick: function () {
 						var payload = {
 							accessRestrictionEnabled: restriction.checked,
-							allowedUsers: lines(allowedUsers),
-							allowedGroups: lines(allowedGroups),
+							allowedUsers: allowedUsersPicker.getIds(),
+							allowedGroups: allowedGroupsPicker.getIds(),
 						};
 						if (canEditAppAdmins) {
-							payload.appAdmins = lines(appAdmins);
+							payload.appAdmins = appAdminsPicker.getIds();
 						}
 						clearFieldErrors(mount);
 						api('POST', ctx.urls.api.configAccess, payload).then(function () {
@@ -2556,8 +2828,8 @@
 
 			mount.appendChild(el('section', { className: 'iv-section', 'aria-labelledby': 'iv-office-title' }, [
 				el('h2', { id: 'iv-office-title', className: 'iv-section__title', text: tr('Office / storekeeper') }),
-				field(tr('Office users (one per line)'), officeUsers, { name: 'officeUsers' }),
-				field(tr('Office groups (one per line)'), officeGroups, { name: 'officeGroups' }),
+				pickerField(tr('Office users'), officeUsersPicker, { name: 'officeUsers' }),
+				pickerField(tr('Office groups'), officeGroupsPicker, { name: 'officeGroups' }),
 				el('label', { className: 'iv-switch', for: 'iv-allow-negative' }, [
 					neg,
 					el('span', { className: 'iv-switch__label', text: tr('Allow negative stock') }),
@@ -2567,8 +2839,8 @@
 					onclick: function () {
 						clearFieldErrors(mount);
 						api('POST', ctx.urls.api.configOffice, {
-							officeUsers: lines(officeUsers),
-							officeGroups: lines(officeGroups),
+							officeUsers: officeUsersPicker.getIds(),
+							officeGroups: officeGroupsPicker.getIds(),
 							allowNegativeStock: neg.checked,
 						}).then(function () {
 							toast(tr('Office settings saved.'));
@@ -2580,17 +2852,15 @@
 				}),
 			]));
 
-			var notifyUsers = el('textarea', {
-				className: 'iv-input',
-				rows: '3',
-				id: 'iv-notify-users',
-				text: (cfg.lowStockNotifyUsers || []).join('\n'),
+			var notifyUsersPicker = createIdPicker({
+				kind: 'user',
+				searchUrls: directoryUrls,
+				initialIds: cfg.lowStockNotifyUsers || [],
 			});
-			var notifyGroups = el('textarea', {
-				className: 'iv-input',
-				rows: '2',
-				id: 'iv-notify-groups',
-				text: (cfg.lowStockNotifyGroups || []).join('\n'),
+			var notifyGroupsPicker = createIdPicker({
+				kind: 'group',
+				searchUrls: directoryUrls,
+				initialIds: cfg.lowStockNotifyGroups || [],
 			});
 			var reorderHint = el('input', {
 				type: 'checkbox',
@@ -2604,8 +2874,8 @@
 					className: 'iv-section__hint',
 					text: tr('These users and groups get a notification the first time an item drops below its reorder level (at most once a day per item).'),
 				}),
-				field(tr('Notify users (one per line)'), notifyUsers, { name: 'lowStockNotifyUsers' }),
-				field(tr('Notify groups (one per line)'), notifyGroups, { name: 'lowStockNotifyGroups' }),
+				pickerField(tr('Notify users'), notifyUsersPicker, { name: 'lowStockNotifyUsers' }),
+				pickerField(tr('Notify groups'), notifyGroupsPicker, { name: 'lowStockNotifyGroups' }),
 				el('label', { className: 'iv-switch', for: 'iv-reorder-hint' }, [
 					reorderHint,
 					el('span', {
@@ -2618,8 +2888,8 @@
 					onclick: function () {
 						clearFieldErrors(mount);
 						return api('POST', ctx.urls.api.configNotify, {
-							lowStockNotifyUsers: lines(notifyUsers),
-							lowStockNotifyGroups: lines(notifyGroups),
+							lowStockNotifyUsers: notifyUsersPicker.getIds(),
+							lowStockNotifyGroups: notifyGroupsPicker.getIds(),
 							locationReorderHintEnabled: reorderHint.checked,
 						}).then(function () {
 							toast(tr('Notification settings saved.'));
@@ -2679,12 +2949,13 @@
 				el('option', { value: 'user', text: tr('User') }),
 				el('option', { value: 'group', text: tr('Group') }),
 			]);
-			var aclSubjectId = el('input', {
-				type: 'text',
-				className: 'iv-input',
-				id: 'iv-acl-subject-id',
-				placeholder: tr('User id or group id'),
-				'aria-label': tr('User id or group id'),
+			var aclSubjectPicker = createIdPicker({
+				multi: false,
+				kindFn: function () { return aclSubjectType.value; },
+				searchUrls: directoryUrls,
+			});
+			aclSubjectType.addEventListener('change', function () {
+				aclSubjectPicker.reset([]);
 			});
 			var aclLocationSelect = el('select', {
 				className: 'iv-input',
@@ -2739,7 +3010,7 @@
 					el('span', { className: 'iv-switch__label', text: tr('Limit field users to granted locations') }),
 				]),
 				field(tr('Grant to'), aclSubjectType, { name: 'subjectType' }),
-				field(tr('User or group id'), aclSubjectId, { name: 'subjectId' }),
+				pickerField(tr('Search and pick a colleague or group'), aclSubjectPicker, { name: 'subjectId' }),
 				field(tr('Locations to grant'), aclLocationSelect, { name: 'locationIds' }),
 				el('p', {
 					className: 'iv-field__hint',
@@ -2756,10 +3027,11 @@
 						return api('PUT', ctx.urls.api.configLocationAcl, {
 							enabled: aclEnabled.checked,
 							subjectType: aclSubjectType.value,
-							subjectId: aclSubjectId.value.trim(),
+							subjectId: aclSubjectPicker.getId(),
 							locationIds: ids,
 						}).then(function (payload) {
 							toast(tr('Location access saved.'));
+							aclSubjectPicker.reset([]);
 							renderAclAssignments(payload);
 						}).catch(function (err) {
 							applyFieldErrors(mount, err && err.details, err && err.message);
@@ -2841,12 +3113,10 @@
 			var stateText = lic.state
 				? (lic.state.customerId + ' · ' + lic.state.validUntil + (lic.state.valid ? ' · ' + tr('Valid') : ' · ' + tr('Expired')))
 				: tr('No license stored');
-			var seatUid = el('input', {
-				type: 'text',
-				className: 'iv-input',
-				id: 'iv-seat-uid',
-				placeholder: tr('Nextcloud user id'),
-				'aria-label': tr('Nextcloud user id'),
+			var seatUidPicker = createIdPicker({
+				kind: 'user',
+				multi: false,
+				searchUrls: directoryUrls,
 			});
 			var deviceLabel = el('input', {
 				type: 'text',
@@ -2987,10 +3257,10 @@
 				}),
 				el('h3', { className: 'iv-section__subtitle', text: tr('Mobile seats') }),
 				seatsHost,
-				field(tr('Assign seat to user'), seatUid, { name: 'uid' }),
+				pickerField(tr('Assign seat to user'), seatUidPicker, { name: 'uid' }),
 				btn(tr('Assign seat'), {
 					onclick: function () {
-						api('POST', ctx.urls.api.licenseSeats, { uid: seatUid.value.trim() }).then(function () {
+						api('POST', ctx.urls.api.licenseSeats, { uid: seatUidPicker.getId() }).then(function () {
 							toast(tr('Seat assigned.'));
 							renderSettings(ctx);
 						}).catch(function (err) {

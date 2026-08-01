@@ -28,14 +28,28 @@
 				<input type="checkbox" class="iv-switch__input" id="iv-access-restriction">
 				<span class="iv-switch__label">Restrict app access</span>
 			</label>
-			<div class="iv-field">
-				<label class="iv-label" for="iv-allowed-users">Allowed users (one per line)</label>
-				<textarea class="iv-input" id="iv-allowed-users" rows="3"></textarea>
+			<div class="iv-field" data-iv-field="allowedUsers">
+				<label class="iv-field__label" for="iv-pk-search-1">Allowed users</label>
+				<div class="iv-picker">
+					<input type="search" class="iv-input" id="iv-pk-search-1" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="false" aria-controls="iv-pk-results-1" aria-autocomplete="list" placeholder="Search by name…" aria-describedby="iv-pk-search-1-err">
+					<ul class="iv-picker__results" id="iv-pk-results-1" role="listbox" hidden></ul>
+					<ul class="iv-chips iv-picker__chips">
+						<li class="iv-muted iv-picker__empty-chip">None selected</li>
+					</ul>
+				</div>
+				<p class="iv-field__error" id="iv-pk-search-1-err" hidden role="alert"></p>
 			</div>
-			<div class="iv-field">
-				<label class="iv-label" for="iv-app-admins">Delegated app administrators</label>
-				<textarea class="iv-input" id="iv-app-admins" rows="3" aria-describedby="iv-app-admins-hint"></textarea>
-				<p id="iv-app-admins-hint" class="iv-field__hint">Nextcloud user IDs who may change access policy, office lists, and the license (in addition to system administrators).</p>
+			<div class="iv-field" data-iv-field="appAdmins">
+				<label class="iv-field__label" for="iv-pk-search-2">Delegated app administrators</label>
+				<div class="iv-picker">
+					<input type="search" class="iv-input" id="iv-pk-search-2" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="false" aria-controls="iv-pk-results-2" aria-autocomplete="list" placeholder="Search by name…" aria-describedby="iv-app-admins-hint iv-pk-search-2-err">
+					<ul class="iv-picker__results" id="iv-pk-results-2" role="listbox" hidden></ul>
+					<ul class="iv-chips iv-picker__chips">
+						<li class="iv-muted iv-picker__empty-chip">None selected</li>
+					</ul>
+				</div>
+				<p class="iv-field__error" id="iv-pk-search-2-err" hidden role="alert"></p>
+				<p id="iv-app-admins-hint" class="iv-field__hint">Search and pick colleagues who may change access policy, office lists, and the license (in addition to system administrators). Never type a raw user id.</p>
 			</div>
 			<label class="iv-switch" for="iv-allow-negative">
 				<input type="checkbox" class="iv-switch__input" id="iv-allow-negative">
@@ -62,9 +76,16 @@
 					<option value="group">Group</option>
 				</select>
 			</div>
-			<div class="iv-field">
-				<label class="iv-label" for="iv-acl-subject-id">User or group id</label>
-				<input class="iv-input" id="iv-acl-subject-id" type="text" autocomplete="username">
+			<div class="iv-field" data-iv-field="subjectId">
+				<label class="iv-field__label" for="iv-pk-search-3">Search and pick a colleague or group</label>
+				<div class="iv-picker">
+					<input type="search" class="iv-input" id="iv-pk-search-3" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="false" aria-controls="iv-pk-results-3" aria-autocomplete="list" placeholder="Search by name…" aria-describedby="iv-pk-search-3-err">
+					<ul class="iv-picker__results" id="iv-pk-results-3" role="listbox" hidden></ul>
+					<ul class="iv-chips iv-picker__chips">
+						<li class="iv-muted iv-picker__empty-chip">None selected</li>
+					</ul>
+				</div>
+				<p class="iv-field__error" id="iv-pk-search-3-err" hidden role="alert"></p>
 			</div>
 			<div class="iv-field">
 				<label class="iv-label" for="iv-acl-loc-ids">Locations to grant</label>
@@ -89,9 +110,16 @@
 			</div>
 			<button type="button" class="iv-btn iv-btn--primary">Apply key</button>
 			<h3 class="iv-section__title">Seats</h3>
-			<div class="iv-field">
-				<label class="iv-label" for="iv-seat-uid">Assign seat to user</label>
-				<input class="iv-input" id="iv-seat-uid" type="text" autocomplete="username">
+			<div class="iv-field" data-iv-field="uid">
+				<label class="iv-field__label" for="iv-pk-search-4">Assign seat to user</label>
+				<div class="iv-picker">
+					<input type="search" class="iv-input" id="iv-pk-search-4" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="false" aria-controls="iv-pk-results-4" aria-autocomplete="list" placeholder="Search by name…" aria-describedby="iv-pk-search-4-err">
+					<ul class="iv-picker__results" id="iv-pk-results-4" role="listbox" hidden></ul>
+					<ul class="iv-chips iv-picker__chips">
+						<li class="iv-muted iv-picker__empty-chip">None selected</li>
+					</ul>
+				</div>
+				<p class="iv-field__error" id="iv-pk-search-4-err" hidden role="alert"></p>
 			</div>
 			<button type="button" class="iv-btn">Assign seat</button>
 			<table class="iv-table">

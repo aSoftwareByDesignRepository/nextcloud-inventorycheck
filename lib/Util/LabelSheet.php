@@ -45,6 +45,40 @@ final class LabelSheet
 		return implode("\n", $out);
 	}
 
+	/**
+	 * Wave D1: bulk location labels — maps to {@see LabelSvg::forLocation}.
+	 *
+	 * @param list<array{code: string, name: string, kind?: string}> $locations
+	 */
+	public static function htmlLocations(array $locations): string
+	{
+		if ($locations === []) {
+			throw new \InvalidArgumentException('no_locations');
+		}
+		$capacity = self::capacity();
+		$pages = array_chunk($locations, $capacity);
+		$out = [];
+		foreach ($pages as $pageLocs) {
+			$tiles = [];
+			foreach ($pageLocs as $loc) {
+				$code = (string)$loc['code'];
+				$svg = LabelSvg::forLocation(
+					$code,
+					(string)$loc['name'],
+					(string)($loc['kind'] ?? 'other'),
+				);
+				$svg = preg_replace('/^<\?xml[^?]*\?>\s*/', '', $svg) ?? $svg;
+				$tiles[] = '<div class="iv-label-tile" role="group" aria-label="'
+					. htmlspecialchars($code, ENT_QUOTES | ENT_HTML5, 'UTF-8')
+					. '">' . $svg . '</div>';
+			}
+			$out[] = '<section class="iv-label-sheet__page" aria-label="A4">'
+				. implode("\n", $tiles)
+				. '</section>';
+		}
+		return implode("\n", $out);
+	}
+
 	public static function capacity(): int
 	{
 		return self::COLS * self::ROWS;

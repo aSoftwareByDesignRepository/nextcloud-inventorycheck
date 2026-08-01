@@ -1347,6 +1347,69 @@ textarea.iv-input {
 	outline-offset: 2px;
 }
 
+/* ── Directory picker (search + pick users/groups) ───────────────────
+ * Portfolio rule: never a raw uid/gid text field — search input +
+ * listbox + chips only. See planning/check-productivity-suite/
+ * ACCESS-AND-DIRECTORY-PICKERS.md §1.
+ */
+.iv-picker {
+	position: relative;
+	max-width: 32rem;
+}
+
+.iv-picker__results {
+	position: absolute;
+	z-index: 20;
+	left: 0;
+	right: 0;
+	margin: 4px 0 0;
+	padding: 4px 0;
+	max-height: min(14rem, 40vh);
+	overflow-y: auto;
+	list-style: none;
+	background: var(--color-main-background);
+	border: 1px solid var(--color-border);
+	border-radius: var(--iv-radius-sm, 6px);
+	box-shadow: 0 8px 24px color-mix(in srgb, var(--color-main-text) 12%, transparent);
+}
+
+.iv-picker__results[hidden] {
+	display: none;
+}
+
+.iv-picker__results li[role='option'] {
+	padding: 8px 12px;
+	cursor: pointer;
+	line-height: 1.35;
+}
+
+.iv-picker__results li[role='option']:hover {
+	background: var(--color-background-hover);
+}
+
+.iv-picker__results li[role='option']:focus,
+.iv-picker__results li[role='option']:focus-visible {
+	outline: 2px solid var(--color-primary-element);
+	outline-offset: -2px;
+	background: var(--color-background-hover);
+}
+
+.iv-picker__empty {
+	padding: 8px 12px;
+	color: var(--color-text-maxcontrast);
+	font-size: 13px;
+	cursor: default;
+}
+
+.iv-picker__chips {
+	margin-top: 8px;
+}
+
+.iv-picker__empty-chip {
+	list-style: none;
+	font-size: 13px;
+}
+
 .iv-license-status {
 	display: flex;
 	flex-wrap: wrap;

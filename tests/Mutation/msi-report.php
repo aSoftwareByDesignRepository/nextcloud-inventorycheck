@@ -35,6 +35,7 @@ $runners = [
 	['file' => 'tests/Mutation/run-middleware-mutations.php', 'bucket' => 'service'],
 	['file' => 'tests/Mutation/run-pairing-mutations.php', 'bucket' => 'service'],
 	['file' => 'tests/Mutation/run-support-us-links-mutations.php', 'bucket' => 'service'],
+	['file' => 'tests/Mutation/run-directory-mutations.php', 'bucket' => 'service'],
 ];
 
 $totals = ['hot' => ['killed' => 0, 'total' => 0], 'service' => ['killed' => 0, 'total' => 0]];

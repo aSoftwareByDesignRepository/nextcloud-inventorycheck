@@ -8,6 +8,7 @@ use OCA\InventoryCheck\Db\BalanceMapper;
 use OCA\InventoryCheck\Db\CycleLineMapper;
 use OCA\InventoryCheck\Db\Item;
 use OCA\InventoryCheck\Db\ItemMapper;
+use OCA\InventoryCheck\Db\LocationMapper;
 use OCA\InventoryCheck\Db\UniqueViolation;
 use OCA\InventoryCheck\Exception\ConflictException;
 use OCA\InventoryCheck\Exception\NotFoundException;
@@ -36,6 +37,7 @@ class ItemService
 		private readonly LocationAclService $locationAcl,
 		private readonly IConfig $config,
 		private readonly CycleLineMapper $cycleLines,
+		private readonly LocationMapper $locations,
 	) {
 	}
 
@@ -131,8 +133,10 @@ class ItemService
 		$trackMode = $this->parseTrackMode($input, 'none');
 		$supplierNote = $this->parseSupplierNote($input);
 		$lastPriceMinor = $this->parseLastPriceMinor($input);
+		$targetStock = $this->parseTargetStock($input, $reorder);
+		$defaultLocationId = $this->parseDefaultLocationId($input);
 
-		return $this->withCodesLock(function () use ($actorUid, $sku, $scan, $name, $uom, $desc, $reorder, $trackMode, $supplierNote, $lastPriceMinor): array {
+		return $this->withCodesLock(function () use ($actorUid, $sku, $scan, $name, $uom, $desc, $reorder, $trackMode, $supplierNote, $lastPriceMinor, $targetStock, $defaultLocationId): array {
 			if (CodeRules::conflictsWithOthers(null, $sku, $scan, $this->items->allCodePairs())) {
 				throw new ConflictException('code_exists');
 			}
@@ -144,6 +148,8 @@ class ItemService
 			$item->setDescription($desc);
 			$item->setUom($uom);
 			$item->setReorderLevel($reorder);
+			$item->setTargetStock($targetStock);
+			$item->setDefaultLocationId($defaultLocationId);
 			$item->setActive(true);
 			$item->setCreatedAt($now);
 			$item->setUpdatedAt($now);
@@ -240,6 +246,12 @@ class ItemService
 					throw new ValidationException('validation_failed', '', [['field' => 'reorderLevel', 'code' => 'validation_failed']]);
 				}
 				$item->setReorderLevel($reorder);
+			}
+			if (array_key_exists('targetStock', $input) || array_key_exists('target_stock', $input)) {
+				$item->setTargetStock($this->parseTargetStock($input, $item->getReorderLevel()));
+			}
+			if (array_key_exists('defaultLocationId', $input) || array_key_exists('default_location_id', $input)) {
+				$item->setDefaultLocationId($this->parseDefaultLocationId($input));
 			}
 			if ($sku !== $item->getSku() || $scan !== $item->getScanCode()) {
 				if (!CodeRules::isValidSku($sku) || !CodeRules::isValidScanCode($scan)) {
@@ -342,6 +354,63 @@ class ItemService
 			throw new ValidationException('validation_failed', '', [['field' => 'trackMode', 'code' => 'validation_failed']]);
 		}
 		return $raw;
+	}
+
+	/**
+	 * Wave D4: optional order-up-to qty (storage units). Null clears.
+	 *
+	 * @param array<string, mixed> $input
+	 */
+	private function parseTargetStock(array $input, int $reorderLevel): ?int
+	{
+		if (!array_key_exists('targetStock', $input) && !array_key_exists('target_stock', $input)) {
+			return null;
+		}
+		$raw = $input['targetStock'] ?? $input['target_stock'];
+		if ($raw === null || $raw === '') {
+			return null;
+		}
+		if (!is_numeric($raw)) {
+			throw new ValidationException('validation_failed', '', [['field' => 'targetStock', 'code' => 'validation_failed']]);
+		}
+		$value = (int)$raw;
+		$max = QtyScale::maxStorage($this->config);
+		if ($value < 0 || $value > $max) {
+			throw new ValidationException('validation_failed', '', [['field' => 'targetStock', 'code' => 'validation_failed']]);
+		}
+		if ($value < $reorderLevel) {
+			throw new ValidationException('validation_failed', '', [['field' => 'targetStock', 'code' => 'target_below_reorder']]);
+		}
+		return $value;
+	}
+
+	/**
+	 * Wave D7: optional default putaway location. Null clears.
+	 *
+	 * @param array<string, mixed> $input
+	 */
+	private function parseDefaultLocationId(array $input): ?int
+	{
+		if (!array_key_exists('defaultLocationId', $input) && !array_key_exists('default_location_id', $input)) {
+			return null;
+		}
+		$raw = $input['defaultLocationId'] ?? $input['default_location_id'];
+		if ($raw === null || $raw === '' || (int)$raw === 0) {
+			return null;
+		}
+		$id = (int)$raw;
+		if ($id < 1) {
+			throw new ValidationException('validation_failed', '', [['field' => 'defaultLocationId', 'code' => 'validation_failed']]);
+		}
+		try {
+			$loc = $this->locations->findById($id);
+		} catch (NotFoundException) {
+			throw new ValidationException('validation_failed', '', [['field' => 'defaultLocationId', 'code' => 'unknown_location']]);
+		}
+		if (!$loc->getActive()) {
+			throw new ValidationException('inactive_location', '', [['field' => 'defaultLocationId', 'code' => 'inactive_location']]);
+		}
+		return $id;
 	}
 
 	private function validateItemFields(string $sku, string $scan, string $name, string $uom, ?string $desc, int $reorder): void

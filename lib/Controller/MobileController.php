@@ -9,9 +9,11 @@ use OCA\InventoryCheck\Exception\AppAccessDeniedException;
 use OCA\InventoryCheck\Exception\MobileGateException;
 use OCA\InventoryCheck\Service\AccessControlService;
 use OCA\InventoryCheck\Service\BalanceService;
+use OCA\InventoryCheck\Service\CycleCountService;
 use OCA\InventoryCheck\Service\DevicePairingService;
 use OCA\InventoryCheck\Service\ItemService;
 use OCA\InventoryCheck\Service\LicenseService;
+use OCA\InventoryCheck\Service\LocationFavouriteService;
 use OCA\InventoryCheck\Service\LocationService;
 use OCA\InventoryCheck\Service\MobileGateService;
 use OCA\InventoryCheck\Service\MovementService;
@@ -45,6 +47,8 @@ class MobileController extends Controller
 		private readonly BalanceService $balances,
 		private readonly MovementService $movements,
 		private readonly AccessControlService $access,
+		private readonly LocationFavouriteService $favourites,
+		private readonly CycleCountService $cycles,
 		private readonly IUserSession $userSession,
 		private readonly IConfig $config,
 	) {
@@ -84,6 +88,19 @@ class MobileController extends Controller
 			);
 		}
 		return new JSONResponse($item);
+	}
+
+	/** Wave D2 */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[NoAdminRequired]
+	public function locationByCode(string $code): JSONResponse
+	{
+		[$uid, $device] = $this->resolveCaller(true);
+		$this->gate->assertGate($uid, $device);
+		return new JSONResponse(
+			$this->locations->byCode($uid ?? ('device:' . (int)$device->getId()), rawurldecode($code)),
+		);
 	}
 
 	#[PublicPage]
@@ -168,6 +185,8 @@ class MobileController extends Controller
 			isset($p['reason']) ? (string)$p['reason'] : null,
 			$asOffice,
 			$lotCode,
+			isset($p['reasonCode']) ? (string)$p['reasonCode'] : (isset($p['reason_code']) ? (string)$p['reason_code'] : null),
+			isset($p['locationCode']) ? (string)$p['locationCode'] : (isset($p['location_code']) ? (string)$p['location_code'] : null),
 		);
 		$result['movements'] = array_map(
 			fn (array $m) => QtyScale::formatMovement($m, $this->config),
@@ -187,6 +206,121 @@ class MobileController extends Controller
 	{
 		$code = (string)$this->request->getParam('code', '');
 		return new JSONResponse($this->pairing->pair($code));
+	}
+
+	/** Companion P1 — favourites (session users only; devices have no favourites). */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[NoAdminRequired]
+	public function favourites(): JSONResponse
+	{
+		[$uid] = $this->requireSessionUser();
+		$this->gate->assertGate($uid, null);
+		return new JSONResponse(['data' => $this->favourites->list($uid)]);
+	}
+
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[NoAdminRequired]
+	public function addFavourite(): JSONResponse
+	{
+		[$uid] = $this->requireSessionUser();
+		$this->gate->assertGate($uid, null);
+		$locationId = (int)$this->request->getParam('locationId', 0);
+		return new JSONResponse(['data' => $this->favourites->add($uid, $locationId)]);
+	}
+
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[NoAdminRequired]
+	public function removeFavourite(int $locationId): JSONResponse
+	{
+		[$uid] = $this->requireSessionUser();
+		$this->gate->assertGate($uid, null);
+		return new JSONResponse(['data' => $this->favourites->remove($uid, $locationId)]);
+	}
+
+	/** Companion P2 — stocktake (session users; devices cannot inventur). */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[NoAdminRequired]
+	public function cycleCounts(): JSONResponse
+	{
+		[$uid] = $this->requireSessionUser();
+		$this->gate->assertGate($uid, null);
+		$page = Pagination::parse($this->request->getParam('limit'), $this->request->getParam('offset'));
+		$status = (string)$this->request->getParam('status', '');
+		return new JSONResponse($this->cycles->list(
+			$uid,
+			$status !== '' ? $status : null,
+			$page['limit'],
+			$page['offset'],
+		));
+	}
+
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[NoAdminRequired]
+	public function cycleCountShow(int $id): JSONResponse
+	{
+		[$uid] = $this->requireSessionUser();
+		$this->gate->assertGate($uid, null);
+		$blind = filter_var($this->request->getParam('blind', '0'), FILTER_VALIDATE_BOOLEAN);
+		$campaign = $this->formatCycleCampaign($this->cycles->get($uid, $id), $blind);
+		return new JSONResponse($campaign);
+	}
+
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[NoAdminRequired]
+	public function cycleCountSetCount(int $lineId): JSONResponse
+	{
+		[$uid] = $this->requireSessionUser();
+		$this->gate->assertGate($uid, null);
+		$p = $this->request->getParams();
+		$line = $this->cycles->setCount(
+			$uid,
+			$lineId,
+			QtyScale::toStorage($this->config, $p['qtyCounted'] ?? 0),
+		);
+		return new JSONResponse(QtyScale::formatCycleLine($line, $this->config));
+	}
+
+	/**
+	 * @return array{0: string, 1: null}
+	 */
+	private function requireSessionUser(): array
+	{
+		[$uid, $device] = $this->resolveCaller(true);
+		if ($device !== null || $uid === null) {
+			// Device tokens are field-only; inventur/favourites need a named seat.
+			throw new MobileGateException('auth_required');
+		}
+		return [$uid, null];
+	}
+
+	/**
+	 * @param array<string, mixed> $campaign
+	 * @return array<string, mixed>
+	 */
+	private function formatCycleCampaign(array $campaign, bool $blind): array
+	{
+		if (isset($campaign['lines']) && is_array($campaign['lines'])) {
+			$campaign['lines'] = array_map(
+				function (array $line) use ($blind): array {
+					$formatted = QtyScale::formatCycleLine($line, $this->config);
+					if ($blind) {
+						// AF-IV13: never leak system/current qty in blind mode.
+						unset($formatted['systemQty'], $formatted['currentQty']);
+						$formatted['blind'] = true;
+					}
+					return $formatted;
+				},
+				$campaign['lines'],
+			);
+		}
+		$campaign['blind'] = $blind;
+		return $campaign;
 	}
 
 	/**

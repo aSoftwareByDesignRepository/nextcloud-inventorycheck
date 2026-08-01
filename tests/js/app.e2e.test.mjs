@@ -126,20 +126,37 @@ test('Track L settings manage seats and device slots with one-time pair code', (
 	assert.equal(/Device pairing: coming soon/.test(appJs), false);
 });
 
-test('settings edit allow and office groups', () => {
-	assert.match(appJs, /Allowed groups \(one per line\)/);
-	assert.match(appJs, /Office groups \(one per line\)/);
-	assert.match(appJs, /allowedGroups:\s*lines\(allowedGroups\)/);
-	assert.match(appJs, /officeGroups:\s*lines\(officeGroups\)/);
+test('settings edit allow and office groups via directory pickers, not raw id lists', () => {
+	assert.match(appJs, /pickerField\(tr\('Allowed groups'\), allowedGroupsPicker/);
+	assert.match(appJs, /pickerField\(tr\('Office groups'\), officeGroupsPicker/);
+	assert.match(appJs, /allowedGroups:\s*allowedGroupsPicker\.getIds\(\)/);
+	assert.match(appJs, /officeGroups:\s*officeGroupsPicker\.getIds\(\)/);
+	assert.equal(/\(one per line\)/.test(appJs), false, 'raw newline-separated id lists must not reappear');
 });
 
-test('settings expose delegated app administrators \(L0 writable\)', () => {
+test('settings expose delegated app administrators via a directory picker (L0 writable)', () => {
 	assert.match(appJs, /Delegated app administrators/);
-	assert.match(appJs, /iv-app-admins/);
+	assert.match(appJs, /appAdminsPicker = createIdPicker/);
 	assert.match(appJs, /canEditAppAdmins/);
 	assert.match(appJs, /isSystemAdmin/);
-	assert.match(appJs, /payload\.appAdmins = lines\(appAdmins\)/);
+	assert.match(appJs, /payload\.appAdmins = appAdminsPicker\.getIds\(\)/);
 	assert.match(appJs, /Only Nextcloud system administrators can change the app administrator list/);
+	assert.equal(/id: 'iv-app-admins'/.test(appJs), false, 'raw textarea id must not reappear');
+});
+
+test('location ACL subject and mobile seat assignment use directory pickers, not raw id inputs', () => {
+	assert.match(appJs, /aclSubjectPicker = createIdPicker\(\{\s*multi:\s*false,\s*kindFn:/);
+	assert.match(appJs, /subjectId:\s*aclSubjectPicker\.getId\(\)/);
+	assert.match(appJs, /seatUidPicker = createIdPicker\(\{\s*kind:\s*'user',\s*multi:\s*false/);
+	assert.match(appJs, /uid:\s*seatUidPicker\.getId\(\)/);
+	assert.equal(/placeholder:\s*tr\('Nextcloud user id'\)/.test(appJs), false);
+	assert.equal(/placeholder:\s*tr\('User id or group id'\)/.test(appJs), false);
+});
+
+test('directory picker never falls back to manual free-text entry', () => {
+	assert.match(appJs, /function createIdPicker\(opts\)/);
+	assert.match(appJs, /Search and pick/);
+	assert.equal(/allowDirectEntry/.test(appJs), false);
 });
 
 test('settings surface unknown user and group field errors', () => {

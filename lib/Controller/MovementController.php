@@ -50,6 +50,7 @@ class MovementController extends Controller
 			$this->request->getParam('transferGroup'),
 			$page['limit'],
 			$page['offset'],
+			($rc = $this->request->getParam('reasonCode')) !== null && $rc !== '' ? (string)$rc : null,
 		);
 		$result['data'] = array_map(fn (array $m) => QtyScale::formatMovement($m, $this->config), $result['data']);
 		return new JSONResponse($result);
@@ -112,6 +113,8 @@ class MovementController extends Controller
 			isset($p['qtyDelta']) ? $this->toStorageQty($p['qtyDelta']) : null,
 			isset($p['reason']) ? (string)$p['reason'] : null,
 			$this->lotCodeParam($p),
+			true,
+			isset($p['reasonCode']) ? (string)$p['reasonCode'] : (isset($p['reason_code']) ? (string)$p['reason_code'] : null),
 		)));
 	}
 
@@ -131,6 +134,8 @@ class MovementController extends Controller
 			isset($p['reason']) ? (string)$p['reason'] : null,
 			$this->access->isOffice($uid),
 			$this->lotCodeParam($p),
+			isset($p['reasonCode']) ? (string)$p['reasonCode'] : (isset($p['reason_code']) ? (string)$p['reason_code'] : null),
+			isset($p['locationCode']) ? (string)$p['locationCode'] : (isset($p['location_code']) ? (string)$p['location_code'] : null),
 		)));
 	}
 

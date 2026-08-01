@@ -15,7 +15,7 @@ final class MobilePublicPageContractTest extends TestCase
 	public function testEveryMobileMethodIsPublicAndCsrfExempt(): void
 	{
 		$src = (string)file_get_contents(dirname(__DIR__, 3) . '/lib/Controller/MobileController.php');
-		foreach (['bootstrap', 'byCode', 'locations', 'balances', 'movements', 'scan', 'pairDevice'] as $method) {
+		foreach (['bootstrap', 'byCode', 'locationByCode', 'locations', 'balances', 'movements', 'scan', 'pairDevice'] as $method) {
 			$this->assertMatchesRegularExpression(
 				'/\#\[PublicPage\]\s*(?:\#\[[^\]]+\]\s*)*public function ' . preg_quote($method, '/') . '\b/s',
 				$src,

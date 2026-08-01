@@ -177,15 +177,17 @@ class MovementService
 		?string $reason,
 		?string $lotCode = null,
 		bool $notifyLowStock = true,
+		?string $reasonCode = null,
 	): array {
 		$this->access->requireOffice($actorUid);
 		$this->assertLocationAccess($actorUid, $locationId);
 		$reason = $this->normalizeReason($reason);
+		$reasonCode = ReasonCodes::requireForAdjust($this->config, $reasonCode);
 		$allowNeg = $this->access->allowNegativeStock();
 		$now = $this->clock->now();
 
 		$result = $this->runInTransaction(function () use (
-			$actorUid, $itemId, $locationId, $mode, $qty, $qtyDelta, $reason, $allowNeg, $now, $lotCode,
+			$actorUid, $itemId, $locationId, $mode, $qty, $qtyDelta, $reason, $reasonCode, $allowNeg, $now, $lotCode,
 		): array {
 			$item = $this->lockActiveItemForMovement($itemId);
 			$lockedLot = $this->enforceTrackMode($item, $lotCode, 'adjust', 0);
@@ -222,7 +224,7 @@ class MovementService
 			$this->updateBalance($bal, $computed['qtyAfter'], $now);
 			$mov = $this->insertMovement(
 				$itemId, $locationId, 'adjust', $computed['delta'], $computed['qtyAfter'],
-				null, null, $reason, $actorUid, $now, null, null, $lockedLot,
+				null, null, $reason, $actorUid, $now, null, null, $lockedLot, $reasonCode,
 			);
 
 			return [
@@ -335,6 +337,8 @@ class MovementService
 		?string $reason,
 		bool $asOffice,
 		?string $lotCode = null,
+		?string $reasonCode = null,
+		?string $locationCode = null,
 	): array {
 		$item = $this->items->resolveByCode(CodeRules::trim($code));
 		if ($item === null) {
@@ -342,6 +346,8 @@ class MovementService
 		}
 		$kind = strtolower(trim($kind));
 		$itemId = (int)$item->getId();
+
+		LocationScanPolicy::assertMatches($this->config, $this->locations, $locationId, $locationCode);
 
 		return match ($kind) {
 			'receive' => $asOffice
@@ -356,7 +362,7 @@ class MovementService
 					$actorUid, $itemId, $locationId, $toLocationId, (int)$qty, $reason, $lotCode,
 				),
 			'adjust' => $asOffice
-				? $this->adjust($actorUid, $itemId, $locationId, 'delta', null, $qtyDelta, $reason, $lotCode)
+				? $this->adjust($actorUid, $itemId, $locationId, 'delta', null, $qtyDelta, $reason, $lotCode, true, $reasonCode)
 				: throw new PermissionDeniedException(),
 			default => throw new ValidationException('validation_failed', '', [
 				['field' => 'kind', 'code' => 'validation_failed'],
@@ -377,6 +383,7 @@ class MovementService
 		?string $transferGroup,
 		int $limit,
 		int $offset,
+		?string $reasonCode = null,
 	): array {
 		if ($from !== null && $to !== null && $from > $to) {
 			throw new ValidationException('invalid_query');
@@ -401,6 +408,7 @@ class MovementService
 			$limit,
 			$offset,
 			$visible,
+			$reasonCode,
 		);
 		return [
 			'data' => array_map(static fn (Movement $m) => $m->toApi(), $result['data']),
@@ -533,6 +541,7 @@ class MovementService
 		?string $refType = null,
 		?int $refId = null,
 		?string $lotCode = null,
+		?string $reasonCode = null,
 	): Movement {
 		$m = new Movement();
 		$m->setItemId($itemId);
@@ -543,6 +552,7 @@ class MovementService
 		$m->setTransferGroup($transferGroup);
 		$m->setCounterpartyLocId($counterpartyLocId);
 		$m->setReason($reason);
+		$m->setReasonCode($reasonCode);
 		$m->setRefType($refType);
 		$m->setRefId($refId);
 		$m->setLotCode($lotCode);

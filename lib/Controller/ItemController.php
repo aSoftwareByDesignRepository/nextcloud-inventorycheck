@@ -194,7 +194,7 @@ class ItemController extends Controller
 	 */
 	private function toStorageInput(array $input): array
 	{
-		foreach (['reorderLevel', 'reorder_level'] as $key) {
+		foreach (['reorderLevel', 'reorder_level', 'targetStock', 'target_stock'] as $key) {
 			if (array_key_exists($key, $input) && $input[$key] !== null && $input[$key] !== '') {
 				$input[$key] = QtyScale::toStorage($this->config, $input[$key]);
 			}
