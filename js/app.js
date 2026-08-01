@@ -644,9 +644,16 @@
 								{ label: tr('SKU'), render: function (r) { return r.item.sku; } },
 								{ label: tr('On hand'), render: function (r) { return formatQty(r.totalQty); } },
 								{ label: tr('Reorder at'), render: function (r) { return formatQty(r.reorderLevel); } },
+								{ label: tr('Suggested'), render: function (r) { return formatQty(r.suggestedQty); } },
 							],
 							low.data
 						),
+					(ctx.isOffice || ctx.isAppAdmin)
+						? el('p', { className: 'iv-actions' }, [
+							el('a', { className: 'iv-btn', href: exportCsvHref(ctx, 'reorder'), text: tr('Export reorder CSV') }),
+							el('a', { className: 'iv-btn', href: exportCsvHref(ctx, 'variance'), text: tr('Export variance CSV') }),
+						])
+						: null,
 				]));
 
 				if (ctx.locationReorderHintEnabled) {
@@ -904,6 +911,7 @@
 			spellcheck: 'false',
 		});
 		var reason = el('input', { type: 'text', maxlength: '512', className: 'iv-input' });
+		var reasonCode = el('select', { className: 'iv-input', 'aria-label': tr('Reason code') });
 		var hint = el('p', {
 			className: 'iv-field__hint',
 			id: 'iv-bycode-hint',
@@ -952,7 +960,28 @@
 				className: 'iv-field__hint',
 				text: tr('Required when the item tracks lots or serial numbers. Serial items always use quantity 1.'),
 			}));
-			fields.push(field(tr('Reason (optional)'), reason, { name: 'reason' }));
+			if (opts.adjust) {
+				fields.push(field(tr('Reason code'), reasonCode, { name: 'reasonCode' }));
+				fields.push(el('p', {
+					className: 'iv-field__hint',
+					text: tr('Required when adjust reason codes are enforced in settings.'),
+				}));
+			}
+			fields.push(field(opts.adjust ? tr('Reason note (optional)') : tr('Reason (optional)'), reason, { name: 'reason' }));
+			var reasonCodesUrl = ctx.urls.api.reasonCodes;
+			var reasonCodesReady = opts.adjust && reasonCodesUrl
+				? api('GET', reasonCodesUrl).then(function (res) {
+					clear(reasonCode);
+					reasonCode.appendChild(el('option', { value: '', text: tr('Choose a reason code') }));
+					(res.data || []).forEach(function (c) {
+						var label = (document.documentElement.getAttribute('lang') || 'en').toLowerCase().slice(0, 2) === 'de'
+							? (c.labelDe || c.code)
+							: (c.labelEn || c.code);
+						reasonCode.appendChild(el('option', { value: c.code, text: label }));
+					});
+					if (opts.prefill && opts.prefill.reasonCode) reasonCode.value = String(opts.prefill.reasonCode);
+				}).catch(function () { /* keep empty */ })
+				: Promise.resolve();
 
 			if (opts.prefill) {
 				if (opts.prefill.itemId) itemSelect.value = String(opts.prefill.itemId);
@@ -962,10 +991,23 @@
 				if (opts.prefill.lotCode) lotCode.value = String(opts.prefill.lotCode);
 				if (opts.prefill.reason) reason.value = opts.prefill.reason;
 			}
-			// Wave B4: default from favourites when no prefill location.
-			if ((!opts.prefill || !opts.prefill.locationId) && masters.favouriteIds && masters.favouriteIds.length) {
-				locSelect.value = String(masters.favouriteIds[0]);
+			// Wave D7: item default_location_id, then Wave B4 favourites.
+			if ((!opts.prefill || !opts.prefill.locationId)) {
+				var prefItem = opts.prefill && opts.prefill.itemId
+					? (masters.items || []).find(function (it) { return Number(it.id) === Number(opts.prefill.itemId); })
+					: null;
+				if (prefItem && prefItem.defaultLocationId) {
+					locSelect.value = String(prefItem.defaultLocationId);
+				} else if (masters.favouriteIds && masters.favouriteIds.length) {
+					locSelect.value = String(masters.favouriteIds[0]);
+				}
 			}
+			itemSelect.addEventListener('change', function () {
+				var it = (masters.items || []).find(function (row) { return String(row.id) === String(itemSelect.value); });
+				if (it && it.defaultLocationId) {
+					locSelect.value = String(it.defaultLocationId);
+				}
+			});
 			if (toSelect && (!opts.prefill || !opts.prefill.toLocationId) && masters.favouriteIds && masters.favouriteIds.length > 1) {
 				var dest = masters.favouriteIds.find(function (id) {
 					return String(id) !== String(locSelect.value);
@@ -981,6 +1023,13 @@
 				return v === '' ? null : v;
 			}
 
+			function reasonCodePayload() {
+				if (!opts.adjust) return null;
+				var v = reasonCode.value.trim();
+				return v === '' ? null : v;
+			}
+
+			reasonCodesReady.then(function () {
 			dialog(opts.title, fields, function () {
 				var itemId = Number(itemSelect.value);
 				var locationId = Number(locSelect.value);
@@ -1014,6 +1063,7 @@
 							qtyDelta: opts.prefill.qtyDelta,
 							lotCode: lotPayload(),
 							reason: reason.value || null,
+							reasonCode: reasonCodePayload(),
 						}).then(function (result) {
 							toast(tr('Stock adjusted.'));
 							refreshAfterMutation(ctx, result);
@@ -1026,6 +1076,7 @@
 						qty: qtyPayload(),
 						lotCode: lotPayload(),
 						reason: reason.value || null,
+						reasonCode: reasonCodePayload(),
 					}).then(function (result) {
 						toast(tr('Stock adjusted.'));
 						refreshAfterMutation(ctx, result);
@@ -1042,6 +1093,7 @@
 					refreshAfterMutation(ctx, result);
 				});
 			}, opts.confirm);
+			});
 		}).catch(function (err) {
 			toast(err.message || tr('Could not load items.'), true);
 		});
@@ -1457,6 +1509,14 @@
 			required: false,
 		}));
 		reorder.removeAttribute('required');
+		var targetStock = el('input', qtyInputAttrs(ctx, {
+			adjust: true,
+			value: existing && existing.targetStock != null ? existing.targetStock : '',
+			required: false,
+		}));
+		targetStock.removeAttribute('required');
+		targetStock.placeholder = tr('Optional target / order-up-to');
+		var defaultLocation = el('select', { className: 'iv-input', 'aria-label': tr('Default location') });
 		var trackMode = el('select', { className: 'iv-input', 'aria-label': tr('Tracking mode') }, [
 			el('option', { value: 'none', text: tr('No lot / serial tracking') }),
 			el('option', { value: 'lot', text: tr('Lot / batch tracking') }),
@@ -1471,12 +1531,21 @@
 			type: 'number', className: 'iv-input', min: '0', step: '1',
 			value: existing && existing.lastPriceMinor != null ? String(existing.lastPriceMinor) : '',
 		});
+		loadMasters(ctx).then(function (masters) {
+		clear(defaultLocation);
+		defaultLocation.appendChild(el('option', { value: '', text: tr('No default location') }));
+		(masters.locations || []).forEach(function (r) {
+			defaultLocation.appendChild(el('option', { value: String(r.id), text: r.name + ' — ' + r.code }));
+		});
+		if (existing && existing.defaultLocationId) defaultLocation.value = String(existing.defaultLocationId);
 		dialog(existing ? tr('Edit item') : tr('New item'), [
 			field(tr('SKU'), sku, { name: 'sku' }),
 			field(tr('Scan code (optional)'), scan, { name: 'scanCode' }),
 			field(tr('Name'), name, { name: 'name' }),
 			field(tr('Unit'), uom, { name: 'uom' }),
 			field(tr('Reorder level'), reorder, { name: 'reorderLevel' }),
+			field(tr('Target stock (optional)'), targetStock, { name: 'targetStock' }),
+			field(tr('Default location (optional)'), defaultLocation, { name: 'defaultLocationId' }),
 			field(tr('Tracking mode'), trackMode, { name: 'trackMode' }),
 			el('p', {
 				className: 'iv-field__hint',
@@ -1495,6 +1564,8 @@
 				name: name.value.trim(),
 				uom: uom.value.trim() || 'pcs',
 				reorderLevel: reorder.value.trim(),
+				targetStock: targetStock.value.trim() === '' ? null : targetStock.value.trim(),
+				defaultLocationId: defaultLocation.value === '' ? null : Number(defaultLocation.value),
 				trackMode: trackMode.value,
 				supplierNote: supplierNote.value.trim() || null,
 				lastPriceMinor: lastPrice.value.trim() === '' ? null : Number(lastPrice.value),
@@ -1511,6 +1582,7 @@
 				renderItems(ctx);
 			});
 		});
+		}).catch(function (err) { toast(err.message || tr('Could not load items.'), true); });
 	}
 
 	/** Wave A4: one primary item photo. Office may upload/replace/remove; everyone may view. */
@@ -1950,6 +2022,15 @@
 					}).catch(function (err) { toast(err.message, true); });
 				},
 			}));
+			if (ctx.urls.api.locationLabelPrint) {
+				ctx.actions.appendChild(el('a', {
+					className: 'iv-btn',
+					href: urlWithId(ctx.urls.api.locationLabelPrint, id),
+					target: '_blank',
+					rel: 'noopener',
+					text: tr('Print location label'),
+				}));
+			}
 			mount.appendChild(el('h2', { className: 'iv-section__title', text: loc.name }));
 			mount.appendChild(el('p', { className: 'iv-muted', text: loc.code + ' · ' + locationKindLabel(loc.kind) }));
 			mount.appendChild(bals.data.length === 0
@@ -3236,7 +3317,55 @@
 				});
 			}
 
-			mount.appendChild(el('section', {
+			
+			var requireAdjustReason = el('input', {
+				type: 'checkbox',
+				className: 'iv-switch__input',
+				id: 'iv-require-adjust-reason',
+				checked: cfg.requireAdjustReason ? '' : null,
+			});
+			var requireLocationScan = el('input', {
+				type: 'checkbox',
+				className: 'iv-switch__input',
+				id: 'iv-require-location-scan',
+				checked: cfg.requireLocationScan ? '' : null,
+			});
+			mount.appendChild(el('section', { className: 'iv-section', 'aria-labelledby': 'iv-waved-title' }, [
+				el('h2', { id: 'iv-waved-title', className: 'iv-section__title', text: tr('Scan & adjust policies') }),
+				el('p', {
+					className: 'iv-section__hint',
+					text: tr('Warehouse hygiene for phone scan and inventur. Adjust reason codes reduce mystery corrections; location scan confirm prevents booking the wrong shelf.'),
+				}),
+				el('label', { className: 'iv-switch', for: 'iv-require-adjust-reason' }, [
+					requireAdjustReason,
+					el('span', { className: 'iv-switch__label', text: tr('Require a reason code on every stock adjust') }),
+				]),
+				el('label', { className: 'iv-switch', for: 'iv-require-location-scan' }, [
+					requireLocationScan,
+					el('span', { className: 'iv-switch__label', text: tr('Require scanning the location code when booking from the scan app') }),
+				]),
+				btn(tr('Save scan policies'), {
+					primary: true,
+					onclick: function () {
+						if (!ctx.urls.api.configWaveD) {
+							toast(tr('Wave D settings are unavailable on this server.'), true);
+							return;
+						}
+						clearFieldErrors(mount);
+						api('POST', ctx.urls.api.configWaveD, {
+							requireAdjustReason: requireAdjustReason.checked,
+							requireLocationScan: requireLocationScan.checked,
+						}).then(function () {
+							toast(tr('Scan policies saved.'));
+						}).catch(function (err) {
+							applyFieldErrors(mount, err && err.details, err && err.message);
+							toast(err.message, true);
+						});
+					},
+				}),
+			]));
+
+mount.appendChild(el('section', {
 				className: 'iv-section',
 				id: 'iv-license',
 				'aria-labelledby': 'iv-license-title',

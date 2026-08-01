@@ -29,6 +29,7 @@ final class MobileGateServiceTest extends TestCase
 		parent::setUp();
 		$this->license = $this->createMock(LicenseService::class);
 		$this->access = $this->createMock(AccessControlService::class);
+		$this->access->method('isOffice')->willReturn(false);
 		$this->clock = $this->createMock(Clock::class);
 		$this->config = $this->createMock(IConfig::class);
 		$this->config->method('getAppValue')->willReturn('0');
