@@ -1,0 +1,107 @@
+/**
+ * Accessibility — scoped to InventoryCheck (WCAG 2.1 AA).
+ * Focus rings, reduced motion, high contrast, forced-colors.
+ * Never restyle Nextcloud core chrome outside #content.app-inventorycheck.
+ */
+
+#content.app-inventorycheck a:focus-visible,
+#content.app-inventorycheck button:focus-visible,
+#content.app-inventorycheck input:focus-visible,
+#content.app-inventorycheck select:focus-visible,
+#content.app-inventorycheck textarea:focus-visible,
+#content.app-inventorycheck [tabindex="0"]:focus-visible,
+#content.app-inventorycheck .iv-btn:focus-visible,
+#content.app-inventorycheck .button:focus-visible,
+#content.app-inventorycheck .form-input:focus-visible,
+#content.app-inventorycheck .form-select:focus-visible,
+#content.app-inventorycheck .form-textarea:focus-visible,
+#content.app-inventorycheck .iv-nav__link:focus-visible,
+#content.app-inventorycheck .iv-settings-nav__link:focus-visible,
+#content.app-inventorycheck .iv-breadcrumb__link:focus-visible,
+.iv-dialog a:focus-visible,
+.iv-dialog button:focus-visible,
+.iv-dialog input:focus-visible,
+.iv-dialog select:focus-visible,
+.iv-dialog textarea:focus-visible,
+.iv-dialog .iv-btn:focus-visible,
+.modal-backdrop.iv-dialog-overlay a:focus-visible,
+.modal-backdrop.iv-dialog-overlay button:focus-visible,
+.modal-backdrop.iv-dialog-overlay input:focus-visible,
+.modal-backdrop.iv-dialog-overlay select:focus-visible,
+.modal-backdrop.iv-dialog-overlay textarea:focus-visible {
+	outline: 2px solid var(--color-primary-element);
+	outline-offset: 2px;
+}
+
+/* Mouse click must not leave a permanent ring (WCAG 2.4.7 / DS principle 5). */
+#content.app-inventorycheck a:focus:not(:focus-visible),
+#content.app-inventorycheck button:focus:not(:focus-visible),
+#content.app-inventorycheck input:focus:not(:focus-visible),
+#content.app-inventorycheck select:focus:not(:focus-visible),
+#content.app-inventorycheck textarea:focus:not(:focus-visible),
+.iv-dialog a:focus:not(:focus-visible),
+.iv-dialog button:focus:not(:focus-visible),
+.iv-dialog input:focus:not(:focus-visible),
+.iv-dialog select:focus:not(:focus-visible),
+.iv-dialog textarea:focus:not(:focus-visible) {
+	outline: none;
+}
+
+@supports not selector(:focus-visible) {
+	#content.app-inventorycheck a:focus,
+	#content.app-inventorycheck button:focus,
+	#content.app-inventorycheck input:focus,
+	#content.app-inventorycheck select:focus,
+	#content.app-inventorycheck textarea:focus,
+	#content.app-inventorycheck [tabindex="0"]:focus {
+		outline: 2px solid var(--color-primary-element);
+		outline-offset: 2px;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	#content.app-inventorycheck *,
+	#content.app-inventorycheck *::before,
+	#content.app-inventorycheck *::after,
+	.iv-dialog,
+	.iv-dialog *,
+	.modal-backdrop.iv-dialog-overlay,
+	.modal-backdrop.iv-dialog-overlay * {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
+}
+
+@media (prefers-contrast: more) {
+	#content.app-inventorycheck .iv-btn,
+	#content.app-inventorycheck .button,
+	.iv-dialog .iv-btn {
+		border-width: 2px;
+	}
+
+	#content.app-inventorycheck a:focus-visible,
+	#content.app-inventorycheck button:focus-visible,
+	.iv-dialog a:focus-visible,
+	.iv-dialog button:focus-visible {
+		outline-width: 3px;
+	}
+}
+
+@media (forced-colors: active) {
+	#content.app-inventorycheck .iv-btn,
+	#content.app-inventorycheck .button,
+	#content.app-inventorycheck .iv-card,
+	#content.app-inventorycheck .iv-empty,
+	.iv-dialog {
+		forced-color-adjust: auto;
+		border: 1px solid CanvasText;
+	}
+
+	#content.app-inventorycheck a:focus-visible,
+	#content.app-inventorycheck button:focus-visible,
+	.iv-dialog button:focus-visible {
+		outline: 3px solid Highlight;
+	}
+}

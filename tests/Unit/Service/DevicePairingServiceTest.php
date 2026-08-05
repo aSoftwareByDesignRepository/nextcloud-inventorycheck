@@ -12,6 +12,7 @@ use OCA\InventoryCheck\Service\Clock;
 use OCA\InventoryCheck\Service\DevicePairingService;
 use OCA\InventoryCheck\Service\LicenseService;
 use OCP\IConfig;
+use OCP\IRequest;
 use OCP\Lock\ILockingProvider;
 use OCP\Lock\LockedException;
 use PHPUnit\Framework\TestCase;
@@ -23,9 +24,11 @@ final class DevicePairingServiceTest extends TestCase
 	private Clock $clock;
 	private IConfig $config;
 	private ILockingProvider $locking;
+	private IRequest $request;
 	private DevicePairingService $pairing;
 	/** @var array<string, string> */
 	private array $appValues = [];
+	private string $clientIp = '203.0.113.10';
 
 	protected function setUp(): void
 	{
@@ -44,13 +47,26 @@ final class DevicePairingServiceTest extends TestCase
 			},
 		);
 		$this->locking = $this->createMock(ILockingProvider::class);
-		$this->pairing = new DevicePairingService(
+		$this->request = $this->createMock(IRequest::class);
+		$this->request->method('getRemoteAddress')->willReturnCallback(fn (): string => $this->clientIp);
+		$this->pairing = $this->makePairing();
+	}
+
+	private function makePairing(): DevicePairingService
+	{
+		return new DevicePairingService(
 			$this->license,
 			$this->devices,
 			$this->clock,
 			$this->config,
 			$this->locking,
+			$this->request,
 		);
+	}
+
+	private function rateKeyForIp(string $ip): string
+	{
+		return 'pair_fail:' . substr(hash('sha256', $ip), 0, 32);
 	}
 
 	public function testPairSuccessClaimsAtomicallyAndReturnsTokenOnce(): void
@@ -132,6 +148,35 @@ final class DevicePairingServiceTest extends TestCase
 		$this->pairing->pair('bad');
 	}
 
+	public function testRateLimitIsPerClientIpNotGlobal(): void
+	{
+		$this->license->method('hashSecret')->willReturn('NONE');
+		$this->devices->method('findPendingByPairCodeHash')->willReturn(null);
+		for ($i = 0; $i < 10; $i++) {
+			try {
+				$this->pairing->pair('ZZZZZZZZ');
+			} catch (ValidationException) {
+				// expected
+			}
+		}
+		$this->clientIp = '198.51.100.20';
+		// Different IP must still be allowed (not frozen by the other bucket).
+		try {
+			$this->pairing->pair('ZZZZZZZZ');
+			$this->fail('expected ValidationException for bad code on fresh IP');
+		} catch (ValidationException) {
+			// expected
+		}
+		$this->assertSame(
+			1,
+			(int)(json_decode($this->appValues[$this->rateKeyForIp('198.51.100.20')], true)['count'] ?? 0),
+		);
+		$this->assertSame(
+			10,
+			(int)(json_decode($this->appValues[$this->rateKeyForIp('203.0.113.10')], true)['count'] ?? 0),
+		);
+	}
+
 	public function testTouchLastSeenSkipsWithinFiveMinutes(): void
 	{
 		$device = new ScanDevice();
@@ -156,20 +201,15 @@ final class DevicePairingServiceTest extends TestCase
 	{
 		$this->locking = $this->createMock(ILockingProvider::class);
 		$this->locking->method('acquireLock')->willThrowException(new LockedException('busy'));
-		$this->pairing = new DevicePairingService(
-			$this->license,
-			$this->devices,
-			$this->clock,
-			$this->config,
-			$this->locking,
-		);
+		$this->pairing = $this->makePairing();
 		$this->expectException(MobileGateException::class);
 		$this->pairing->pair('ZZZZZZZZ');
 	}
 
 	public function testRecordFailureThrowsWhenWindowAlreadyFull(): void
 	{
-		$this->appValues['pair_fail_window'] = json_encode([
+		$key = $this->rateKeyForIp($this->clientIp);
+		$this->appValues[$key] = json_encode([
 			'start' => 1_700_000_000,
 			'count' => 10,
 		]);
@@ -183,19 +223,20 @@ final class DevicePairingServiceTest extends TestCase
 		}
 		$this->assertSame(
 			10,
-			(int)(json_decode($this->appValues['pair_fail_window'], true)['count'] ?? 0),
+			(int)(json_decode($this->appValues[$key], true)['count'] ?? 0),
 			'full window must not increment further',
 		);
 	}
 
 	public function testRateLimitUsesExclusiveLockAroundCounter(): void
 	{
+		$lock = 'inventorycheck/pair_rate/' . substr(hash('sha256', $this->clientIp), 0, 16);
 		$this->locking->expects($this->atLeastOnce())->method('acquireLock')->with(
-			'inventorycheck/pair_rate',
+			$lock,
 			ILockingProvider::LOCK_EXCLUSIVE,
 		);
 		$this->locking->expects($this->atLeastOnce())->method('releaseLock')->with(
-			'inventorycheck/pair_rate',
+			$lock,
 			ILockingProvider::LOCK_EXCLUSIVE,
 		);
 		$this->license->method('hashSecret')->willReturn('NONE');

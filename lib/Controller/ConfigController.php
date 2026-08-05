@@ -133,6 +133,7 @@ class ConfigController extends Controller
 		$this->access->requireAppAdmin($uid);
 		return new JSONResponse([
 			'enabled' => $this->locationAcl->isEnabled(),
+			'devicesStrict' => $this->locationAcl->isDevicesStrict(),
 			'assignments' => $this->locationAcl->listAll(),
 		]);
 	}
@@ -144,9 +145,19 @@ class ConfigController extends Controller
 		$this->access->requireAppAdmin($uid);
 		$p = $this->request->getParams();
 
-		if (array_key_exists('enabled', $p)) {
-			$this->locationAcl->setEnabled($this->parseBool($p['enabled'], 'enabled'));
-		}
+		// Phase 1 — parse/validate only (no writes). Writing `enabled` before a
+		// failing assignment replace left ACL half-applied; commit enabled last.
+		$enabled = array_key_exists('enabled', $p)
+			? $this->parseBool($p['enabled'], 'enabled')
+			: null;
+		$devicesStrict = array_key_exists('devicesStrict', $p)
+			? $this->parseBool($p['devicesStrict'], 'devicesStrict')
+			: null;
+
+		$assignments = null;
+		$subjectType = null;
+		$subjectId = null;
+		$locationIds = null;
 		if (array_key_exists('assignments', $p)) {
 			if (!is_array($p['assignments'])) {
 				throw new ValidationException('validation_failed', '', [
@@ -155,12 +166,25 @@ class ConfigController extends Controller
 			}
 			/** @var list<array<string, mixed>> $assignments */
 			$assignments = $p['assignments'];
-			$this->locationAcl->replaceAll($uid, $assignments);
 		} elseif (array_key_exists('subjectType', $p) || array_key_exists('subjectId', $p) || array_key_exists('locationIds', $p)) {
 			$subjectType = is_string($p['subjectType'] ?? null) ? $p['subjectType'] : '';
-			$subjectId = is_string($p['subjectId'] ?? null) ? $p['subjectId'] : '';
+			$subjectId = is_string($p['subjectId'] ?? null) ? trim($p['subjectId']) : '';
 			$locationIds = is_array($p['locationIds'] ?? null) ? $p['locationIds'] : [];
-			$this->locationAcl->setForSubject($subjectType, $subjectId, $locationIds);
+		}
+
+		// Phase 2 — assignments first, then flags (fail closed on partial apply).
+		if ($assignments !== null) {
+			$this->locationAcl->replaceAll($uid, $assignments);
+		} elseif ($subjectId !== null && $subjectId !== '') {
+			$this->locationAcl->setForSubject((string)$subjectType, $subjectId, $locationIds ?? []);
+		}
+		// Apply devicesStrict before enabled: enabling both in one save must not
+		// briefly leave ACL on while strict is still off (unbound scanners org-wide).
+		if ($devicesStrict !== null) {
+			$this->locationAcl->setDevicesStrict($devicesStrict);
+		}
+		if ($enabled !== null) {
+			$this->locationAcl->setEnabled($enabled);
 		}
 
 		return $this->locationAcl();
@@ -183,21 +207,23 @@ class ConfigController extends Controller
 		$allowedGroups = array_key_exists('allowedGroups', $p)
 			? $this->validatedGroupIds($p['allowedGroups'], 'allowedGroups')
 			: null;
-		// Dedicated App Admins (portfolio §2.1) may rewrite the list; self-lockout is blocked.
+		// Only Nextcloud system admins (L0) may rewrite the Dedicated App Admin list
+		// (SPEC §ACL / portfolio privilege boundary). L1 sees the list but cannot escalate.
 		$appAdmins = null;
-		if (array_key_exists('appAdmins', $p) && $this->access->isAppAdmin($uid)) {
+		if (array_key_exists('appAdmins', $p) && $this->access->isSystemAdmin($uid)) {
 			$appAdmins = $this->validatedUserIds($p['appAdmins'], 'appAdmins');
-			if (
-				!$this->access->isSystemAdmin($uid)
-				&& !in_array($uid, $appAdmins, true)
-				&& $appAdmins === []
-			) {
-				throw new ValidationException(
-					'validation_failed',
-					'You cannot remove your own app administrator access without assigning another administrator first.',
-					[['field' => 'appAdmins', 'code' => 'cannot_remove_self']],
-				);
-			}
+		}
+
+		// Fail closed: restriction with empty allowlists locks every non-admin out.
+		$effectiveRestriction = $restriction ?? $this->access->isAccessRestrictionEnabled();
+		$effectiveUsers = $allowedUsers ?? $this->access->getJsonIdList(AccessControlService::KEY_ACCESS_ALLOWED_USER_IDS);
+		$effectiveGroups = $allowedGroups ?? $this->access->getJsonIdList(AccessControlService::KEY_ACCESS_ALLOWED_GROUP_IDS);
+		if ($effectiveRestriction && $effectiveUsers === [] && $effectiveGroups === []) {
+			throw new ValidationException(
+				'access_allowlist_required',
+				'Access restriction requires at least one allowed user or group.',
+				[['field' => 'allowedUsers', 'code' => 'access_allowlist_required']],
+			);
 		}
 
 		// Phase 2 — commit only after all validations succeeded.

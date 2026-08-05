@@ -70,7 +70,7 @@ final class LifecycleAndRaceIntegrationTest extends TestCase
 		$bySku = $this->items->byCode($this->uid, 'BYSKU-' . $suffix);
 		$this->assertSame((int)$item['id'], (int)$bySku['id']);
 
-		$this->movements->adjust($this->uid, (int)$item['id'], (int)$loc['id'], 'set', 0, null, 'zero');
+		$this->movements->adjust($this->uid, (int)$item['id'], (int)$loc['id'], 'set', 0, null, 'zero', null, true, 'correction');
 		$this->items->update($this->uid, (int)$item['id'], ['active' => false]);
 
 		$this->expectException(NotFoundException::class);
@@ -106,6 +106,69 @@ final class LifecycleAndRaceIntegrationTest extends TestCase
 		} catch (ConflictException $e) {
 			$this->assertSame('code_exists', $e->getErrorCode());
 		}
+	}
+
+	/** EXEC A7: location.code must not collide with item sku/scan_code (and vice versa). */
+	public function testItemLocationCodeCrossUniqueness(): void
+	{
+		$suffix = bin2hex(random_bytes(3));
+		$shared = 'XCODE-' . $suffix;
+		$this->locations->create($this->uid, [
+			'code' => $shared,
+			'name' => 'Bin',
+			'kind' => 'shelf',
+		]);
+
+		try {
+			$this->items->create($this->uid, [
+				'sku' => $shared,
+				'name' => 'Colliding sku',
+			]);
+			$this->fail('expected ConflictException for sku=location.code');
+		} catch (ConflictException $e) {
+			$this->assertSame('code_exists', $e->getErrorCode());
+		}
+
+		try {
+			$this->items->create($this->uid, [
+				'sku' => 'OK-' . $suffix,
+				'scanCode' => $shared,
+				'name' => 'Colliding scan',
+			]);
+			$this->fail('expected ConflictException for scan=location.code');
+		} catch (ConflictException $e) {
+			$this->assertSame('code_exists', $e->getErrorCode());
+		}
+
+		$item = $this->items->create($this->uid, [
+			'sku' => 'ITEM-' . $suffix,
+			'scanCode' => 'SCAN-' . $suffix,
+			'name' => 'Ok item',
+		]);
+
+		try {
+			$this->locations->create($this->uid, [
+				'code' => 'ITEM-' . $suffix,
+				'name' => 'Colliding loc',
+				'kind' => 'other',
+			]);
+			$this->fail('expected ConflictException for location.code=item.sku');
+		} catch (ConflictException $e) {
+			$this->assertSame('code_exists', $e->getErrorCode());
+		}
+
+		try {
+			$this->locations->create($this->uid, [
+				'code' => 'SCAN-' . $suffix,
+				'name' => 'Colliding scan loc',
+				'kind' => 'other',
+			]);
+			$this->fail('expected ConflictException for location.code=item.scan');
+		} catch (ConflictException $e) {
+			$this->assertSame('code_exists', $e->getErrorCode());
+		}
+
+		$this->assertSame('ITEM-' . $suffix, $item['sku']);
 	}
 
 	public function testInvalidCodeCharsetRejected(): void

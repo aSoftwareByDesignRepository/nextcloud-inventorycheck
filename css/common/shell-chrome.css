@@ -108,7 +108,9 @@
 	margin-top: var(--iv-space-5, 24px);
 }
 #content.app-inventorycheck #app-content .iv-section:first-child,
-#content.app-inventorycheck #app-content .iv-main > .iv-section:first-of-type {
+#content.app-inventorycheck #app-content .iv-main > .iv-section:first-of-type,
+#content.app-inventorycheck #app-content .iv-main > .iv-card:first-of-type,
+#content.app-inventorycheck #app-content .iv-main > .iv-filter-panel:first-of-type {
 	margin-top: 0;
 }
 #content.app-inventorycheck #app-content .iv-section__title,
@@ -119,12 +121,20 @@
 	line-height: var(--iv-line-tight, 1.2);
 	color: var(--iv-text, var(--color-main-text));
 }
+/*
+ * Bachus / AZ parity: structured cards must match Filter panel chrome.
+ * Plain .iv-card { padding } above is (2,2,0) — without this peer rule, list
+ * headers stay inset on white and look nothing like iv-filter-panel__head.
+ */
+#content.app-inventorycheck #app-content .iv-card:has(.iv-card__header),
+#content.app-inventorycheck #app-content .iv-card:has(.iv-card__body),
 #content.app-inventorycheck #app-content .iv-filter-panel {
 	padding: 0;
 	overflow: hidden;
 }
 #content.app-inventorycheck #app-content .iv-filter-panel__head,
-#content.app-inventorycheck #app-content .iv-filter-panel > header {
+#content.app-inventorycheck #app-content .iv-filter-panel > header,
+#content.app-inventorycheck #app-content .iv-card__header {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: flex-start;
@@ -135,11 +145,26 @@
 	background: var(--iv-bg-soft, color-mix(in srgb, var(--color-main-background) 96%, var(--color-main-text) 4%));
 }
 #content.app-inventorycheck #app-content .iv-filter-panel__head h2,
-#content.app-inventorycheck #app-content .iv-filter-panel > header h2 {
+#content.app-inventorycheck #app-content .iv-filter-panel > header h2,
+#content.app-inventorycheck #app-content .iv-card__header .iv-card__title {
 	margin: 0;
 }
-#content.app-inventorycheck #app-content .iv-filter-panel__intro {
+#content.app-inventorycheck #app-content .iv-filter-panel__intro,
+#content.app-inventorycheck #app-content .iv-card__header .iv-card__lead {
 	margin: var(--iv-space-2, 8px) 0 0;
+	max-width: 65ch;
+	font-size: var(--iv-fs-sm, 0.875rem);
+	line-height: var(--iv-line-base, 1.5);
+	color: var(--iv-muted, var(--color-text-maxcontrast));
+}
+#content.app-inventorycheck #app-content .iv-card__body {
+	display: flex;
+	flex-direction: column;
+	gap: var(--iv-space-4, 16px);
+	padding: var(--iv-space-5, 24px);
+}
+#content.app-inventorycheck #app-content .iv-card__body--table {
+	padding: 0;
 }
 /* Body owns padding (AZC azc-card__body). Form itself stays flush. */
 #content.app-inventorycheck #app-content .iv-filter-panel__body {
@@ -174,8 +199,16 @@
 	overflow: hidden;
 	background: var(--iv-bg-card, var(--color-main-background));
 }
-/* Empty states — AZ-like bordered soft panel */
-#content.app-inventorycheck #app-content .iv-empty,
+/* Principle 14: card is the only frame — no wrap border inside headed cards or table-solo. */
+#content.app-inventorycheck #app-content .iv-card--table-solo > .iv-table-wrap,
+#content.app-inventorycheck #app-content .iv-card:has(.iv-card__header) > .iv-card__body > .iv-table-wrap,
+#content.app-inventorycheck #app-content .iv-card > .iv-table-wrap {
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+}
+/* Empty states — AZ-like bordered soft panel (never apply to .iv-howto) */
+#content.app-inventorycheck #app-content .iv-empty:not(.iv-howto):not(.iv-stocktake-howto),
 #content.app-inventorycheck #app-content .iv-empty-state {
 	border: 1px dashed var(--iv-border-strong, var(--color-border));
 	border-radius: var(--iv-radius-md, 12px);
@@ -394,11 +427,19 @@
 }
 .iv-page-header__main {
 	display: grid;
-	grid-template-columns: 56px minmax(0, 1fr) auto;
+	/* DutyCheck parity: icon | title — actions always full-width below.
+	 * Never put actions in a 3rd column; that crushes the lead into a
+	 * word-salad column beside Receive / Issue / More. */
+	grid-template-columns: 56px minmax(0, 1fr);
 	gap: var(--iv-space-4);
 	align-items: start;
 	min-width: 0;
 	width: 100%;
+	max-width: 100%;
+}
+.iv-page-header__text {
+	min-width: 0;
+	overflow-wrap: break-word;
 }
 .iv-page-header__icon {
 	display: flex;
@@ -423,6 +464,7 @@
 	margin: 0 0 var(--iv-space-1);
 	font-size: var(--iv-fs-2xl);
 	line-height: var(--iv-line-tight);
+	overflow-wrap: break-word;
 }
 .iv-page-header__lead {
 	margin: 0;
@@ -430,13 +472,18 @@
 	font-size: var(--iv-fs-md);
 	line-height: var(--iv-line-base);
 	max-width: 60ch;
+	overflow-wrap: break-word;
 }
 .iv-page-header__actions {
+	grid-column: 1 / -1;
 	display: flex;
 	flex-wrap: wrap;
 	gap: var(--iv-space-2);
 	align-items: center;
-	justify-content: flex-end;
+	justify-content: flex-start;
+	min-width: 0;
+	max-width: 100%;
+	width: 100%;
 }
 
 /* ── Scope strip ───────────────────────────────────────────── */
@@ -487,7 +534,7 @@
 }
 .iv-btn:focus-visible,
 .iv-app .btn:focus-visible {
-	outline: 3px solid var(--color-primary-element, #0082c9);
+	outline: 2px solid var(--color-primary-element, #0082c9);
 	outline-offset: 2px;
 }
 .iv-btn--primary,
@@ -503,8 +550,14 @@
 }
 .iv-btn--danger,
 .iv-app .btn--danger {
-	background: var(--color-error);
-	color: var(--color-error-text);
+	background: var(--iv-danger-fill, var(--color-element-error, #c90000));
+	border-color: var(--iv-danger-fill, var(--color-element-error, #c90000));
+	color: var(--iv-danger-on-fill, var(--color-primary-element-text, #fff));
+}
+.iv-btn--danger:hover:not(:disabled),
+.iv-app .btn--danger:hover:not(:disabled) {
+	background: var(--iv-danger-fill-hover, var(--color-element-error, #c90000));
+	border-color: var(--iv-danger-fill-hover, var(--color-element-error, #c90000));
 }
 .iv-btn--ghost {
 	background: transparent;
@@ -512,7 +565,7 @@
 	border-color: transparent;
 }
 .iv-btn--sm {
-	min-height: 36px;
+	min-height: var(--iv-touch, 44px);
 	padding: var(--iv-space-1) var(--iv-space-3);
 	font-size: var(--iv-fs-sm);
 }
@@ -619,13 +672,11 @@
 
 
 
-/* ── Responsive page header (AZC parity) ── */
-@media (max-width: 767px) {
-	#app-content.iv-app .iv-page-header__main,
-	.iv-page-header__main {
-		grid-template-columns: 48px minmax(0, 1fr);
-	}
-
+/*
+ * Responsive page header — icon shrinks on phones; actions already full-width
+ * (DutyCheck parity). Keep lead readable; do not crush with overflow-wrap:anywhere.
+ */
+@media (max-width: 1023px) {
 	#app-content.iv-app .iv-page-header__icon,
 	.iv-page-header__icon {
 		width: 48px;
@@ -638,12 +689,9 @@
 		height: 24px;
 	}
 
-	#app-content.iv-app .iv-page-header__actions,
-	.iv-page-header__actions {
-		grid-column: 1 / -1;
-		justify-content: flex-start;
-		width: 100%;
-		max-width: 100%;
+	#app-content.iv-app .iv-page-header__main,
+	.iv-page-header__main {
+		grid-template-columns: 48px minmax(0, 1fr);
 	}
 
 	#app-content.iv-app .iv-page-header__actions .iv-btn,
@@ -654,9 +702,21 @@
 		max-width: 100%;
 	}
 
+	/* Overflow menu stays a compact control; its popover owns full-width items */
+	#app-content.iv-app .iv-page-header__actions .iv-actions-more {
+		flex: 0 1 auto;
+	}
+
+	#app-content.iv-app .iv-page-header__actions .iv-actions-more__body .iv-btn,
+	#app-content.iv-app .iv-page-header__actions .iv-actions-more__body .button,
+	#app-content.iv-app .iv-page-header__actions .iv-actions-more__body a.button {
+		flex: 0 0 auto;
+		min-width: 0;
+		width: 100%;
+	}
+
 	#app-content.iv-app .iv-page-header__text h1 {
 		font-size: var(--iv-fs-xl);
-		overflow-wrap: anywhere;
 	}
 
 	#app-content.iv-app .iv-page-header__lead {
@@ -675,5 +735,9 @@
 	#app-content.iv-app .iv-page-header__actions a.button {
 		flex: 1 1 100%;
 		min-width: 0;
+	}
+
+	#app-content.iv-app .iv-page-header__actions .iv-actions-more {
+		flex: 1 1 100%;
 	}
 }

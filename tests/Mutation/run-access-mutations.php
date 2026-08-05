@@ -90,4 +90,10 @@ runMutations(dirname(__DIR__, 2), 'AccessControlServiceTest', [
 		'search' => "\t\tif (\$userId === '') {\n\t\t\treturn false;\n\t\t}\n\t\tif (\$this->isAppAdmin(\$userId)) {",
 		'replace' => "\t\tif (\$this->isAppAdmin(\$userId)) {",
 	],
+	[
+		'name' => 'purge-skips-office-and-notify',
+		'file' => $file,
+		'search' => "self::KEY_APP_ADMINS,\n\t\t\tself::KEY_ACCESS_ALLOWED_USER_IDS,\n\t\t\tself::KEY_OFFICE_USER_IDS,\n\t\t\tLowStockNotifyService::KEY_NOTIFY_USER_IDS,",
+		'replace' => "self::KEY_APP_ADMINS,\n\t\t\tself::KEY_ACCESS_ALLOWED_USER_IDS,",
+	],
 ]);

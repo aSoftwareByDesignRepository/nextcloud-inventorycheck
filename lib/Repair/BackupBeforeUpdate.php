@@ -43,6 +43,15 @@ final class BackupBeforeUpdate implements IRepairStep
 			$result = $this->backupService->createSnapshot('pre-migration');
 		} catch (UpgradeBackupException $e) {
 			$output->warning('InventoryCheck: pre-update backup failed: ' . $e->getMessage());
+			// Oversized ledgers must not stall occ upgrade in maintenance mode —
+			// operators still have DB dumps / snapshots outside this JSON path.
+			if (str_contains($e->getMessage(), 'exceeds backup row limit')) {
+				$output->warning(
+					'InventoryCheck: continuing upgrade without a JSON snapshot. '
+					. 'Take a database dump before updating large warehouses.',
+				);
+				return;
+			}
 			throw $e;
 		}
 

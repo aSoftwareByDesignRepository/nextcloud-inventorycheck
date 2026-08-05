@@ -11,8 +11,12 @@ return [
 		['name' => 'page#location', 'url' => '/locations/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
 		['name' => 'page#movements', 'url' => '/movements', 'verb' => 'GET'],
 		['name' => 'page#stocktake', 'url' => '/stocktake', 'verb' => 'GET'],
+		['name' => 'page#stocktakeNew', 'url' => '/stocktake/create', 'verb' => 'GET'],
 		['name' => 'page#stocktakeCampaign', 'url' => '/stocktake/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
 		['name' => 'page#settings', 'url' => '/settings', 'verb' => 'GET'],
+		// {section} allowlist pinned to SettingsSectionCatalog::routeRequirement() by SettingsPagesContractTest.
+		['name' => 'page#settingsSection', 'url' => '/settings/{section}', 'verb' => 'GET',
+			'requirements' => ['section' => 'access|office|notifications|quantities|location-access|connections|policies|license|support']],
 
 		['name' => 'location#index', 'url' => '/api/locations', 'verb' => 'GET'],
 		['name' => 'location#byCode', 'url' => '/api/locations/by-code/{code}', 'verb' => 'GET', 'requirements' => ['code' => '[^/]+']],
@@ -99,6 +103,7 @@ return [
 
 		['name' => 'mobile#bootstrap', 'url' => '/mobile/v1/bootstrap', 'verb' => 'GET'],
 		['name' => 'mobile#byCode', 'url' => '/mobile/v1/items/by-code/{code}', 'verb' => 'GET', 'requirements' => ['code' => '[^/]+']],
+		['name' => 'mobile#itemPhoto', 'url' => '/mobile/v1/items/{id}/photo', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
 		['name' => 'mobile#locationByCode', 'url' => '/mobile/v1/locations/by-code/{code}', 'verb' => 'GET', 'requirements' => ['code' => '[^/]+']],
 		['name' => 'mobile#locations', 'url' => '/mobile/v1/locations', 'verb' => 'GET'],
 		['name' => 'mobile#balances', 'url' => '/mobile/v1/balances', 'verb' => 'GET'],

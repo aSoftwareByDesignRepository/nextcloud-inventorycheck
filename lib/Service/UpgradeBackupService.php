@@ -33,6 +33,12 @@ class UpgradeBackupService
 {
 	private const LOCK_KEY = 'inventorycheck-upgrade-backup';
 
+	/**
+	 * JSON snapshots are for typical installs. Warehouse-scale tables must use a
+	 * DB dump — loading millions of rows into PHP OOMs mid-upgrade.
+	 */
+	public const MAX_TABLE_ROWS = 200_000;
+
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly IConfig $config,
@@ -460,10 +466,28 @@ class UpgradeBackupService
 			throw new UpgradeBackupException('Refusing to export unknown table: ' . $table);
 		}
 
+		$countQb = $this->db->getQueryBuilder();
+		$countQb->select($countQb->func()->count('*', 'cnt'))->from($table);
+		$countRes = $countQb->executeQuery();
+		$rowCount = (int)($countRes->fetchOne() ?: 0);
+		$countRes->closeCursor();
+		if ($rowCount > self::MAX_TABLE_ROWS) {
+			throw new UpgradeBackupException(sprintf(
+				'Table %s has %d rows; exceeds backup row limit of %d. Use a database-level dump for large instances.',
+				$table,
+				$rowCount,
+				self::MAX_TABLE_ROWS,
+			));
+		}
+
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')->from($table);
 		$result = $qb->executeQuery();
-		$rows = $result->fetchAll();
+		// Stream row-by-row — never PDO::fetchAll on warehouse-scale tables.
+		$rows = [];
+		while (($row = $result->fetch()) !== false) {
+			$rows[] = $row;
+		}
 		$result->closeCursor();
 
 		return $rows;

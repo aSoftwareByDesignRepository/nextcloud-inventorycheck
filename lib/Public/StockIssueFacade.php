@@ -167,6 +167,13 @@ class StockIssueFacade
 			return FacadeResult::success(['movements' => $replay], 'idempotent_replay');
 		}
 
+		// Global lock order: item_id ascending (matches MovementService / inventur close).
+		// Unsorted SKU map order ABBA-deadlocks against concurrent multi-item TXs.
+		usort(
+			$needed,
+			static fn (array $a, array $b): int => $a['itemId'] <=> $b['itemId'],
+		);
+
 		return $this->postAllOrNothing($req, $locationId, $needed, $replay);
 	}
 

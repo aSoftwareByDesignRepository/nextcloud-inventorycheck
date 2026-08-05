@@ -57,4 +57,10 @@ runMutations(dirname(__DIR__, 2), 'StockIssueFacadeTest', [
 		'search' => "'sku' => \$failedSku,",
 		'replace' => "'sku' => \$needed[0]['sku'] ?? '',",
 	],
+	[
+		'name' => 'multi-sku-lock-order-dropped',
+		'file' => $facade,
+		'search' => "usort(\n\t\t\t\$needed,\n\t\t\tstatic fn (array \$a, array \$b): int => \$a['itemId'] <=> \$b['itemId'],\n\t\t);",
+		'replace' => '/* no sort */',
+	],
 ]);

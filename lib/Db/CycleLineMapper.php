@@ -56,6 +56,79 @@ class CycleLineMapper extends QBMapper
 		return $this->findEntities($qb);
 	}
 
+	/** @return list<CycleLine> */
+	public function forCampaignPage(int $campaignId, int $limit, int $offset): array
+	{
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')->from($this->getTableName())
+			->where($qb->expr()->eq('campaign_id', $qb->createNamedParameter($campaignId, IQueryBuilder::PARAM_INT)))
+			->orderBy('item_id', 'ASC')
+			->setMaxResults($limit)
+			->setFirstResult($offset);
+		return $this->findEntities($qb);
+	}
+
+	public function countForCampaign(int $campaignId): int
+	{
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->func()->count('id', 'cnt'))->from($this->getTableName())
+			->where($qb->expr()->eq('campaign_id', $qb->createNamedParameter($campaignId, IQueryBuilder::PARAM_INT)));
+		$res = $qb->executeQuery();
+		$cnt = (int)($res->fetchOne() ?: 0);
+		$res->closeCursor();
+		return $cnt;
+	}
+
+	/** Lines that already have a counted quantity (for close progress UI). */
+	public function countCountedForCampaign(int $campaignId): int
+	{
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->func()->count('id', 'cnt'))->from($this->getTableName())
+			->where($qb->expr()->eq('campaign_id', $qb->createNamedParameter($campaignId, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->isNotNull('qty_counted'));
+		$res = $qb->executeQuery();
+		$cnt = (int)($res->fetchOne() ?: 0);
+		$res->closeCursor();
+		return $cnt;
+	}
+
+	/**
+	 * True when any line's frozen system_qty differs from the live balance
+	 * at $locationId (UC-C2). Uses a single join — not an N+1 hydrate.
+	 * Missing balance row ⇒ current qty 0 (COALESCE).
+	 */
+	public function campaignHasConflicts(int $campaignId, int $locationId): bool
+	{
+		return $this->countConflictsForCampaign($campaignId, $locationId) > 0;
+	}
+
+	public function countConflictsForCampaign(int $campaignId, int $locationId): int
+	{
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->func()->count('l.id', 'cnt'))
+			->from($this->getTableName(), 'l')
+			->leftJoin(
+				'l',
+				BalanceMapper::TABLE,
+				'b',
+				$qb->expr()->andX(
+					$qb->expr()->eq('b.item_id', 'l.item_id'),
+					$qb->expr()->eq('b.location_id', $qb->createNamedParameter($locationId, IQueryBuilder::PARAM_INT)),
+				),
+			)
+			->where($qb->expr()->eq('l.campaign_id', $qb->createNamedParameter($campaignId, IQueryBuilder::PARAM_INT)))
+			->andWhere(
+				$qb->expr()->neq(
+					'l.system_qty',
+					$qb->createFunction('COALESCE(b.qty, 0)'),
+				),
+			);
+		$res = $qb->executeQuery();
+		$cnt = (int)($res->fetchOne() ?: 0);
+		$res->closeCursor();
+		return $cnt;
+	}
+
 	/**
 	 * Open or counting inventur lines for an item (B1: block delete/deactivate).
 	 */

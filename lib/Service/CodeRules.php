@@ -16,6 +16,12 @@ final class CodeRules
 	public const SCAN_MAX = 128;
 	public const LOC_CODE_MAX = 64;
 
+	/**
+	 * Shared exclusive lock for item sku/scan_code and location.code mutations
+	 * so item↔location cross-uniqueness cannot race (EXEC A7).
+	 */
+	public const CODES_LOCK = 'inventorycheck/item_codes';
+
 	public const PATTERN_SKU = '/^[A-Za-z0-9._\\/-]{1,64}$/';
 	public const PATTERN_SCAN = '/^[A-Za-z0-9._\\/-]{1,128}$/';
 	public const PATTERN_LOC = '/^[A-Za-z0-9._\\/-]{1,64}$/';
@@ -77,6 +83,40 @@ final class CodeRules
 				return true;
 			}
 			if ($scanCode === $otherSku || $scanCode === $otherScan) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * EXEC A7: item sku/scan_code must not equal any location.code (exact).
+	 *
+	 * @param list<string> $locationCodes
+	 */
+	public static function conflictsWithLocationCodes(
+		string $sku,
+		string $scanCode,
+		array $locationCodes,
+	): bool {
+		foreach ($locationCodes as $code) {
+			$code = (string)$code;
+			if ($sku === $code || $scanCode === $code) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * EXEC A7: location.code must not equal any item sku or scan_code (exact).
+	 *
+	 * @param list<array{id: int, sku: string, scanCode: string}> $items
+	 */
+	public static function locationConflictsWithItems(string $code, array $items): bool
+	{
+		foreach ($items as $row) {
+			if ($code === (string)$row['sku'] || $code === (string)$row['scanCode']) {
 				return true;
 			}
 		}

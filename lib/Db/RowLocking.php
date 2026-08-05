@@ -35,11 +35,16 @@ trait RowLocking
 		if ($exclusive) {
 			return ' FOR UPDATE';
 		}
-		return match ($provider) {
-			IDBConnection::PLATFORM_MYSQL => ' LOCK IN SHARE MODE',
-			IDBConnection::PLATFORM_POSTGRES => ' FOR SHARE',
-			default => ' FOR UPDATE',
-		};
+		// NC 30+ exposes MariaDB as its own provider ('mariadb'); shared-lock
+		// syntax is identical to MySQL. Treating it as default FOR UPDATE would
+		// over-serialize concurrent movements on typical docker/MariaDB installs.
+		if ($provider === IDBConnection::PLATFORM_MYSQL || $provider === 'mariadb') {
+			return ' LOCK IN SHARE MODE';
+		}
+		if ($provider === IDBConnection::PLATFORM_POSTGRES) {
+			return ' FOR SHARE';
+		}
+		return ' FOR UPDATE';
 	}
 
 	/**

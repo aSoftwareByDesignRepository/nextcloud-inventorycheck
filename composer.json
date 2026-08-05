@@ -48,6 +48,7 @@
 		"test:mutation:middleware": "php tests/Mutation/run-middleware-mutations.php",
 		"test:mutation:movement": "php tests/Mutation/run-movement-service-mutations.php",
 		"test:mutation:pairing": "php tests/Mutation/run-pairing-mutations.php",
+		"test:mutation:lifecycle": "php tests/Mutation/run-lifecycle-mutations.php",
 		"test:mutation:balance": "php tests/Mutation/run-balance-mutations.php",
 		"test:mutation:csv": "php tests/Mutation/run-csv-mutations.php",
 		"test:mutation:wave": "php tests/Mutation/run-wave-mutations.php",
@@ -56,7 +57,7 @@
 		"test:mutation:facade": "php tests/Mutation/run-stock-issue-facade-mutations.php",
 		"test:mutation:filters": "php tests/Mutation/run-filter-panel-mutations.php",
 		"test:mutation:directory": "php tests/Mutation/run-directory-mutations.php",
-		"test:mutation": "composer test:mutation:math && composer test:mutation:adjust && composer test:mutation:codes && composer test:mutation:access && composer test:mutation:config && composer test:mutation:license && composer test:mutation:hash && composer test:mutation:rank && composer test:mutation:support && composer test:mutation:middleware && composer test:mutation:movement && composer test:mutation:pairing && composer test:mutation:balance && composer test:mutation:csv && composer test:mutation:wave && composer test:mutation:label && composer test:mutation:qtyscale && composer test:mutation:facade && composer test:mutation:filters && composer test:mutation:directory",
+		"test:mutation": "composer test:mutation:math && composer test:mutation:adjust && composer test:mutation:codes && composer test:mutation:access && composer test:mutation:config && composer test:mutation:license && composer test:mutation:hash && composer test:mutation:rank && composer test:mutation:support && composer test:mutation:middleware && composer test:mutation:movement && composer test:mutation:pairing && composer test:mutation:lifecycle && composer test:mutation:balance && composer test:mutation:csv && composer test:mutation:wave && composer test:mutation:label && composer test:mutation:qtyscale && composer test:mutation:facade && composer test:mutation:filters && composer test:mutation:directory",
 		"test:msi": "php tests/Mutation/msi-report.php",
 		"test:gauntlet": "composer test:all && composer test:js && composer test:a11y && composer test:msi"
 	},

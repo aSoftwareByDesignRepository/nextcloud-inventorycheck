@@ -41,5 +41,7 @@ final class L10nParityContractTest extends TestCase
 		self::assertSame([], $missingDe, 'Missing DE keys: ' . implode(' | ', $missingDe));
 		self::assertArrayNotHasKey('Device pairing: coming soon', $enT);
 		self::assertArrayNotHasKey('Device pairing: coming soon', $deT);
+		self::assertArrayNotHasKey('Native scanner app: coming soon. Device slots and pairing codes work now.', $enT);
+		self::assertArrayNotHasKey('Native scanner app: coming soon. Device slots and pairing codes work now.', $deT);
 	}
 }

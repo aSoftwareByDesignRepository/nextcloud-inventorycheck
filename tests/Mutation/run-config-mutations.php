@@ -54,4 +54,22 @@ runMutations(dirname(__DIR__, 2), 'ConfigDirectoryValidationTest', [
 		'search' => "\$allowedUsers = array_key_exists('allowedUsers', \$p)\n\t\t\t? \$this->validatedUserIds(\$p['allowedUsers'], 'allowedUsers')\n\t\t\t: null;\n\t\t\$allowedGroups = array_key_exists('allowedGroups', \$p)\n\t\t\t? \$this->validatedGroupIds(\$p['allowedGroups'], 'allowedGroups')\n\t\t\t: null;",
 		'replace' => "\$allowedUsers = array_key_exists('allowedUsers', \$p)\n\t\t\t? \$this->validatedUserIds(\$p['allowedUsers'], 'allowedUsers')\n\t\t\t: null;\n\t\tif (\$allowedUsers !== null) {\n\t\t\t\$this->access->setJsonIdList(AccessControlService::KEY_ACCESS_ALLOWED_USER_IDS, \$allowedUsers);\n\t\t}\n\t\t\$allowedGroups = array_key_exists('allowedGroups', \$p)\n\t\t\t? \$this->validatedGroupIds(\$p['allowedGroups'], 'allowedGroups')\n\t\t\t: null;",
 	],
+	[
+		'name' => 'empty-allowlist-gate-dropped',
+		'file' => $file,
+		'search' => "if (\$effectiveRestriction && \$effectiveUsers === [] && \$effectiveGroups === []) {\n\t\t\tthrow new ValidationException(\n\t\t\t\t'access_allowlist_required',\n\t\t\t\t'Access restriction requires at least one allowed user or group.',\n\t\t\t\t[['field' => 'allowedUsers', 'code' => 'access_allowlist_required']],\n\t\t\t);\n\t\t}",
+		'replace' => "if (false && \$effectiveRestriction && \$effectiveUsers === [] && \$effectiveGroups === []) {\n\t\t\tthrow new ValidationException(\n\t\t\t\t'access_allowlist_required',\n\t\t\t\t'Access restriction requires at least one allowed user or group.',\n\t\t\t\t[['field' => 'allowedUsers', 'code' => 'access_allowlist_required']],\n\t\t\t);\n\t\t}",
+	],
+	[
+		'name' => 'location-acl-enabled-written-before-assignments',
+		'file' => $file,
+		'search' => "// Phase 2 — assignments first, then flags (fail closed on partial apply).\n\t\tif (\$assignments !== null) {\n\t\t\t\$this->locationAcl->replaceAll(\$uid, \$assignments);\n\t\t} elseif (\$subjectId !== null && \$subjectId !== '') {\n\t\t\t\$this->locationAcl->setForSubject((string)\$subjectType, \$subjectId, \$locationIds ?? []);\n\t\t}\n\t\t// Apply devicesStrict before enabled: enabling both in one save must not\n\t\t// briefly leave ACL on while strict is still off (unbound scanners org-wide).\n\t\tif (\$devicesStrict !== null) {\n\t\t\t\$this->locationAcl->setDevicesStrict(\$devicesStrict);\n\t\t}\n\t\tif (\$enabled !== null) {\n\t\t\t\$this->locationAcl->setEnabled(\$enabled);\n\t\t}",
+		'replace' => "if (\$enabled !== null) {\n\t\t\t\$this->locationAcl->setEnabled(\$enabled);\n\t\t}\n\t\tif (\$assignments !== null) {\n\t\t\t\$this->locationAcl->replaceAll(\$uid, \$assignments);\n\t\t} elseif (\$subjectId !== null && \$subjectId !== '') {\n\t\t\t\$this->locationAcl->setForSubject((string)\$subjectType, \$subjectId, \$locationIds ?? []);\n\t\t}\n\t\tif (\$devicesStrict !== null) {\n\t\t\t\$this->locationAcl->setDevicesStrict(\$devicesStrict);\n\t\t}",
+	],
+	[
+		'name' => 'location-acl-enabled-before-devices-strict',
+		'file' => $file,
+		'search' => "// Apply devicesStrict before enabled: enabling both in one save must not\n\t\t// briefly leave ACL on while strict is still off (unbound scanners org-wide).\n\t\tif (\$devicesStrict !== null) {\n\t\t\t\$this->locationAcl->setDevicesStrict(\$devicesStrict);\n\t\t}\n\t\tif (\$enabled !== null) {\n\t\t\t\$this->locationAcl->setEnabled(\$enabled);\n\t\t}",
+		'replace' => "if (\$enabled !== null) {\n\t\t\t\$this->locationAcl->setEnabled(\$enabled);\n\t\t}\n\t\tif (\$devicesStrict !== null) {\n\t\t\t\$this->locationAcl->setDevicesStrict(\$devicesStrict);\n\t\t}",
+	],
 ]);

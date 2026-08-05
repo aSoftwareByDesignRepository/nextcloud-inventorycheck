@@ -14,10 +14,12 @@ final class SettingsSupportUsWiringTest extends TestCase
 	public function testSettingsTemplatePassesSupportUsLinksInstance(): void
 	{
 		$src = (string)file_get_contents(dirname(__DIR__, 3) . '/templates/settings.php');
+		self::assertStringContainsString("\$ivSettingsSection === 'support'", $src);
 		self::assertStringContainsString('SupportUsLinks', $src);
 		self::assertStringContainsString('$supportUsLinks', $src);
 		self::assertStringContainsString("supportUsCssPrefix = 'iv'", $src);
 		self::assertStringContainsString('parts/support-us-section.php', $src);
+		self::assertStringContainsString('parts/settings-nav.php', $src);
 		self::assertStringNotContainsString("\$supportUs = \$_['supportUs']", $src);
 	}
 }

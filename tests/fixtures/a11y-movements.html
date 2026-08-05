@@ -20,13 +20,36 @@
 	<main id="iv-main">
 		<header class="iv-page-header" aria-labelledby="iv-page-title">
 			<h1 id="iv-page-title">Movements</h1>
-			<p>Append-only booking history</p>
+			<p class="iv-page-header__lead">Every booking is listed here — filter, export, or reverse a mistake</p>
 		</header>
+		<section class="iv-card iv-howto" id="iv-howto-movements" role="region" aria-labelledby="iv-howto-movements-title">
+			<header class="iv-section__header iv-quickstart__header">
+				<div class="iv-quickstart__intro">
+					<h2 id="iv-howto-movements-title" class="iv-card__title">How movements work</h2>
+					<p class="iv-section__sub">Every receive, issue, transfer, and adjust is listed here — append-only.</p>
+				</div>
+				<button type="button" class="button iv-hint-dismiss" aria-label="Hide tips" title="Hide tips" aria-controls="iv-howto-movements" data-iv-dismiss-hint="movements_howto_v1">Hide tips</button>
+			</header>
+			<ol class="iv-quickstart">
+				<li class="iv-quickstart__item" data-step="book">
+					<strong>1. Book stock</strong>
+					<p>Use Receive or Issue above (or from the Dashboard). Transfers and adjusts sit under More.</p>
+				</li>
+				<li class="iv-quickstart__item" data-step="filter">
+					<strong>2. Filter the ledger</strong>
+					<p>Narrow by kind, item, location, or dates. Results update as you choose. Clear resets the list.</p>
+				</li>
+				<li class="iv-quickstart__item" data-step="reverse">
+					<strong>3. Reverse a mistake</strong>
+					<p>Reverse posts a compensating booking. History stays complete — nothing is deleted.</p>
+				</li>
+			</ol>
+		</section>
 		<section id="iv-mov-filter-panel" class="iv-card iv-filter-panel" aria-labelledby="iv-mov-filter-title">
 			<header class="iv-filter-panel__head">
 				<div class="iv-filter-panel__head-text">
-					<h2 id="iv-mov-filter-title">Filter</h2>
-					<p class="iv-filter-panel__intro">Narrow the list by kind, item, location, or date, then click Apply.</p>
+					<h2 id="iv-mov-filter-title" class="iv-sr-only">Filter movements</h2>
+					<p class="iv-filter-panel__intro">Filters update as you choose.</p>
 				</div>
 			</header>
 			<div class="iv-filter-panel__body">

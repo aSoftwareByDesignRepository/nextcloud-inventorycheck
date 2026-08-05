@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace OCA\InventoryCheck\Controller;
 
 use OCA\InventoryCheck\AppInfo\Application;
+use OCA\InventoryCheck\Db\ScanDevice;
 use OCA\InventoryCheck\Exception\AppAccessDeniedException;
 use OCA\InventoryCheck\Exception\MobileGateException;
 use OCA\InventoryCheck\Service\AccessControlService;
 use OCA\InventoryCheck\Service\BalanceService;
 use OCA\InventoryCheck\Service\CycleCountService;
 use OCA\InventoryCheck\Service\DevicePairingService;
+use OCA\InventoryCheck\Service\ItemPhotoService;
 use OCA\InventoryCheck\Service\ItemService;
 use OCA\InventoryCheck\Service\LicenseService;
 use OCA\InventoryCheck\Service\LocationFavouriteService;
@@ -23,6 +25,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
+use OCP\AppFramework\Http\DataDisplayResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IConfig;
 use OCP\IRequest;
@@ -34,6 +37,11 @@ use OCP\IUserSession;
  * Device callers authenticate with X-IV-Device-Token only (no NC session),
  * so every route is PublicPage + NoCSRFRequired. Auth is enforced inside
  * resolveCaller / MobileGateService — never by SecurityMiddleware session.
+ *
+ * Session-backed mutating routes still call {@see assertSafeMutationChannel}
+ * so a bare cookie cannot drive scan/favourites/inventur without CSRF or a
+ * device token (parity with CustomerCheck companion hardening). Forged
+ * Authorization headers are ignored — only X-IV-Device-Token or CSRF count.
  */
 class MobileController extends Controller
 {
@@ -49,10 +57,26 @@ class MobileController extends Controller
 		private readonly AccessControlService $access,
 		private readonly LocationFavouriteService $favourites,
 		private readonly CycleCountService $cycles,
+		private readonly ItemPhotoService $photos,
 		private readonly IUserSession $userSession,
 		private readonly IConfig $config,
 	) {
 		parent::__construct(Application::APP_ID, $request);
+	}
+
+	/**
+	 * Session users keep their uid; device tokens always use device:{id}
+	 * so Wave C3 / device location grants apply consistently on every route.
+	 */
+	private function actorUid(?string $uid, ?ScanDevice $device): string
+	{
+		if ($uid !== null && $uid !== '') {
+			return $uid;
+		}
+		if ($device !== null) {
+			return 'device:' . (int)$device->getId();
+		}
+		return '';
 	}
 
 	#[PublicPage]
@@ -78,7 +102,7 @@ class MobileController extends Controller
 		[$uid, $device] = $this->resolveCaller(true);
 		$this->gate->assertGate($uid, $device);
 		$item = QtyScale::formatItem(
-			$this->items->byCode($uid ?? ('device:' . (int)$device->getId()), rawurldecode($code)),
+			$this->items->byCode($this->actorUid($uid, $device), rawurldecode($code)),
 			$this->config,
 		);
 		if (isset($item['balances']) && is_array($item['balances'])) {
@@ -90,6 +114,22 @@ class MobileController extends Controller
 		return new JSONResponse($item);
 	}
 
+	/**
+	 * Companion read-only item photo (devices + session seats). No upload on mobile.
+	 */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[NoAdminRequired]
+	public function itemPhoto(int $id): DataDisplayResponse
+	{
+		[$uid, $device] = $this->resolveCaller(true);
+		$this->gate->assertGate($uid, $device);
+		$photo = $this->photos->read($id);
+		$response = new DataDisplayResponse($photo['content'], 200, ['Content-Type' => $photo['mime']]);
+		$response->cacheFor(3600, false, true);
+		return $response;
+	}
+
 	/** Wave D2 */
 	#[PublicPage]
 	#[NoCSRFRequired]
@@ -99,7 +139,7 @@ class MobileController extends Controller
 		[$uid, $device] = $this->resolveCaller(true);
 		$this->gate->assertGate($uid, $device);
 		return new JSONResponse(
-			$this->locations->byCode($uid ?? ('device:' . (int)$device->getId()), rawurldecode($code)),
+			$this->locations->byCode($this->actorUid($uid, $device), rawurldecode($code)),
 		);
 	}
 
@@ -111,9 +151,7 @@ class MobileController extends Controller
 		[$uid, $device] = $this->resolveCaller(true);
 		$this->gate->assertGate($uid, $device);
 		$page = Pagination::parse($this->request->getParam('limit'), $this->request->getParam('offset'));
-		// Device tokens (no uid) stay unrestricted; session-backed mobile
-		// users honour Wave C3 location ACL like the web app.
-		return new JSONResponse($this->locations->list($uid ?? '', true, $page['limit'], $page['offset']));
+		return new JSONResponse($this->locations->list($this->actorUid($uid, $device), true, $page['limit'], $page['offset']));
 	}
 
 	#[PublicPage]
@@ -127,7 +165,7 @@ class MobileController extends Controller
 		$itemId = $this->request->getParam('itemId');
 		$locationId = $this->request->getParam('locationId');
 		$result = $this->balances->list(
-			$uid ?? '',
+			$this->actorUid($uid, $device),
 			$itemId !== null && $itemId !== '' ? (int)$itemId : null,
 			$locationId !== null && $locationId !== '' ? (int)$locationId : null,
 			filter_var($this->request->getParam('nonZero', '0'), FILTER_VALIDATE_BOOLEAN),
@@ -150,7 +188,7 @@ class MobileController extends Controller
 		$this->gate->assertGate($uid, $device);
 		$page = Pagination::parse($this->request->getParam('limit'), $this->request->getParam('offset'));
 		$result = $this->movements->list(
-			$uid ?? '',
+			$this->actorUid($uid, $device),
 			null, null, null, null, null, null, $page['limit'], $page['offset'],
 		);
 		$result['data'] = array_map(
@@ -165,11 +203,12 @@ class MobileController extends Controller
 	#[NoAdminRequired]
 	public function scan(): JSONResponse
 	{
+		$this->assertSafeMutationChannel();
 		[$uid, $device] = $this->resolveCaller(true);
 		$this->gate->assertGate($uid, $device);
 		$p = $this->request->getParams();
 		$asOffice = $device === null && $uid !== null && $this->access->isOffice($uid);
-		$actor = $uid ?? ('device:' . (int)$device->getId());
+		$actor = $this->actorUid($uid, $device);
 		$lotCode = null;
 		if (isset($p['lotCode']) && $p['lotCode'] !== '') {
 			$lotCode = (string)$p['lotCode'];
@@ -187,6 +226,7 @@ class MobileController extends Controller
 			$lotCode,
 			isset($p['reasonCode']) ? (string)$p['reasonCode'] : (isset($p['reason_code']) ? (string)$p['reason_code'] : null),
 			isset($p['locationCode']) ? (string)$p['locationCode'] : (isset($p['location_code']) ? (string)$p['location_code'] : null),
+			isset($p['toLocationCode']) ? (string)$p['toLocationCode'] : (isset($p['to_location_code']) ? (string)$p['to_location_code'] : null),
 		);
 		$result['movements'] = array_map(
 			fn (array $m) => QtyScale::formatMovement($m, $this->config),
@@ -224,6 +264,7 @@ class MobileController extends Controller
 	#[NoAdminRequired]
 	public function addFavourite(): JSONResponse
 	{
+		$this->assertSafeMutationChannel();
 		[$uid] = $this->requireSessionUser();
 		$this->gate->assertGate($uid, null);
 		$locationId = (int)$this->request->getParam('locationId', 0);
@@ -235,6 +276,7 @@ class MobileController extends Controller
 	#[NoAdminRequired]
 	public function removeFavourite(int $locationId): JSONResponse
 	{
+		$this->assertSafeMutationChannel();
 		[$uid] = $this->requireSessionUser();
 		$this->gate->assertGate($uid, null);
 		return new JSONResponse(['data' => $this->favourites->remove($uid, $locationId)]);
@@ -266,7 +308,11 @@ class MobileController extends Controller
 		[$uid] = $this->requireSessionUser();
 		$this->gate->assertGate($uid, null);
 		$blind = filter_var($this->request->getParam('blind', '0'), FILTER_VALIDATE_BOOLEAN);
-		$campaign = $this->formatCycleCampaign($this->cycles->get($uid, $id), $blind);
+		$page = Pagination::parse($this->request->getParam('limit'), $this->request->getParam('offset'));
+		$campaign = $this->formatCycleCampaign(
+			$this->cycles->get($uid, $id, $page['limit'], $page['offset']),
+			$blind,
+		);
 		return new JSONResponse($campaign);
 	}
 
@@ -275,6 +321,7 @@ class MobileController extends Controller
 	#[NoAdminRequired]
 	public function cycleCountSetCount(int $lineId): JSONResponse
 	{
+		$this->assertSafeMutationChannel();
 		[$uid] = $this->requireSessionUser();
 		$this->gate->assertGate($uid, null);
 		$p = $this->request->getParams();
@@ -284,6 +331,23 @@ class MobileController extends Controller
 			QtyScale::toStorage($this->config, $p['qtyCounted'] ?? 0),
 		);
 		return new JSONResponse(QtyScale::formatCycleLine($line, $this->config));
+	}
+
+	/**
+	 * Session-backed mutations need a CSRF requesttoken. Device-token callers
+	 * skip CSRF (PublicPage companions); a forged Authorization header must
+	 * never short-circuit this check — resolveCaller ignores Authorization.
+	 */
+	private function assertSafeMutationChannel(): void
+	{
+		$token = trim((string)$this->request->getHeader('X-IV-Device-Token'));
+		if ($token !== '') {
+			return;
+		}
+		if ($this->request->passesCSRFCheck()) {
+			return;
+		}
+		throw new MobileGateException('auth_required');
 	}
 
 	/**

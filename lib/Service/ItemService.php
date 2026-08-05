@@ -20,13 +20,6 @@ use OCP\Lock\LockedException;
 
 class ItemService
 {
-	/**
-	 * Serialises all sku/scan_code mutations so the S7 cross-field
-	 * uniqueness check cannot be raced past by a concurrent writer
-	 * (the DB has no cross-field constraint to fall back on).
-	 */
-	private const CODES_LOCK = 'inventorycheck/item_codes';
-
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly ItemMapper $items,
@@ -138,6 +131,9 @@ class ItemService
 
 		return $this->withCodesLock(function () use ($actorUid, $sku, $scan, $name, $uom, $desc, $reorder, $trackMode, $supplierNote, $lastPriceMinor, $targetStock, $defaultLocationId): array {
 			if (CodeRules::conflictsWithOthers(null, $sku, $scan, $this->items->allCodePairs())) {
+				throw new ConflictException('code_exists');
+			}
+			if (CodeRules::conflictsWithLocationCodes($sku, $scan, $this->locations->allCodes())) {
 				throw new ConflictException('code_exists');
 			}
 			$now = $this->clock->now();
@@ -260,6 +256,9 @@ class ItemService
 				if (CodeRules::conflictsWithOthers($id, $sku, $scan, $this->items->allCodePairs())) {
 					throw new ConflictException('code_exists');
 				}
+				if (CodeRules::conflictsWithLocationCodes($sku, $scan, $this->locations->allCodes())) {
+					throw new ConflictException('code_exists');
+				}
 				$item->setSku($sku);
 				$item->setScanCode($scan);
 			}
@@ -276,7 +275,9 @@ class ItemService
 				$item->setActive($active);
 			}
 			if (array_key_exists('trackMode', $input) || array_key_exists('track_mode', $input)) {
-				$item->setTrackMode($this->parseTrackMode($input, $item->getTrackMode()));
+				$nextMode = $this->parseTrackMode($input, $item->getTrackMode());
+				$this->assertTrackModeChangeAllowed($id, $item->getTrackMode(), $nextMode);
+				$item->setTrackMode($nextMode);
 			}
 			if (array_key_exists('supplierNote', $input) || array_key_exists('supplier_note', $input)) {
 				$item->setSupplierNote($this->parseSupplierNote($input));
@@ -354,6 +355,28 @@ class ItemService
 			throw new ValidationException('validation_failed', '', [['field' => 'trackMode', 'code' => 'validation_failed']]);
 		}
 		return $raw;
+	}
+
+	/**
+	 * Upgrading trackMode (none→lot|serial, lot→serial) while anonymous stock
+	 * exists lets capacity checks ignore pre-flip qty and corrupt the ledger.
+	 * Downgrades and same-mode writes stay allowed; inventur mid-campaign flips
+	 * require zeroing stock first (then close still detects track_mode_changed).
+	 */
+	private function assertTrackModeChangeAllowed(int $itemId, string $from, string $to): void
+	{
+		if ($from === $to) {
+			return;
+		}
+		$rank = ['none' => 0, 'lot' => 1, 'serial' => 2];
+		$fromRank = $rank[$from] ?? 0;
+		$toRank = $rank[$to] ?? 0;
+		if ($toRank <= $fromRank) {
+			return;
+		}
+		if ($this->items->hasNonZeroBalance($itemId)) {
+			throw new ConflictException('track_mode_requires_zero_stock');
+		}
 	}
 
 	/**
@@ -442,7 +465,7 @@ class ItemService
 		$attempts = 0;
 		while (true) {
 			try {
-				$this->locking->acquireLock(self::CODES_LOCK, ILockingProvider::LOCK_EXCLUSIVE);
+				$this->locking->acquireLock(CodeRules::CODES_LOCK, ILockingProvider::LOCK_EXCLUSIVE);
 				break;
 			} catch (LockedException) {
 				if (++$attempts >= 40) {
@@ -454,7 +477,7 @@ class ItemService
 		try {
 			return $fn();
 		} finally {
-			$this->locking->releaseLock(self::CODES_LOCK, ILockingProvider::LOCK_EXCLUSIVE);
+			$this->locking->releaseLock(CodeRules::CODES_LOCK, ILockingProvider::LOCK_EXCLUSIVE);
 		}
 	}
 }

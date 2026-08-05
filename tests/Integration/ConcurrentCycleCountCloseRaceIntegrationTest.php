@@ -57,13 +57,19 @@ final class ConcurrentCycleCountCloseRaceIntegrationTest extends TestCase
 		$camp = $counts->create($uid, $locId, 'Race ' . $suffix);
 		$counts->startCounting($uid, (int)$camp['id']);
 		$lineId = null;
-		foreach ($camp['lines'] as $line) {
-			if ((int)$line['itemId'] === $itemId) {
-				$lineId = (int)$line['id'];
-				break;
+		$offset = 0;
+		$limit = 200;
+		do {
+			$page = $counts->get($uid, (int)$camp['id'], $limit, $offset);
+			foreach ($page['lines'] as $line) {
+				if ((int)$line['itemId'] === $itemId) {
+					$lineId = (int)$line['id'];
+					break 2;
+				}
 			}
-		}
-		self::assertNotNull($lineId);
+			$offset += $limit;
+		} while ($offset < (int)($page['linesTotal'] ?? 0));
+		self::assertNotNull($lineId, 'inventur line for seeded item must exist');
 		$counts->setCount($uid, $lineId, 10);
 		$campaignId = (int)$camp['id'];
 

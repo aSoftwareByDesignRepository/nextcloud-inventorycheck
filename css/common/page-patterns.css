@@ -306,8 +306,8 @@
 
 #app-content.iv-app .iv-filter-field__control .form-input[aria-invalid='true'],
 #app-content.iv-app .iv-filter-field__control .form-select[aria-invalid='true'] {
-	border-color: var(--color-error, #e9322d);
-	outline-color: var(--color-error, #e9322d);
+	border-color: var(--iv-danger-border, var(--color-error-text, var(--color-error)));
+	outline-color: var(--iv-danger-ink, var(--color-error-text, var(--color-error)));
 }
 
 @media (max-width: 1200px) {
@@ -665,24 +665,31 @@
 	}
 
 	/* Card reflow: every field + action reachable without sideways scrolling */
-	#app-content.iv-app .table-container:has(.iv-table--responsive) {
+	#app-content.iv-app .table-container:has(.iv-table--responsive),
+	#app-content.iv-app .iv-table-wrap:has(.iv-table--responsive) {
 		overflow-x: visible;
 	}
 
 	#app-content.iv-app .table.iv-table--responsive,
+	#app-content.iv-app .iv-table.iv-table--responsive,
 	#app-content.iv-app .table.iv-table--responsive tbody,
+	#app-content.iv-app .iv-table.iv-table--responsive tbody,
 	#app-content.iv-app .table.iv-table--responsive tr,
-	#app-content.iv-app .table.iv-table--responsive td {
+	#app-content.iv-app .iv-table.iv-table--responsive tr,
+	#app-content.iv-app .table.iv-table--responsive td,
+	#app-content.iv-app .iv-table.iv-table--responsive td {
 		display: block;
 		width: 100%;
 	}
 
-	#app-content.iv-app .table.iv-table--responsive {
+	#app-content.iv-app .table.iv-table--responsive,
+	#app-content.iv-app .iv-table.iv-table--responsive {
 		min-width: 0;
 		border-collapse: collapse;
 	}
 
-	#app-content.iv-app .table.iv-table--responsive thead {
+	#app-content.iv-app .table.iv-table--responsive thead,
+	#app-content.iv-app .iv-table.iv-table--responsive thead {
 		position: absolute;
 		width: 1px;
 		height: 1px;

@@ -38,10 +38,10 @@ class DirectoryOptionsService
 			return [];
 		}
 		$limit = min(self::MAX_LIMIT, $limit);
-		$byId = $this->userManager->search($query, $limit, 0);
-		$byName = $this->userManager->searchDisplayName($query, $limit, 0);
+		$byId = $this->userManager->search($query, $limit, 0) ?? [];
+		$byName = $this->userManager->searchDisplayName($query, $limit, 0) ?? [];
 		$merged = [];
-		foreach (array_merge($byId, $byName) as $user) {
+		foreach (array_merge(is_array($byId) ? $byId : [], is_array($byName) ? $byName : []) as $user) {
 			if ($user === null) {
 				continue;
 			}

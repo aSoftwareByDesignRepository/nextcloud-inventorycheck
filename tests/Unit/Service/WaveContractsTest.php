@@ -105,7 +105,62 @@ final class WaveContractsTest extends TestCase
 	{
 		$src = (string)file_get_contents(dirname(__DIR__, 3) . '/lib/Service/LocationAclService.php');
 		self::assertStringContainsString("str_starts_with(\$uid, 'device:')", $src);
-		self::assertStringContainsString('Wave C3 ACL is a web-field', $src);
+		self::assertStringContainsString('TYPE_DEVICE', $src);
+		self::assertStringContainsString('visibleLocationIdsForDevice', $src);
+		self::assertStringContainsString('zero grants → unrestricted', $src);
+	}
+
+	public function testCycleCountAclDenyMapsToSameNotFoundCode(): void
+	{
+		$src = (string)file_get_contents(dirname(__DIR__, 3) . '/lib/Service/CycleCountService.php');
+		self::assertStringContainsString('assertAccessibleOrNotFound', $src);
+		self::assertStringContainsString("assertAccessibleOrNotFound(\$actorUid, \$locationId, 'unknown_campaign')", $src);
+		self::assertStringContainsString("assertAccessibleOrNotFound(\$actorUid, (int)\$camp->getLocationId(), 'unknown_count_line')", $src);
+		self::assertStringContainsString('throw new NotFoundException($notFoundCode)', $src);
+	}
+
+	public function testCycleCountCreateLocksLocationInsideTransaction(): void
+	{
+		$src = (string)file_get_contents(dirname(__DIR__, 3) . '/lib/Service/CycleCountService.php');
+		$create = strpos($src, 'function create(');
+		self::assertNotFalse($create);
+		$slice = substr($src, $create, 1200);
+		$tx = strpos($slice, 'beginTransaction');
+		$lock = strpos($slice, 'locations->lockById($locationId, true)');
+		self::assertNotFalse($tx, 'create() must open a transaction');
+		self::assertNotFalse($lock, 'create() must exclusive-lock the location');
+		self::assertLessThan($lock, $tx, 'lock must be inside the transaction');
+		self::assertStringNotContainsString(
+			'$loc = $this->locations->findById($locationId);',
+			$slice,
+			'unlocked pre-check before TX is a TOCTOU hole',
+		);
+		self::assertStringContainsString('MAX_CAMPAIGN_LINES', $src);
+		self::assertStringContainsString('stocktake_too_large', $src);
+		self::assertStringContainsString('searchActiveAfterId', $src, 'inventur create must keyset-page items (no OFFSET phantoms)');
+		self::assertStringNotContainsString("search('', true, self::ITEM_PAGE", $src);
+		self::assertStringContainsString('forCampaignPage', $src);
+		self::assertStringContainsString('linesTotal', $src);
+		self::assertStringContainsString('campaignHasConflicts', $src);
+	}
+
+	public function testItemPhotoRejectsInactiveAfterLock(): void
+	{
+		$src = (string)file_get_contents(dirname(__DIR__, 3) . '/lib/Service/ItemPhotoService.php');
+		self::assertStringContainsString('lockById($itemId, true)', $src);
+		self::assertGreaterThanOrEqual(2, substr_count($src, "throw new ValidationException('inactive_item')"));
+		self::assertMatchesRegularExpression(
+			'/lockById\(\$itemId, true\);\s*\n\s*if \(!\$item->getActive\(\)\)/',
+			$src,
+		);
+	}
+
+	public function testFlangePostsSortedByItemId(): void
+	{
+		$src = (string)file_get_contents(dirname(__DIR__, 3) . '/lib/Public/StockIssueFacade.php');
+		self::assertStringContainsString('usort', $src);
+		self::assertStringContainsString("\$a['itemId'] <=> \$b['itemId']", $src);
+		self::assertStringContainsString('ABBA-deadlocks', $src);
 	}
 
 	public function testCycleCountCloseLocksBalancesBeforeConflictDecision(): void
@@ -141,7 +196,7 @@ final class WaveContractsTest extends TestCase
 	public function testItemServiceReorderCeilingUsesQtyScaleMaxStorage(): void
 	{
 		$src = (string)file_get_contents(dirname(__DIR__, 3) . '/lib/Service/ItemService.php');
-		self::assertSame(2, substr_count($src, 'QtyScale::maxStorage($this->config)'));
+		self::assertSame(3, substr_count($src, 'QtyScale::maxStorage($this->config)'));
 		self::assertStringNotContainsString('$reorder > 1000000', $src);
 		self::assertStringContainsString('item_in_open_stocktake', $src);
 		self::assertSame(2, substr_count($src, 'countOpenCampaignsForItem'));

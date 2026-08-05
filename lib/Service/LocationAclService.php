@@ -6,6 +6,7 @@ namespace OCA\InventoryCheck\Service;
 
 use OCA\InventoryCheck\AppInfo\Application;
 use OCA\InventoryCheck\Db\LocationMapper;
+use OCA\InventoryCheck\Db\ScanDeviceMapper;
 use OCA\InventoryCheck\Exception\NotFoundException;
 use OCA\InventoryCheck\Exception\ValidationException;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -15,17 +16,23 @@ use OCP\IGroupManager;
 use OCP\IUserManager;
 
 /**
- * Wave C3: optional per-location ACL for field users.
+ * Wave C3 / device binding: optional per-location ACL.
  *
- * When disabled (default), all canUseApp users see every location.
- * When enabled, office/app-admin/system-admin still see all; field users only
- * see locations explicitly granted to their uid or groups. Zero grants → none.
+ * When disabled (default), all canUseApp users and scanners see every location.
+ * When enabled:
+ * - office/app-admin/system-admin still see all
+ * - field users only see grants (uid or groups); zero grants → none
+ * - device actors (`device:N`) with ≥1 grants → those locations only;
+ *   with zero grants → unrestricted (BC) unless devices-strict is on (then none)
  */
 class LocationAclService
 {
 	public const KEY_ENABLED = 'location_acl_enabled';
+	/** When '1', unbound scanners (zero grants) see no locations. Default off = BC. */
+	public const KEY_DEVICES_STRICT = 'location_acl_devices_strict';
 	public const TYPE_USER = 'user';
 	public const TYPE_GROUP = 'group';
+	public const TYPE_DEVICE = 'device';
 
 	public function __construct(
 		private readonly IDBConnection $db,
@@ -34,6 +41,7 @@ class LocationAclService
 		private readonly IGroupManager $groupManager,
 		private readonly IUserManager $userManager,
 		private readonly LocationMapper $locations,
+		private readonly ScanDeviceMapper $devices,
 	) {
 	}
 
@@ -47,20 +55,28 @@ class LocationAclService
 		$this->config->setAppValue(Application::APP_ID, self::KEY_ENABLED, $enabled ? '1' : '0');
 	}
 
+	public function isDevicesStrict(): bool
+	{
+		return $this->config->getAppValue(Application::APP_ID, self::KEY_DEVICES_STRICT, '0') === '1';
+	}
+
+	public function setDevicesStrict(bool $strict): void
+	{
+		$this->config->setAppValue(Application::APP_ID, self::KEY_DEVICES_STRICT, $strict ? '1' : '0');
+	}
+
 	/**
 	 * null = unrestricted (caller may see all locations).
-	 *
-	 * Device actors (`device:…`) are unrestricted: Wave C3 ACL is a web-field
-	 * control. Scan devices are physically location-scoped; treating them as
-	 * field users with zero grants would make every scan 404 while reads still
-	 * showed all locations (asymmetric IDOR / dead scanners).
 	 *
 	 * @return list<int>|null
 	 */
 	public function visibleLocationIds(string $uid): ?array
 	{
-		if ($uid === '' || str_starts_with($uid, 'device:') || !$this->isEnabled()) {
+		if ($uid === '' || !$this->isEnabled()) {
 			return null;
+		}
+		if (str_starts_with($uid, 'device:')) {
+			return $this->visibleLocationIdsForDevice($uid);
 		}
 		if ($this->access->isOffice($uid)) {
 			return null;
@@ -102,6 +118,35 @@ class LocationAclService
 		return array_values(array_unique($ids));
 	}
 
+	/**
+	 * Device grants: empty → null (unrestricted BC) unless devices-strict is on
+	 * (then empty → [] so scanners cannot book org-wide without an explicit grant).
+	 *
+	 * @return list<int>|null
+	 */
+	private function visibleLocationIdsForDevice(string $uid): ?array
+	{
+		$raw = substr($uid, strlen('device:'));
+		if ($raw === '' || !ctype_digit($raw) || (int)$raw <= 0) {
+			return $this->isDevicesStrict() ? [] : null;
+		}
+		$subjectId = (string)(int)$raw;
+		$ids = [];
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('location_id')->from('iv_loc_acl')
+			->where($qb->expr()->eq('subject_type', $qb->createNamedParameter(self::TYPE_DEVICE)))
+			->andWhere($qb->expr()->eq('subject_id', $qb->createNamedParameter($subjectId)));
+		$res = $qb->executeQuery();
+		while (($row = $res->fetch()) !== false) {
+			$ids[] = (int)$row['location_id'];
+		}
+		$res->closeCursor();
+		if ($ids === []) {
+			return $this->isDevicesStrict() ? [] : null;
+		}
+		return array_values(array_unique($ids));
+	}
+
 	public function canAccessLocation(string $uid, int $locationId): bool
 	{
 		$visible = $this->visibleLocationIds($uid);
@@ -118,6 +163,55 @@ class LocationAclService
 		}
 	}
 
+	/** GDPR / user-delete: drop every per-user location ACL grant for a deleted UID. */
+	public function purgeUser(string $userId): void
+	{
+		if ($userId === '') {
+			return;
+		}
+		$del = $this->db->getQueryBuilder();
+		$del->delete('iv_loc_acl')
+			->where($del->expr()->eq('subject_type', $del->createNamedParameter(self::TYPE_USER)))
+			->andWhere($del->expr()->eq('subject_id', $del->createNamedParameter($userId)))
+			->executeStatement();
+	}
+
+	/** Drop grants when a scanner slot is deleted. */
+	public function purgeDevice(int $deviceId): void
+	{
+		if ($deviceId <= 0) {
+			return;
+		}
+		$del = $this->db->getQueryBuilder();
+		$del->delete('iv_loc_acl')
+			->where($del->expr()->eq('subject_type', $del->createNamedParameter(self::TYPE_DEVICE)))
+			->andWhere($del->expr()->eq('subject_id', $del->createNamedParameter((string)$deviceId)))
+			->executeStatement();
+	}
+
+	/**
+	 * Validate and dedupe location ids (throws if any id is invalid / missing).
+	 * Used before createDevice bind so bad payloads fail before a slot exists.
+	 *
+	 * @param list<mixed> $locationIds
+	 * @return list<int>
+	 */
+	public function normalizeLocationIds(array $locationIds): array
+	{
+		$clean = [];
+		foreach ($locationIds as $locId) {
+			$n = (int)$locId;
+			if ($n <= 0) {
+				throw new ValidationException('validation_failed', '', [
+					['field' => 'locationIds', 'code' => 'validation_failed'],
+				]);
+			}
+			$this->locations->findById($n);
+			$clean[] = $n;
+		}
+		return array_values(array_unique($clean));
+	}
+
 	/**
 	 * Replace every location grant for one subject (validate-then-commit).
 	 * Empty $locationIds clears that subject's grants.
@@ -128,34 +222,16 @@ class LocationAclService
 	{
 		$type = strtolower(trim($subjectType));
 		$id = trim($subjectId);
-		if (!in_array($type, [self::TYPE_USER, self::TYPE_GROUP], true) || $id === '') {
+		if (!in_array($type, [self::TYPE_USER, self::TYPE_GROUP, self::TYPE_DEVICE], true) || $id === '') {
 			throw new ValidationException('validation_failed', '', [
 				['field' => 'subjectType', 'code' => 'validation_failed'],
 			]);
 		}
-		if ($type === self::TYPE_USER && !$this->userManager->userExists($id)) {
-			throw new ValidationException('unknown_user', 'Unknown user: ' . $id, [
-				['field' => 'subjectId', 'code' => 'unknown_user'],
-			]);
+		$this->assertSubjectExists($type, $id);
+		$clean = $this->normalizeLocationIds($locationIds);
+		if ($type === self::TYPE_DEVICE) {
+			$id = (string)(int)$id;
 		}
-		if ($type === self::TYPE_GROUP && !$this->groupManager->groupExists($id)) {
-			throw new ValidationException('unknown_group', 'Unknown group: ' . $id, [
-				['field' => 'subjectId', 'code' => 'unknown_group'],
-			]);
-		}
-		$clean = [];
-		foreach ($locationIds as $locId) {
-			$n = (int)$locId;
-			if ($n <= 0) {
-				throw new ValidationException('validation_failed', '', [
-					['field' => 'locationIds', 'code' => 'validation_failed'],
-				]);
-			}
-			// Existence check — throws NotFoundException for phantom ids.
-			$this->locations->findById($n);
-			$clean[] = $n;
-		}
-		$clean = array_values(array_unique($clean));
 
 		$this->db->beginTransaction();
 		try {
@@ -216,20 +292,14 @@ class LocationAclService
 			$type = strtolower(trim((string)($row['subjectType'] ?? $row['subject_type'] ?? '')));
 			$id = trim((string)($row['subjectId'] ?? $row['subject_id'] ?? ''));
 			$locId = (int)($row['locationId'] ?? $row['location_id'] ?? 0);
-			if (!in_array($type, [self::TYPE_USER, self::TYPE_GROUP], true) || $id === '' || $locId <= 0) {
+			if (!in_array($type, [self::TYPE_USER, self::TYPE_GROUP, self::TYPE_DEVICE], true) || $id === '' || $locId <= 0) {
 				throw new ValidationException('validation_failed', '', [
 					['field' => 'acl', 'code' => 'validation_failed'],
 				]);
 			}
-			if ($type === self::TYPE_USER && !$this->userManager->userExists($id)) {
-				throw new ValidationException('unknown_user', 'Unknown user: ' . $id, [
-					['field' => 'subjectId', 'code' => 'unknown_user'],
-				]);
-			}
-			if ($type === self::TYPE_GROUP && !$this->groupManager->groupExists($id)) {
-				throw new ValidationException('unknown_group', 'Unknown group: ' . $id, [
-					['field' => 'subjectId', 'code' => 'unknown_group'],
-				]);
+			$this->assertSubjectExists($type, $id);
+			if ($type === self::TYPE_DEVICE) {
+				$id = (string)(int)$id;
 			}
 			$this->locations->findById($locId);
 			$clean[] = [$type, $id, $locId];
@@ -254,5 +324,33 @@ class LocationAclService
 			throw $e;
 		}
 		return $this->listAll();
+	}
+
+	private function assertSubjectExists(string $type, string $id): void
+	{
+		if ($type === self::TYPE_USER && !$this->userManager->userExists($id)) {
+			throw new ValidationException('unknown_user', 'Unknown user: ' . $id, [
+				['field' => 'subjectId', 'code' => 'unknown_user'],
+			]);
+		}
+		if ($type === self::TYPE_GROUP && !$this->groupManager->groupExists($id)) {
+			throw new ValidationException('unknown_group', 'Unknown group: ' . $id, [
+				['field' => 'subjectId', 'code' => 'unknown_group'],
+			]);
+		}
+		if ($type === self::TYPE_DEVICE) {
+			if (!ctype_digit($id) || (int)$id <= 0) {
+				throw new ValidationException('validation_failed', '', [
+					['field' => 'subjectId', 'code' => 'validation_failed'],
+				]);
+			}
+			try {
+				$this->devices->findById((int)$id);
+			} catch (NotFoundException) {
+				throw new ValidationException('unknown_device', 'Unknown device: ' . $id, [
+					['field' => 'subjectId', 'code' => 'unknown_device'],
+				]);
+			}
+		}
 	}
 }

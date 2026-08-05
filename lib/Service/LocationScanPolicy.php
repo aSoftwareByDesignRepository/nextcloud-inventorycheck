@@ -30,6 +30,7 @@ final class LocationScanPolicy
 	 * When policy is on, $locationCode must resolve to $locationId (exact code match).
 	 * When policy is off, $locationCode is ignored (optional soft check if provided).
 	 *
+	 * @param string $field JSON field name in the 422 details (locationCode | toLocationCode)
 	 * @throws ValidationException location_code_required | location_code_mismatch
 	 */
 	public static function assertMatches(
@@ -37,9 +38,11 @@ final class LocationScanPolicy
 		LocationMapper $locations,
 		int $locationId,
 		?string $locationCode,
+		string $field = 'locationCode',
 	): void {
 		$code = $locationCode !== null ? CodeRules::trim($locationCode) : '';
 		$required = self::isRequired($config);
+		$fieldName = $field !== '' ? $field : 'locationCode';
 
 		if (!$required) {
 			if ($code === '') {
@@ -48,14 +51,14 @@ final class LocationScanPolicy
 			// Soft: if provided, still must match (avoid silent wrong labels).
 		} elseif ($code === '') {
 			throw new ValidationException('validation_failed', '', [
-				['field' => 'locationCode', 'code' => 'location_code_required'],
+				['field' => $fieldName, 'code' => 'location_code_required'],
 			]);
 		}
 
 		$loc = $locations->findById($locationId);
 		if (!hash_equals($loc->getCode(), $code)) {
 			throw new ValidationException('location_code_mismatch', '', [
-				['field' => 'locationCode', 'code' => 'location_code_mismatch'],
+				['field' => $fieldName, 'code' => 'location_code_mismatch'],
 			]);
 		}
 	}

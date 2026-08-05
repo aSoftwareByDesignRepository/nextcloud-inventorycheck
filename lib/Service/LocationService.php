@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\InventoryCheck\Service;
 
 use OCA\InventoryCheck\Db\CycleCampaignMapper;
+use OCA\InventoryCheck\Db\ItemMapper;
 use OCA\InventoryCheck\Db\Location;
 use OCA\InventoryCheck\Db\LocationMapper;
 use OCA\InventoryCheck\Db\UniqueViolation;
@@ -12,6 +13,8 @@ use OCA\InventoryCheck\Exception\ConflictException;
 use OCA\InventoryCheck\Exception\NotFoundException;
 use OCA\InventoryCheck\Exception\ValidationException;
 use OCP\IDBConnection;
+use OCP\Lock\ILockingProvider;
+use OCP\Lock\LockedException;
 
 class LocationService
 {
@@ -22,6 +25,8 @@ class LocationService
 		private readonly Clock $clock,
 		private readonly LocationAclService $locationAcl,
 		private readonly CycleCampaignMapper $cycleCampaigns,
+		private readonly ItemMapper $items,
+		private readonly ILockingProvider $locking,
 	) {
 	}
 
@@ -95,25 +100,31 @@ class LocationService
 			$notes = null;
 		}
 		$this->validateMaster($code, $name, $kind, $notes);
-		if ($this->locations->findByCode($code) !== null) {
-			throw new ConflictException('code_exists');
-		}
-		$now = $this->clock->now();
-		$loc = new Location();
-		$loc->setCode($code);
-		$loc->setName($name);
-		$loc->setKind($kind);
-		$loc->setNotes($notes);
-		$loc->setActive(true);
-		$loc->setCreatedAt($now);
-		$loc->setUpdatedAt($now);
-		$loc->setCreatedBy($actorUid);
-		try {
-			return $this->locations->insert($loc)->toApi();
-		} catch (\Throwable $e) {
-			// Unique-index backstop for two concurrent creates of one code.
-			throw UniqueViolation::is($e) ? new ConflictException('code_exists') : $e;
-		}
+
+		return $this->withCodesLock(function () use ($actorUid, $code, $name, $kind, $notes): array {
+			if ($this->locations->findByCode($code) !== null) {
+				throw new ConflictException('code_exists');
+			}
+			if (CodeRules::locationConflictsWithItems($code, $this->items->allCodePairs())) {
+				throw new ConflictException('code_exists');
+			}
+			$now = $this->clock->now();
+			$loc = new Location();
+			$loc->setCode($code);
+			$loc->setName($name);
+			$loc->setKind($kind);
+			$loc->setNotes($notes);
+			$loc->setActive(true);
+			$loc->setCreatedAt($now);
+			$loc->setUpdatedAt($now);
+			$loc->setCreatedBy($actorUid);
+			try {
+				return $this->locations->insert($loc)->toApi();
+			} catch (\Throwable $e) {
+				// Unique-index backstop for two concurrent creates of one code.
+				throw UniqueViolation::is($e) ? new ConflictException('code_exists') : $e;
+			}
+		});
 	}
 
 	/**
@@ -123,6 +134,14 @@ class LocationService
 	public function update(string $actorUid, int $id, array $input): array
 	{
 		$this->access->requireOffice($actorUid);
+		$touchesCode = array_key_exists('code', $input);
+		$run = fn (): array => $this->updateLocked($id, $input);
+		return $touchesCode ? $this->withCodesLock($run) : $run();
+	}
+
+	/** @param array<string, mixed> $input */
+	private function updateLocked(int $id, array $input): array
+	{
 		$this->db->beginTransaction();
 		try {
 			// Exclusive lock: serialises against movements' shared location
@@ -135,6 +154,9 @@ class LocationService
 				}
 				$existing = $this->locations->findByCode($code);
 				if ($existing !== null && (int)$existing->getId() !== $id) {
+					throw new ConflictException('code_exists');
+				}
+				if (CodeRules::locationConflictsWithItems($code, $this->items->allCodePairs())) {
 					throw new ConflictException('code_exists');
 				}
 				$loc->setCode($code);
@@ -217,6 +239,32 @@ class LocationService
 		}
 		if ($notes !== null && mb_strlen($notes) > 10000) {
 			throw new ValidationException('validation_failed', '', [['field' => 'notes', 'code' => 'validation_failed']]);
+		}
+	}
+
+	/**
+	 * @template T
+	 * @param callable(): T $fn
+	 * @return T
+	 */
+	private function withCodesLock(callable $fn): mixed
+	{
+		$attempts = 0;
+		while (true) {
+			try {
+				$this->locking->acquireLock(CodeRules::CODES_LOCK, ILockingProvider::LOCK_EXCLUSIVE);
+				break;
+			} catch (LockedException) {
+				if (++$attempts >= 40) {
+					throw new ConflictException('conflict');
+				}
+				usleep(25_000);
+			}
+		}
+		try {
+			return $fn();
+		} finally {
+			$this->locking->releaseLock(CodeRules::CODES_LOCK, ILockingProvider::LOCK_EXCLUSIVE);
 		}
 	}
 }

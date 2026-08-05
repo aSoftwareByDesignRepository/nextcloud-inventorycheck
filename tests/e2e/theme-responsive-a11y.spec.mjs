@@ -20,7 +20,7 @@ const a11yRoutes = [
 	{ path: '/apps/inventorycheck/locations', ready: '#iv-page-title, #iv-loc-filter-panel, .iv-filter-panel, .iv-empty', creds: 'E2E' },
 	{ path: '/apps/inventorycheck/movements', ready: '#iv-page-title, .iv-filter-panel, .iv-filterbar, .iv-empty', creds: 'E2E' },
 	{ path: '/apps/inventorycheck/stocktake', ready: '#iv-page-title, .iv-section, .iv-empty, .iv-row', creds: 'E2E' },
-	{ path: '/apps/inventorycheck/settings', ready: '#iv-page-title, #iv-support-us, .iv-section', creds: 'ADMIN' },
+	{ path: '/apps/inventorycheck/settings/access', ready: '#iv-page-title, #iv-access-title, .iv-section', creds: 'ADMIN' },
 ]
 
 const viewports = [
@@ -242,6 +242,12 @@ test.describe('InventoryCheck route a11y smoke', () => {
 	}
 })
 
+const overflowRoutes = [
+	'/apps/inventorycheck/',
+	'/apps/inventorycheck/items',
+	'/apps/inventorycheck/movements',
+]
+
 test.describe('InventoryCheck responsive overflow matrix', () => {
 	test.beforeEach(async ({ page }) => {
 		test.skip(!hasAnyCreds(), 'Requires NC_* / E2E_* credentials or .auth/user.json')
@@ -249,14 +255,16 @@ test.describe('InventoryCheck responsive overflow matrix', () => {
 	})
 
 	for (const vp of viewports) {
-		test(`no horizontal overflow @ ${vp.name}`, async ({ page }) => {
-			await page.setViewportSize({ width: vp.width, height: vp.height })
-			await openInventory(page, '/apps/inventorycheck/')
-			await expect(page.locator('.iv-page-header').first()).toBeVisible()
-			await expect(page.locator('a.iv-skip-link')).toBeAttached()
-			await assertNoHorizontalOverflow(page)
-			await assertTouchTargets(page)
-		})
+		for (const route of overflowRoutes) {
+			test(`no horizontal overflow @ ${vp.name} ${route}`, async ({ page }) => {
+				await page.setViewportSize({ width: vp.width, height: vp.height })
+				await openInventory(page, route)
+				await expect(page.locator('.iv-page-header').first()).toBeVisible()
+				await expect(page.locator('a.iv-skip-link')).toBeAttached()
+				await assertNoHorizontalOverflow(page)
+				await assertTouchTargets(page)
+			})
+		}
 	}
 })
 

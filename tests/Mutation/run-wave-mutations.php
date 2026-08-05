@@ -5,7 +5,10 @@ declare(strict_types=1);
 
 require __DIR__ . '/harness.php';
 
-runMutations(dirname(__DIR__, 2), 'WaveContractsTest|LowStockNotifyServiceTest|StockIssueFacadeTest|WaveAbFeaturesIntegrationTest|WaveCFeaturesIntegrationTest', [
+// Keep Wave A/B/C integration oracles; inventur mutants need close/start races.
+// Dev DB must not accumulate multi-million oc_iv_cc_line / balances rows or each
+// mutant run takes minutes (TRUNCATE those tables in local troubleshooting).
+runMutations(dirname(__DIR__, 2), 'WaveContractsTest|LowStockNotifyServiceTest|StockIssueFacadeTest|WaveAbFeaturesIntegrationTest|WaveCFeaturesIntegrationTest|MobileGateServiceTest|ConfigDirectoryValidationTest|LicenseControllerDeviceBindTest', [
 	[
 		'name' => 'can-start-always-true',
 		'file' => 'lib/Service/CycleCountSemantics.php',
@@ -127,9 +130,51 @@ runMutations(dirname(__DIR__, 2), 'WaveContractsTest|LowStockNotifyServiceTest|S
 		'replace' => "null,\n\t\t\t\t\t\t\ttrue,\n\t\t\t\t\t\t);",
 	],
 	[
-		'name' => 'device-acl-bypass-removed',
+		'name' => 'device-acl-ignore-grants',
 		'file' => 'lib/Service/LocationAclService.php',
-		'search' => "if (\$uid === '' || str_starts_with(\$uid, 'device:') || !\$this->isEnabled()) {\n\t\t\treturn null;\n\t\t}",
-		'replace' => "if (\$uid === '' || !\$this->isEnabled()) {\n\t\t\treturn null;\n\t\t}",
+		'search' => "if (\$ids === []) {\n\t\t\treturn \$this->isDevicesStrict() ? [] : null;\n\t\t}\n\t\treturn array_values(array_unique(\$ids));",
+		'replace' => "return null;",
+	],
+	[
+		'name' => 'device-acl-strict-ignored',
+		'file' => 'lib/Service/LocationAclService.php',
+		'search' => "if (\$ids === []) {\n\t\t\treturn \$this->isDevicesStrict() ? [] : null;\n\t\t}",
+		'replace' => "if (\$ids === []) {\n\t\t\treturn null;\n\t\t}",
+	],
+	[
+		'name' => 'device-acl-empty-always-none',
+		'file' => 'lib/Service/LocationAclService.php',
+		'search' => "if (\$ids === []) {\n\t\t\treturn \$this->isDevicesStrict() ? [] : null;\n\t\t}",
+		'replace' => "if (\$ids === []) {\n\t\t\treturn [];\n\t\t}",
+	],
+	[
+		'name' => 'create-device-skips-location-bind',
+		'file' => 'lib/Controller/LicenseController.php',
+		'search' => "if (\$bindIds !== null && \$bindIds !== []) {\n\t\t\t\$deviceId = (int)(\$created['device']['id'] ?? 0);\n\t\t\ttry {\n\t\t\t\tif (\$deviceId <= 0) {\n\t\t\t\t\tthrow new \\RuntimeException('device_create_missing_id');\n\t\t\t\t}\n\t\t\t\t\$this->locationAcl->setForSubject(\n\t\t\t\t\tLocationAclService::TYPE_DEVICE,\n\t\t\t\t\t(string)\$deviceId,\n\t\t\t\t\t\$bindIds,\n\t\t\t\t);\n\t\t\t} catch (\\Throwable \$e) {\n\t\t\t\t// Fail closed: never leave a half-bound scanner that is pairable org-wide.\n\t\t\t\tif (\$deviceId > 0) {\n\t\t\t\t\ttry {\n\t\t\t\t\t\t\$this->license->deactivateDevice(\$deviceId);\n\t\t\t\t\t} finally {\n\t\t\t\t\t\t// purge even if deactivate throws (slot may still have grants).\n\t\t\t\t\t\t\$this->locationAcl->purgeDevice(\$deviceId);\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\tthrow \$e;\n\t\t\t}\n\t\t}",
+		'replace' => "if (false) {\n\t\t}",
+	],
+	[
+		'name' => 'create-device-skips-bind-rollback',
+		'file' => 'lib/Controller/LicenseController.php',
+		'search' => "} catch (\\Throwable \$e) {\n\t\t\t\t// Fail closed: never leave a half-bound scanner that is pairable org-wide.\n\t\t\t\tif (\$deviceId > 0) {\n\t\t\t\t\ttry {\n\t\t\t\t\t\t\$this->license->deactivateDevice(\$deviceId);\n\t\t\t\t\t} finally {\n\t\t\t\t\t\t// purge even if deactivate throws (slot may still have grants).\n\t\t\t\t\t\t\$this->locationAcl->purgeDevice(\$deviceId);\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\tthrow \$e;\n\t\t\t}",
+		'replace' => "} catch (\\Throwable \$e) {\n\t\t\t\tthrow \$e;\n\t\t\t}",
+	],
+	[
+		'name' => 'bootstrap-hides-device-strict-flag',
+		'file' => 'lib/Service/MobileGateService.php',
+		'search' => "'locationAclDevicesStrict' => \$this->locationAcl->isDevicesStrict(),",
+		'replace' => "'locationAclDevicesStrict' => false,",
+	],
+	[
+		'name' => 'cyclecount-acl-deny-leaks-unknown-location',
+		'file' => 'lib/Service/CycleCountService.php',
+		'search' => "private function assertAccessibleOrNotFound(string \$actorUid, int \$locationId, string \$notFoundCode): void\n\t{\n\t\ttry {\n\t\t\t\$this->locationAcl->assertCanAccess(\$actorUid, \$locationId);\n\t\t} catch (NotFoundException) {\n\t\t\tthrow new NotFoundException(\$notFoundCode);\n\t\t}\n\t}",
+		'replace' => "private function assertAccessibleOrNotFound(string \$actorUid, int \$locationId, string \$notFoundCode): void\n\t{\n\t\t\$this->locationAcl->assertCanAccess(\$actorUid, \$locationId);\n\t}",
+	],
+	[
+		'name' => 'cyclecount-create-uses-offset-phantoms',
+		'file' => 'lib/Service/CycleCountService.php',
+		'search' => "\$page = \$this->items->searchActiveAfterId(\$afterId, self::ITEM_PAGE);",
+		'replace' => "\$page = \$this->items->search('', true, self::ITEM_PAGE, \$afterId)['data'];",
 	],
 ]);

@@ -89,7 +89,7 @@ foreach ($mutations as $m) {
 	}
 }
 
-fwrite(STDOUT, sprintf("Filter panel mutations: killed %d / %d\n", $killed, count($mutations)));
+fwrite(STDOUT, sprintf("Killed %d / %d\n", $killed, count($mutations)));
 if ($survived !== []) {
 	fwrite(STDERR, 'Survivors: ' . implode(', ', $survived) . "\n");
 	exit(1);

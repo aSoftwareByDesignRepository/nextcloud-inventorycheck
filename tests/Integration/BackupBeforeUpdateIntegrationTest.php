@@ -15,9 +15,16 @@ final class BackupBeforeUpdateIntegrationTest extends TestCase
 		/** @var BackupBeforeUpdate $step */
 		$step = \OC::$server->get(BackupBeforeUpdate::class);
 		$output = $this->createMock(IOutput::class);
-		$output->expects(self::atLeastOnce())->method('info');
+		// Success → info; oversized ledger soft-continue → warning only.
+		$progress = 0;
+		$output->method('info')->willReturnCallback(static function () use (&$progress): void {
+			$progress++;
+		});
+		$output->method('warning')->willReturnCallback(static function () use (&$progress): void {
+			$progress++;
+		});
 
 		$step->run($output);
-		$this->addToAssertionCount(1);
+		self::assertGreaterThan(0, $progress, 'repair must emit info (snapshot) or warning (oversized skip)');
 	}
 }

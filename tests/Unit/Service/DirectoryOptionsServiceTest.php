@@ -56,6 +56,13 @@ final class DirectoryOptionsServiceTest extends TestCase
 		$this->assertSame([], $this->service->searchUsers('   '));
 	}
 
+	public function testSearchUsersReturnsEmptyForSingleCharacterQuery(): void
+	{
+		$this->userManager->expects($this->never())->method('search');
+		$this->userManager->expects($this->never())->method('searchDisplayName');
+		$this->assertSame([], $this->service->searchUsers('a'));
+	}
+
 	public function testSearchUsersReturnsEmptyForZeroLimit(): void
 	{
 		$this->userManager->expects($this->never())->method('search');
@@ -64,9 +71,26 @@ final class DirectoryOptionsServiceTest extends TestCase
 
 	public function testSearchUsersMapsIdAndDisplayNameAndSorts(): void
 	{
-		$this->userManager->method('search')->with('an', 20)->willReturn([
+		$this->userManager->method('search')->with('an', 20, 0)->willReturn([
 			$this->makeUser('zed', 'Anna Zed'),
 			$this->makeUser('anna', 'Anna Alpha'),
+		]);
+		$this->userManager->method('searchDisplayName')->with('an', 20, 0)->willReturn([]);
+		$result = $this->service->searchUsers('an');
+		$this->assertSame([
+			['id' => 'anna', 'displayName' => 'Anna Alpha'],
+			['id' => 'zed', 'displayName' => 'Anna Zed'],
+		], $result);
+	}
+
+	public function testSearchUsersMergesDisplayNameHits(): void
+	{
+		$this->userManager->method('search')->with('an', 20, 0)->willReturn([
+			$this->makeUser('zed', 'Anna Zed'),
+		]);
+		$this->userManager->method('searchDisplayName')->with('an', 20, 0)->willReturn([
+			$this->makeUser('anna', 'Anna Alpha'),
+			$this->makeUser('zed', 'Anna Zed'),
 		]);
 		$result = $this->service->searchUsers('an');
 		$this->assertSame([
@@ -78,18 +102,21 @@ final class DirectoryOptionsServiceTest extends TestCase
 	public function testSearchUsersFallsBackToUidWhenDisplayNameBlank(): void
 	{
 		$this->userManager->method('search')->willReturn([$this->makeUser('anna', '')]);
+		$this->userManager->method('searchDisplayName')->willReturn([]);
 		$this->assertSame([['id' => 'anna', 'displayName' => 'anna']], $this->service->searchUsers('an'));
 	}
 
 	public function testSearchUsersSkipsNullAndEmptyUid(): void
 	{
 		$this->userManager->method('search')->willReturn([null, $this->makeUser('', 'ghost')]);
+		$this->userManager->method('searchDisplayName')->willReturn([]);
 		$this->assertSame([], $this->service->searchUsers('an'));
 	}
 
 	public function testSearchUsersLimitIsCappedAt50(): void
 	{
-		$this->userManager->expects($this->once())->method('search')->with('an', 50)->willReturn([]);
+		$this->userManager->expects($this->once())->method('search')->with('an', 50, 0)->willReturn([]);
+		$this->userManager->expects($this->once())->method('searchDisplayName')->with('an', 50, 0)->willReturn([]);
 		$this->service->searchUsers('an', 999);
 	}
 

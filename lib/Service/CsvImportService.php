@@ -25,8 +25,6 @@ use OCP\Lock\LockedException;
  */
 class CsvImportService
 {
-	private const CODES_LOCK = 'inventorycheck/item_codes';
-
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly ItemMapper $items,
@@ -231,6 +229,10 @@ class CsvImportService
 				$errors[] = ['line' => $line, 'code' => 'code_exists', 'message' => 'sku or scan_code already exists'];
 				continue;
 			}
+			if (CodeRules::conflictsWithLocationCodes($sku, $scan, $this->locations->allCodes())) {
+				$errors[] = ['line' => $line, 'code' => 'code_exists', 'message' => 'sku or scan_code collides with a location code'];
+				continue;
+			}
 
 			$openingLocCode = CodeRules::trim((string)($raw['opening_location_code'] ?? ''));
 			$openingQtyRaw = $raw['opening_qty'] ?? '';
@@ -297,7 +299,7 @@ class CsvImportService
 		$attempts = 0;
 		while (true) {
 			try {
-				$this->locking->acquireLock(self::CODES_LOCK, ILockingProvider::LOCK_EXCLUSIVE);
+				$this->locking->acquireLock(CodeRules::CODES_LOCK, ILockingProvider::LOCK_EXCLUSIVE);
 				break;
 			} catch (LockedException) {
 				if (++$attempts >= 40) {
@@ -309,7 +311,7 @@ class CsvImportService
 		try {
 			return $fn();
 		} finally {
-			$this->locking->releaseLock(self::CODES_LOCK, ILockingProvider::LOCK_EXCLUSIVE);
+			$this->locking->releaseLock(CodeRules::CODES_LOCK, ILockingProvider::LOCK_EXCLUSIVE);
 		}
 	}
 }

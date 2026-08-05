@@ -36,13 +36,12 @@
 .modal,
 .iv-dialog {
   background-color: var(--inventorycheck-color-modal-background, var(--iv-bg-card, var(--color-main-background)));
-  color: var(--inventorycheck-color-text-maxcontrast, var(--color-text-maxcontrast, var(--inventorycheck-color-text, var(--color-main-text))));
+  color: var(--iv-text, var(--color-main-text));
   border: 1px solid var(--iv-border, var(--color-border));
   border-radius: var(--iv-radius-lg, 16px);
   box-shadow: var(--iv-shadow-md, 0 8px 24px color-mix(in srgb, var(--color-main-text) 12%, transparent));
-  max-width: 90vw;
-  max-height: 90vh;
-  max-height: 90dvh;
+  max-width: min(36rem, 90vw);
+  max-height: min(90dvh, calc(100dvh - var(--header-height, 50px) - 2rem));
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -145,14 +144,16 @@
 .modal-close {
   background: none;
   border: none;
-  font-size: var(--inventorycheck-font-size-xl);
+  font-size: var(--inventorycheck-font-size-xl, var(--iv-fs-xl));
   color: var(--inventorycheck-color-text-muted, var(--color-text-maxcontrast));
   cursor: pointer;
   padding: var(--space-1);
   border-radius: var(--radius-base, 6px);
   transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
-  width: 2rem;
-  height: 2rem;
+  width: var(--iv-touch, 44px);
+  height: var(--iv-touch, 44px);
+  min-width: var(--iv-touch, 44px);
+  min-height: var(--iv-touch, 44px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -353,10 +354,10 @@
   box-sizing: border-box;
 }
 
-.form-input:focus,
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
+.form-input:focus-visible,
+.form-group input:focus-visible,
+.form-group select:focus-visible,
+.form-group textarea:focus-visible {
   border-color: var(--inventorycheck-color-form-border-focus, var(--color-primary-element));
   box-shadow: 0 0 0 3px var(--inventorycheck-color-primary-light, color-mix(in srgb, var(--color-primary-element) 28%, transparent));
   outline: none;

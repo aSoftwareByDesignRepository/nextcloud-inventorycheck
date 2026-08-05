@@ -46,11 +46,24 @@ final class AzcShellParityContractTest extends TestCase
 	public function testNavigationUsesAzcHierarchyClasses(): void
 	{
 		$nav = (string)file_get_contents($this->root . '/templates/common/navigation.php');
-		foreach (['nav-menu', 'nav-item-has-children', 'nav-parent-toggle', 'nav-submenu', 'nav-parent-chevron', 'sidebar-header', 'app-brand'] as $token) {
+		foreach (['nav-menu', 'sidebar-header', 'app-brand'] as $token) {
 			$this->assertStringContainsString($token, $nav, 'nav missing ' . $token);
 		}
-		$this->assertStringContainsString('iv-admin-subnav', $nav);
-		$this->assertStringContainsString("aria-expanded", $nav);
+		// Design-system: Settings expands to section sub-pages (SETTINGS-PAGES-STANDARD).
+		$this->assertStringContainsString("l->t('Settings')", $nav);
+		$this->assertStringContainsString('nav-item-has-children', $nav);
+		$this->assertStringContainsString('iv-settings-subnav', $nav);
+		$this->assertStringContainsString('nav-submenu', $nav);
+		$this->assertStringContainsString('settingsSectionUrls', $nav);
+		$this->assertStringContainsString('settingsSectionLabels', $nav);
+		// DutyCheck / design-system: visible hint lines under nav labels (not title-only).
+		$this->assertStringContainsString('iv-nav__label', $nav);
+		$this->assertStringContainsString('iv-nav__name', $nav);
+		$this->assertStringContainsString('iv-nav__hint', $nav);
+		$this->assertStringContainsString("l->t('Low stock and recent bookings')", $nav);
+		$this->assertStringContainsString("l->t('Access, license, support')", $nav);
+		$start = (string)file_get_contents($this->root . '/templates/common/page-start.php');
+		$this->assertStringContainsString("navUrls['settings']", $start);
 	}
 
 	public function testPageChromeMatchesAzcStructure(): void
@@ -66,6 +79,8 @@ final class AzcShellParityContractTest extends TestCase
 			'iv-skip-link',
 			'iv-main-content',
 			'data-iv-is-system-admin',
+			'data-iv-require-adjust-reason',
+			'data-iv-require-location-scan',
 		] as $token) {
 			$this->assertStringContainsString($token, $start, 'page-start missing ' . $token);
 		}
@@ -89,6 +104,24 @@ final class AzcShellParityContractTest extends TestCase
 		$this->assertMatchesRegularExpression(
 			'/\.nav-submenu > li > a::before \{\s*content:\s*none;/s',
 			$css,
+		);
+		// Visible name+hint must not inherit nowrap ellipsis from bare spans.
+		$this->assertStringContainsString(':not(.iv-nav__label)', $css);
+		$this->assertStringContainsString('.iv-nav__hint', $css);
+		// Active primary pill: hints must use on-fill text (not maxcontrast) for every NC theme.
+		$this->assertStringContainsString('a[aria-current="page"] .iv-nav__hint', $css);
+		$this->assertMatchesRegularExpression(
+			'/a\[aria-current="page"\]\s+\.iv-nav__hint[\s\S]{0,800}?color:\s*var\(--color-primary-element-text\)/s',
+			$css,
+		);
+		$this->assertStringContainsString('Maxcontrast hints stay dark-on-dark', $css);
+		// Mobile drawer must keep NC $navigation-width — width:100% on the rail leaves a white slab.
+		$this->assertStringContainsString('never set width:100% on #app-navigation', $css);
+		$this->assertStringContainsString('--navigation-width', $css);
+		$this->assertDoesNotMatchRegularExpression(
+			'/#content\.app-inventorycheck #app-navigation\s*\{[^}]*width:\s*100%/s',
+			$css,
+			'#app-navigation must not force width:100% (breaks NC mobile drawer translate)'
 		);
 	}
 
@@ -179,6 +212,22 @@ final class AzcShellParityContractTest extends TestCase
 		$nav = (string)file_get_contents($this->root . '/templates/common/navigation.php');
 		$this->assertStringContainsString('skip-link', $nav);
 		$this->assertStringContainsString('Skip to app navigation', $nav);
+		// Stack page-header actions below the title (DutyCheck: always full-width row).
+		$this->assertStringContainsString('grid-column: 1 / -1', $chrome);
+		$this->assertMatchesRegularExpression(
+			'/\.iv-page-header__actions\s*\{[^}]*grid-column:\s*1\s*\/\s*-1/s',
+			$chrome,
+			'Page-header actions must be a full-width row under the title (never a 3rd column)'
+		);
+		$this->assertDoesNotMatchRegularExpression(
+			'/\.iv-page-header__main\s*\{[^}]*grid-template-columns:\s*[^}]*\s+auto/s',
+			$chrome,
+			'Page-header must not use a 3-column icon|title|actions grid'
+		);
+		$this->assertMatchesRegularExpression(
+			'/\.iv-page-header__main\s*\{[^}]*grid-template-columns:\s*56px\s+minmax\(0,\s*1fr\)/s',
+			$chrome,
+		);
 	}
 
 	public function testTableChromeMatchesAzcBaseStyles(): void
@@ -235,6 +284,26 @@ final class AzcShellParityContractTest extends TestCase
 			$app,
 			'Dialogs mount on body; radius enforcer must cover modal-backdrop > .modal'
 		);
+	}
+
+	/**
+	 * Bachus: structured list cards must beat AZ content-surface padding so
+	 * headers share Filter soft-band chrome (no inset white trap).
+	 */
+	public function testStructuredCardsMatchFilterPanelChromeSpecificity(): void
+	{
+		$chrome = (string)file_get_contents($this->root . '/css/common/shell-chrome.css');
+		$this->assertMatchesRegularExpression(
+			'/#content\.app-inventorycheck\s+#app-content\s+\.iv-card:has\(\.iv-card__header\)[\s\S]*?padding:\s*0/s',
+			$chrome,
+			'Structured list cards need padding:0 at #content specificity (Filter parity)'
+		);
+		$this->assertMatchesRegularExpression(
+			'/#content\.app-inventorycheck\s+#app-content\s+\.iv-card__header[\s\S]*?background:\s*var\(--iv-bg-soft/s',
+			$chrome,
+			'List card headers must share Filter soft-band chrome'
+		);
+		$this->assertStringContainsString('Bachus / AZ parity: structured cards', $chrome);
 	}
 
 }

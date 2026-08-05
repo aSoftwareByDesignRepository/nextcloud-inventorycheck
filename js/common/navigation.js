@@ -50,8 +50,17 @@
                     toggle.setAttribute('aria-expanded', isExpanded ? 'false' : 'true');
                     if (isExpanded) {
                         submenu.setAttribute('hidden', '');
-                    } else {
-                        submenu.removeAttribute('hidden');
+                        return;
+                    }
+                    submenu.removeAttribute('hidden');
+                    // One-click open: from any non-settings page, land on the first
+                    // settings section (Access) instead of leaving an empty expand.
+                    const onSettings = /\/settings(\/|$)/.test(window.location.pathname || '');
+                    if (!onSettings) {
+                        const first = submenu.querySelector('a[href]:not([href="#"])');
+                        if (first && first.href) {
+                            window.location.assign(first.href);
+                        }
                     }
                 });
             });

@@ -67,6 +67,9 @@ class ItemPhotoService
 		$this->db->beginTransaction();
 		try {
 			$item = $this->items->lockById($itemId, true);
+			if (!$item->getActive()) {
+				throw new ValidationException('inactive_item');
+			}
 			$old = $item->getPhotoName();
 			$folder->newFile($fileName)->putContent($clean);
 			$item->setPhotoName($fileName);
@@ -93,6 +96,9 @@ class ItemPhotoService
 		$this->db->beginTransaction();
 		try {
 			$item = $this->items->lockById($itemId, true);
+			if (!$item->getActive()) {
+				throw new ValidationException('inactive_item');
+			}
 			$old = $item->getPhotoName();
 			$item->setPhotoName(null);
 			$item->setPhotoMime(null);

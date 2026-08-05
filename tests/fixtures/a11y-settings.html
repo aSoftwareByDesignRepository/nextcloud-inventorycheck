@@ -18,16 +18,28 @@
 	<div id="iv-live-region" class="iv-sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 	<div id="iv-alert-region" class="iv-sr-only" role="alert" aria-live="assertive" aria-atomic="true"></div>
 	<main id="iv-main">
-		<header class="iv-page-header" aria-labelledby="iv-page-title">
-			<h1 id="iv-page-title">Settings</h1>
-			<p>Access, stock policy, license, support</p>
+	<header class="iv-page-header" aria-labelledby="iv-page-title">
+			<h1 id="iv-page-title">Access control</h1>
+			<p>Decide who may open InventoryCheck. Restriction takes effect immediately for non-administrators.</p>
 		</header>
-		<section class="iv-section" aria-labelledby="iv-access-title">
-			<h2 id="iv-access-title" class="iv-section__title">Access</h2>
-			<label class="iv-switch" for="iv-access-restriction">
-				<input type="checkbox" class="iv-switch__input" id="iv-access-restriction">
-				<span class="iv-switch__label">Restrict app access</span>
-			</label>
+		<nav class="iv-settings-nav" id="iv-settings-pages" aria-label="Settings pages">
+			<a class="iv-settings-nav__link is-active" href="#" aria-current="page">Access</a>
+			<a class="iv-settings-nav__link" href="#">Office</a>
+			<a class="iv-settings-nav__link" href="#">License</a>
+			<a class="iv-settings-nav__link" href="#">Support us</a>
+		</nav>
+		<section class="iv-section iv-settings-page iv-card" aria-labelledby="iv-access-title" data-iv-settings-section="access">
+			<h2 id="iv-access-title" class="iv-section__title iv-sr-only">Access control</h2>
+			<div class="iv-callout iv-callout--info" role="note" aria-labelledby="iv-access-gate-title">
+				<p id="iv-access-gate-title"><strong>This list controls the door, not the stock.</strong></p>
+				<p class="iv-callout__text">Office rights and location ACL still decide what they can book. Administrators always keep access.</p>
+			</div>
+			<div class="iv-field iv-field--switch">
+				<label class="iv-switch iv-switch-field" for="iv-access-restriction">
+					<input type="checkbox" class="iv-switch__input" id="iv-access-restriction">
+					<span class="iv-switch__label">Restrict access to allow-listed users and groups</span>
+				</label>
+			</div>
 			<div class="iv-field" data-iv-field="allowedUsers">
 				<label class="iv-field__label" for="iv-pk-search-1">Allowed users</label>
 				<div class="iv-picker">
@@ -39,6 +51,7 @@
 				</div>
 				<p class="iv-field__error" id="iv-pk-search-1-err" hidden role="alert"></p>
 			</div>
+			<div id="iv-app-admins" class="iv-picker-anchor">
 			<div class="iv-field" data-iv-field="appAdmins">
 				<label class="iv-field__label" for="iv-pk-search-2">Delegated app administrators</label>
 				<div class="iv-picker">
@@ -49,26 +62,40 @@
 					</ul>
 				</div>
 				<p class="iv-field__error" id="iv-pk-search-2-err" hidden role="alert"></p>
-				<p id="iv-app-admins-hint" class="iv-field__hint">Search and pick colleagues who may change access policy, office lists, and the license (in addition to system administrators). Never type a raw user id.</p>
 			</div>
-			<label class="iv-switch" for="iv-allow-negative">
-				<input type="checkbox" class="iv-switch__input" id="iv-allow-negative">
-				<span class="iv-switch__label">Allow negative stock</span>
-			</label>
-			<button type="button" class="iv-btn iv-btn--primary">Save access</button>
+			</div>
+				<p id="iv-app-admins-hint" class="iv-field__hint">People who may change settings (in addition to system admins).</p>
+			<div class="iv-form-actions">
+				<button type="button" class="iv-btn iv-btn--primary">Save access</button>
+			</div>
 		</section>
-		<section class="iv-section" aria-labelledby="iv-frac-title">
-			<h2 id="iv-frac-title" class="iv-section__title">Fractional quantities</h2>
-			<p class="iv-section__hint">Optional. Turn this on if you book cable metres or similar with up to three decimal places. Existing whole numbers become ×1000 storage units. This cannot be undone.</p>
-			<button type="button" class="iv-btn iv-btn--primary">Enable fractional quantities (up to 3 decimals)</button>
+		<section class="iv-section iv-settings-page iv-card" aria-labelledby="iv-office-title" data-iv-settings-section="office">
+			<h2 id="iv-office-title" class="iv-section__title iv-sr-only">Office / storekeeper</h2>
+			<div class="iv-field iv-field--switch">
+				<label class="iv-switch iv-switch-field" for="iv-allow-negative">
+					<input type="checkbox" class="iv-switch__input" id="iv-allow-negative">
+					<span class="iv-switch__label">Allow negative stock</span>
+				</label>
+			</div>
+			<div class="iv-form-actions">
+				<button type="button" class="iv-btn iv-btn--primary">Save office settings</button>
+			</div>
 		</section>
-		<section class="iv-section" aria-labelledby="iv-acl-title">
-			<h2 id="iv-acl-title" class="iv-section__title">Location access</h2>
-			<p class="iv-section__hint">Optional. When on, field users only see locations granted to them or their groups. Office and admins still see everything. With no grants, field users see none.</p>
-			<label class="iv-switch" for="iv-loc-acl">
-				<input type="checkbox" class="iv-switch__input" id="iv-loc-acl">
-				<span class="iv-switch__label">Limit field users to granted locations</span>
-			</label>
+		<section class="iv-section iv-settings-page iv-card" aria-labelledby="iv-frac-title" data-iv-settings-section="quantities">
+			<h2 id="iv-frac-title" class="iv-section__title iv-sr-only">Fractional quantities</h2>
+			<p class="iv-field__hint">Turns every quantity into milli-units (×1000). You cannot turn it off later.</p>
+			<div class="iv-form-actions">
+				<button type="button" class="iv-btn iv-btn--primary">Enable fractional quantities (up to 3 decimals)</button>
+			</div>
+		</section>
+		<section class="iv-section iv-settings-page iv-card" aria-labelledby="iv-acl-title" data-iv-settings-section="location-access">
+			<h2 id="iv-acl-title" class="iv-section__title iv-sr-only">Location access</h2>
+			<div class="iv-field iv-field--switch">
+				<label class="iv-switch iv-switch-field" for="iv-loc-acl">
+					<input type="checkbox" class="iv-switch__input" id="iv-loc-acl">
+					<span class="iv-switch__label">Limit field users to granted locations</span>
+				</label>
+			</div>
 			<div class="iv-field">
 				<label class="iv-label" for="iv-acl-subject-type">Grant to</label>
 				<select class="iv-input" id="iv-acl-subject-type">
@@ -87,13 +114,16 @@
 				</div>
 				<p class="iv-field__error" id="iv-pk-search-3-err" hidden role="alert"></p>
 			</div>
-			<div class="iv-field">
-				<label class="iv-label" for="iv-acl-loc-ids">Locations to grant</label>
-				<select class="iv-input" id="iv-acl-loc-ids" multiple size="3" aria-label="Locations to grant">
-					<option value="1">Van A — VAN-A</option>
-					<option value="2">Warehouse — WH-1</option>
-				</select>
-				<p class="iv-field__hint">Hold Ctrl (or Cmd on Mac) to select several locations.</p>
+			<div class="iv-field" data-iv-field="locationIds">
+				<label class="iv-field__label" for="iv-acl-loc-search">Locations to grant</label>
+				<div class="iv-picker iv-local-option-picker" id="iv-acl-loc-ids">
+					<input type="search" class="iv-input" id="iv-acl-loc-search" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="false" aria-controls="iv-acl-loc-results" aria-autocomplete="list" placeholder="Search locations…" aria-label="Locations to grant">
+					<ul class="iv-picker__results" id="iv-acl-loc-results" role="listbox" hidden></ul>
+					<ul class="iv-chips iv-picker__chips">
+						<li class="iv-muted iv-picker__empty-chip">None selected</li>
+					</ul>
+				</div>
+				<p class="iv-field__hint">Search and tap locations to add. Remove chips to take them back.</p>
 			</div>
 			<button type="button" class="iv-btn iv-btn--primary">Save location access</button>
 			<h3 class="iv-section__subtitle">Current grants</h3>
@@ -102,7 +132,7 @@
 			</div>
 		</section>
 		<section class="iv-section" id="iv-license" aria-labelledby="iv-license-title">
-			<h2 id="iv-license-title" class="iv-section__title">License / Mobile &amp; Scanner</h2>
+			<h2 id="iv-license-title" class="iv-section__title iv-sr-only">Official mobile &amp; scanner licenses</h2>
 			<div class="iv-field">
 				<label class="iv-label" for="iv-license-key">License key</label>
 				<textarea class="iv-input" id="iv-license-key" rows="3" aria-describedby="iv-license-hint"></textarea>
@@ -144,9 +174,47 @@
 				<input class="iv-input" id="iv-device-label" type="text">
 			</div>
 			<button type="button" class="iv-btn">Create device slot</button>
-			<p class="iv-muted" role="status">One-time pairing code: <code class="iv-label-code">AB12CD34</code> — Copy this code now. It is shown only once.</p>
-			<button type="button" class="iv-btn">Copy code</button>
+			<div class="iv-pair-code-panel" id="iv-pair-code-panel" role="status" aria-live="polite">
+				<p class="iv-pair-code-panel__lead">Copy this code now. It is shown only once.</p>
+				<p class="iv-mono iv-pair-code-panel__code" id="iv-pair-code-once" aria-label="Pairing code">AB12CD34</p>
+				<button type="button" class="iv-btn iv-btn--primary">Copy code</button>
+			</div>
+			<p class="iv-muted" role="status">One-time pairing code</p>
 			<button type="button" class="iv-btn">Regenerate code</button>
+		</section>
+		<section class="iv-section iv-settings-page iv-card" id="iv-wave-d" aria-labelledby="iv-wave-d-title" data-iv-settings-section="policies">
+			<h2 id="iv-wave-d-title" class="iv-section__title iv-sr-only">Scan &amp; adjust policies</h2>
+			<div class="iv-field iv-field--switch">
+				<label class="iv-switch iv-switch-field" for="iv-require-adjust-reason">
+					<input type="checkbox" class="iv-switch__input" id="iv-require-adjust-reason" checked>
+					<span class="iv-switch__label">Require reason code on adjust</span>
+				</label>
+			</div>
+			<div class="iv-field iv-field--switch">
+				<label class="iv-switch iv-switch-field" for="iv-require-location-scan">
+					<input type="checkbox" class="iv-switch__input" id="iv-require-location-scan">
+					<span class="iv-switch__label">Require scanned location barcode before booking</span>
+				</label>
+			</div>
+			<div class="iv-field">
+				<label class="iv-label" for="iv-default-location">Default location</label>
+				<select class="iv-input" id="iv-default-location" aria-describedby="iv-default-location-hint">
+					<option value="">None</option>
+					<option value="1">Van A — VAN-A</option>
+					<option value="2">Warehouse — WH-1</option>
+				</select>
+				<p id="iv-default-location-hint" class="iv-field__hint">Optional session default for new bookings.</p>
+			</div>
+			<div class="iv-form-actions">
+				<button type="button" class="iv-btn iv-btn--primary">Save warehouse policy</button>
+			</div>
+			<div class="iv-field">
+				<label class="iv-label" for="iv-target-stock">Target stock (example item)</label>
+				<input class="iv-input" id="iv-target-stock" type="number" min="0" step="1" value="24" aria-describedby="iv-target-stock-hint">
+				<p id="iv-target-stock-hint" class="iv-field__hint">Used for suggested reorder quantity on the buyer CSV.</p>
+			</div>
+			<a class="iv-btn" href="#iv-variance">Open variance report</a>
+			<a class="iv-btn" href="#iv-reorder">Download reorder CSV</a>
 		</section>
 		<section class="iv-section iv-support-us" id="iv-support-us" aria-labelledby="iv-support-us-title" data-support-us="1">
 			<h2 id="iv-support-us-title" class="iv-section__title">Support &amp; us</h2>

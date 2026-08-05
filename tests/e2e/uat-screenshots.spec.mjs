@@ -24,7 +24,8 @@ test('AC-22 live screenshot archive vs MobilityCheck', async ({ page }, testInfo
 		{ path: '/apps/inventorycheck/', name: `live-dashboard-${vp}.png` },
 		{ path: '/apps/inventorycheck/items', name: `live-items-${vp}.png` },
 		{ path: '/apps/inventorycheck/movements', name: `live-movements-${vp}.png` },
-		{ path: '/apps/inventorycheck/settings', name: `live-settings-${vp}.png` },
+		{ path: '/apps/inventorycheck/settings/access', name: `live-settings-${vp}.png` },
+		{ path: '/apps/inventorycheck/settings/license', name: `live-settings-license-${vp}.png` },
 	]
 
 	for (const surface of surfaces) {

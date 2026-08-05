@@ -265,6 +265,21 @@ final class AppAccessMiddlewareEnvelopeTest extends TestCase
 		$this->assertSame('code_exists', $response->getData()['error']['code']);
 	}
 
+	/** Transient track_mode lock race — 423 so companions can retry like ApiError.isLocked. */
+	public function testItemLockConflictReturns423Locked(): void
+	{
+		$this->apiPath();
+		$response = $this->middleware->afterException(
+			$this->itemController,
+			'receive',
+			new ConflictException('item_lock_conflict'),
+		);
+		$this->assertSame(Http::STATUS_LOCKED, $response->getStatus());
+		$this->assertSame(423, $response->getStatus());
+		$this->assertSame('item_lock_conflict', $response->getData()['error']['code']);
+		$this->assertNotSame('', $response->getData()['error']['message']);
+	}
+
 	public function testValidationWithDetails(): void
 	{
 		$this->apiPath();
@@ -290,6 +305,60 @@ final class AppAccessMiddlewareEnvelopeTest extends TestCase
 		);
 		$this->assertSame(402, $response->getStatus());
 		$this->assertSame('seat_required', $response->getData()['error']['code']);
+	}
+
+	/** AF-IV20: web session controllers must never map MobileGateException to 402. */
+	public function testMobileGateOnWebControllerIsRethrownNever402(): void
+	{
+		$this->apiPath();
+		$this->expectException(MobileGateException::class);
+		try {
+			$this->middleware->afterException(
+				$this->itemController,
+				'index',
+				new MobileGateException('seat_required'),
+			);
+		} catch (MobileGateException $e) {
+			$this->assertSame('seat_required', $e->getErrorCode());
+			throw $e;
+		}
+	}
+
+	/** AF-IV20: license_missing on a non-mobile controller must not become 402 either. */
+	public function testLicenseMissingOnWebControllerIsRethrown(): void
+	{
+		$this->apiPath();
+		$this->expectException(MobileGateException::class);
+		$this->middleware->afterException(
+			$this->itemController,
+			'show',
+			new MobileGateException('license_missing'),
+		);
+	}
+
+	public function testMobileGateLicenseMissingStill402OnMobile(): void
+	{
+		$this->request->method('getPathInfo')->willReturn('/apps/inventorycheck/mobile/v1/bootstrap');
+		$this->request->method('getMethod')->willReturn('GET');
+		$response = $this->middleware->afterException(
+			$this->mobileController,
+			'bootstrap',
+			new MobileGateException('license_missing'),
+		);
+		$this->assertSame(402, $response->getStatus());
+		$this->assertSame('license_missing', $response->getData()['error']['code']);
+	}
+
+	public function testPhotoNotFoundEnvelope(): void
+	{
+		$this->apiPath();
+		$response = $this->middleware->afterException(
+			$this->itemController,
+			'show',
+			new NotFoundException('photo_not_found'),
+		);
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+		$this->assertSame('photo_not_found', $response->getData()['error']['code']);
 	}
 
 	public function testMobileGateAuthRequiredUnauthorized(): void

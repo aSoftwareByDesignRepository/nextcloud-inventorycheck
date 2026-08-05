@@ -10,6 +10,7 @@ use OCA\InventoryCheck\Db\ScanDeviceMapper;
 use OCA\InventoryCheck\Exception\MobileGateException;
 use OCA\InventoryCheck\Exception\ValidationException;
 use OCP\IConfig;
+use OCP\IRequest;
 use OCP\Lock\ILockingProvider;
 use OCP\Lock\LockedException;
 
@@ -20,14 +21,17 @@ use OCP\Lock\LockedException;
  * concurrent POSTs cannot both receive a live token (AC-18 / N5).
  * Rate-limit check+increment share one exclusive lock so concurrent bad
  * attempts cannot all pass a stale count and overshoot RATE_MAX (TOCTOU).
+ *
+ * Failure windows are **per client IP** (hashed) so one attacker cannot
+ * freeze pairing for every legitimate warehouse scanner on the instance.
  */
 class DevicePairingService
 {
-	private const RATE_KEY = 'pair_fail_window';
+	private const RATE_KEY_PREFIX = 'pair_fail:';
 	private const RATE_MAX = 10;
 	private const RATE_WINDOW = 3600;
 	private const LAST_SEEN_THROTTLE = 300;
-	private const RATE_LOCK = 'inventorycheck/pair_rate';
+	private const RATE_LOCK_PREFIX = 'inventorycheck/pair_rate/';
 
 	public function __construct(
 		private readonly LicenseService $license,
@@ -35,6 +39,7 @@ class DevicePairingService
 		private readonly Clock $clock,
 		private readonly IConfig $config,
 		private readonly ILockingProvider $locking,
+		private readonly IRequest $request,
 	) {
 	}
 
@@ -113,7 +118,8 @@ class DevicePairingService
 	{
 		$this->withRateLock(function (): void {
 			$now = $this->clock->now();
-			$raw = $this->config->getAppValue(Application::APP_ID, self::RATE_KEY, '');
+			$key = $this->rateBucketKey();
+			$raw = $this->config->getAppValue(Application::APP_ID, $key, '');
 			$data = $raw !== '' ? json_decode($raw, true) : null;
 			if (!is_array($data) || $now - (int)($data['start'] ?? 0) > self::RATE_WINDOW) {
 				$data = ['start' => $now, 'count' => 0];
@@ -123,13 +129,13 @@ class DevicePairingService
 				throw new MobileGateException('rate_limited');
 			}
 			$data['count'] = $count + 1;
-			$this->config->setAppValue(Application::APP_ID, self::RATE_KEY, json_encode($data));
+			$this->config->setAppValue(Application::APP_ID, $key, json_encode($data));
 		});
 	}
 
 	private function currentFailureCount(): int
 	{
-		$raw = $this->config->getAppValue(Application::APP_ID, self::RATE_KEY, '');
+		$raw = $this->config->getAppValue(Application::APP_ID, $this->rateBucketKey(), '');
 		$data = $raw !== '' ? json_decode($raw, true) : null;
 		if (!is_array($data)) {
 			return 0;
@@ -144,14 +150,38 @@ class DevicePairingService
 	}
 
 	/**
+	 * Per-IP config key (hashed). Empty remote address buckets as "unknown"
+	 * so CLI/tests still share one window without storing raw IPs.
+	 * Nextcloud appconfig keys are capped at 64 chars — keep the digest short.
+	 */
+	private function rateBucketKey(): string
+	{
+		$ip = trim($this->request->getRemoteAddress());
+		if ($ip === '') {
+			$ip = 'unknown';
+		}
+		return self::RATE_KEY_PREFIX . substr(hash('sha256', $ip), 0, 32);
+	}
+
+	private function rateLockName(): string
+	{
+		$ip = trim($this->request->getRemoteAddress());
+		if ($ip === '') {
+			$ip = 'unknown';
+		}
+		return self::RATE_LOCK_PREFIX . substr(hash('sha256', $ip), 0, 16);
+	}
+
+	/**
 	 * @param callable(): void $fn
 	 */
 	private function withRateLock(callable $fn): void
 	{
+		$lock = $this->rateLockName();
 		$attempts = 0;
 		while (true) {
 			try {
-				$this->locking->acquireLock(self::RATE_LOCK, ILockingProvider::LOCK_EXCLUSIVE);
+				$this->locking->acquireLock($lock, ILockingProvider::LOCK_EXCLUSIVE);
 				break;
 			} catch (LockedException) {
 				// Contended lock ≠ rate limit; retry briefly so honest clients are not 429'd.
@@ -164,7 +194,7 @@ class DevicePairingService
 		try {
 			$fn();
 		} finally {
-			$this->locking->releaseLock(self::RATE_LOCK, ILockingProvider::LOCK_EXCLUSIVE);
+			$this->locking->releaseLock($lock, ILockingProvider::LOCK_EXCLUSIVE);
 		}
 	}
 }

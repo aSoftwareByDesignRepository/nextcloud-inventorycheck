@@ -16,7 +16,7 @@ final class PageNoCsrfContractTest extends TestCase
 	public function testEveryPageActionIsNoCsrfRequired(): void
 	{
 		$src = (string)file_get_contents(dirname(__DIR__, 3) . '/lib/Controller/PageController.php');
-		foreach (['dashboard', 'items', 'item', 'locations', 'location', 'movements', 'settings'] as $method) {
+		foreach (['dashboard', 'items', 'item', 'locations', 'location', 'movements', 'settings', 'settingsSection'] as $method) {
 			self::assertMatchesRegularExpression(
 				'/\#\[NoCSRFRequired\]\s*(?:\#\[[^\]]+\]\s*)*public function ' . preg_quote($method, '/') . '\b/s',
 				$src,

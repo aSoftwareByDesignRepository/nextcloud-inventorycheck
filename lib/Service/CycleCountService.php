@@ -12,6 +12,7 @@ use OCA\InventoryCheck\Db\CycleLineMapper;
 use OCA\InventoryCheck\Db\ItemMapper;
 use OCA\InventoryCheck\Db\LocationMapper;
 use OCA\InventoryCheck\Exception\ConflictException;
+use OCA\InventoryCheck\Exception\NotFoundException;
 use OCA\InventoryCheck\Exception\ValidationException;
 use OCP\IDBConnection;
 
@@ -26,6 +27,11 @@ class CycleCountService
 	public const STATUS_OPEN = 'open';
 	public const STATUS_COUNTING = 'counting';
 	public const STATUS_CLOSED = 'closed';
+
+	/** Hard cap so inventur create cannot materialise the whole catalog into PHP/DB (DoS / OOM). */
+	public const MAX_CAMPAIGN_LINES = 10000;
+
+	private const ITEM_PAGE = 500;
 
 	public function __construct(
 		private readonly IDBConnection $db,
@@ -56,29 +62,48 @@ class CycleCountService
 		];
 	}
 
-	/** @return array<string, mixed> */
-	public function get(string $actorUid, int $id): array
+	/**
+	 * @return array<string, mixed>
+	 */
+	public function get(string $actorUid, int $id, ?int $limit = null, ?int $offset = null): array
 	{
 		$camp = $this->campaigns->findById($id);
 		$locationId = (int)$camp->getLocationId();
-		$this->locationAcl->assertCanAccess($actorUid, $locationId);
+		// IDOR: ACL deny must look identical to a missing campaign.
+		$this->assertAccessibleOrNotFound($actorUid, $locationId, 'unknown_campaign');
 		$api = $camp->toApi();
+		$page = Pagination::parse(
+			$limit ?? Pagination::DEFAULT_LIMIT,
+			$offset ?? 0,
+		);
+		$linesTotal = $this->lines->countForCampaign($id);
+		$linesCounted = $this->lines->countCountedForCampaign($id);
 		$lines = [];
-		$hasConflicts = false;
-		foreach ($this->lines->forCampaign($id) as $l) {
+		foreach ($this->lines->forCampaignPage($id, $page['limit'], $page['offset']) as $l) {
 			$row = $l->toApi();
-			$pair = $this->balances->findPair((int)$l->getItemId(), $locationId);
+			$itemId = (int)$l->getItemId();
+			try {
+				$item = $this->items->findById($itemId);
+				$row['sku'] = $item->getSku();
+				$row['itemName'] = $item->getName();
+				$row['scanCode'] = $item->getScanCode();
+			} catch (\Throwable) {
+				// Line stays countable even if the item row was removed mid-campaign.
+			}
+			$pair = $this->balances->findPair($itemId, $locationId);
 			$current = $pair !== null ? $pair->getQty() : 0;
 			$row['currentQty'] = $current;
-			$conflict = CycleCountSemantics::hasConflict((int)$l->getSystemQty(), $current);
-			$row['conflict'] = $conflict;
-			if ($conflict) {
-				$hasConflicts = true;
-			}
+			$row['conflict'] = CycleCountSemantics::hasConflict((int)$l->getSystemQty(), $current);
 			$lines[] = $row;
 		}
 		$api['lines'] = $lines;
-		$api['hasConflicts'] = $hasConflicts;
+		$api['linesTotal'] = $linesTotal;
+		$api['linesCounted'] = $linesCounted;
+		$api['linesUncounted'] = max(0, $linesTotal - $linesCounted);
+		$api['limit'] = $page['limit'];
+		$api['offset'] = $page['offset'];
+		$api['hasConflicts'] = $this->lines->campaignHasConflicts($id, $locationId);
+		$api['conflictCount'] = $this->lines->countConflictsForCampaign($id, $locationId);
 		return $api;
 	}
 
@@ -90,14 +115,16 @@ class CycleCountService
 		if ($name === '' || mb_strlen($name) > 255) {
 			throw new ValidationException('validation_failed', '', [['field' => 'name', 'code' => 'validation_failed']]);
 		}
-		$loc = $this->locations->findById($locationId);
-		if (!$loc->getActive()) {
-			throw new ValidationException('inactive_location');
-		}
-
 		$now = $this->clock->now();
 		$this->db->beginTransaction();
 		try {
+			// Exclusive lock serialises against location deactivate/delete (S5/S6)
+			// so we cannot open inventur on a location flipped inactive mid-create.
+			$loc = $this->locations->lockById($locationId, true);
+			if (!$loc->getActive()) {
+				throw new ValidationException('inactive_location');
+			}
+
 			$camp = new CycleCampaign();
 			$camp->setLocationId($locationId);
 			$camp->setStatus(self::STATUS_OPEN);
@@ -108,29 +135,48 @@ class CycleCountService
 			$camp->setClosedAt(null);
 			$camp = $this->campaigns->insert($camp);
 
-			$activeItems = $this->items->search('', true, 100000, 0)['data'];
-			foreach ($activeItems as $item) {
-				// Wave C2: inventur adjusts total qty without a lot/serial —
-				// lot/serial SKUs are excluded until a dedicated per-lot count
-				// exists (FEFO backlog). Including them would fail closed on
-				// close() with invalid_lot_code and leave campaigns unclosable.
-				if ($item->getTrackMode() !== 'none') {
-					continue;
+			// Keyset by id (not OFFSET): concurrent item inserts must not
+			// re-emit the same SKU across pages and trip iv_ccl_camp_item_uq.
+			$eligible = 0;
+			$afterId = 0;
+			while (true) {
+				$page = $this->items->searchActiveAfterId($afterId, self::ITEM_PAGE);
+				if ($page === []) {
+					break;
 				}
-				$itemId = (int)$item->getId();
-				$bal = $this->balances->findPair($itemId, $locationId);
-				$systemQty = $bal?->getQty() ?? 0;
-				$line = new CycleLine();
-				$line->setCampaignId((int)$camp->getId());
-				$line->setItemId($itemId);
-				$line->setSystemQty($systemQty);
-				$line->setQtyCounted(null);
-				$line->setPostedMovId(null);
-				$line->setUpdatedAt($now);
-				$this->lines->insert($line);
+				foreach ($page as $item) {
+					$itemId = (int)$item->getId();
+					$afterId = $itemId;
+					// Wave C2: inventur adjusts total qty without a lot/serial —
+					// lot/serial SKUs are excluded until a dedicated per-lot count
+					// exists (FEFO backlog). Including them would fail closed on
+					// close() with invalid_lot_code and leave campaigns unclosable.
+					if ($item->getTrackMode() !== 'none') {
+						continue;
+					}
+					$eligible++;
+					if ($eligible > self::MAX_CAMPAIGN_LINES) {
+						throw new ValidationException('stocktake_too_large', '', [
+							['field' => 'locationId', 'code' => 'stocktake_too_large'],
+						]);
+					}
+					$bal = $this->balances->findPair($itemId, $locationId);
+					$systemQty = $bal?->getQty() ?? 0;
+					$line = new CycleLine();
+					$line->setCampaignId((int)$camp->getId());
+					$line->setItemId($itemId);
+					$line->setSystemQty($systemQty);
+					$line->setQtyCounted(null);
+					$line->setPostedMovId(null);
+					$line->setUpdatedAt($now);
+					$this->lines->insert($line);
+				}
+				if (count($page) < self::ITEM_PAGE) {
+					break;
+				}
 			}
 			$this->db->commit();
-			return $this->get($actorUid, (int)$camp->getId());
+			return $this->get($actorUid, (int)$camp->getId(), Pagination::MAX_LIMIT, 0);
 		} catch (\Throwable $e) {
 			if ($this->db->inTransaction()) {
 				$this->db->rollBack();
@@ -153,7 +199,7 @@ class CycleCountService
 			$camp->setUpdatedAt($this->clock->now());
 			$this->campaigns->update($camp);
 			$this->db->commit();
-			return $this->get($actorUid, $campaignId);
+			return $this->get($actorUid, $campaignId, Pagination::MAX_LIMIT, 0);
 		} catch (\Throwable $e) {
 			if ($this->db->inTransaction()) {
 				$this->db->rollBack();
@@ -178,7 +224,8 @@ class CycleCountService
 			// Otherwise setCount vs close ABBA-deadlocks on the same inventur.
 			$peek = $this->lines->findById($lineId);
 			$camp = $this->campaigns->lockById($peek->getCampaignId(), true);
-			$this->locationAcl->assertCanAccess($actorUid, (int)$camp->getLocationId());
+			// IDOR: ACL deny must look identical to a missing count line.
+			$this->assertAccessibleOrNotFound($actorUid, (int)$camp->getLocationId(), 'unknown_count_line');
 			$line = $this->lines->lockById($lineId, true);
 			if ((int)$line->getCampaignId() !== (int)$camp->getId()) {
 				throw new ConflictException('campaign_not_counting');
@@ -225,15 +272,12 @@ class CycleCountService
 				}
 			}
 
-			// Global lock protocol (must match MovementService):
-			//   campaign → location → items (asc id) → balances (asc item,loc)
-			// Locking balances *before* items deadlocks against concurrent
-			// receive/issue/transfer which take item then balance.
+			// Global lock protocol (must match MovementService — deadlock-free):
+			//   campaign → items (asc id) → location → balances (asc item,loc)
+			// Never location-before-items: movements take item then location;
+			// inventur close taking location then item is classic ABBA deadlock
+			// against concurrent receive/issue/transfer/scan.
 			$locationId = (int)$camp->getLocationId();
-			$loc = $this->locations->lockById($locationId, false);
-			if (!$loc->getActive()) {
-				throw new ValidationException('inactive_location');
-			}
 			$itemIds = [];
 			foreach ($lines as $line) {
 				$itemIds[(int)$line->getItemId()] = true;
@@ -247,6 +291,10 @@ class CycleCountService
 					throw new ValidationException('inactive_item');
 				}
 				$trackModes[$itemId] = $item->getTrackMode();
+			}
+			$loc = $this->locations->lockById($locationId, false);
+			if (!$loc->getActive()) {
+				throw new ValidationException('inactive_location');
 			}
 
 			// B1∩C2: create skipped lot/serial SKUs, but trackMode can flip mid-
@@ -352,7 +400,7 @@ class CycleCountService
 			foreach (array_keys($notifyItemIds) as $itemId) {
 				$this->movements->notifyLowStockAfterChange($itemId);
 			}
-			$api = $this->get($actorUid, $campaignId);
+			$api = $this->get($actorUid, $campaignId, Pagination::MAX_LIMIT, 0);
 			$api['postedMovementIds'] = $posted;
 			return $api;
 		} catch (\Throwable $e) {
@@ -360,6 +408,19 @@ class CycleCountService
 				$this->db->rollBack();
 			}
 			throw $e;
+		}
+	}
+
+	/**
+	 * Map ACL denial onto the same not-found code as a missing row so callers
+	 * cannot probe whether a campaign/line exists outside their location grants.
+	 */
+	private function assertAccessibleOrNotFound(string $actorUid, int $locationId, string $notFoundCode): void
+	{
+		try {
+			$this->locationAcl->assertCanAccess($actorUid, $locationId);
+		} catch (NotFoundException) {
+			throw new NotFoundException($notFoundCode);
 		}
 	}
 }

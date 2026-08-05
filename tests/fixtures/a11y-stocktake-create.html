@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>InventoryCheck — New stocktake a11y</title>
+	<!--STYLE-->
+</head>
+<body>
+	<a class="iv-skip-link" href="#iv-main-content">Skip to main content</a>
+	<div id="iv-live-region" class="iv-sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+	<div id="iv-alert-region" class="iv-sr-only" role="alert" aria-live="assertive" aria-atomic="true"></div>
+	<main id="iv-main-content" class="iv-main" tabindex="-1">
+		<header class="iv-page-header" aria-labelledby="iv-page-title">
+			<nav class="iv-breadcrumb" aria-label="Breadcrumb">
+				<ol class="iv-breadcrumb__list">
+					<li class="iv-breadcrumb__item"><a class="iv-breadcrumb__link" href="#">InventoryCheck</a></li>
+					<li class="iv-breadcrumb__item"><a class="iv-breadcrumb__link" href="#">Stocktake</a></li>
+					<li class="iv-breadcrumb__item iv-breadcrumb__item--current" aria-current="page">
+						<span class="iv-breadcrumb__current">New stocktake</span>
+					</li>
+				</ol>
+			</nav>
+			<div class="iv-page-header__main">
+				<div class="iv-page-header__text">
+					<h1 id="iv-page-title">New stocktake</h1>
+					<p class="iv-page-header__lead">Tap a location below to start counting — favourites appear first</p>
+				</div>
+			</div>
+		</header>
+		<div id="iv-page-root" class="iv-page-root">
+			<section class="iv-card iv-howto iv-stocktake-howto" id="iv-stocktake-howto-create" role="region" aria-labelledby="iv-stocktake-howto-create-title">
+				<header class="iv-section__header iv-quickstart__header">
+					<div class="iv-quickstart__intro">
+						<h2 id="iv-stocktake-howto-create-title" class="iv-card__title">How a stocktake works</h2>
+						<p class="iv-section__sub">Three short steps — tap a location below when you are ready.</p>
+					</div>
+					<button type="button" class="button iv-hint-dismiss" aria-label="Hide tips" title="Hide tips" aria-controls="iv-stocktake-howto-create" aria-describedby="iv-stocktake-howto-create-title" data-iv-dismiss-hint="stocktake_create_howto_v1">Hide tips</button>
+				</header>
+				<ol class="iv-quickstart">
+					<li class="iv-quickstart__item" data-step="choose">
+						<strong>1. Choose where you are counting</strong>
+						<p>Tap a location in the list. Favourites appear first. Search if you have many warehouses or vans.</p>
+					</li>
+					<li class="iv-quickstart__item" data-step="count">
+						<strong>2. Count what is on the shelf</strong>
+						<p>The next screen lists every active item at that location. Type the real quantity; each line autosaves.</p>
+					</li>
+					<li class="iv-quickstart__item" data-step="close">
+						<strong>3. Close when you are finished</strong>
+						<p>Closing posts stock adjustments so the system matches the shelf. You can leave uncounted lines unchanged if you confirm.</p>
+					</li>
+				</ol>
+			</section>
+			<div class="iv-card iv-stocktake-new" role="region" aria-labelledby="iv-stocktake-new-title">
+				<header class="iv-card__header">
+					<h2 id="iv-stocktake-new-title" class="iv-card__title">Where are you counting?</h2>
+				</header>
+				<div class="iv-card__body iv-stocktake-new__body">
+					<div class="iv-field iv-loc-chooser" data-iv-field="locationId" data-iv-loc-chooser="1">
+						<p class="iv-field__label iv-sr-only" id="iv-loc-choose-list-label">Where are you counting?</p>
+						<input type="search" class="iv-input iv-loc-chooser__search" id="iv-loc-choose-q" autocomplete="off" spellcheck="false" placeholder="Search locations…" aria-label="Search locations" aria-controls="iv-loc-choose-list" aria-describedby="iv-loc-choose-q-err">
+						<div class="iv-loc-chooser__list" id="iv-loc-choose-list" role="listbox" aria-labelledby="iv-loc-choose-list-label">
+							<button type="button" class="iv-loc-chooser__item iv-loc-chooser__item--fav" role="option" aria-label="Start stocktake at Warehouse North">
+								<span class="iv-loc-chooser__star" aria-hidden="true">★</span>
+								<span class="iv-loc-chooser__text">
+									<span class="iv-loc-chooser__name">Warehouse North</span>
+									<span class="iv-loc-chooser__code">WH-NORTH</span>
+								</span>
+							</button>
+							<button type="button" class="iv-loc-chooser__item" role="option" aria-label="Start stocktake at Van 12">
+								<span class="iv-loc-chooser__text">
+									<span class="iv-loc-chooser__name">Van 12</span>
+									<span class="iv-loc-chooser__code">VAN-12</span>
+								</span>
+							</button>
+							<button type="button" class="iv-loc-chooser__item" role="option" aria-label="Start stocktake at Site B">
+								<span class="iv-loc-chooser__text">
+									<span class="iv-loc-chooser__name">Site B</span>
+									<span class="iv-loc-chooser__code">SITE-B</span>
+								</span>
+							</button>
+						</div>
+						<p class="iv-loc-chooser__status iv-muted" role="status" hidden></p>
+						<p class="iv-field__error" id="iv-loc-choose-q-err" hidden role="alert"></p>
+					</div>
+					<details class="iv-disclosure iv-section iv-stocktake-more">
+						<summary class="iv-disclosure__summary">More stocktake options</summary>
+						<div class="iv-disclosure__body">
+							<div class="iv-field" data-iv-field="name">
+								<label class="iv-field__label" for="iv-stocktake-name">Name</label>
+								<input type="text" class="iv-input" maxlength="255" id="iv-stocktake-name" value="Stocktake 2026-08-05" aria-describedby="iv-stocktake-name-err">
+								<p class="iv-field__error" id="iv-stocktake-name-err" hidden role="alert"></p>
+							</div>
+						</div>
+					</details>
+					<p class="iv-muted iv-stocktake-snapshot-hint">We snapshot every active item at that location.</p>
+				</div>
+			</div>
+		</div>
+	</main>
+</body>
+</html>

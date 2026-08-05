@@ -113,6 +113,79 @@ body,
 
 	/* Accent alias for components that mirror primary branding */
 	--iv-accent: var(--color-primary-element);
+
+	/*
+	 * Solid danger CTAs (DS checklist): use --color-element-error, never pale
+	 * --color-error tint + white text (fails AA on NC 30+).
+	 */
+	--iv-danger-fill: var(--color-element-error, #c90000);
+	--iv-danger-fill-hover: color-mix(in srgb, var(--color-element-error, #c90000) 82%, var(--color-main-text));
+	--iv-danger-on-fill: var(--color-primary-element-text, #ffffff);
+	--iv-danger-ink: var(--color-error-text, var(--color-element-error, #8a0000));
+	--iv-danger-border: var(--color-border-error, var(--color-element-error, #c90000));
+
+	/*
+	 * Legacy --inventorycheck-* aliases → Nextcloud / --iv-* tokens.
+	 * Common CSS ported from older shells still references these names;
+	 * without aliases they resolve to nothing and break dark / HC themes.
+	 */
+	--inventorycheck-color-primary: var(--color-primary-element);
+	--inventorycheck-color-primary-element: var(--color-primary-element);
+	--inventorycheck-color-primary-light: var(--iv-tint-info);
+	--inventorycheck-color-border-focus: var(--color-primary-element);
+	--inventorycheck-color-text: var(--color-main-text);
+	--inventorycheck-color-text-maxcontrast: var(--color-text-maxcontrast);
+	--inventorycheck-color-text-muted: var(--color-text-maxcontrast);
+	--inventorycheck-color-text-secondary: var(--color-text-maxcontrast);
+	--inventorycheck-color-text-tertiary: var(--color-text-maxcontrast);
+	--inventorycheck-color-border: var(--iv-border, var(--color-border));
+	--inventorycheck-color-background: var(--color-main-background);
+	--inventorycheck-color-background-secondary: var(--iv-bg-soft, var(--color-background-dark));
+	--inventorycheck-color-background-tertiary: var(--color-background-hover, var(--iv-bg-soft));
+	--inventorycheck-color-background-elevated: var(--iv-bg-card, var(--color-main-background));
+	--inventorycheck-color-modal-background: var(--iv-bg-card, var(--color-main-background));
+	--inventorycheck-color-modal-border: var(--iv-border, var(--color-border));
+	--inventorycheck-color-modal-footer-background: var(--iv-bg-soft, var(--color-background-dark));
+	--inventorycheck-color-form-background: var(--color-main-background);
+	--inventorycheck-color-form-border: var(--iv-border, var(--color-border));
+	--inventorycheck-color-form-border-focus: var(--color-primary-element);
+	--inventorycheck-color-form-border-error: var(--iv-danger-border, var(--color-error-text, var(--color-error)));
+	--inventorycheck-color-form-border-success: var(--color-success-text, var(--color-success));
+	--inventorycheck-color-form-label: var(--color-main-text);
+	--inventorycheck-color-form-required: var(--iv-danger-ink, var(--color-error-text, var(--color-error)));
+	--inventorycheck-color-error: var(--iv-danger-ink, var(--color-error-text, var(--color-error)));
+	--inventorycheck-color-error-light: var(--iv-tint-danger);
+	--inventorycheck-color-success-light: var(--iv-tint-success);
+	--inventorycheck-color-warning-light: var(--iv-tint-warning);
+	--inventorycheck-color-border-warning: var(--color-warning-text, var(--color-warning));
+	--inventorycheck-color-table-header-background: var(--color-background-dark, var(--iv-bg-soft));
+	--inventorycheck-color-table-border: var(--iv-border, var(--color-border));
+
+	--inventorycheck-font-family-sans: inherit;
+	--inventorycheck-font-size-sm: var(--iv-fs-sm);
+	--inventorycheck-font-size-base: var(--iv-fs-md);
+	--inventorycheck-font-size-lg: var(--iv-fs-lg);
+	--inventorycheck-font-size-xl: var(--iv-fs-xl);
+	--inventorycheck-font-size-3xl: var(--iv-fs-2xl);
+	--inventorycheck-font-weight-medium: 500;
+	--inventorycheck-font-weight-semibold: 600;
+	--inventorycheck-font-weight-bold: 700;
+	--inventorycheck-line-height-tight: var(--iv-line-tight);
+	--inventorycheck-line-height-normal: var(--iv-line-base);
+	--inventorycheck-line-height-relaxed: 1.6;
+	--inventorycheck-letter-spacing-tight: -0.01em;
+
+	--radius-base: var(--iv-radius-sm);
+}
+
+/* Dark themes: NC --color-element-error is a bright accent — darken for on-fill AA. */
+body[data-theme-dark],
+body[data-theme-dark-highcontrast],
+[data-theme-dark] #app-content.iv-app,
+[data-theme-dark-highcontrast] #app-content.iv-app {
+	--iv-danger-fill: color-mix(in srgb, var(--color-element-error, #ff5050) 52%, var(--color-main-background));
+	--iv-danger-fill-hover: color-mix(in srgb, var(--color-element-error, #ff5050) 64%, var(--color-main-background));
+	--iv-danger-border: var(--color-element-error, #ff5050);
 }
 
 @media (prefers-contrast: more) {

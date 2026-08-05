@@ -20,12 +20,37 @@
 	<main id="iv-main">
 		<header class="iv-page-header" aria-labelledby="iv-page-title">
 			<h1 id="iv-page-title">Dashboard</h1>
-			<p>Low stock and recent movements</p>
+			<p class="iv-page-header__lead">Receive, issue, and transfer stock — low stock and recent bookings below</p>
 		</header>
+		<section class="iv-card iv-howto" id="iv-howto-dashboard" role="region" aria-labelledby="iv-howto-dashboard-title">
+			<header class="iv-section__header iv-quickstart__header">
+				<div class="iv-quickstart__intro">
+					<h2 id="iv-howto-dashboard-title" class="iv-card__title">How booking works</h2>
+					<p class="iv-section__sub">Three short steps — then low stock and recent bookings appear below.</p>
+				</div>
+				<button type="button" class="button iv-hint-dismiss" aria-label="Hide tips" title="Hide tips" aria-controls="iv-howto-dashboard" data-iv-dismiss-hint="dashboard_howto_v1">Hide tips</button>
+			</header>
+			<ol class="iv-quickstart">
+				<li class="iv-quickstart__item" data-step="masters">
+					<strong>1. Create items and locations</strong>
+					<p>Items need a SKU. Locations are warehouses, vans, or site boxes. Favourites speed later booking.</p>
+					<p class="iv-quickstart__cta"><a class="button primary" href="#">Open Items</a></p>
+				</li>
+				<li class="iv-quickstart__item" data-step="receive">
+					<strong>2. Receive stock</strong>
+					<p>Scan or pick an item and location, enter the quantity, and confirm. That starts the ledger.</p>
+				</li>
+				<li class="iv-quickstart__item" data-step="issue">
+					<strong>3. Issue or transfer as needed</strong>
+					<p>Field users issue from vans. Transfer moves stock between locations. Every booking lands under Recent movements.</p>
+				</li>
+			</ol>
+		</section>
 		<section class="iv-section" aria-labelledby="iv-neg-title">
 			<h2 id="iv-neg-title" class="iv-section__title">Negative balances</h2>
-			<p class="iv-muted">Negative stock is turned off. Adjust or receive to clear these.</p>
+			<p class="iv-muted">Negative stock is turned off. Set each line to zero to clear it.</p>
 			<table class="iv-table">
+				<caption class="iv-sr-only">Negative balances</caption>
 				<thead>
 					<tr>
 						<th scope="col">Item</th>
@@ -45,6 +70,7 @@
 		<section class="iv-section" aria-labelledby="iv-low-title">
 			<h2 id="iv-low-title" class="iv-section__title">Low stock</h2>
 			<table class="iv-table">
+				<caption class="iv-sr-only">Low stock</caption>
 				<thead>
 					<tr>
 						<th scope="col">Item</th>
@@ -69,6 +95,7 @@
 		<section class="iv-section" aria-labelledby="iv-mov-title">
 			<h2 id="iv-mov-title" class="iv-section__title">Recent movements</h2>
 			<table class="iv-table">
+				<caption class="iv-sr-only">Recent movements</caption>
 				<thead>
 					<tr>
 						<th scope="col">Kind</th>

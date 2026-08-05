@@ -23,6 +23,7 @@ const requiredSurfaces = [
 	'a11y-movements.html',
 	'a11y-settings.html',
 	'a11y-stocktake.html',
+	'a11y-stocktake-create.html',
 ];
 
 function loadFixture(name) {
@@ -80,6 +81,8 @@ test('movements fixture exposes filter form and receive dialog', () => {
 
 test('settings fixture exposes license seats devices and support', () => {
 	const html = loadFixture('a11y-settings.html');
+	assert.match(html, /id="iv-settings-pages"/);
+	assert.match(html, /aria-label="Settings pages"/);
 	assert.match(html, /id="iv-license"/);
 	assert.match(html, /data-iv-field="appAdmins"/);
 	assert.match(html, /Delegated app administrators/);
@@ -93,7 +96,26 @@ test('settings fixture exposes license seats devices and support', () => {
 	assert.match(html, /id="iv-acl-title"/);
 	assert.match(html, /Location access/);
 	assert.match(html, /id="iv-acl-loc-ids"/);
-	assert.match(html, /multiple/);
+	assert.match(html, /Search locations/);
+	assert.doesNotMatch(html, /Hold Ctrl/);
+	assert.doesNotMatch(html, /<select[^>]*id="iv-acl-loc-ids"[^>]*multiple/);
+});
+
+test('settings fixture exposes Wave D warehouse policy controls', () => {
+	const html = loadFixture('a11y-settings.html');
+	assert.match(html, /id="iv-wave-d"/);
+	assert.match(html, /Scan &amp; adjust policies|Scan & adjust policies/);
+	assert.match(html, /id="iv-require-adjust-reason"/);
+	assert.match(html, /Require reason code on adjust/);
+	assert.match(html, /id="iv-require-location-scan"/);
+	assert.match(html, /Require scanned location barcode before booking/);
+	assert.match(html, /id="iv-default-location"/);
+	assert.match(html, /id="iv-target-stock"/);
+	assert.match(html, /variance report/i);
+	assert.match(html, /reorder CSV/i);
+	assert.match(html, /iv-switch-field/);
+	assert.match(html, /iv-form-actions/);
+	assert.match(html, /iv-settings-page/);
 });
 
 test('settings fixture uses directory pickers, never raw id text inputs, for allow-lists/app-admins/ACL subject/seat uid', () => {
@@ -108,8 +130,8 @@ test('settings fixture uses directory pickers, never raw id text inputs, for all
 	assert.match(html, /data-iv-field="allowedUsers"/);
 	assert.match(html, /data-iv-field="subjectId"/);
 	assert.match(html, /data-iv-field="uid"/);
-	const pickerCount = (html.match(/class="iv-picker"/g) || []).length;
-	assert.equal(pickerCount, 4, 'expected 4 directory pickers: allowedUsers, appAdmins, ACL subject, seat uid');
+	const pickerCount = (html.match(/class="iv-picker(?:\s|")/g) || []).length;
+	assert.equal(pickerCount, 5, 'expected 5 pickers: allowedUsers, appAdmins, ACL subject, ACL locations, seat uid');
 	assert.match(html, /role="combobox"/);
 	assert.match(html, /role="listbox"/);
 });
@@ -119,6 +141,26 @@ test('dashboard fixture flags negative balances with text not color alone', () =
 	assert.match(html, /Negative balances/);
 	assert.match(html, /negative stock/);
 	assert.match(html, /iv-badge--overdue/);
+	assert.match(html, /iv-howto-dashboard/);
+	assert.match(html, /How booking works/);
+	assert.match(html, /iv-quickstart__item/);
+	assert.match(html, /dashboard_howto_v1/);
+	assert.doesNotMatch(html, /iv-howto[^"]*iv-empty|iv-empty[^"]*iv-howto/);
+});
+
+test('dashboard tables expose captions for AT (reorder / recent / negatives)', () => {
+	const html = loadFixture('a11y-dashboard.html');
+	assert.match(html, /<caption[^>]*>Negative balances<\/caption>/);
+	assert.match(html, /<caption[^>]*>Low stock<\/caption>/);
+	assert.match(html, /<caption[^>]*>Recent movements<\/caption>/);
+});
+
+test('movements fixture includes DutyCheck-style how-to card', () => {
+	const html = loadFixture('a11y-movements.html');
+	assert.match(html, /iv-howto-movements/);
+	assert.match(html, /How movements work/);
+	assert.match(html, /movements_howto_v1/);
+	assert.match(html, /iv-quickstart__item/);
 });
 
 test('item detail fixture keeps selectable label code for A12', () => {
@@ -129,4 +171,28 @@ test('item detail fixture keeps selectable label code for A12', () => {
 	assert.match(html, /data-symbology="code128b"/);
 	assert.match(html, /Print label/);
 	assert.match(html, /Download SVG/);
+});
+
+test('stocktake-create fixture is tap-to-start page chooser, never a giant native select or modal', () => {
+	const html = loadFixture('a11y-stocktake-create.html');
+	assert.doesNotMatch(html, /aria-modal="true"/);
+	assert.doesNotMatch(html, /iv-dialog-overlay/);
+	assert.match(html, /New stocktake/);
+	assert.match(html, /iv-stocktake-new/);
+	assert.match(html, /iv-page-header__lead/);
+	assert.match(html, /Tap a location below to start counting/);
+	assert.match(html, /iv-stocktake-howto/);
+	assert.match(html, /How a stocktake works/);
+	assert.match(html, /iv-quickstart__item/);
+	assert.match(html, /data-iv-dismiss-hint="stocktake_create_howto_v1"/);
+	assert.match(html, /Where are you counting/);
+	assert.match(html, /iv-sr-only/);
+	assert.match(html, /data-iv-loc-chooser="1"/);
+	assert.match(html, /role="listbox"/);
+	assert.match(html, /Start stocktake at Warehouse North/);
+	assert.match(html, /iv-loc-chooser__name/);
+	assert.match(html, /iv-stocktake-more/);
+	assert.doesNotMatch(html, /<select[^>]*data-iv-field="locationId"/);
+	assert.doesNotMatch(html, /<select[^>]*aria-required="true"/);
+	assert.doesNotMatch(html, />Create</);
 });

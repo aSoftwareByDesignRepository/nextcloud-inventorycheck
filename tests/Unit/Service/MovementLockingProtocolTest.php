@@ -39,6 +39,20 @@ final class MovementLockingProtocolTest extends TestCase
 		self::assertStringContainsString("['field' => 'toLocationId'", $src);
 	}
 
+	/** Wave D8 / AF-IV12: issue + transfer (both ends) must call LocationScanPolicy. */
+	public function testIssueAndTransferEnforceLocationScanPolicy(): void
+	{
+		$src = file_get_contents(dirname(__DIR__, 3) . '/lib/Service/MovementService.php');
+		self::assertNotFalse($src);
+		self::assertGreaterThanOrEqual(
+			4,
+			substr_count($src, 'LocationScanPolicy::assertMatches'),
+			'scan + issue + transfer-from + transfer-to (at minimum)',
+		);
+		self::assertStringContainsString("'toLocationCode'", $src);
+		self::assertStringContainsString('web issue must honour require_location_scan', $src);
+	}
+
 	public function testMovementServiceDocumentsAscendingLockOrderAndUsesLockPairs(): void
 	{
 		$src = file_get_contents(dirname(__DIR__, 3) . '/lib/Service/MovementService.php');
@@ -70,6 +84,26 @@ final class MovementLockingProtocolTest extends TestCase
 		);
 	}
 
+	public function testIssueWithRefEnforcesOfficeAndLocationAcl(): void
+	{
+		$src = file_get_contents(dirname(__DIR__, 3) . '/lib/Service/MovementService.php');
+		self::assertNotFalse($src);
+		$start = strpos($src, 'function issueWithRef(');
+		self::assertNotFalse($start);
+		$body = substr($src, $start, 900);
+		self::assertStringContainsString('$this->access->requireOffice($actorUid)', $body);
+		self::assertStringContainsString('$this->assertLocationAccess($actorUid, $locationId)', $body);
+	}
+
+	public function testTrackModeUpgradeRequiresZeroStockGate(): void
+	{
+		$src = file_get_contents(dirname(__DIR__, 3) . '/lib/Service/ItemService.php');
+		self::assertNotFalse($src);
+		self::assertStringContainsString('assertTrackModeChangeAllowed', $src);
+		self::assertStringContainsString("ConflictException('track_mode_requires_zero_stock')", $src);
+		self::assertStringContainsString('hasNonZeroBalance', $src);
+	}
+
 	public function testMovementsTakeEntitySharedLocksInsideTheTransaction(): void
 	{
 		$src = file_get_contents(dirname(__DIR__, 3) . '/lib/Service/MovementService.php');
@@ -87,6 +121,9 @@ final class MovementLockingProtocolTest extends TestCase
 	 * Wave C2: a serial-tracked item must take an EXCLUSIVE item-row lock
 	 * (not the usual shared lock) so two concurrent receives of the same
 	 * serial number can never both pass the net-quantity check.
+	 *
+	 * track_mode flip mid-flight must NOT escalate SHARE→EXCLUSIVE in-place
+	 * (deadlock); abort with item_lock_conflict so the client retries.
 	 */
 	public function testSerialItemsTakeExclusiveLockNonSerialTakeShared(): void
 	{
@@ -94,11 +131,34 @@ final class MovementLockingProtocolTest extends TestCase
 		self::assertNotFalse($src);
 		self::assertStringContainsString("getTrackMode() === 'serial'", $src);
 		self::assertStringContainsString('lockById($itemId, $exclusive)', $src);
-		self::assertStringContainsString('lockById($itemId, true)', $src);
+		self::assertStringContainsString("ConflictException('item_lock_conflict')", $src);
+		self::assertMatchesRegularExpression(
+			"/if\s*\(\s*!\\\$exclusive\s*&&\s*\\\$item->getTrackMode\(\)\s*===\s*'serial'\s*\)/",
+			$src,
+			'track_mode flip must throw item_lock_conflict (no dead if(false) branch)',
+		);
+		self::assertStringNotContainsString(
+			'// track_mode may have flipped to serial between peek and lock — escalate.',
+			$src,
+			'shared→exclusive escalate is a deadlock footgun',
+		);
 		self::assertStringContainsString("throw new ValidationException('inactive_item')", $src);
 		self::assertStringContainsString('if (!$item->getActive())', $src);
 		self::assertStringContainsString('checkSerialCapacity', $src);
 		self::assertStringContainsString('sumQtyDeltaByItemAndLot', $src);
+	}
+
+	/** Companion honesty: recent list joins item/location names for field UX. */
+	public function testListApiJoinsItemAndLocationLabels(): void
+	{
+		$src = file_get_contents(dirname(__DIR__, 3) . '/lib/Service/MovementService.php');
+		self::assertNotFalse($src);
+		self::assertStringContainsString('movementToListApi', $src);
+		self::assertStringContainsString('withDisplayNames', $src);
+		self::assertStringContainsString("\$api['itemName']", $src);
+		self::assertStringContainsString("\$api['sku']", $src);
+		self::assertStringContainsString("\$api['locationCode']", $src);
+		self::assertStringContainsString("\$api['locationName']", $src);
 	}
 
 	public function testDeactivateAndDeletePathsTakeExclusiveEntityLocks(): void
@@ -117,6 +177,16 @@ final class MovementLockingProtocolTest extends TestCase
 	public function testRowLockSuffixPerProvider(): void
 	{
 		self::assertSame(' LOCK IN SHARE MODE', $this->suffixFor(IDBConnection::PLATFORM_MYSQL, false));
+		if (\defined(IDBConnection::class . '::PLATFORM_MARIADB')) {
+			self::assertSame(
+				' LOCK IN SHARE MODE',
+				$this->suffixFor(\constant(IDBConnection::class . '::PLATFORM_MARIADB'), false),
+			);
+			self::assertSame(
+				' FOR UPDATE',
+				$this->suffixFor(\constant(IDBConnection::class . '::PLATFORM_MARIADB'), true),
+			);
+		}
 		self::assertSame(' FOR SHARE', $this->suffixFor(IDBConnection::PLATFORM_POSTGRES, false));
 		self::assertSame('', $this->suffixFor(IDBConnection::PLATFORM_SQLITE, false));
 		self::assertSame('', $this->suffixFor(IDBConnection::PLATFORM_SQLITE, true));

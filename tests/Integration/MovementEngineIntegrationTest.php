@@ -143,7 +143,7 @@ final class MovementEngineIntegrationTest extends TestCase
 		$locId = (int)$loc['id'];
 		$this->movements->receive($this->uid, $itemId, $locId, 5, null);
 		$this->expectException(ValidationException::class);
-		$this->movements->adjust($this->uid, $itemId, $locId, 'set', 5, null, null);
+		$this->movements->adjust($this->uid, $itemId, $locId, 'set', 5, null, null, null, true, 'correction');
 	}
 
 	private function assertLedgerMatchesBalances(int $itemId): void

@@ -83,6 +83,7 @@ class AppAccessMiddleware extends Middleware
 				'code_not_found' => $l->t('No active item matches this code.'),
 				'unknown_item' => $l->t('This item does not exist.'),
 				'unknown_location' => $l->t('This location does not exist.'),
+				'photo_not_found' => $l->t('No photo for this item.'),
 				default => $l->t('The requested entry does not exist.'),
 			};
 			return $this->envelope($code, $msg, Http::STATUS_NOT_FOUND);
@@ -99,10 +100,16 @@ class AppAccessMiddleware extends Middleware
 			return $this->envelope('insufficient_stock', $msg, Http::STATUS_CONFLICT);
 		}
 		if ($exception instanceof ConflictException) {
+			$code = $exception->getErrorCode();
+			// item_lock_conflict is a transient lock/retry signal (track_mode flip
+			// mid-movement). 423 lets companions treat it like ApiError.isLocked.
+			$status = $code === 'item_lock_conflict'
+				? Http::STATUS_LOCKED
+				: Http::STATUS_CONFLICT;
 			return $this->envelope(
-				$exception->getErrorCode(),
-				$this->conflictMessage($exception->getErrorCode(), $l),
-				Http::STATUS_CONFLICT,
+				$code,
+				$this->conflictMessage($code, $l),
+				$status,
 			);
 		}
 		if ($exception instanceof ValidationException) {
@@ -115,6 +122,12 @@ class AppAccessMiddleware extends Middleware
 			], Http::STATUS_UNPROCESSABLE_ENTITY);
 		}
 		if ($exception instanceof MobileGateException) {
+			// AF-IV20: 402 license/seat/device envelopes are mobile-only.
+			// Web session controllers must never surface payment-required for
+			// MobileGateException — rethrow so it becomes a server error, not 402.
+			if (!str_contains($class, 'MobileController')) {
+				throw $exception;
+			}
 			// SPEC §9.1 rung 1 / AC-17: unauthenticated mobile callers are 401,
 			// never 402 (402 is reserved for license/seat/device entitlement misses).
 			if ($exception->getErrorCode() === 'auth_required') {
@@ -195,6 +208,7 @@ class AppAccessMiddleware extends Middleware
 			'insufficient_stock' => $l->t('Not enough stock at this location.'),
 			'code_exists' => $l->t('This code is already in use.'),
 			'item_has_stock' => $l->t('This item still has stock. Move or adjust it to zero before deactivating.'),
+			'track_mode_requires_zero_stock' => $l->t('Clear stock to zero before switching this item to lot or serial tracking.'),
 			'location_has_stock' => $l->t('This location still has stock. Move or adjust it to zero before deactivating.'),
 			'item_has_movements' => $l->t('This item has movement history and cannot be deleted. Deactivate it instead.'),
 			'location_has_movements' => $l->t('This location has movement history and cannot be deleted. Deactivate it instead.'),
@@ -205,6 +219,7 @@ class AppAccessMiddleware extends Middleware
 			'campaign_not_open' => $l->t('This cycle count has already been started or closed.'),
 			'campaign_not_counting' => $l->t('This cycle count is not open for counting right now.'),
 			'line_already_posted' => $l->t('This line was already posted and cannot be counted again.'),
+			'item_lock_conflict' => $l->t('This item changed while you were working. Reload and try again.'),
 			default => $l->t('The action conflicts with the current state. Reload and try again.'),
 		};
 	}
@@ -222,6 +237,8 @@ class AppAccessMiddleware extends Middleware
 			'license_invalid' => $l->t('This license key is not valid: %s', [$exception->getMessage()]),
 			'unknown_user' => $l->t('This Nextcloud user does not exist.'),
 			'unknown_group' => $l->t('This Nextcloud group does not exist.'),
+			'unknown_device' => $l->t('This scanner device slot does not exist.'),
+			'access_allowlist_required' => $l->t('Turn on access restriction only after choosing at least one allowed user or group.'),
 			'invalid_pair_code' => $l->t('This pairing code is invalid or expired.'),
 			'photo_too_large' => $l->t('The photo is too large. Maximum size is 2 MB.'),
 			'photo_type_invalid' => $l->t('Only JPEG, PNG, or WebP photos are allowed.'),
@@ -229,6 +246,7 @@ class AppAccessMiddleware extends Middleware
 			'count_incomplete' => $l->t('Every line must be counted before closing, or choose to abandon uncounted lines.'),
 			'count_conflict' => $l->t('Stock changed after this stocktake started. Review conflict lines, then close again and confirm you accept the counted quantities.'),
 			'track_mode_changed' => $l->t('An item on this stocktake was switched to lot or serial tracking. Remove it from the count or set tracking back to none, then try again.'),
+			'stocktake_too_large' => $l->t('Too many active items to include in one stocktake. Deactivate unused items or split the count, then try again.'),
 			'favourite_limit' => $l->t('You already have the maximum number of favourite locations.'),
 			'location_code_mismatch' => $l->t('The scanned location code does not match the selected location.'),
 			default => $l->t('Please check the highlighted fields.'),

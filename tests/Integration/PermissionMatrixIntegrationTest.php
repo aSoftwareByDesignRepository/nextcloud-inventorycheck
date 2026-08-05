@@ -439,12 +439,24 @@ final class PermissionMatrixIntegrationTest extends TestCase
 	{
 		$this->loginAs(self::ADMIN);
 		$page = Server::get(PageController::class);
-		$this->apiMiddleware()->beforeController($page, 'settings');
-		$response = $page->settings();
+		$this->apiMiddleware()->beforeController($page, 'settingsSection');
+		$response = $page->settingsSection('support');
 		$this->assertInstanceOf(TemplateResponse::class, $response);
 		$params = $response->getParams();
 		$this->assertTrue($params['isAppAdmin']);
+		$this->assertSame('support', $params['settingsSection']);
 		$this->assertArrayHasKey('supportUsLicenseUrl', $params);
 		$this->assertStringContainsString('#iv-license', (string)$params['supportUsLicenseUrl']);
+		$this->assertStringContainsString('/settings/license', (string)$params['supportUsLicenseUrl']);
+	}
+
+	public function testP9SettingsIndexRedirectsToAccess(): void
+	{
+		$this->loginAs(self::ADMIN);
+		$page = Server::get(PageController::class);
+		$this->apiMiddleware()->beforeController($page, 'settings');
+		$response = $page->settings();
+		$this->assertInstanceOf(\OCP\AppFramework\Http\RedirectResponse::class, $response);
+		$this->assertStringContainsString('/settings/access', $response->getRedirectURL());
 	}
 }

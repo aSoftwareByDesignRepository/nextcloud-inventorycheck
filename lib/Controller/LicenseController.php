@@ -7,6 +7,7 @@ namespace OCA\InventoryCheck\Controller;
 use OCA\InventoryCheck\AppInfo\Application;
 use OCA\InventoryCheck\Service\AccessControlService;
 use OCA\InventoryCheck\Service\LicenseService;
+use OCA\InventoryCheck\Service\LocationAclService;
 use OCA\InventoryCheck\Service\Pagination;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -19,6 +20,7 @@ class LicenseController extends Controller
 		IRequest $request,
 		private readonly LicenseService $license,
 		private readonly AccessControlService $access,
+		private readonly LocationAclService $locationAcl,
 	) {
 		parent::__construct(Application::APP_ID, $request);
 	}
@@ -84,7 +86,43 @@ class LicenseController extends Controller
 		$uid = $this->access->currentUserId();
 		$this->access->requireAppAdmin($uid);
 		$label = (string)$this->request->getParam('label', '');
-		return new JSONResponse($this->license->createDevice($uid, $label));
+
+		// Validate bind targets before creating the slot so a bad locationIds
+		// payload cannot leave an unbound (org-wide BC) scanner behind.
+		$bindIds = null;
+		$rawIds = $this->request->getParam('locationIds');
+		if (is_array($rawIds) && $rawIds !== []) {
+			$bindIds = $this->locationAcl->normalizeLocationIds($rawIds);
+		}
+
+		$created = $this->license->createDevice($uid, $label);
+
+		if ($bindIds !== null && $bindIds !== []) {
+			$deviceId = (int)($created['device']['id'] ?? 0);
+			try {
+				if ($deviceId <= 0) {
+					throw new \RuntimeException('device_create_missing_id');
+				}
+				$this->locationAcl->setForSubject(
+					LocationAclService::TYPE_DEVICE,
+					(string)$deviceId,
+					$bindIds,
+				);
+			} catch (\Throwable $e) {
+				// Fail closed: never leave a half-bound scanner that is pairable org-wide.
+				if ($deviceId > 0) {
+					try {
+						$this->license->deactivateDevice($deviceId);
+					} finally {
+						// purge even if deactivate throws (slot may still have grants).
+						$this->locationAcl->purgeDevice($deviceId);
+					}
+				}
+				throw $e;
+			}
+		}
+
+		return new JSONResponse($created);
 	}
 
 	#[NoAdminRequired]
@@ -100,6 +138,7 @@ class LicenseController extends Controller
 	{
 		$this->access->requireAppAdmin($this->access->currentUserId());
 		$this->license->deactivateDevice($id);
+		$this->locationAcl->purgeDevice($id);
 		return new JSONResponse(['ok' => true]);
 	}
 }

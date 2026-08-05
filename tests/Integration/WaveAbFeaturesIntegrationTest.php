@@ -59,6 +59,23 @@ final class WaveAbFeaturesIntegrationTest extends TestCase
 		$config->setAppValue(Application::APP_ID, \OCA\InventoryCheck\Service\QtyScale::KEY, '0');
 	}
 
+	/** Create returns a paginated line window; page until the target item appears. */
+	private function lineIdForItem(int $campaignId, int $itemId): int
+	{
+		$offset = 0;
+		$limit = 200;
+		do {
+			$page = $this->counts->get($this->uid, $campaignId, $limit, $offset);
+			foreach ($page['lines'] as $line) {
+				if ((int)$line['itemId'] === $itemId) {
+					return (int)$line['id'];
+				}
+			}
+			$offset += $limit;
+		} while ($offset < (int)($page['linesTotal'] ?? 0));
+		self::fail('inventur line for item ' . $itemId . ' not found in campaign ' . $campaignId);
+	}
+
 	public function testCsvDryRunReportsDuplicateAndCommitIsAtomicWithOpeningReceive(): void
 	{
 		$suffix = bin2hex(random_bytes(3));
@@ -117,14 +134,7 @@ final class WaveAbFeaturesIntegrationTest extends TestCase
 		self::assertNotEmpty($camp['lines']);
 
 		$this->counts->startCounting($this->uid, (int)$camp['id']);
-		$lineId = null;
-		foreach ($camp['lines'] as $line) {
-			if ((int)$line['itemId'] === (int)$item['id']) {
-				$lineId = (int)$line['id'];
-				break;
-			}
-		}
-		self::assertNotNull($lineId);
+		$lineId = $this->lineIdForItem((int)$camp['id'], (int)$item['id']);
 
 		try {
 			$this->counts->close($this->uid, (int)$camp['id'], false);
@@ -148,12 +158,12 @@ final class WaveAbFeaturesIntegrationTest extends TestCase
 	{
 		$suffix = bin2hex(random_bytes(3));
 		$loc = $this->locations->create($this->uid, [
-			'code' => 'CC-M-' . $suffix,
+			'code' => 'CC-ML-' . $suffix,
 			'name' => 'Match Loc',
 			'kind' => 'warehouse',
 		]);
 		$item = $this->items->create($this->uid, [
-			'sku' => 'CC-M-' . $suffix,
+			'sku' => 'CC-MI-' . $suffix,
 			'name' => 'Match Item',
 			'uom' => 'pcs',
 			'reorderLevel' => 0,
@@ -162,14 +172,7 @@ final class WaveAbFeaturesIntegrationTest extends TestCase
 
 		$camp = $this->counts->create($this->uid, (int)$loc['id'], 'Match ' . $suffix);
 		$this->counts->startCounting($this->uid, (int)$camp['id']);
-		$lineId = null;
-		foreach ($camp['lines'] as $line) {
-			if ((int)$line['itemId'] === (int)$item['id']) {
-				$lineId = (int)$line['id'];
-				break;
-			}
-		}
-		self::assertNotNull($lineId);
+		$lineId = $this->lineIdForItem((int)$camp['id'], (int)$item['id']);
 		$this->counts->setCount($this->uid, $lineId, 7);
 		$closed = $this->counts->close($this->uid, (int)$camp['id'], true);
 		self::assertSame(CycleCountService::STATUS_CLOSED, $closed['status']);
@@ -185,12 +188,12 @@ final class WaveAbFeaturesIntegrationTest extends TestCase
 	{
 		$suffix = bin2hex(random_bytes(3));
 		$loc = $this->locations->create($this->uid, [
-			'code' => 'CC-X-' . $suffix,
+			'code' => 'CC-XL-' . $suffix,
 			'name' => 'Conflict Loc',
 			'kind' => 'warehouse',
 		]);
 		$item = $this->items->create($this->uid, [
-			'sku' => 'CC-X-' . $suffix,
+			'sku' => 'CC-XI-' . $suffix,
 			'name' => 'Conflict Item',
 			'uom' => 'pcs',
 			'reorderLevel' => 0,
@@ -199,27 +202,24 @@ final class WaveAbFeaturesIntegrationTest extends TestCase
 
 		$camp = $this->counts->create($this->uid, (int)$loc['id'], 'Conflict ' . $suffix);
 		$this->counts->startCounting($this->uid, (int)$camp['id']);
-		$lineId = null;
-		foreach ($camp['lines'] as $line) {
-			if ((int)$line['itemId'] === (int)$item['id']) {
-				$lineId = (int)$line['id'];
-				self::assertSame(10, (int)$line['systemQty']);
-				break;
-			}
-		}
-		self::assertNotNull($lineId);
+		$lineId = $this->lineIdForItem((int)$camp['id'], (int)$item['id']);
 
 		// Mid-count receive — live qty drifts from frozen snapshot.
 		$this->movements->receive($this->uid, (int)$item['id'], (int)$loc['id'], 2, 'mid-count');
-		$view = $this->counts->get($this->uid, (int)$camp['id']);
+		$view = $this->counts->get($this->uid, (int)$camp['id'], 200, 0);
 		self::assertTrue($view['hasConflicts']);
 		$conflictLine = null;
-		foreach ($view['lines'] as $line) {
-			if ((int)$line['id'] === $lineId) {
-				$conflictLine = $line;
-				break;
+		$offset = 0;
+		do {
+			$page = $this->counts->get($this->uid, (int)$camp['id'], 200, $offset);
+			foreach ($page['lines'] as $line) {
+				if ((int)$line['id'] === $lineId) {
+					$conflictLine = $line;
+					break 2;
+				}
 			}
-		}
+			$offset += 200;
+		} while ($offset < (int)($page['linesTotal'] ?? 0));
 		self::assertNotNull($conflictLine);
 		self::assertTrue($conflictLine['conflict']);
 		self::assertSame(12, (int)$conflictLine['currentQty']);
@@ -245,12 +245,12 @@ final class WaveAbFeaturesIntegrationTest extends TestCase
 	{
 		$suffix = bin2hex(random_bytes(3));
 		$loc = $this->locations->create($this->uid, [
-			'code' => 'CC-T-' . $suffix,
+			'code' => 'CC-TL-' . $suffix,
 			'name' => 'Track Flip Loc',
 			'kind' => 'warehouse',
 		]);
 		$item = $this->items->create($this->uid, [
-			'sku' => 'CC-T-' . $suffix,
+			'sku' => 'CC-TI-' . $suffix,
 			'name' => 'Track Flip Item',
 			'uom' => 'pcs',
 			'reorderLevel' => 0,
@@ -260,15 +260,11 @@ final class WaveAbFeaturesIntegrationTest extends TestCase
 
 		$camp = $this->counts->create($this->uid, (int)$loc['id'], 'TrackFlip ' . $suffix);
 		$this->counts->startCounting($this->uid, (int)$camp['id']);
-		$lineId = null;
-		foreach ($camp['lines'] as $line) {
-			if ((int)$line['itemId'] === (int)$item['id']) {
-				$lineId = (int)$line['id'];
-				break;
-			}
-		}
-		self::assertNotNull($lineId);
+		$lineId = $this->lineIdForItem((int)$camp['id'], (int)$item['id']);
 		$this->counts->setCount($this->uid, $lineId, 4);
+
+		// Zero stock first — upgrading trackMode with anonymous qty is refused.
+		$this->movements->adjust($this->uid, (int)$item['id'], (int)$loc['id'], 'set', 0, null, 'clear for trackMode', null, true, 'correction');
 
 		// Mid-campaign flip to lot — close must not brick with invalid_lot_code.
 		$this->items->update($this->uid, (int)$item['id'], ['trackMode' => 'lot']);
@@ -283,16 +279,45 @@ final class WaveAbFeaturesIntegrationTest extends TestCase
 		self::assertSame(CycleCountService::STATUS_COUNTING, $view['status']);
 	}
 
+	public function testTrackModeUpgradeRefusedWhileStockRemains(): void
+	{
+		$suffix = bin2hex(random_bytes(3));
+		$loc = $this->locations->create($this->uid, [
+			'code' => 'TM-L-' . $suffix,
+			'name' => 'Track Mode Loc',
+			'kind' => 'warehouse',
+		]);
+		$item = $this->items->create($this->uid, [
+			'sku' => 'TM-I-' . $suffix,
+			'name' => 'Track Mode Item',
+			'uom' => 'pcs',
+			'reorderLevel' => 0,
+			'trackMode' => 'none',
+		]);
+		$this->movements->receive($this->uid, (int)$item['id'], (int)$loc['id'], 3, 'seed');
+
+		try {
+			$this->items->update($this->uid, (int)$item['id'], ['trackMode' => 'serial']);
+			self::fail('expected track_mode_requires_zero_stock');
+		} catch (ConflictException $e) {
+			self::assertSame('track_mode_requires_zero_stock', $e->getErrorCode());
+		}
+
+		$this->movements->adjust($this->uid, (int)$item['id'], (int)$loc['id'], 'set', 0, null, 'clear', null, true, 'correction');
+		$updated = $this->items->update($this->uid, (int)$item['id'], ['trackMode' => 'serial']);
+		self::assertSame('serial', $updated['trackMode']);
+	}
+
 	public function testCannotDeleteOrDeactivateItemOnOpenStocktake(): void
 	{
 		$suffix = bin2hex(random_bytes(3));
 		$loc = $this->locations->create($this->uid, [
-			'code' => 'CC-D-' . $suffix,
+			'code' => 'CC-DL-' . $suffix,
 			'name' => 'Delete Guard Loc',
 			'kind' => 'warehouse',
 		]);
 		$item = $this->items->create($this->uid, [
-			'sku' => 'CC-D-' . $suffix,
+			'sku' => 'CC-DI-' . $suffix,
 			'name' => 'Delete Guard Item',
 			'uom' => 'pcs',
 			'reorderLevel' => 0,

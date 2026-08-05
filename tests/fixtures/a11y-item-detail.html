@@ -25,50 +25,66 @@
 		<section class="iv-section" aria-labelledby="iv-meta-title">
 			<h2 id="iv-meta-title" class="iv-section__title">Item</h2>
 			<p><strong>SKU:</strong> FILTER-42</p>
-			<p><strong>Scan code:</strong> <span class="iv-label-code" id="iv-label-code">FILTER-42</span></p>
+			<p><strong>Scan code:</strong> <span class="iv-label-code" id="iv-label-code-meta">FILTER-42</span></p>
 			<button type="button" class="iv-btn">Edit</button>
-			<button type="button" class="iv-btn">Deactivate</button>
-			<a class="iv-btn" href="#">Print label</a>
-			<a class="iv-btn" href="#">Download SVG</a>
+			<a class="iv-btn iv-btn--primary" href="#">Print label</a>
+			<details class="iv-actions-more">
+				<summary class="iv-actions-more__summary">More</summary>
+				<div class="iv-actions-more__body">
+					<button type="button" class="iv-btn">Deactivate</button>
+					<a class="iv-btn" href="#">Download SVG</a>
+				</div>
+			</details>
 		</section>
 		<section class="iv-section" aria-labelledby="iv-bal-title">
 			<h2 id="iv-bal-title" class="iv-section__title">Balances by location</h2>
 			<table class="iv-table">
+				<caption class="iv-sr-only">Balances by location</caption>
 				<thead>
 					<tr>
 						<th scope="col">Location</th>
 						<th scope="col">On hand</th>
+						<th scope="col">Actions</th>
 					</tr>
 				</thead>
 				<tbody>
 					<tr>
 						<td data-label="Location">Warehouse (WH)</td>
 						<td data-label="On hand"><span data-iv-balance="1:1">7</span></td>
+						<td data-label="Actions">
+							<div class="iv-row__actions" data-iv-balance-actions="1">
+								<button type="button" class="iv-btn iv-btn--touch">Receive</button>
+								<button type="button" class="iv-btn iv-btn--touch">Issue</button>
+							</div>
+						</td>
 					</tr>
 					<tr>
 						<td data-label="Location">Van (VAN-1)</td>
 						<td data-label="On hand"><span data-iv-balance="1:2">3</span></td>
+						<td data-label="Actions">
+							<div class="iv-row__actions" data-iv-balance-actions="1">
+								<button type="button" class="iv-btn iv-btn--touch">Receive</button>
+								<button type="button" class="iv-btn iv-btn--touch">Issue</button>
+							</div>
+						</td>
 					</tr>
 				</tbody>
 			</table>
 		</section>
-		<section class="iv-section" aria-labelledby="iv-qr-title">
-			<h2 id="iv-qr-title" class="iv-section__title">Label preview</h2>
-			<p class="iv-muted">QR and Code 128 encode the scan code. Print a sticker, or paste the code into a movement form with a wedge scanner.</p>
-			<figure class="iv-label-preview">
-				<svg role="img" aria-labelledby="iv-qr-caption" width="160" height="200" viewBox="0 0 160 200">
-					<title id="iv-qr-caption">QR and barcode for FILTER-42</title>
-					<rect width="160" height="200" fill="#fff" stroke="#111"/>
-					<g id="iv-label-barcode" data-symbology="code128b" data-payload="FILTER-42"></g>
-					<text x="80" y="120" text-anchor="middle" font-size="12">FILTER-42</text>
-				</svg>
-				<figcaption class="iv-label-code" id="iv-label-code">FILTER-42</figcaption>
-			</figure>
-			<p class="iv-actions iv-actions--inline">
-				<a class="button" href="#">Print label</a>
-				<a class="button" href="#">Download SVG</a>
-			</p>
-		</section>
+		<details class="iv-disclosure iv-section iv-label-preview-disclosure">
+			<summary class="iv-disclosure__summary">Label preview</summary>
+			<div class="iv-disclosure__body">
+				<figure class="iv-label-preview">
+					<svg role="img" aria-labelledby="iv-qr-caption" width="160" height="200" viewBox="0 0 160 200">
+						<title id="iv-qr-caption">QR and barcode for FILTER-42</title>
+						<rect width="160" height="200" fill="#fff" stroke="#111"/>
+						<g id="iv-label-barcode" data-symbology="code128b" data-payload="FILTER-42"></g>
+						<text x="80" y="120" text-anchor="middle" font-size="12">FILTER-42</text>
+					</svg>
+					<figcaption class="iv-label-code" id="iv-label-code">FILTER-42</figcaption>
+				</figure>
+			</div>
+		</details>
 	</main>
 </body>
 </html>

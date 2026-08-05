@@ -392,15 +392,60 @@
 
 /* Labels truncate; icons must stay fixed-size (never flex-grow).
  * Historic bug: `.nav-menu span { flex: 1 }` also matched `.iv-nav__icon`,
- * so icons ballooned (~100px) and child indent looked left of the parent text. */
-#app-navigation .nav-menu > li > a > span:not(.iv-nav__icon):not(.nav-parent-chevron),
-#app-navigation .nav-parent-toggle > span:not(.iv-nav__icon):not(.nav-parent-chevron),
+ * so icons ballooned (~100px) and child indent looked left of the parent text.
+ * DutyCheck-style name+hint: `.iv-nav__label` must wrap (not nowrap ellipsis). */
+#app-navigation .nav-menu > li > a > span:not(.iv-nav__icon):not(.nav-parent-chevron):not(.iv-nav__label),
+#app-navigation .nav-parent-toggle > span:not(.iv-nav__icon):not(.nav-parent-chevron):not(.iv-nav__label),
 #app-navigation .nav-submenu > li > a > span {
     flex: 1 1 auto;
     min-width: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+#app-navigation .nav-menu > li > a > .iv-nav__label,
+#app-navigation .nav-parent-toggle > .iv-nav__label {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    white-space: normal;
+    overflow: hidden;
+}
+
+#app-navigation .iv-nav__name,
+#app-navigation .iv-nav__hint {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#app-navigation .iv-nav__hint {
+    font-size: 0.72rem;
+    line-height: 1.25;
+    font-weight: 400;
+    /* Idle: muted against sidebar surface (theme token). */
+    color: var(--color-text-maxcontrast);
+}
+
+/*
+ * Active primary pill uses --color-primary-element + --color-primary-element-text.
+ * Maxcontrast hints stay dark-on-dark / light-on-light across NC themes — fail AA.
+ * Inherit the on-fill token on current/active (and hover of current).
+ */
+#app-navigation .nav-menu > li.active > a .iv-nav__hint,
+#app-navigation .nav-menu > li > a[aria-current="page"] .iv-nav__hint,
+#app-navigation .nav-submenu > li.active > a .iv-nav__hint,
+#app-navigation .nav-submenu > li > a[aria-current="page"] .iv-nav__hint,
+#app-navigation .nav-menu > li.active > a:hover .iv-nav__hint,
+#app-navigation .nav-menu > li > a[aria-current="page"]:hover .iv-nav__hint,
+#app-navigation .nav-submenu > li.active > a:hover .iv-nav__hint,
+#app-navigation .nav-submenu > li > a[aria-current="page"]:hover .iv-nav__hint {
+    color: var(--color-primary-element-text);
 }
 
 #app-navigation .nav-menu .iv-nav__icon,
@@ -524,13 +569,34 @@
     margin-top: 0.25rem;
 }
 
-/* Sidebar labels stay left-aligned (admin-notifications / NC core must not center nav text) */
-#content.app-inventorycheck #app-navigation,
+/*
+ * Sidebar labels stay left-aligned (admin-notifications / NC core must not center nav text).
+ *
+ * CRITICAL: never set width:100% on #app-navigation itself. That overrides NC core’s
+ * $navigation-width (~300px). On viewports <1024px core uses position:fixed +
+ * transform:translateX(-300px); a full-viewport-wide rail then leaves a white slab
+ * covering the content (looks like a broken left overlay).
+ */
+#content.app-inventorycheck #app-navigation {
+    text-align: left;
+    align-items: stretch;
+}
+
 #content.app-inventorycheck #app-navigation .nav-menu,
 #content.app-inventorycheck #app-navigation .nav-submenu {
     text-align: left;
     align-items: stretch;
     width: 100%;
+}
+
+/* Mobile / tablet drawer: pin rail width so NC core’s translate hides the whole panel */
+@media only screen and (width < 1024px) {
+    #content.app-inventorycheck #app-navigation:not(.vue),
+    #content.app-inventorycheck #app-navigation.iv-nav {
+        width: var(--navigation-width, 300px);
+        max-width: var(--navigation-width, 300px);
+        box-sizing: border-box;
+    }
 }
 
 #content.app-inventorycheck #app-navigation .nav-menu a,

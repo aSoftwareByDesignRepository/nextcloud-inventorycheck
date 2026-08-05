@@ -303,10 +303,14 @@ final class ConfigDirectoryValidationTest extends TestCase
 	{
 		$this->access->method('currentUserId')->willReturn('admin');
 		$this->access->expects($this->once())->method('requireAppAdmin');
+		$this->users->method('userExists')->with('alice')->willReturn(true);
 		$this->request->method('getParams')->willReturn([
 			'accessRestrictionEnabled' => '1',
+			'allowedUsers' => ['alice'],
 		]);
 		$this->access->expects($this->once())->method('setAccessRestrictionEnabled')->with(true);
+		$this->access->expects($this->once())->method('setJsonIdList')
+			->with(AccessControlService::KEY_ACCESS_ALLOWED_USER_IDS, ['alice']);
 		$this->access->method('isAppAdmin')->willReturn(true);
 		$this->access->method('isSystemAdmin')->willReturn(true);
 		$this->access->method('isOffice')->willReturn(true);
@@ -315,6 +319,48 @@ final class ConfigDirectoryValidationTest extends TestCase
 		$this->access->method('getJsonIdList')->willReturn([]);
 
 		$this->controller->saveAccess();
+	}
+
+	public function testEnableRestrictionWithEmptyAllowlistsRejected(): void
+	{
+		$this->access->method('currentUserId')->willReturn('admin');
+		$this->access->expects($this->once())->method('requireAppAdmin');
+		$this->request->method('getParams')->willReturn([
+			'accessRestrictionEnabled' => '1',
+			'allowedUsers' => [],
+			'allowedGroups' => [],
+		]);
+		$this->access->method('isAccessRestrictionEnabled')->willReturn(false);
+		$this->access->method('getJsonIdList')->willReturn([]);
+		$this->access->expects($this->never())->method('setAccessRestrictionEnabled');
+		$this->access->expects($this->never())->method('setJsonIdList');
+
+		try {
+			$this->controller->saveAccess();
+			$this->fail('expected ValidationException');
+		} catch (ValidationException $e) {
+			$this->assertSame('access_allowlist_required', $e->getErrorCode());
+		}
+	}
+
+	public function testClearAllowlistsWhileRestrictionOnRejected(): void
+	{
+		$this->access->method('currentUserId')->willReturn('admin');
+		$this->access->expects($this->once())->method('requireAppAdmin');
+		$this->request->method('getParams')->willReturn([
+			'allowedUsers' => [],
+			'allowedGroups' => [],
+		]);
+		$this->access->method('isAccessRestrictionEnabled')->willReturn(true);
+		$this->access->method('getJsonIdList')->willReturn(['alice']);
+		$this->access->expects($this->never())->method('setJsonIdList');
+
+		try {
+			$this->controller->saveAccess();
+			$this->fail('expected ValidationException');
+		} catch (ValidationException $e) {
+			$this->assertSame('access_allowlist_required', $e->getErrorCode());
+		}
 	}
 
 	public function testInvalidBoolRejected(): void
@@ -355,5 +401,66 @@ final class ConfigDirectoryValidationTest extends TestCase
 		} catch (ValidationException $e) {
 			$this->assertSame('unknown_group', $e->getErrorCode());
 		}
+	}
+
+	public function testSaveLocationAclEnabledOnlySkipsEmptySubject(): void
+	{
+		$this->access->method('currentUserId')->willReturn('admin');
+		$this->access->expects($this->exactly(2))->method('requireAppAdmin')->with('admin');
+		$this->request->method('getParams')->willReturn([
+			'enabled' => true,
+			'subjectType' => 'user',
+			'subjectId' => '',
+			'locationIds' => [],
+		]);
+		$this->locationAcl->expects($this->once())->method('setEnabled')->with(true);
+		$this->locationAcl->expects($this->never())->method('setForSubject');
+		$this->locationAcl->method('isEnabled')->willReturn(true);
+		$this->locationAcl->method('isDevicesStrict')->willReturn(false);
+		$this->locationAcl->method('listAll')->willReturn([]);
+
+		$response = $this->controller->saveLocationAcl();
+		$this->assertSame(200, $response->getStatus());
+	}
+
+	public function testSaveLocationAclPersistsDevicesStrict(): void
+	{
+		$this->access->method('currentUserId')->willReturn('admin');
+		$this->access->expects($this->exactly(2))->method('requireAppAdmin')->with('admin');
+		$this->request->method('getParams')->willReturn([
+			'enabled' => true,
+			'devicesStrict' => true,
+		]);
+		$this->locationAcl->expects($this->once())->method('setEnabled')->with(true);
+		$this->locationAcl->expects($this->once())->method('setDevicesStrict')->with(true);
+		$this->locationAcl->method('isEnabled')->willReturn(true);
+		$this->locationAcl->method('isDevicesStrict')->willReturn(true);
+		$this->locationAcl->method('listAll')->willReturn([]);
+
+		$response = $this->controller->saveLocationAcl();
+		$data = $response->getData();
+		$this->assertTrue($data['devicesStrict']);
+	}
+
+	public function testSaveLocationAclCommitsEnabledAfterAssignmentsInSource(): void
+	{
+		$src = (string)file_get_contents(dirname(__DIR__, 3) . '/lib/Controller/ConfigController.php');
+		$phase2 = strpos($src, 'Phase 2 — assignments first');
+		$this->assertNotFalse($phase2);
+		$replacePos = strpos($src, 'replaceAll($uid, $assignments)', $phase2);
+		$strictPos = strpos($src, 'setDevicesStrict($devicesStrict)', $phase2);
+		$enabledPos = strpos($src, 'setEnabled($enabled)', $phase2);
+		$this->assertNotFalse($replacePos);
+		$this->assertNotFalse($strictPos);
+		$this->assertNotFalse($enabledPos);
+		$this->assertLessThan($enabledPos, $replacePos, 'enabled must commit after assignment writes');
+		$this->assertLessThan($enabledPos, $strictPos, 'devicesStrict must commit before enabled (no unbound org-wide window)');
+	}
+
+	public function testAccessAllowlistRequiredGatePresentInSource(): void
+	{
+		$src = (string)file_get_contents(dirname(__DIR__, 3) . '/lib/Controller/ConfigController.php');
+		$this->assertStringContainsString('access_allowlist_required', $src);
+		$this->assertStringContainsString('$effectiveRestriction', $src);
 	}
 }

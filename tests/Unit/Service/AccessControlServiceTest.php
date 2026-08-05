@@ -283,4 +283,24 @@ final class AccessControlServiceTest extends TestCase
 		$this->acl->setAllowNegativeStock(false);
 		$this->assertFalse($this->acl->allowNegativeStock());
 	}
+
+	public function testPurgeUserScrubsAdminAllowOfficeAndNotifyLists(): void
+	{
+		$this->acl->setJsonIdList(AccessControlService::KEY_APP_ADMINS, ['gone', 'keep-admin']);
+		$this->acl->setJsonIdList(AccessControlService::KEY_ACCESS_ALLOWED_USER_IDS, ['gone', 'keep-allow']);
+		$this->acl->setJsonIdList(AccessControlService::KEY_OFFICE_USER_IDS, ['gone', 'keep-office']);
+		$this->acl->setJsonIdList(\OCA\InventoryCheck\Service\LowStockNotifyService::KEY_NOTIFY_USER_IDS, ['gone', 'keep-notify']);
+
+		$this->acl->purgeUser('gone');
+		$this->acl->purgeUser('gone'); // idempotent
+		$this->acl->purgeUser('');
+
+		$this->assertSame(['keep-admin'], $this->acl->getJsonIdList(AccessControlService::KEY_APP_ADMINS));
+		$this->assertSame(['keep-allow'], $this->acl->getJsonIdList(AccessControlService::KEY_ACCESS_ALLOWED_USER_IDS));
+		$this->assertSame(['keep-office'], $this->acl->getJsonIdList(AccessControlService::KEY_OFFICE_USER_IDS));
+		$this->assertSame(
+			['keep-notify'],
+			$this->acl->getJsonIdList(\OCA\InventoryCheck\Service\LowStockNotifyService::KEY_NOTIFY_USER_IDS),
+		);
+	}
 }

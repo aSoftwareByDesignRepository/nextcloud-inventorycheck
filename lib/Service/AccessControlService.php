@@ -174,9 +174,11 @@ class AccessControlService
 		);
 	}
 
-	
 	/**
-	 * Portfolio §2.1 / user lifecycle: strip deleted UIDs from app-admin and allow lists.
+	 * Portfolio §2.1 / GDPR user-delete: strip deleted UIDs from every
+	 * authorization JSON list (app-admin, allow, office, low-stock notify).
+	 * Seats / favourites / location ACL grants are purged by
+	 * {@see \OCA\InventoryCheck\Listener\UserDeletedListener}.
 	 * Idempotent — missing uid is a no-op.
 	 */
 	public function purgeUser(string $userId): void
@@ -184,7 +186,12 @@ class AccessControlService
 		if ($userId === '') {
 			return;
 		}
-		foreach ([self::KEY_APP_ADMINS, self::KEY_ACCESS_ALLOWED_USER_IDS] as $key) {
+		foreach ([
+			self::KEY_APP_ADMINS,
+			self::KEY_ACCESS_ALLOWED_USER_IDS,
+			self::KEY_OFFICE_USER_IDS,
+			LowStockNotifyService::KEY_NOTIFY_USER_IDS,
+		] as $key) {
 			$ids = $this->getJsonIdList($key);
 			$filtered = array_values(array_filter(
 				$ids,

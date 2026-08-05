@@ -111,6 +111,7 @@ class Application extends App implements IBootstrap
 				$c->get(IGroupManager::class),
 				$c->get(IUserManager::class),
 				$c->get(LocationMapper::class),
+				$c->get(ScanDeviceMapper::class),
 			);
 		});
 		$context->registerService(QtyScaleService::class, static function ($c): QtyScaleService {
@@ -128,6 +129,8 @@ class Application extends App implements IBootstrap
 				$c->get(Clock::class),
 				$c->get(LocationAclService::class),
 				$c->get(CycleCampaignMapper::class),
+				$c->get(ItemMapper::class),
+				$c->get(ILockingProvider::class),
 			);
 		});
 		$context->registerService(ItemService::class, static function ($c): ItemService {
@@ -141,6 +144,7 @@ class Application extends App implements IBootstrap
 				$c->get(LocationAclService::class),
 				$c->get(IConfig::class),
 				$c->get(CycleLineMapper::class),
+				$c->get(LocationMapper::class),
 			);
 		});
 		$context->registerService(BalanceService::class, static function ($c): BalanceService {
@@ -209,6 +213,15 @@ class Application extends App implements IBootstrap
 				$c->get(Clock::class),
 				$c->get(IConfig::class),
 				$c->get(ILockingProvider::class),
+				$c->get(IRequest::class),
+			);
+		});
+		$context->registerService(UserDeletedListener::class, static function ($c): UserDeletedListener {
+			return new UserDeletedListener(
+				$c->get(AccessControlService::class),
+				$c->get(LicenseService::class),
+				$c->get(LocationFavouriteMapper::class),
+				$c->get(LocationAclService::class),
 			);
 		});
 		$context->registerService(MobileGateService::class, static function ($c): MobileGateService {
@@ -217,6 +230,7 @@ class Application extends App implements IBootstrap
 				$c->get(AccessControlService::class),
 				$c->get(Clock::class),
 				$c->get(IConfig::class),
+				$c->get(LocationAclService::class),
 			);
 		});
 

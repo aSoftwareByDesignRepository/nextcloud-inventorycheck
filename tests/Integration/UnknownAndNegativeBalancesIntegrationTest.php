@@ -124,7 +124,7 @@ final class UnknownAndNegativeBalancesIntegrationTest extends TestCase
 		$this->movements->receive($this->uid, $itemId, (int)$locA['id'], 3, 'seed');
 		// Touch loc B then adjust back to zero so a zero row exists.
 		$this->movements->receive($this->uid, $itemId, (int)$locB['id'], 2, 'tmp');
-		$this->movements->adjust($this->uid, $itemId, (int)$locB['id'], 'set', 0, null, 'clear');
+		$this->movements->adjust($this->uid, $itemId, (int)$locB['id'], 'set', 0, null, 'clear', null, true, 'correction');
 
 		$nonZero = $this->balances->list($this->uid, $itemId, null, true, 50, 0, false);
 		$this->assertGreaterThanOrEqual(1, $nonZero['total']);

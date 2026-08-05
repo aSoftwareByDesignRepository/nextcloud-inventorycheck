@@ -50,7 +50,13 @@ class CycleCountController extends Controller
 	#[NoAdminRequired]
 	public function show(int $id): JSONResponse
 	{
-		return new JSONResponse($this->formatCampaign($this->cycles->get($this->access->currentUserId(), $id)));
+		$page = Pagination::parse($this->request->getParam('limit'), $this->request->getParam('offset'));
+		return new JSONResponse($this->formatCampaign($this->cycles->get(
+			$this->access->currentUserId(),
+			$id,
+			$page['limit'],
+			$page['offset'],
+		)));
 	}
 
 	#[NoAdminRequired]

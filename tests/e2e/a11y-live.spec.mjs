@@ -8,12 +8,21 @@ import { ensureLoggedIn, credsFromEnv, openInventory } from './helpers/auth.mjs'
  * Scoped to #app-content.iv-app so Nextcloud chrome is out of scope.
  */
 const routes = [
-	{ path: '/apps/inventorycheck/', ready: '#iv-page-title, .iv-section, .iv-empty', creds: 'E2E' },
-	{ path: '/apps/inventorycheck/items', ready: '#iv-page-title, #iv-items-filter-panel, .iv-filter-panel, .iv-empty', creds: 'E2E' },
-	{ path: '/apps/inventorycheck/locations', ready: '#iv-page-title, #iv-loc-filter-panel, .iv-filter-panel, .iv-empty', creds: 'E2E' },
-	{ path: '/apps/inventorycheck/movements', ready: '#iv-page-title, .iv-filter-panel, .iv-filterbar, .iv-empty', creds: 'E2E' },
-	{ path: '/apps/inventorycheck/stocktake', ready: '#iv-page-title, .iv-section, .iv-empty, .iv-row', creds: 'E2E' },
-	{ path: '/apps/inventorycheck/settings', ready: '#iv-page-title, #iv-support-us, .iv-section', creds: 'ADMIN' },
+	{ path: '/apps/inventorycheck/', ready: '#iv-page-title, .iv-howto, .iv-section, .iv-empty', creds: 'E2E' },
+	{ path: '/apps/inventorycheck/items', ready: '#iv-page-title, .iv-howto, #iv-items-filter-panel, .iv-filter-panel, .iv-empty', creds: 'E2E' },
+	{ path: '/apps/inventorycheck/locations', ready: '#iv-page-title, .iv-howto, #iv-loc-filter-panel, .iv-filter-panel, .iv-empty', creds: 'E2E' },
+	{ path: '/apps/inventorycheck/movements', ready: '#iv-page-title, .iv-howto, .iv-filter-panel, .iv-filterbar, .iv-empty', creds: 'E2E' },
+	{ path: '/apps/inventorycheck/stocktake', ready: '#iv-page-title, .iv-howto, .iv-stocktake-howto, .iv-section, .iv-empty, .iv-row', creds: 'E2E' },
+	{ path: '/apps/inventorycheck/stocktake/create', ready: '#iv-page-title, .iv-howto, .iv-stocktake-howto, .iv-stocktake-new, [data-iv-loc-chooser="1"], .iv-empty', creds: 'E2E' },
+	{ path: '/apps/inventorycheck/settings/access', ready: '#iv-page-title, #iv-access-title, .iv-settings-page', creds: 'ADMIN' },
+	{ path: '/apps/inventorycheck/settings/office', ready: '#iv-page-title, .iv-howto, #iv-office-title, .iv-settings-page', creds: 'ADMIN' },
+	{ path: '/apps/inventorycheck/settings/notifications', ready: '#iv-page-title, .iv-howto, #iv-notify-title, .iv-settings-page', creds: 'ADMIN' },
+	{ path: '/apps/inventorycheck/settings/quantities', ready: '#iv-page-title, .iv-howto, #iv-frac-title, .iv-settings-page', creds: 'ADMIN' },
+	{ path: '/apps/inventorycheck/settings/location-access', ready: '#iv-page-title, .iv-howto, #iv-loc-acl-title, .iv-settings-page', creds: 'ADMIN' },
+	{ path: '/apps/inventorycheck/settings/connections', ready: '#iv-page-title, .iv-howto, #iv-connections-title, .iv-settings-page', creds: 'ADMIN' },
+	{ path: '/apps/inventorycheck/settings/policies', ready: '#iv-page-title, .iv-howto, #iv-policies-title, .iv-settings-page', creds: 'ADMIN' },
+	{ path: '/apps/inventorycheck/settings/license', ready: '#iv-page-title, .iv-howto, #iv-license-title, .iv-settings-page', creds: 'ADMIN' },
+	{ path: '/apps/inventorycheck/settings/support', ready: '#iv-page-title, .iv-howto, #iv-support-us, [data-support-us="1"]', creds: 'ADMIN' },
 ]
 
 for (const route of routes) {
@@ -45,7 +54,13 @@ test('movement dialog opens with labelled fields (A6)', async ({ page }) => {
 	await issue.click()
 	const dialog = page.locator('.iv-dialog, [aria-modal="true"]').first()
 	await expect(dialog).toBeVisible({ timeout: 10_000 })
-	await expect(dialog.getByLabel(/Item|Artikel/i).or(dialog.locator('select').first())).toBeVisible()
+	await expect(dialog.locator('.iv-dialog__title, #iv-dialog-title')).toBeVisible()
+	const qty = dialog.locator('input[type="number"], input[type="text"], input[type="search"]').first()
+	await expect(qty).toBeVisible({ timeout: 10_000 })
+	// Desktop focus must never inflate the dialog with fake soft-keyboard padding.
+	await qty.focus()
+	await expect(dialog).not.toHaveAttribute('style', /padding-bottom:\s*[1-9]\d{2,}px/)
+	await expect(dialog.locator('.iv-dialog__body')).not.toHaveAttribute('style', /padding-bottom:\s*[1-9]\d{2,}px/)
 	await page.keyboard.press('Escape')
 	await expect(dialog).toBeHidden({ timeout: 5_000 })
 })

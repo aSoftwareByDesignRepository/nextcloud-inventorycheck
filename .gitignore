@@ -1,11 +1,54 @@
+# Dependencies
 /vendor/
 /node_modules/
+
+# PHPUnit / coverage
+.phpunit.result.cache
+tests/coverage/
+tests/results.xml
 /test-results/
 /playwright-report/
 /blob-report/
+
+# E2E secrets and artifacts (never publish)
 /tests/e2e/.env
 /tests/e2e/.auth/
 /tests/e2e/artifacts/
-.phpunit.result.cache
+
+# Composer bootstrap junk
 /composer.phar
 /composer-setup.php
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Never commit signing or TLS material
+*.key
+*.crt
+*.pem
+*.p12
+*.pfx
+*.cer
+*.csr
+.nextcloud/
+
+# Nextcloud local dev paths (if ever copied into the tree)
+data/
+config/config.php
+
+# Build / release artifacts
+/build/
+appinfo/signature.json
+
+# Internal UAT / surplus docs (do not reintroduce into the public tree)
+/docs/

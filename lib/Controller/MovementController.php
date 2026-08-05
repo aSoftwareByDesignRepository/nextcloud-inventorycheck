@@ -81,6 +81,7 @@ class MovementController extends Controller
 			$this->toStorageQty($p['qty'] ?? 0),
 			isset($p['reason']) ? (string)$p['reason'] : null,
 			$this->lotCodeParam($p),
+			$this->locationCodeParam($p),
 		)));
 	}
 
@@ -97,6 +98,8 @@ class MovementController extends Controller
 			$this->toStorageQty($p['qty'] ?? 0),
 			isset($p['reason']) ? (string)$p['reason'] : null,
 			$this->lotCodeParam($p),
+			$this->locationCodeParam($p),
+			$this->toLocationCodeParam($p),
 		)));
 	}
 
@@ -135,7 +138,8 @@ class MovementController extends Controller
 			$this->access->isOffice($uid),
 			$this->lotCodeParam($p),
 			isset($p['reasonCode']) ? (string)$p['reasonCode'] : (isset($p['reason_code']) ? (string)$p['reason_code'] : null),
-			isset($p['locationCode']) ? (string)$p['locationCode'] : (isset($p['location_code']) ? (string)$p['location_code'] : null),
+			$this->locationCodeParam($p),
+			$this->toLocationCodeParam($p),
 		)));
 	}
 
@@ -151,6 +155,30 @@ class MovementController extends Controller
 			return null;
 		}
 		return (string)$p['lotCode'];
+	}
+
+	/** @param array<string, mixed> $p */
+	private function locationCodeParam(array $p): ?string
+	{
+		if (isset($p['locationCode']) && $p['locationCode'] !== '') {
+			return (string)$p['locationCode'];
+		}
+		if (isset($p['location_code']) && $p['location_code'] !== '') {
+			return (string)$p['location_code'];
+		}
+		return null;
+	}
+
+	/** @param array<string, mixed> $p */
+	private function toLocationCodeParam(array $p): ?string
+	{
+		if (isset($p['toLocationCode']) && $p['toLocationCode'] !== '') {
+			return (string)$p['toLocationCode'];
+		}
+		if (isset($p['to_location_code']) && $p['to_location_code'] !== '') {
+			return (string)$p['to_location_code'];
+		}
+		return null;
 	}
 
 	/**

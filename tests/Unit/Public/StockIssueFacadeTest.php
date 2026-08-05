@@ -527,4 +527,59 @@ class StockIssueFacadeTest extends TestCase
 		$this->assertSame('idempotent_replay', $result->code);
 		$this->assertSame(777, $result->data['movements'][0]['movementId'] ?? null);
 	}
+
+	/**
+	 * Multi-SKU posts must lock items in ascending id order (ABBA-safe vs inventur).
+	 */
+	public function testMultiSkuPostsInAscendingItemIdOrder(): void
+	{
+		$low = new Item();
+		$low->setId(5);
+		$low->setSku('AAA');
+		$low->setActive(true);
+		$high = new Item();
+		$high->setId(50);
+		$high->setSku('ZZZ');
+		$high->setActive(true);
+		$this->items->method('findBySku')->willReturnCallback(
+			static fn (string $sku): ?Item => match ($sku) {
+				'ZZZ' => $high,
+				'AAA' => $low,
+				default => null,
+			},
+		);
+		$this->movementMapper->method('findByRef')->willReturn([]);
+		$this->movementMapper->method('findByRefAndItemId')->willReturn(null);
+		$loc = new Location();
+		$loc->setId(3);
+		$loc->setActive(true);
+		$this->locations->method('findById')->willReturn($loc);
+		$this->db->method('beginTransaction');
+		$this->db->method('commit');
+		$this->db->method('inTransaction')->willReturn(false);
+
+		$seen = [];
+		$this->movements->method('issueWithRef')->willReturnCallback(
+			static function (string $actor, int $itemId) use (&$seen): array {
+				$seen[] = $itemId;
+				return ['movements' => [['id' => $itemId]], 'balances' => []];
+			},
+		);
+
+		$result = $this->facade->issueBySkuBundle(new StockIssueRequest(
+			actorUid: 'tech',
+			// Deliberately reverse of item id order
+			lines: [
+				['sku' => 'ZZZ', 'qty' => 1],
+				['sku' => 'AAA', 'qty' => 1],
+			],
+			locationPolicy: StockIssueRequest::POLICY_EXPLICIT,
+			refType: StockIssueRequest::REF_MAINT_WO,
+			refId: 77,
+			locationId: 3,
+		));
+
+		$this->assertTrue($result->ok);
+		$this->assertSame([5, 50], $seen, 'must post lowest itemId first regardless of SKU order');
+	}
 }

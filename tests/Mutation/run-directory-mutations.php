@@ -18,20 +18,20 @@ runMutations(dirname(__DIR__, 2), 'DirectoryOptionsServiceTest|DirectoryControll
 	[
 		'name' => 'searchUsers-blank-query-guard-dropped',
 		'file' => $service,
-		'search' => "if (\$query === '' || \$limit < 1) {\n\t\t\treturn [];\n\t\t}",
+		'search' => "if (mb_strlen(\$query) < 2 || \$limit < 1) {\n\t\t\treturn [];\n\t\t}",
 		'replace' => "if (false) {\n\t\t\treturn [];\n\t\t}",
 	],
 	[
 		'name' => 'searchUsers-limit-cap-removed',
 		'file' => $service,
-		'search' => "\$limit = min(self::MAX_LIMIT, \$limit);\n\t\t\$out = [];\n\t\tforeach (\$this->userManager->search(\$query, \$limit) as \$user) {",
-		'replace' => "\$out = [];\n\t\tforeach (\$this->userManager->search(\$query, \$limit) as \$user) {",
+		'search' => "\$limit = min(self::MAX_LIMIT, \$limit);\n\t\t\$byId = \$this->userManager->search(\$query, \$limit, 0) ?? [];",
+		'replace' => "\$byId = \$this->userManager->search(\$query, \$limit, 0) ?? [];",
 	],
 	[
 		'name' => 'searchUsers-empty-uid-not-skipped',
 		'file' => $service,
-		'search' => "\$uid = trim((string)\$user->getUID());\n\t\t\tif (\$uid === '') {\n\t\t\t\tcontinue;\n\t\t\t}",
-		'replace' => "\$uid = trim((string)\$user->getUID());\n\t\t\tif (false) {\n\t\t\t\tcontinue;\n\t\t\t}",
+		'search' => "if (\$uid === '' || isset(\$merged[\$uid])) {\n\t\t\t\tcontinue;\n\t\t\t}",
+		'replace' => "if (isset(\$merged[\$uid])) {\n\t\t\t\tcontinue;\n\t\t\t}",
 	],
 	[
 		'name' => 'searchUsers-displayName-fallback-removed',

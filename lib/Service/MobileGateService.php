@@ -21,12 +21,15 @@ class MobileGateService
 	private const COMPANION_API_WAVE_D = 3;
 	/** Mobile favourites + cycle-count endpoints for companion P1/P2. */
 	private const COMPANION_API_MOBILE_STOCKTAKE = 4;
+	/** Mobile read-only item photo GET. */
+	private const COMPANION_API_ITEM_PHOTO = 5;
 
 	public function __construct(
 		private readonly LicenseService $license,
 		private readonly AccessControlService $access,
 		private readonly Clock $clock,
 		private readonly IConfig $config,
+		private readonly LocationAclService $locationAcl,
 	) {
 	}
 
@@ -61,11 +64,21 @@ class MobileGateService
 			}
 		}
 		$qtyScale = QtyScale::current($this->config);
-		$companionApi = self::COMPANION_API_MOBILE_STOCKTAKE;
-		if ($qtyScale === QtyScale::SCALE_MILLI && $companionApi < self::COMPANION_API_FRACTIONAL) {
-			$companionApi = self::COMPANION_API_FRACTIONAL;
-		}
+		// Always advertise the highest shipped companion API; bump further only
+		// when fractional qty requires a higher floor than the photo endpoint.
+		$companionApi = max(
+			self::COMPANION_API_ITEM_PHOTO,
+			$qtyScale === QtyScale::SCALE_MILLI ? self::COMPANION_API_FRACTIONAL : self::COMPANION_API_BASE,
+		);
 		$isOffice = $userId !== null && $userId !== '' && $this->access->isOffice($userId);
+		$deviceLocationIds = null;
+		$deviceLocationUnbound = false;
+		if ($device !== null) {
+			$deviceLocationIds = $this->locationAcl->visibleLocationIds('device:' . (int)$device->getId());
+			$deviceLocationUnbound = $this->locationAcl->isEnabled()
+				&& !$this->locationAcl->isDevicesStrict()
+				&& $deviceLocationIds === null;
+		}
 		return [
 			'licensing' => $licensing,
 			'seatAssigned' => $seatAssigned,
@@ -75,14 +88,23 @@ class MobileGateService
 			'companionApi' => $companionApi,
 			'requireAdjustReason' => ReasonCodes::isRequired($this->config),
 			'requireLocationScan' => LocationScanPolicy::isRequired($this->config),
+			'locationAclEnabled' => $this->locationAcl->isEnabled(),
+			'locationAclDevicesStrict' => $this->locationAcl->isDevicesStrict(),
+			/** null = unrestricted (ACL off or unbound device); list = restricted grants */
+			'deviceLocationIds' => $deviceLocationIds,
+			/** true when ACL is on, strict is off, and this scanner has zero grants */
+			'deviceLocationUnbound' => $deviceLocationUnbound,
 			'capabilities' => [
 				'csv' => true,
 				'photos' => true,
+				'itemPhoto' => true,
 				'cycleCount' => true,
 				'bulkLabels' => true,
 				'locationByCode' => true,
 				'reasonCodes' => true,
 				'favourites' => true,
+				'deviceLocationAcl' => true,
+				'deviceLocationStrict' => true,
 				'qtyScale' => $qtyScale,
 			],
 			'reasonCodes' => ReasonCodes::catalog(),

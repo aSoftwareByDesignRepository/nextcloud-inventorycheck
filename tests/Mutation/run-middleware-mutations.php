@@ -19,6 +19,12 @@ runMutations(dirname(__DIR__, 2), 'AppAccessMiddlewareEnvelopeTest', [
 		'replace' => "if (false) {\n\t\t\treturn;\n\t\t}",
 	],
 	[
+		'name' => 'af-iv20-web-402-guard-removed',
+		'file' => $file,
+		'search' => "if (!str_contains(\$class, 'MobileController')) {\n\t\t\t\tthrow \$exception;\n\t\t\t}",
+		'replace' => "if (false) {\n\t\t\t\tthrow \$exception;\n\t\t\t}",
+	],
+	[
 		'name' => 'json-route-api-check-dropped',
 		'file' => $file,
 		'search' => "return str_contains(\$path, '/api/')\n\t\t\t|| str_contains(\$path, '/mobile/')\n\t\t\t|| \$this->request->getMethod() !== 'GET';",
@@ -53,6 +59,12 @@ runMutations(dirname(__DIR__, 2), 'AppAccessMiddlewareEnvelopeTest', [
 		'file' => $file,
 		'search' => "if (\$exception->getErrorCode() === 'rate_limited') {\n\t\t\t\treturn \$this->envelope(\n\t\t\t\t\t'rate_limited',\n\t\t\t\t\t\$l->t('Too many pairing attempts. Try again later.'),\n\t\t\t\t\t429,\n\t\t\t\t);",
 		'replace' => "if (\$exception->getErrorCode() === 'rate_limited') {\n\t\t\t\treturn \$this->envelope(\n\t\t\t\t\t'rate_limited',\n\t\t\t\t\t\$l->t('Too many pairing attempts. Try again later.'),\n\t\t\t\t\tself::HTTP_PAYMENT_REQUIRED,\n\t\t\t\t);",
+	],
+	[
+		'name' => 'item-lock-conflict-maps-to-409',
+		'file' => $file,
+		'search' => "\$status = \$code === 'item_lock_conflict'\n\t\t\t\t? Http::STATUS_LOCKED\n\t\t\t\t: Http::STATUS_CONFLICT;",
+		'replace' => "\$status = \$code === 'item_lock_conflict'\n\t\t\t\t? Http::STATUS_CONFLICT\n\t\t\t\t: Http::STATUS_CONFLICT;",
 	],
 	[
 		'name' => 'access-denied-code-wrong',

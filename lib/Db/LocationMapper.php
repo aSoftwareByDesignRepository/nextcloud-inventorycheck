@@ -61,6 +61,24 @@ class LocationMapper extends QBMapper
 	}
 
 	/**
+	 * All location codes for item↔location cross-uniqueness (EXEC A7).
+	 *
+	 * @return list<string>
+	 */
+	public function allCodes(): array
+	{
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('code')->from($this->getTableName());
+		$result = $qb->executeQuery();
+		$codes = [];
+		while ($row = $result->fetch()) {
+			$codes[] = (string)$row['code'];
+		}
+		$result->closeCursor();
+		return $codes;
+	}
+
+	/**
 	 * @param list<int>|null $idFilter restrict to these ids (null = no filter, [] = empty result)
 	 * @return array{data: list<Location>, total: int}
 	 */

@@ -80,9 +80,18 @@ class MovementService
 	/**
 	 * @return array{movements: list<array<string, mixed>>, balances: list<array<string, mixed>>}
 	 */
-	public function issue(string $actorUid, int $itemId, int $locationId, int $qty, ?string $reason, ?string $lotCode = null): array
-	{
+	public function issue(
+		string $actorUid,
+		int $itemId,
+		int $locationId,
+		int $qty,
+		?string $reason,
+		?string $lotCode = null,
+		?string $locationCode = null,
+	): array {
 		$this->assertLocationAccess($actorUid, $locationId);
+		// Wave D8 / AF-IV12: web issue must honour require_location_scan (not only /scan).
+		LocationScanPolicy::assertMatches($this->config, $this->locations, $locationId, $locationCode);
 		return $this->postSingle($actorUid, 'issue', $itemId, $locationId, $qty, $reason, $lotCode, true);
 	}
 
@@ -97,6 +106,8 @@ class MovementService
 		int $qty,
 		?string $reason,
 		?string $lotCode = null,
+		?string $locationCode = null,
+		?string $toLocationCode = null,
 	): array {
 		if ($fromLocationId === $toLocationId) {
 			throw new ValidationException('same_location');
@@ -106,6 +117,15 @@ class MovementService
 		}
 		$this->assertLocationAccess($actorUid, $fromLocationId);
 		$this->assertLocationAccess($actorUid, $toLocationId);
+		// Wave D8 / AF-IV12: confirm both ends when policy is on.
+		LocationScanPolicy::assertMatches($this->config, $this->locations, $fromLocationId, $locationCode);
+		LocationScanPolicy::assertMatches(
+			$this->config,
+			$this->locations,
+			$toLocationId,
+			$toLocationCode,
+			'toLocationCode',
+		);
 		$reason = $this->normalizeReason($reason);
 
 		$allowNeg = $this->access->allowNegativeStock();
@@ -263,6 +283,10 @@ class MovementService
 		int $refId,
 		bool $notifyLowStock = true,
 	): array {
+		// Defense in depth: FlangeService already requireOffice, but in-process
+		// StockIssueFacade callers must not skip office / location ACL.
+		$this->access->requireOffice($actorUid);
+		$this->assertLocationAccess($actorUid, $locationId);
 		$refType = CodeRules::trim($refType);
 		if ($refType === '' || mb_strlen($refType) > 32 || $refId <= 0) {
 			throw new ValidationException('validation_failed', '', [
@@ -339,6 +363,7 @@ class MovementService
 		?string $lotCode = null,
 		?string $reasonCode = null,
 		?string $locationCode = null,
+		?string $toLocationCode = null,
 	): array {
 		$item = $this->items->resolveByCode(CodeRules::trim($code));
 		if ($item === null) {
@@ -347,19 +372,35 @@ class MovementService
 		$kind = strtolower(trim($kind));
 		$itemId = (int)$item->getId();
 
+		// ACL before location-code checks — otherwise a wrong code on a hidden
+		// location returns location_code_mismatch and proves the shelf exists.
+		$this->assertLocationAccess($actorUid, $locationId);
+		if ($kind === 'transfer' && $toLocationId !== null && $toLocationId > 0) {
+			$this->assertLocationAccess($actorUid, $toLocationId);
+		}
+
 		LocationScanPolicy::assertMatches($this->config, $this->locations, $locationId, $locationCode);
 
 		return match ($kind) {
 			'receive' => $asOffice
 				? $this->receive($actorUid, $itemId, $locationId, (int)$qty, $reason, $lotCode)
 				: throw new PermissionDeniedException(),
-			'issue' => $this->issue($actorUid, $itemId, $locationId, (int)$qty, $reason, $lotCode),
+			// issue/transfer re-assert inside their methods (web API paths share the gate).
+			'issue' => $this->issue($actorUid, $itemId, $locationId, (int)$qty, $reason, $lotCode, $locationCode),
 			'transfer' => $toLocationId === null || $toLocationId <= 0
 				? throw new ValidationException('validation_failed', '', [
 					['field' => 'toLocationId', 'code' => 'validation_failed'],
 				])
 				: $this->transfer(
-					$actorUid, $itemId, $locationId, $toLocationId, (int)$qty, $reason, $lotCode,
+					$actorUid,
+					$itemId,
+					$locationId,
+					$toLocationId,
+					(int)$qty,
+					$reason,
+					$lotCode,
+					$locationCode,
+					$toLocationCode,
 				),
 			'adjust' => $asOffice
 				? $this->adjust($actorUid, $itemId, $locationId, 'delta', null, $qtyDelta, $reason, $lotCode, true, $reasonCode)
@@ -411,11 +452,61 @@ class MovementService
 			$reasonCode,
 		);
 		return [
-			'data' => array_map(static fn (Movement $m) => $m->toApi(), $result['data']),
+			'data' => array_map(fn (Movement $m) => $this->movementToListApi($m), $result['data']),
 			'total' => $result['total'],
 			'limit' => $limit,
 			'offset' => $offset,
 		];
+	}
+
+	/**
+	 * Join item name+sku and location code+name for companion Recent / API lists.
+	 * Keys are always present; deleted masters yield null (row stays listable).
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function movementToListApi(Movement $m): array
+	{
+		$itemName = null;
+		$sku = null;
+		$locationCode = null;
+		$locationName = null;
+		try {
+			$item = $this->items->findById($m->getItemId());
+			$itemName = $item->getName();
+			$sku = $item->getSku();
+		} catch (\Throwable) {
+			// Keep numeric ids when the item row is gone.
+		}
+		try {
+			$loc = $this->locations->findById($m->getLocationId());
+			$locationCode = $loc->getCode();
+			$locationName = $loc->getName();
+		} catch (\Throwable) {
+			// Keep numeric ids when the location row is gone.
+		}
+		return self::withDisplayNames($m->toApi(), $itemName, $sku, $locationCode, $locationName);
+	}
+
+	/**
+	 * Attach display fields used by companion Recent. QtyScale formatting must
+	 * leave these keys untouched.
+	 *
+	 * @param array<string, mixed> $api
+	 * @return array<string, mixed>
+	 */
+	public static function withDisplayNames(
+		array $api,
+		?string $itemName,
+		?string $sku,
+		?string $locationCode,
+		?string $locationName,
+	): array {
+		$api['itemName'] = $itemName;
+		$api['sku'] = $sku;
+		$api['locationCode'] = $locationCode;
+		$api['locationName'] = $locationName;
+		return $api;
 	}
 
 	/**
@@ -572,10 +663,12 @@ class MovementService
 	 * race-free.
 	 *
 	 * track_mode is peeked (unlocked) first purely to pick the lock
-	 * strength; the authoritative value is re-read from the locked row, and
-	 * if it turns out to be serial after all (track_mode flipped between
-	 * the peek and the lock) the lock is escalated to exclusive before any
-	 * balance work happens, closing that narrow race window too.
+	 * strength; the authoritative value is re-read from the locked row.
+	 * If it turns out to be serial after a shared lock was taken, we do
+	 * **not** escalate in-place (SHARE→EXCLUSIVE upgrade deadlocks when two
+	 * transactions both hold SHARE and both escalate). Instead we abort with
+	 * {@see ConflictException} `item_lock_conflict` so the client retries and
+	 * the next attempt peeks serial and takes EXCLUSIVE from the start.
 	 */
 	private function lockActiveItemForMovement(int $itemId): Item
 	{
@@ -586,9 +679,8 @@ class MovementService
 		if (!$item->getActive()) {
 			throw new ValidationException('inactive_item');
 		}
-		// track_mode may have flipped to serial between peek and lock — escalate.
 		if (!$exclusive && $item->getTrackMode() === 'serial') {
-			$item = $this->items->lockById($itemId, true);
+			throw new ConflictException('item_lock_conflict');
 		}
 		return $item;
 	}

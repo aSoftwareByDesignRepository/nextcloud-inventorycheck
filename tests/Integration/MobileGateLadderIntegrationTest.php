@@ -10,8 +10,16 @@ use OCA\InventoryCheck\Exception\AppAccessDeniedException;
 use OCA\InventoryCheck\Exception\MobileGateException;
 use OCA\InventoryCheck\Middleware\AppAccessMiddleware;
 use OCA\InventoryCheck\Service\AccessControlService;
+use OCA\InventoryCheck\Service\BalanceService;
+use OCA\InventoryCheck\Service\CycleCountService;
 use OCA\InventoryCheck\Service\DevicePairingService;
+use OCA\InventoryCheck\Service\ItemPhotoService;
+use OCA\InventoryCheck\Service\ItemService;
 use OCA\InventoryCheck\Service\LicenseService;
+use OCA\InventoryCheck\Service\LocationFavouriteService;
+use OCA\InventoryCheck\Service\LocationService;
+use OCA\InventoryCheck\Service\MobileGateService;
+use OCA\InventoryCheck\Service\MovementService;
 use OCA\InventoryCheck\Tests\Support\Iv2TestSigning;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -153,24 +161,32 @@ final class MobileGateLadderIntegrationTest extends TestCase
 		}
 	}
 
+	private function makeMobileController(IRequest $request): MobileController
+	{
+		return new MobileController(
+			$request,
+			Server::get(MobileGateService::class),
+			Server::get(LicenseService::class),
+			Server::get(DevicePairingService::class),
+			Server::get(ItemService::class),
+			Server::get(LocationService::class),
+			Server::get(BalanceService::class),
+			Server::get(MovementService::class),
+			Server::get(AccessControlService::class),
+			Server::get(LocationFavouriteService::class),
+			Server::get(CycleCountService::class),
+			Server::get(ItemPhotoService::class),
+			Server::get(IUserSession::class),
+			Server::get(IConfig::class),
+		);
+	}
+
 	private function controllerWithoutAuth(): MobileController
 	{
 		$request = $this->createMock(IRequest::class);
 		$request->method('getHeader')->with('X-IV-Device-Token')->willReturn('');
 		Server::get(IUserSession::class)->setUser(null);
-		return new MobileController(
-			$request,
-			Server::get(\OCA\InventoryCheck\Service\MobileGateService::class),
-			Server::get(LicenseService::class),
-			Server::get(DevicePairingService::class),
-			Server::get(\OCA\InventoryCheck\Service\ItemService::class),
-			Server::get(\OCA\InventoryCheck\Service\LocationService::class),
-			Server::get(\OCA\InventoryCheck\Service\BalanceService::class),
-			Server::get(\OCA\InventoryCheck\Service\MovementService::class),
-			Server::get(AccessControlService::class),
-			Server::get(IUserSession::class),
-			Server::get(IConfig::class),
-		);
+		return $this->makeMobileController($request);
 	}
 
 	private function controllerAsUser(string $uid): MobileController
@@ -180,19 +196,7 @@ final class MobileGateLadderIntegrationTest extends TestCase
 		Server::get(IUserSession::class)->setUser($user);
 		$request = $this->createMock(IRequest::class);
 		$request->method('getHeader')->with('X-IV-Device-Token')->willReturn('');
-		return new MobileController(
-			$request,
-			Server::get(\OCA\InventoryCheck\Service\MobileGateService::class),
-			Server::get(LicenseService::class),
-			Server::get(DevicePairingService::class),
-			Server::get(\OCA\InventoryCheck\Service\ItemService::class),
-			Server::get(\OCA\InventoryCheck\Service\LocationService::class),
-			Server::get(\OCA\InventoryCheck\Service\BalanceService::class),
-			Server::get(\OCA\InventoryCheck\Service\MovementService::class),
-			Server::get(AccessControlService::class),
-			Server::get(IUserSession::class),
-			Server::get(IConfig::class),
-		);
+		return $this->makeMobileController($request);
 	}
 
 	public function testBootstrapWithoutAuthReturns401(): void
@@ -237,19 +241,7 @@ final class MobileGateLadderIntegrationTest extends TestCase
 		Server::get(IUserSession::class)->setUser(null);
 		$request = $this->createMock(IRequest::class);
 		$request->method('getHeader')->willReturn('');
-		$controller = new MobileController(
-			$request,
-			Server::get(\OCA\InventoryCheck\Service\MobileGateService::class),
-			Server::get(LicenseService::class),
-			Server::get(DevicePairingService::class),
-			Server::get(\OCA\InventoryCheck\Service\ItemService::class),
-			Server::get(\OCA\InventoryCheck\Service\LocationService::class),
-			Server::get(\OCA\InventoryCheck\Service\BalanceService::class),
-			Server::get(\OCA\InventoryCheck\Service\MovementService::class),
-			Server::get(AccessControlService::class),
-			Server::get(IUserSession::class),
-			Server::get(IConfig::class),
-		);
+		$controller = $this->makeMobileController($request);
 		try {
 			$controller->bootstrap();
 			$this->fail('expected auth_required');
@@ -265,19 +257,7 @@ final class MobileGateLadderIntegrationTest extends TestCase
 		Server::get(IUserSession::class)->setUser(null);
 		$request = $this->createMock(IRequest::class);
 		$request->method('getHeader')->with('X-IV-Device-Token')->willReturn(str_repeat('a', 64));
-		$controller = new MobileController(
-			$request,
-			Server::get(\OCA\InventoryCheck\Service\MobileGateService::class),
-			Server::get(LicenseService::class),
-			Server::get(DevicePairingService::class),
-			Server::get(\OCA\InventoryCheck\Service\ItemService::class),
-			Server::get(\OCA\InventoryCheck\Service\LocationService::class),
-			Server::get(\OCA\InventoryCheck\Service\BalanceService::class),
-			Server::get(\OCA\InventoryCheck\Service\MovementService::class),
-			Server::get(AccessControlService::class),
-			Server::get(IUserSession::class),
-			Server::get(IConfig::class),
-		);
+		$controller = $this->makeMobileController($request);
 		$response = $this->invoke($controller, 'bootstrap', static fn () => $controller->bootstrap());
 		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
 		$this->assertSame('auth_required', $response->getData()['error']['code']);
@@ -295,19 +275,7 @@ final class MobileGateLadderIntegrationTest extends TestCase
 		Server::get(IUserSession::class)->setUser(null);
 		$request = $this->createMock(IRequest::class);
 		$request->method('getHeader')->with('X-IV-Device-Token')->willReturn($token);
-		$controller = new MobileController(
-			$request,
-			Server::get(\OCA\InventoryCheck\Service\MobileGateService::class),
-			$license,
-			Server::get(DevicePairingService::class),
-			Server::get(\OCA\InventoryCheck\Service\ItemService::class),
-			Server::get(\OCA\InventoryCheck\Service\LocationService::class),
-			Server::get(\OCA\InventoryCheck\Service\BalanceService::class),
-			Server::get(\OCA\InventoryCheck\Service\MovementService::class),
-			Server::get(AccessControlService::class),
-			Server::get(IUserSession::class),
-			Server::get(IConfig::class),
-		);
+		$controller = $this->makeMobileController($request);
 		$response = $this->invoke($controller, 'bootstrap', static fn () => $controller->bootstrap());
 		$this->assertSame(402, $response->getStatus());
 		$this->assertSame('device_required', $response->getData()['error']['code']);

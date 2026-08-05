@@ -53,7 +53,8 @@ final class FamilyVisualParityContractTest extends TestCase
 
 	public function testIvCssUsesFamilyShellTokensPresentInMobilityCheck(): void
 	{
-		$ivCss = (string)file_get_contents($this->ivRoot . '/css/app.css');
+		$ivCss = (string)file_get_contents($this->ivRoot . '/css/app.css')
+			. (string)file_get_contents($this->ivRoot . '/css/common/accessibility.css');
 		foreach (['skip-link', 'page-header', 'empty-state', 'focus-visible', '44px'] as $token) {
 			$this->assertStringContainsString($token, $ivCss, 'InventoryCheck missing family token: ' . $token);
 			$this->assertStringContainsString($token, $this->mcCss, 'MobilityCheck unexpectedly missing: ' . $token);

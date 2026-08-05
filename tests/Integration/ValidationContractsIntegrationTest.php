@@ -167,12 +167,12 @@ final class ValidationContractsIntegrationTest extends TestCase
 	{
 		$suffix = bin2hex(random_bytes(3));
 		$loc = $this->locations->create($this->uid, [
-			'code' => 'VR-' . $suffix,
+			'code' => 'VR-L-' . $suffix,
 			'name' => 'Ref loc',
 			'kind' => 'warehouse',
 		]);
 		$item = $this->items->create($this->uid, [
-			'sku' => 'VR-' . $suffix,
+			'sku' => 'VR-I-' . $suffix,
 			'name' => 'Ref item',
 		]);
 		$result = $this->movements->receive(

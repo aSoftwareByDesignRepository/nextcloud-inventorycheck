@@ -75,5 +75,47 @@ final class QtyScaleTest extends TestCase
 		$low = QtyScale::formatLowStock(['totalQty' => 900, 'reorderLevel' => 1000], $c);
 		self::assertSame('0.9', $low['totalQty']);
 		self::assertSame('1', $low['reorderLevel']);
+
+		$cycle = QtyScale::formatCycleLine([
+			'id' => 7,
+			'itemId' => 42,
+			'sku' => 'FILTER-42',
+			'itemName' => 'Air filter',
+			'scanCode' => 'SC-42',
+			'systemQty' => 2500,
+			'qtyCounted' => 1500,
+			'currentQty' => 2400,
+		], $c);
+		self::assertSame('FILTER-42', $cycle['sku']);
+		self::assertSame('Air filter', $cycle['itemName']);
+		self::assertSame('SC-42', $cycle['scanCode']);
+		self::assertSame(7, $cycle['id']);
+		self::assertSame(42, $cycle['itemId']);
+		self::assertSame('2.5', $cycle['systemQty']);
+		self::assertSame('1.5', $cycle['qtyCounted']);
+		self::assertSame('2.4', $cycle['currentQty']);
+	}
+
+	public function testFormatMovementPreservesDisplayNameJoins(): void
+	{
+		$c = $this->config('3');
+		$mov = QtyScale::formatMovement([
+			'id' => 9,
+			'itemId' => 1,
+			'locationId' => 2,
+			'qtyDelta' => -500,
+			'qtyAfter' => 1500,
+			'itemName' => 'Air filter',
+			'sku' => 'FILTER-42',
+			'locationCode' => 'VAN-1',
+			'locationName' => 'Van front',
+		], $c);
+		self::assertSame('-0.5', $mov['qtyDelta']);
+		self::assertSame('1.5', $mov['qtyAfter']);
+		self::assertSame('Air filter', $mov['itemName']);
+		self::assertSame('FILTER-42', $mov['sku']);
+		self::assertSame('VAN-1', $mov['locationCode']);
+		self::assertSame('Van front', $mov['locationName']);
+		self::assertSame(9, $mov['id']);
 	}
 }

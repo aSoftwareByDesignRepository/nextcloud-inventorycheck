@@ -66,4 +66,16 @@ class LocationFavouriteMapper extends QBMapper
 			->andWhere($qb->expr()->eq('location_id', $qb->createNamedParameter($locationId, IQueryBuilder::PARAM_INT)));
 		$qb->executeStatement();
 	}
+
+	/** GDPR / user-delete: drop every favourite row for a deleted UID. */
+	public function deleteAllForUser(string $userId): void
+	{
+		if ($userId === '') {
+			return;
+		}
+		$qb = $this->db->getQueryBuilder();
+		$qb->delete($this->getTableName())
+			->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId)));
+		$qb->executeStatement();
+	}
 }

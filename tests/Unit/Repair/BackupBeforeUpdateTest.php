@@ -57,4 +57,22 @@ final class BackupBeforeUpdateTest extends TestCase
 
 		(new BackupBeforeUpdate($backup))->run($output);
 	}
+
+	public function testOversizedLedgerContinuesUpgradeWithoutSnapshot(): void
+	{
+		$backup = $this->createMock(UpgradeBackupService::class);
+		$backup->method('hasDataToBackup')->willReturn(true);
+		$backup->method('createSnapshot')->willThrowException(
+			new \OCA\InventoryCheck\Exception\UpgradeBackupException(
+				'Table iv_cc_line has 2500001 rows; exceeds backup row limit of 200000. Use a database-level dump for large instances.',
+			),
+		);
+
+		$output = $this->createMock(IOutput::class);
+		$output->expects(self::exactly(2))->method('warning');
+		$output->expects(self::never())->method('info');
+
+		(new BackupBeforeUpdate($backup))->run($output);
+		$this->addToAssertionCount(1);
+	}
 }

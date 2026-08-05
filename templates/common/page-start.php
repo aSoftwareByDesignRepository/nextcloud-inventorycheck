@@ -23,11 +23,14 @@ $mobileAppStatus = (string)$_['mobileAppStatus'];
 $urlsJson = (string)$_['urlsJson'];
 $allowNegativeStock = !empty($_['allowNegativeStock']);
 $locationReorderHintEnabled = !empty($_['locationReorderHintEnabled']);
+$requireAdjustReason = !empty($_['requireAdjustReason']);
+$requireLocationScan = !empty($_['requireLocationScan']);
 $qtyScale = (int)($_['qtyScale'] ?? 0);
 $locationAclEnabled = !empty($_['locationAclEnabled']);
 $timezone = (string)($_['timezone'] ?? 'UTC');
 $roleLabel = (string)($_['roleLabel'] ?? ($isAppAdmin ? $l->t('Administrator') : ($isOffice ? $l->t('Office') : $l->t('Field'))));
 $htmlLang = str_replace('_', '-', $l->getLanguageCode());
+$settingsSection = (string)($_['settingsSection'] ?? '');
 
 $pageIcons = [
 	'dashboard' => 'layout-grid',
@@ -37,13 +40,17 @@ $pageIcons = [
 	'location-detail' => 'map-pin',
 	'movements' => 'history',
 	'stocktake' => 'clipboard-list',
+	'stocktake-new' => 'clipboard-list',
 	'settings' => 'settings',
 	'access-denied' => 'shield',
 ];
 $headerIcon = $pageIcons[$pageId] ?? 'inbox';
 
-$navUrls = json_decode($urlsJson, true)['pages'] ?? [];
+$decodedUrls = json_decode($urlsJson, true);
+$navUrls = is_array($decodedUrls) ? ($decodedUrls['pages'] ?? []) : [];
 $homeUrl = (string)($navUrls['dashboard'] ?? '#');
+$settingsHomeUrl = (string)($navUrls['settings'] ?? '#');
+$stocktakeListUrl = (string)($navUrls['stocktake'] ?? '#');
 
 require __DIR__ . '/navigation.php';
 ?>
@@ -51,12 +58,15 @@ require __DIR__ . '/navigation.php';
 	lang="<?php p($htmlLang); ?>"
 	data-iv-page="<?php p($pageId); ?>"
 	<?php if ($entityId !== null): ?>data-iv-entity-id="<?php p((string)$entityId); ?>"<?php endif; ?>
+	<?php if ($settingsSection !== ''): ?>data-iv-settings-section="<?php p($settingsSection); ?>"<?php endif; ?>
 	data-iv-current-user="<?php p($currentUserId); ?>"
 	data-iv-is-app-admin="<?php p($isAppAdmin ? '1' : '0'); ?>"
 	data-iv-is-system-admin="<?php p($isSystemAdmin ? '1' : '0'); ?>"
 	data-iv-is-office="<?php p($isOffice ? '1' : '0'); ?>"
 	data-iv-allow-negative="<?php p($allowNegativeStock ? '1' : '0'); ?>"
 	data-iv-location-reorder-hint="<?php p($locationReorderHintEnabled ? '1' : '0'); ?>"
+	data-iv-require-adjust-reason="<?php p($requireAdjustReason ? '1' : '0'); ?>"
+	data-iv-require-location-scan="<?php p($requireLocationScan ? '1' : '0'); ?>"
 	data-iv-qty-scale="<?php p((string)$qtyScale); ?>"
 	data-iv-location-acl="<?php p($locationAclEnabled ? '1' : '0'); ?>"
 	data-iv-mobile-app-status="<?php p($mobileAppStatus); ?>"
@@ -73,9 +83,25 @@ require __DIR__ . '/navigation.php';
 					<li class="iv-breadcrumb__item">
 						<a class="iv-breadcrumb__link" href="<?php p($homeUrl); ?>"><?php p($l->t('InventoryCheck')); ?></a>
 					</li>
-					<li class="iv-breadcrumb__item iv-breadcrumb__item--current" aria-current="page">
-						<span class="iv-breadcrumb__current"><?php p($pageTitle); ?></span>
-					</li>
+					<?php if ($pageId === 'settings' && $settingsSection !== ''): ?>
+						<li class="iv-breadcrumb__item">
+							<a class="iv-breadcrumb__link" href="<?php p($settingsHomeUrl); ?>"><?php p($l->t('Settings')); ?></a>
+						</li>
+						<li class="iv-breadcrumb__item iv-breadcrumb__item--current" aria-current="page">
+							<span class="iv-breadcrumb__current"><?php p($pageTitle); ?></span>
+						</li>
+					<?php elseif ($pageId === 'stocktake-new'): ?>
+						<li class="iv-breadcrumb__item">
+							<a class="iv-breadcrumb__link" href="<?php p($stocktakeListUrl); ?>"><?php p($l->t('Stocktake')); ?></a>
+						</li>
+						<li class="iv-breadcrumb__item iv-breadcrumb__item--current" aria-current="page">
+							<span class="iv-breadcrumb__current"><?php p($pageTitle); ?></span>
+						</li>
+					<?php else: ?>
+						<li class="iv-breadcrumb__item iv-breadcrumb__item--current" aria-current="page">
+							<span class="iv-breadcrumb__current"><?php p($pageTitle); ?></span>
+						</li>
+					<?php endif; ?>
 				</ol>
 			</nav>
 			<div class="iv-page-header__main">

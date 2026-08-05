@@ -6,6 +6,8 @@ namespace OCA\InventoryCheck\Tests\Integration;
 
 use OCA\InventoryCheck\AppInfo\Application;
 use OCA\InventoryCheck\Db\BalanceMapper;
+use OCA\InventoryCheck\Db\ScanDevice;
+use OCA\InventoryCheck\Db\ScanDeviceMapper;
 use OCA\InventoryCheck\Exception\ConflictException;
 use OCA\InventoryCheck\Exception\NotFoundException;
 use OCA\InventoryCheck\Exception\ValidationException;
@@ -15,6 +17,7 @@ use OCA\InventoryCheck\Service\FlangeService;
 use OCA\InventoryCheck\Service\ItemService;
 use OCA\InventoryCheck\Service\LocationAclService;
 use OCA\InventoryCheck\Service\LocationFavouriteService;
+use OCA\InventoryCheck\Service\LocationScanPolicy;
 use OCA\InventoryCheck\Service\LocationService;
 use OCA\InventoryCheck\Service\LowStockService;
 use OCA\InventoryCheck\Service\MovementService;
@@ -37,6 +40,7 @@ final class WaveCFeaturesIntegrationTest extends TestCase
 	private MovementService $movements;
 	private BalanceMapper $balances;
 	private LocationAclService $acl;
+	private ScanDeviceMapper $devices;
 	private FlangeService $flange;
 	private LocationFavouriteService $favourites;
 	private LowStockService $lowStock;
@@ -56,6 +60,7 @@ final class WaveCFeaturesIntegrationTest extends TestCase
 		$this->movements = $c->get(MovementService::class);
 		$this->balances = $c->get(BalanceMapper::class);
 		$this->acl = $c->get(LocationAclService::class);
+		$this->devices = $c->get(ScanDeviceMapper::class);
 		$this->flange = $c->get(FlangeService::class);
 		$this->favourites = $c->get(LocationFavouriteService::class);
 		$this->lowStock = $c->get(LowStockService::class);
@@ -65,6 +70,7 @@ final class WaveCFeaturesIntegrationTest extends TestCase
 		foreach ([
 			QtyScale::KEY,
 			LocationAclService::KEY_ENABLED,
+			LocationAclService::KEY_DEVICES_STRICT,
 			AccessControlService::KEY_ALLOW_NEGATIVE,
 			AccessControlService::KEY_OFFICE_USER_IDS,
 			AccessControlService::KEY_ACCESS_RESTRICTION,
@@ -76,6 +82,7 @@ final class WaveCFeaturesIntegrationTest extends TestCase
 		$this->config->setAppValue(Application::APP_ID, AccessControlService::KEY_ALLOW_NEGATIVE, '0');
 		$this->config->setAppValue(Application::APP_ID, QtyScale::KEY, '0');
 		$this->config->setAppValue(Application::APP_ID, LocationAclService::KEY_ENABLED, '0');
+		$this->config->setAppValue(Application::APP_ID, LocationAclService::KEY_DEVICES_STRICT, '0');
 		$this->acl->replaceAll($this->uid, []);
 	}
 
@@ -352,11 +359,12 @@ final class WaveCFeaturesIntegrationTest extends TestCase
 		self::assertNotContains((int)$hidden['id'], $locIds);
 
 		// Org-wide sum is 21 (not low). Visible-only sum is 1 → field user sees low stock.
-		$officeLow = $this->lowStock->list($this->uid, 200, 0);
+		// Use a high limit: shared integration DBs accumulate many low-stock rows from prior runs.
+		$officeLow = $this->lowStock->list($this->uid, 100000, 0);
 		$officeIds = array_map(static fn (array $r): int => (int)$r['item']['id'], $officeLow['data']);
 		self::assertNotContains((int)$item['id'], $officeIds);
 
-		$fieldLow = $this->lowStock->list($fieldUid, 200, 0);
+		$fieldLow = $this->lowStock->list($fieldUid, 100000, 0);
 		$fieldIds = array_map(static fn (array $r): int => (int)$r['item']['id'], $fieldLow['data']);
 		self::assertContains((int)$item['id'], $fieldIds);
 
@@ -407,12 +415,178 @@ final class WaveCFeaturesIntegrationTest extends TestCase
 		$this->config->setAppValue(Application::APP_ID, LocationAclService::KEY_ENABLED, '0');
 	}
 
-	public function testDeviceActorsRemainUnrestrictedWhenAclOn(): void
+	public function testDeviceActorsRemainUnrestrictedWhenAclOnWithoutGrants(): void
 	{
 		$this->config->setAppValue(Application::APP_ID, LocationAclService::KEY_ENABLED, '1');
+		$this->config->setAppValue(Application::APP_ID, LocationAclService::KEY_DEVICES_STRICT, '0');
 		self::assertNull($this->acl->visibleLocationIds('device:42'));
 		self::assertTrue($this->acl->canAccessLocation('device:42', 999999));
 		$this->config->setAppValue(Application::APP_ID, LocationAclService::KEY_ENABLED, '0');
+	}
+
+	public function testDeviceActorsStrictEmptyMeansNone(): void
+	{
+		$this->config->setAppValue(Application::APP_ID, LocationAclService::KEY_ENABLED, '1');
+		$this->config->setAppValue(Application::APP_ID, LocationAclService::KEY_DEVICES_STRICT, '1');
+		self::assertSame([], $this->acl->visibleLocationIds('device:42'));
+		self::assertFalse($this->acl->canAccessLocation('device:42', 999999));
+		$this->config->setAppValue(Application::APP_ID, LocationAclService::KEY_DEVICES_STRICT, '0');
+		$this->config->setAppValue(Application::APP_ID, LocationAclService::KEY_ENABLED, '0');
+	}
+
+	public function testDeviceActorsHonourLocationGrantsWhenBound(): void
+	{
+		$suffix = bin2hex(random_bytes(3));
+		$visible = $this->locations->create($this->uid, [
+			'code' => 'DV-V-' . $suffix,
+			'name' => 'Device Visible',
+			'kind' => 'van',
+		]);
+		$hidden = $this->locations->create($this->uid, [
+			'code' => 'DV-H-' . $suffix,
+			'name' => 'Device Hidden',
+			'kind' => 'warehouse',
+		]);
+		$now = time();
+		$device = new ScanDevice();
+		$device->setLabel('Bound Scanner ' . $suffix);
+		$device->setPairCodeHash(null);
+		$device->setPairCodeExpires(null);
+		$device->setTokenHash('tok_' . $suffix);
+		$device->setPairedAt($now);
+		$device->setLastSeenAt($now);
+		$device->setActive(true);
+		$device->setCreatedAt($now);
+		$device->setCreatedBy($this->uid);
+		$device = $this->devices->insert($device);
+		$deviceId = (int)$device->getId();
+
+		$this->config->setAppValue(Application::APP_ID, LocationAclService::KEY_ENABLED, '1');
+		$this->config->setAppValue(Application::APP_ID, LocationAclService::KEY_DEVICES_STRICT, '0');
+		$this->acl->setForSubject(LocationAclService::TYPE_DEVICE, (string)$deviceId, [(int)$visible['id']]);
+
+		$actor = 'device:' . $deviceId;
+		$visibleIds = $this->acl->visibleLocationIds($actor);
+		self::assertSame([(int)$visible['id']], $visibleIds);
+		self::assertTrue($this->acl->canAccessLocation($actor, (int)$visible['id']));
+		self::assertFalse($this->acl->canAccessLocation($actor, (int)$hidden['id']));
+
+		$list = $this->locations->list($actor, true, 200, 0);
+		$ids = array_map(static fn (array $r): int => (int)$r['id'], $list['data']);
+		self::assertContains((int)$visible['id'], $ids);
+		self::assertNotContains((int)$hidden['id'], $ids);
+
+		$this->acl->setForSubject(LocationAclService::TYPE_DEVICE, (string)$deviceId, []);
+		self::assertNull($this->acl->visibleLocationIds($actor), 'clearing grants restores unrestricted BC');
+
+		$this->config->setAppValue(Application::APP_ID, LocationAclService::KEY_DEVICES_STRICT, '1');
+		self::assertSame([], $this->acl->visibleLocationIds($actor), 'strict empty grants deny all');
+		self::assertFalse($this->acl->canAccessLocation($actor, (int)$visible['id']));
+
+		$this->config->setAppValue(Application::APP_ID, LocationAclService::KEY_DEVICES_STRICT, '0');
+		$this->config->setAppValue(Application::APP_ID, LocationAclService::KEY_ENABLED, '0');
+		$this->acl->purgeDevice($deviceId);
+		$device->setActive(false);
+		$this->devices->update($device);
+	}
+
+	public function testDeviceScanDoesNotLeakHiddenLocationViaCodeMismatch(): void
+	{
+		$suffix = bin2hex(random_bytes(3));
+		$visible = $this->locations->create($this->uid, [
+			'code' => 'SC-V-' . $suffix,
+			'name' => 'Scan Visible',
+			'kind' => 'van',
+		]);
+		$hidden = $this->locations->create($this->uid, [
+			'code' => 'SC-H-' . $suffix,
+			'name' => 'Scan Hidden',
+			'kind' => 'warehouse',
+		]);
+		$item = $this->items->create($this->uid, [
+			'sku' => 'SC-I-' . $suffix,
+			'name' => 'Scan Item',
+			'uom' => 'pcs',
+			'reorderLevel' => 0,
+		]);
+		$this->movements->receive($this->uid, (int)$item['id'], (int)$visible['id'], 3, null);
+
+		$now = time();
+		$device = new ScanDevice();
+		$device->setLabel('Scan Probe ' . $suffix);
+		$device->setPairCodeHash(null);
+		$device->setPairCodeExpires(null);
+		$device->setTokenHash('tok_sc_' . $suffix);
+		$device->setPairedAt($now);
+		$device->setLastSeenAt($now);
+		$device->setActive(true);
+		$device->setCreatedAt($now);
+		$device->setCreatedBy($this->uid);
+		$device = $this->devices->insert($device);
+		$deviceId = (int)$device->getId();
+
+		$this->config->setAppValue(Application::APP_ID, LocationAclService::KEY_ENABLED, '1');
+		$this->acl->setForSubject(LocationAclService::TYPE_DEVICE, (string)$deviceId, [(int)$visible['id']]);
+		$prevRequired = LocationScanPolicy::isRequired($this->config);
+		LocationScanPolicy::setRequired($this->config, true);
+
+		$actor = 'device:' . $deviceId;
+		try {
+			$this->movements->scan(
+				$actor,
+				(string)$item['sku'],
+				'issue',
+				(int)$hidden['id'],
+				null,
+				1,
+				null,
+				null,
+				false,
+				null,
+				null,
+				'WRONG-CODE',
+				null,
+			);
+			self::fail('expected unknown_location, not location_code_mismatch');
+		} catch (NotFoundException $e) {
+			self::assertSame('unknown_location', $e->getErrorCode());
+		} catch (ValidationException $e) {
+			self::fail('location code must not run before ACL; got ' . $e->getErrorCode());
+		} finally {
+			LocationScanPolicy::setRequired($this->config, $prevRequired);
+			$this->config->setAppValue(Application::APP_ID, LocationAclService::KEY_ENABLED, '0');
+			$this->acl->purgeDevice($deviceId);
+			$device->setActive(false);
+			$this->devices->update($device);
+		}
+	}
+
+	public function testItemMapperSearchActiveAfterIdIsStrictlyIncreasingUnique(): void
+	{
+		$mapper = (new Application())->getContainer()->get(\OCA\InventoryCheck\Db\ItemMapper::class);
+		self::assertSame([], $mapper->searchActiveAfterId(0, 0), 'limit < 1 must yield empty');
+
+		$seen = [];
+		$afterId = 0;
+		$pages = 0;
+		while ($pages < 20) {
+			$page = $mapper->searchActiveAfterId($afterId, 25);
+			if ($page === []) {
+				break;
+			}
+			foreach ($page as $item) {
+				$id = (int)$item->getId();
+				self::assertGreaterThan($afterId, $id, 'keyset must advance past cursor');
+				self::assertArrayNotHasKey($id, $seen, 'keyset must never re-emit an id');
+				$seen[$id] = true;
+				$afterId = $id;
+			}
+			$pages++;
+			if (count($page) < 25) {
+				break;
+			}
+		}
+		self::assertNotSame([], $seen, 'fixture catalog must have at least one active item');
 	}
 
 	public function testCycleCountListAndGetHonourLocationAcl(): void
@@ -422,7 +596,10 @@ final class WaveCFeaturesIntegrationTest extends TestCase
 		if ($users->get($fieldUid) === null) {
 			$users->createUser($fieldUid, bin2hex(random_bytes(8)));
 		}
-		$counts = (new Application())->getContainer()->get(\OCA\InventoryCheck\Service\CycleCountService::class);
+		$app = new Application();
+		$counts = $app->getContainer()->get(\OCA\InventoryCheck\Service\CycleCountService::class);
+		/** @var \OCA\InventoryCheck\Db\CycleCampaignMapper $campaigns */
+		$campaigns = $app->getContainer()->get(\OCA\InventoryCheck\Db\CycleCampaignMapper::class);
 
 		$suffix = bin2hex(random_bytes(3));
 		$visible = $this->locations->create($this->uid, [
@@ -435,25 +612,46 @@ final class WaveCFeaturesIntegrationTest extends TestCase
 			'name' => 'CC Hidden',
 			'kind' => 'site',
 		]);
-		$visCamp = $counts->create($this->uid, (int)$visible['id'], 'Vis ' . $suffix);
-		$hidCamp = $counts->create($this->uid, (int)$hidden['id'], 'Hid ' . $suffix);
+		// Seed campaigns directly — avoid inventur create materialising ~thousands
+		// of catalog lines (dev DB pollution); ACL list/get only need campaign rows.
+		$now = time();
+		$seed = static function (int $locationId, string $name) use ($campaigns, $now): \OCA\InventoryCheck\Db\CycleCampaign {
+			$camp = new \OCA\InventoryCheck\Db\CycleCampaign();
+			$camp->setLocationId($locationId);
+			$camp->setStatus(\OCA\InventoryCheck\Service\CycleCountService::STATUS_OPEN);
+			$camp->setName($name);
+			$camp->setCreatedAt($now);
+			$camp->setUpdatedAt($now);
+			$camp->setCreatedBy('admin');
+			$camp->setClosedAt(null);
+			return $campaigns->insert($camp);
+		};
+		$visCamp = $seed((int)$visible['id'], 'Vis ' . $suffix);
+		$hidCamp = $seed((int)$hidden['id'], 'Hid ' . $suffix);
 
 		$this->config->setAppValue(Application::APP_ID, LocationAclService::KEY_ENABLED, '1');
 		$this->acl->setForSubject('user', $fieldUid, [(int)$visible['id']]);
 
 		$list = $counts->list($fieldUid, null, 50, 0);
 		$ids = array_map(static fn (array $r): int => (int)$r['id'], $list['data']);
-		self::assertContains((int)$visCamp['id'], $ids);
-		self::assertNotContains((int)$hidCamp['id'], $ids);
+		self::assertContains((int)$visCamp->getId(), $ids);
+		self::assertNotContains((int)$hidCamp->getId(), $ids);
 
-		$ok = $counts->get($fieldUid, (int)$visCamp['id']);
-		self::assertSame((int)$visCamp['id'], (int)$ok['id']);
+		$ok = $counts->get($fieldUid, (int)$visCamp->getId());
+		self::assertSame((int)$visCamp->getId(), (int)$ok['id']);
 
 		try {
-			$counts->get($fieldUid, (int)$hidCamp['id']);
-			self::fail('expected unknown_location');
+			$counts->get($fieldUid, (int)$hidCamp->getId());
+			self::fail('expected unknown_campaign');
 		} catch (NotFoundException $e) {
-			self::assertSame('unknown_location', $e->getErrorCode());
+			self::assertSame('unknown_campaign', $e->getErrorCode());
+		}
+
+		try {
+			$counts->get($fieldUid, 999_999_999);
+			self::fail('expected unknown_campaign for missing id');
+		} catch (NotFoundException $e) {
+			self::assertSame('unknown_campaign', $e->getErrorCode(), 'ACL deny and missing id must share one code');
 		}
 
 		$this->acl->setForSubject('user', $fieldUid, []);

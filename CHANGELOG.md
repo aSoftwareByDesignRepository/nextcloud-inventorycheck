@@ -1,5 +1,84 @@
 # Changelog
 
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## Unreleased
+
+### Changed
+
+- **Bachus UX:** prefilled receive/issue/adjust opens a confirm-only booking strip (qty + confirm) when item, location, and quantity are known; scan codes resolve on Enter; dashboard keeps Receive/Issue primary and tucks Transfer/Adjust under “More stock actions”; tables use card reflow (`.iv-table--responsive`) on narrow screens; empty item/location balances offer one-tap Receive; stocktake create auto-starts counting; settings restore deep-linkable `#iv-license` / `#iv-app-admins` anchors; fractional qty enable auto-reloads.
+- **Bachus UX (pass 2):** New item shows SKU/Name first (expert fields under “More item options”); CSV import auto-checks on paste/file and collapses column help; pairing codes show inline (no second modal); location ACL uses searchable chips instead of Ctrl/Cmd multi-select.
+- **Bachus UX (pass 3):** Movement filters auto-apply when values resolve; clean stocktakes close in one click (dirty ones still confirm).
+- **Design system / settings multipage:** Settings split into catalog-driven sub-pages (`/settings/{section}`) with sidebar children + in-page chip bar; `/settings` redirects to Access; legacy `#anchor` bookmarks forward client-side; each page saves only its own topic. Danger buttons use `--iv-danger-*` tokens; movement filter apply refreshes `#iv-movements-results` without remounting the filter shell (race-safe load sequence).
+- **Bachus UX (pass 4):** Dashboard low-stock is Receive-only; exports tuck under More; variance loads only when opened; search/filter Apply buttons are AT fallbacks (results update as you type/choose); cold-start booking is scan-first with browse-on-demand; new item = SKU+Name; new location = Code+Name; Access allow-lists appear only when restricted; dialogs use one × close; CSV auto-check only.
+- **Bachus UX (pass 5):** Open stocktakes auto-start counting; dirty close uses confirm-as-consent (no checkbox traps); redundant search “active filter” chips removed; DATEV export under More; empty per-location low-stock section hidden; license seats/devices behind progressive disclosure.
+- **Bachus UX (pass 6):** Prefillable transfers use confirm-only (incl. reverse); new stocktake is location-first (name under More, single location auto-selected); blind count under Counting options; CSV import confirms-as-skip for bad rows; field users get primary Issue; favourites use short aria-pressed toggles; `btn()` forwards ARIA attrs.
+- **Guidance UX:** sidebar shows DutyCheck-style name + hint lines under every primary nav item; Access settings open with a dismissible Quick start (lockout safety) and an explicit “door vs stock” callout; License/Support page leads filled from the settings catalog.
+- **Bachus UX (pass 7):** Single-location stocktake is 1-click (no dialog); item/location Deactivate (+ Download SVG) under More; movements filter title is screen-reader-only; Access drops the redundant default-open paragraph; label preview drops the instructional wall of text.
+- **Bachus UX (pass 8):** Confirm-only bookings expose one-tap “Change item or location” (expands the full form — no close/reopen dead-end); negative-balance copy and primary CTA are “Set to zero” (matches Adjust-to-0 behaviour).
+- **Bachus UX (pass 9):** Stocktake Enter advances to the next line; “Count remaining as system” fills uncounted page lines in one tap; item/location balance rows offer Receive/Issue; list Deactivate removed (detail More / Reactivate only); Label preview under closed disclosure; Movements Receive/Issue primary with exports under More; Status OK is screen-reader-only; empty filter-active hosts removed.
+- **Bachus UX (pass 10):** Balance-row Receive/Issue opens qty-only confirm strip (masters known, qty optional); inventur Status column only when conflicts exist; “Count this page as system” honest naming; items/locations search intros are sr-only and Clear appears only when typing; Active Yes/No column replaced by Inactive badge on the name.
+
+### Fixed
+
+- **Aristoteles:** dialog single-overlay + `#iv-page-actions` inert (blocks double booking); Change binds local button + `dlg.close()` (no global Close click); delta reverse strips spurious `qty` on expand; movements filter `.catch` respects `loadSeq` / reuseShell; stocktake close prefers live line counts + pending-autosave gate; location ACL enabled-only save skips empty `setForSubject`; mobile session CSRF no longer accepts forged `Authorization: Bearer`.
+- **Aristoteles (pass 2):** Stocktake close uses campaign-wide `linesUncounted` (never page-local filters — prevents silent over-abandon on paginated inventur); CSV dry-run sequenced + text-matched before Import; Change keeps chrome inert until replacement dialog mounts; New stocktake latched against double-create; items/locations listHost clears `aria-busy` on error; inventur rows label from API `itemName`/`sku`.
+
+- **Security:** session-backed mobile mutations (`scan`, favourites, inventur count) require a CSRF requesttoken or `X-IV-Device-Token` — bare cookies can no longer drive NoCSRFRequired companion writes.
+- **GDPR purge:** user-delete now clears office + low-stock notify lists, mobile seats, location favourites, and per-user location ACL grants (not only app-admin/allow lists).
+- **Pairing DoS:** failed pairing rate limits are per client IP (hashed), so one attacker cannot freeze pairing for every scanner on the instance.
+- **Deadlock:** serial `track_mode` flip mid-movement no longer escalates SHARE→EXCLUSIVE in-place; clients get `item_lock_conflict` (**HTTP 423 Locked**) and retry with a clean exclusive lock.
+- **Deadlock:** flange multi-SKU issues sort by `itemId` ascending before posting (ABBA-safe vs inventur close).
+- **UX / a11y contract:** removed foreign family class prefixes (`mc-`/`mn-`/…) from soft-keyboard CSS so InventoryCheck visual parity stays clean.
+- **Inventur DoS/OOM:** stocktake create paginates the catalog and refuses more than 10 000 eligible lines (`stocktake_too_large`) instead of loading 100 000 SKUs in one shot.
+- **Inventur show:** campaign lines are paginated (limit/offset, totals, conflict counts); web UI adds Previous/Next for large counts.
+- **Photos:** upload/delete reject inactive items after the exclusive row lock.
+- **Upgrade backup OOM:** table export streams row-by-row, refuses tables over 200 000 rows with a clear error, and pre-migration repair continues the upgrade (with a warning) instead of stalling maintenance mode.
+
+### Changed
+
+- Companion bootstrap `companionApi` uses an explicit `max()` ladder (item-photo floor + fractional bump) instead of a dead branch.
+
+## 1.3.5 - 2026-08-02
+
+### Changed
+
+- Packaging release: version bump for ready4upload / production archive (working tree already at 1.3.4).
+
+## 1.3.4 - 2026-08-02
+
+### Changed
+
+- **Transfers:** mobile adjust/transfer accepts `toLocationCode` / `to_location_code` for destination scan confirm.
+- **Bachus:** dashboard variance adjustments sit behind progressive disclosure (expert chrome).
+- Expanded shell a11y fixtures, movement locking contracts, and mutation coverage.
+
+## 1.3.3 — 2026-08-02
+
+### Changed
+
+- Version lockstep for Wave D companion follow-ups (item photo, AF-IV20, variance UI) after 1.3.2.
+
+## 1.3.2 — 2026-08-01
+
+- **AF-IV20:** `AppAccessMiddleware` maps `MobileGateException` → 402 only for `MobileController`; web session controllers rethrow (never 402 for license/seat misses).
+- **Companion:** `GET /mobile/v1/items/{id}/photo` read-only item photo (device token or session seat); `companionApi` → **5**; `capabilities.itemPhoto`.
+- **Wave D6 UI:** dashboard variance table (adjust movements) beside CSV export — loading / empty / error states, EN+DE l10n.
+
+
+## 1.3.1 — 2026-08-01
+
+- **Companion mobile API:** `/mobile/v1/favourites/locations` + `/mobile/v1/cycle-counts*` (session seats; devices excluded).
+- **Bootstrap:** `companionApi` → **4**; `capabilities.favourites`; `isOffice` flag.
+- **Inventur:** `setCount` allowed for any ACL-visible user (create/close remain office).
+- **Wave D web UX:** reason-code picker on adjust; scan policies in Settings; target stock / default location on items; reorder + variance CSV links; location label print.
+- **CSV / QtyScale:** DE headers for Wave D columns; format `suggestedQty` / `targetStock` on low-stock rows.
+- **Variance export:** optional `reasonCode` filter.
+
+
 ## 1.3.0 — 2026-08-01
 
 - **Wave D (warehouse / buyer / auditor hygiene):**

@@ -41,12 +41,12 @@ final class LatencySmokeIntegrationTest extends TestCase
 		$suffix = bin2hex(random_bytes(3));
 		$uid = 'admin';
 		$loc = $locations->create($uid, [
-			'code' => 'LAT-' . $suffix,
+			'code' => 'LAT-L-' . $suffix,
 			'name' => 'Latency Loc',
 			'kind' => 'other',
 		]);
 		$item = $items->create($uid, [
-			'sku' => 'LAT-' . $suffix,
+			'sku' => 'LAT-I-' . $suffix,
 			'name' => 'Latency Item',
 		]);
 		$itemId = (int)$item['id'];

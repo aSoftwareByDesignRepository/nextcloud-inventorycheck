@@ -14,7 +14,7 @@ $balances = 'lib/Db/BalanceMapper.php';
 $rowLocking = 'lib/Db/RowLocking.php';
 $itemService = 'lib/Service/ItemService.php';
 
-runMutations(dirname(__DIR__, 2), 'MovementLockingProtocolTest|SpecEdgeCasesIntegrationTest|LifecycleAndRaceIntegrationTest|WaveCFeaturesIntegrationTest', [
+runMutations(dirname(__DIR__, 2), 'MovementLockingProtocolTest|LocationScanPolicyTest|WaveDLocationScanIntegrationTest|AfIvWalkthroughContractTest|SpecEdgeCasesIntegrationTest|LifecycleAndRaceIntegrationTest|WaveCFeaturesIntegrationTest|WaveAbFeaturesIntegrationTest', [
 	[
 		'name' => 'receive-office-gate-dropped',
 		'file' => $movement,
@@ -48,8 +48,8 @@ runMutations(dirname(__DIR__, 2), 'MovementLockingProtocolTest|SpecEdgeCasesInte
 	[
 		'name' => 'share-mode-suffix-dropped',
 		'file' => $rowLocking,
-		'search' => "IDBConnection::PLATFORM_MYSQL => ' LOCK IN SHARE MODE',",
-		'replace' => "IDBConnection::PLATFORM_MYSQL => '',",
+		'search' => "return ' LOCK IN SHARE MODE';",
+		'replace' => "return '';",
 	],
 	[
 		'name' => 'deactivate-exclusive-lock-downgraded',
@@ -68,5 +68,41 @@ runMutations(dirname(__DIR__, 2), 'MovementLockingProtocolTest|SpecEdgeCasesInte
 		'file' => $movement,
 		'search' => 'if ($current + $incomingDelta > $unit) {',
 		'replace' => 'if ($current + $incomingDelta > $unit * 100) {',
+	],
+	[
+		'name' => 'issue-location-scan-dropped',
+		'file' => $movement,
+		'search' => "\t\t// Wave D8 / AF-IV12: web issue must honour require_location_scan (not only /scan).\n\t\tLocationScanPolicy::assertMatches(\$this->config, \$this->locations, \$locationId, \$locationCode);\n\t\treturn \$this->postSingle(\$actorUid, 'issue', \$itemId, \$locationId, \$qty, \$reason, \$lotCode, true);",
+		'replace' => "\t\treturn \$this->postSingle(\$actorUid, 'issue', \$itemId, \$locationId, \$qty, \$reason, \$lotCode, true);",
+	],
+	[
+		'name' => 'transfer-to-location-scan-dropped',
+		'file' => $movement,
+		'search' => "\t\tLocationScanPolicy::assertMatches(\n\t\t\t\$this->config,\n\t\t\t\$this->locations,\n\t\t\t\$toLocationId,\n\t\t\t\$toLocationCode,\n\t\t\t'toLocationCode',\n\t\t);\n",
+		'replace' => '',
+	],
+	[
+		'name' => 'item-lock-conflict-dropped',
+		'file' => $movement,
+		'search' => "if (!\$exclusive && \$item->getTrackMode() === 'serial') {\n\t\t\tthrow new ConflictException('item_lock_conflict');\n\t\t}",
+		'replace' => "if (false && !\$exclusive && \$item->getTrackMode() === 'serial') {\n\t\t\tthrow new ConflictException('item_lock_conflict');\n\t\t}",
+	],
+	[
+		'name' => 'issue-with-ref-office-gate-dropped',
+		'file' => $movement,
+		'search' => "\$this->access->requireOffice(\$actorUid);\n\t\t\$this->assertLocationAccess(\$actorUid, \$locationId);\n\t\t\$refType = CodeRules::trim(\$refType);",
+		'replace' => "\$this->assertLocationAccess(\$actorUid, \$locationId);\n\t\t\$refType = CodeRules::trim(\$refType);",
+	],
+	[
+		'name' => 'track-mode-zero-stock-gate-dropped',
+		'file' => $itemService,
+		'search' => "if (\$this->items->hasNonZeroBalance(\$itemId)) {\n\t\t\tthrow new ConflictException('track_mode_requires_zero_stock');\n\t\t}",
+		'replace' => "if (false && \$this->items->hasNonZeroBalance(\$itemId)) {\n\t\t\tthrow new ConflictException('track_mode_requires_zero_stock');\n\t\t}",
+	],
+	[
+		'name' => 'scan-location-code-before-acl',
+		'file' => $movement,
+		'search' => "\t\t// ACL before location-code checks — otherwise a wrong code on a hidden\n\t\t// location returns location_code_mismatch and proves the shelf exists.\n\t\t\$this->assertLocationAccess(\$actorUid, \$locationId);\n\t\tif (\$kind === 'transfer' && \$toLocationId !== null && \$toLocationId > 0) {\n\t\t\t\$this->assertLocationAccess(\$actorUid, \$toLocationId);\n\t\t}\n\n\t\tLocationScanPolicy::assertMatches(\$this->config, \$this->locations, \$locationId, \$locationCode);",
+		'replace' => "\t\tLocationScanPolicy::assertMatches(\$this->config, \$this->locations, \$locationId, \$locationCode);\n\t\t\$this->assertLocationAccess(\$actorUid, \$locationId);\n\t\tif (\$kind === 'transfer' && \$toLocationId !== null && \$toLocationId > 0) {\n\t\t\t\$this->assertLocationAccess(\$actorUid, \$toLocationId);\n\t\t}",
 	],
 ]);

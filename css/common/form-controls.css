@@ -11,8 +11,8 @@
 	--iv-form-border-focus: var(--color-primary-element, #0082c9);
 	--iv-form-ring: color-mix(in srgb, var(--color-primary-element, #0082c9) 28%, transparent);
 	--iv-form-disabled-bg: var(--color-background-dark, var(--color-background-hover));
-	--iv-form-error: var(--color-error, #db0606);
-	--iv-form-error-ring: color-mix(in srgb, var(--color-error, #db0606) 28%, transparent);
+	--iv-form-error: var(--color-error-text, var(--color-error, #db0606));
+	--iv-form-error-ring: color-mix(in srgb, var(--color-error-text, var(--color-error, #db0606)) 28%, transparent);
 	--iv-form-success: var(--color-success, #2d7b46);
 	--iv-form-radius: var(--iv-radius-sm, 6px);
 }
@@ -88,17 +88,11 @@
 	display: none;
 }
 
-#content.app-inventorycheck #app-content input:not([type="checkbox"]):not([type="radio"]):focus,
 #content.app-inventorycheck #app-content input:not([type="checkbox"]):not([type="radio"]):focus-visible,
-#content.app-inventorycheck #app-content textarea:focus,
 #content.app-inventorycheck #app-content textarea:focus-visible,
-#content.app-inventorycheck #app-content select:focus,
 #content.app-inventorycheck #app-content select:focus-visible,
-#content.app-inventorycheck #app-content .form-input:focus,
 #content.app-inventorycheck #app-content .form-input:focus-visible,
-#content.app-inventorycheck #app-content .form-select:focus,
 #content.app-inventorycheck #app-content .form-select:focus-visible,
-#content.app-inventorycheck #app-content .form-textarea:focus,
 #content.app-inventorycheck #app-content .form-textarea:focus-visible {
 	border-color: var(--iv-form-border-focus);
 	box-shadow: 0 0 0 3px var(--iv-form-ring);

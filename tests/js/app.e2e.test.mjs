@@ -87,9 +87,10 @@ test('dialogs implement focus trap Esc and return focus (A6)', () => {
 
 test('dialogs disable confirm while pending to prevent double-submit', () => {
 	assert.match(appJs, /confirmBtn\.disabled = true/);
-	assert.match(appJs, /cancelBtn\.disabled = true/);
 	assert.match(appJs, /aria-busy/);
 	assert.match(appJs, /if \(confirmBtn\.disabled\)/);
+	// Bachus: single × close — no footer Cancel to double-disable.
+	assert.doesNotMatch(appJs, /cancelBtn\.disabled = true/);
 });
 
 test('CSS enforces focus-visible and touch-friendly targets', () => {
@@ -112,18 +113,32 @@ test('N4 seed fixture script is present', () => {
 	assert.match(src, /--movements=20000/);
 });
 
+test('location ACL settings grant to scanner devices as well as users/groups', () => {
+	assert.match(appJs, /value: 'device'/);
+	assert.match(appJs, /Scanner device/);
+	assert.match(appJs, /aclDevicePicker/);
+	assert.match(appJs, /licenseDevices/);
+	assert.match(appJs, /Unbound scanners stay unrestricted/);
+	assert.match(appJs, /devicesStrict/);
+	assert.match(appJs, /Require location grants for scanners \(strict\)/);
+	assert.match(appJs, /Locations for new scanner \(optional\)/);
+	assert.match(appJs, /iv-device-create-locs/);
+});
+
 test('Track L settings manage seats and device slots with one-time pair code', () => {
 	assert.match(appJs, /licenseSeats/);
 	assert.match(appJs, /licenseDevices/);
 	assert.match(appJs, /Assign seat/);
 	assert.match(appJs, /Create device slot/);
-	assert.match(appJs, /One-time pairing code/);
+	assert.match(appJs, /iv-pair-code-panel/);
 	assert.match(appJs, /Copy this code now/);
 	assert.match(appJs, /Regenerate code/);
 	assert.match(appJs, /pair-code/);
 	assert.match(appJs, /withinLimit/);
 	assert.match(appJs, /Over seat limit/);
 	assert.equal(/Device pairing: coming soon/.test(appJs), false);
+	assert.equal(/Native scanner app: coming soon/.test(appJs), false);
+	assert.match(appJs, /data-iv-acl-clear/);
 });
 
 test('settings edit allow and office groups via directory pickers, not raw id lists', () => {
@@ -139,14 +154,15 @@ test('settings expose delegated app administrators via a directory picker (L0 wr
 	assert.match(appJs, /appAdminsPicker = createIdPicker/);
 	assert.match(appJs, /canEditAppAdmins/);
 	assert.match(appJs, /isSystemAdmin/);
-	assert.match(appJs, /payload\.appAdmins = appAdminsPicker\.getIds\(\)/);
+	assert.match(appJs, /accessPayload\.appAdmins = appAdminsPicker\.getIds\(\)/);
 	assert.match(appJs, /Only Nextcloud system administrators can change the app administrator list/);
 	assert.equal(/id: 'iv-app-admins'/.test(appJs), false, 'raw textarea id must not reappear');
 });
 
 test('location ACL subject and mobile seat assignment use directory pickers, not raw id inputs', () => {
 	assert.match(appJs, /aclSubjectPicker = createIdPicker\(\{\s*multi:\s*false,\s*kindFn:/);
-	assert.match(appJs, /subjectId:\s*aclSubjectPicker\.getId\(\)/);
+	assert.match(appJs, /aclSubjectPicker\.getId\(\)/);
+	assert.match(appJs, /payload\.subjectId = subjectId/);
 	assert.match(appJs, /seatUidPicker = createIdPicker\(\{\s*kind:\s*'user',\s*multi:\s*false/);
 	assert.match(appJs, /uid:\s*seatUidPicker\.getId\(\)/);
 	assert.equal(/placeholder:\s*tr\('Nextcloud user id'\)/.test(appJs), false);
@@ -201,7 +217,7 @@ test('movements page exposes kind item location date filters and pagination', ()
 	assert.match(appJs, /iv-mov-item-dl/);
 	assert.match(appJs, /kindSelect\.addEventListener\('change'/);
 	assert.doesNotMatch(appJs, /iv-filter-grid--extended/);
-	assert.doesNotMatch(appJs, /Apply filters/);
+	assert.match(appJs, /Filters update as you choose/);
 });
 
 test('items and locations expose AZC simple search filter panels', () => {
@@ -212,7 +228,7 @@ test('items and locations expose AZC simple search filter panels', () => {
 	assert.match(appJs, /No items match these filters/);
 	assert.match(appJs, /No locations match these filters/);
 	assert.match(appJs, /Search locations/);
-	assert.match(appJs, /Find locations by code or name/);
+	assert.match(appJs, /Results update as you type/);
 	assert.match(appJs, /loadSeq/);
 	assert.match(appJs, /urls\.api\.locations \+ '\?limit=50&offset=0&q='/);
 });
@@ -322,6 +338,24 @@ test('Wave A–B UI surfaces are wired in app.js', () => {
 	assert.doesNotMatch(appJs, /disabled:\s*offset\s*<=\s*0/);
 });
 
+
+test('Wave D adjust honesty + dashboard table captions are wired', () => {
+	assert.match(appJs, /requireAdjustReason/);
+	assert.match(appJs, /data-iv-require-adjust-reason/);
+	assert.match(appJs, /Could not load reason codes/);
+	assert.match(appJs, /Choose a reason code\./);
+	assert.match(appJs, /caption: tr\('Low stock'\)/);
+	assert.match(appJs, /caption: tr\('Recent movements'\)/);
+	assert.match(appJs, /caption: tr\('Negative balances'\)/);
+});
+
+test('Wave D location-scan honesty wires issue/transfer locationCode on web', () => {
+	assert.match(appJs, /requireLocationScan/);
+	assert.match(appJs, /codeForLocationId/);
+	assert.match(appJs, /toLocationCode/);
+	assert.match(appJs, /Confirm both location codes/);
+	assert.match(appJs, /opts\.path === 'issue'/);
+});
 test('Wave C UI surfaces are wired in app.js', () => {
 	assert.match(appJs, /configFractional/);
 	assert.match(appJs, /configLocationAcl/);
@@ -333,6 +367,12 @@ test('Wave C UI surfaces are wired in app.js', () => {
 	assert.match(appJs, /exportCsvHref/);
 	assert.match(appJs, /lang=de/);
 	assert.match(appJs, /Locations to grant/);
-	assert.match(appJs, /selectedOptions/);
+	assert.match(appJs, /createLocalOptionPicker/);
+	assert.match(
+		appJs,
+		/function createLocalOptionPicker[\s\S]*?keydown[\s\S]*?ArrowDown[\s\S]*?Enter/,
+		'local location picker must support keyboard selection (WCAG 2.1.1)',
+	);
+	assert.match(appJs, /aclLocationPicker\.getIds/);
 	assert.doesNotMatch(appJs, /disabled:\s*fracEnabled/);
 });

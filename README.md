@@ -1,53 +1,125 @@
 # InventoryCheck
 
-Stock levels, locations, and append-only movements on Nextcloud — ready for QR scan (Track L).
+[![Nextcloud](https://img.shields.io/badge/Nextcloud-32–34-0082c9?logo=nextcloud&logoColor=white)](https://nextcloud.com/)
+[![PHP](https://img.shields.io/badge/PHP-8.2–8.5-777BB4?logo=php&logoColor=white)](https://www.php.net/)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
 
-**Standalone repository:** [github.com/aSoftwareByDesignRepository/nextcloud-inventorycheck](https://github.com/aSoftwareByDesignRepository/nextcloud-inventorycheck)  
-App ID: **`inventorycheck`**. Clone path:
+**[English](#english)** · **[Deutsch](#deutsch)**
 
-```bash
-git clone https://github.com/aSoftwareByDesignRepository/nextcloud-inventorycheck.git /path/to/nextcloud/apps/inventorycheck
-```
+Stock. Locations. Clear bookings — on your Nextcloud.
 
-## Features
+---
 
-- Items (SKU / scan code), locations (warehouse / van / site), per-location balances
-- Movements: receive, issue, transfer, adjust; reverse with a compensating booking
-- Low-stock signals; printable item labels (SVG + browser print)
-- Access control: allowed groups, office groups, app admins
-- Optional mobile license seats and scanner device pairing (Track L)
-- Support & Us in Settings
+## English
 
-## Requirements
+**Stock. Locations. Clear bookings.**
 
-- Nextcloud 32–34
-- PHP 8.2–8.5
-- MySQL/MariaDB or PostgreSQL
+InventoryCheck keeps parts and supplies on the Nextcloud you already host: warehouses, vans and site boxes, quantities, and an append-only booking history. See low stock early, print labels, run stocktakes — then optional InventoryCheck Mobile uses the same ledger for shelf and van scanning.
 
-## Install
+**Free web app** (AGPL-3.0-or-later). Companion apps: https://nextcloud.software-by-design.de/
 
-Enable the app in Apps, or:
+### Why teams install it
 
-```bash
-cd nextcloud
-docker compose exec nextcloud php occ app:enable inventorycheck
-```
+- Know what is where — locations and items with SKU, scan code, unit of measure and reorder level
+- Book without rewriting history — receive, issue, transfer, adjust (compensating bookings for corrections)
+- Act on low stock — dashboard, movement history and printable labels
+- Count the shelf — stocktake from create → count → close
+- Stay scoped — office / field roles and optional access restriction
+- Optional mobile — seats and paired scan devices
 
-First install seeds a small demo warehouse + three SKUs once (`demo_seeded`). Deleting them will not resurrect them on repair.
+### Clear limits
 
-## Development
+- Movements are append-only — corrections use compensating bookings.
+- Declared databases: MySQL and PostgreSQL.
 
-```bash
-cd nextcloud
-docker compose exec nextcloud bash -lc 'cd /var/www/html/custom_apps/inventorycheck && composer install && composer test:gauntlet'
-```
+### Requirements
 
-Host-side JS contracts:
+- Nextcloud 32–34 · PHP 8.2–8.5 · MySQL or PostgreSQL
+
+### Install from Git
 
 ```bash
-cd nextcloud/apps/inventorycheck && npm test 2>/dev/null || node --test --test-concurrency=1 tests/js/*.test.mjs tests/js/*.e2e.test.mjs
+cd /path/to/nextcloud/apps/
+git clone https://github.com/aSoftwareByDesignRepository/nextcloud-inventorycheck.git inventorycheck
+cd inventorycheck
+composer install --no-dev
 ```
 
-## License
+Enable the app in Nextcloud (Apps → InventoryCheck) or run `php occ app:enable inventorycheck`.
 
-AGPL-3.0-or-later
+First install may seed a small demo warehouse once (`demo_seeded`). Deleting those rows will not resurrect them on repair.
+
+### App Store release (maintainers)
+
+```bash
+make release          # unsigned tarball under build/release/
+make release-signed   # + occ integrity:sign-app (needs certs)
+make verify-release   # refuses tests/, docs/, vendor/, secrets paths
+```
+
+Before cutting a store version: fold `CHANGELOG.md` `## Unreleased` into a dated version section, bump `appinfo/info.xml` / `appinfo/version`, and push `screenshots/` so App Store screenshot URLs resolve.
+
+### Security
+
+Do not open public issues that contain production secrets, personal data, or internal hostnames. Report sensitive findings privately to the maintainer (see `appinfo/info.xml` author). See [SECURITY.md](SECURITY.md).
+
+### Project & support
+
+**Software by Design GbR** · [nextcloud.software-by-design.de](https://nextcloud.software-by-design.de/) · [info@software-by-design.de](mailto:info@software-by-design.de)  
+[Support packages](https://nextcloud.software-by-design.de/en/support.html#packages)
+
+### License
+
+[AGPL-3.0-or-later](LICENSE).
+
+---
+
+## Deutsch
+
+**Bestände. Lagerorte. Klare Buchungen.**
+
+InventoryCheck verwaltet Teile und Verbrauchsmaterial in der Nextcloud, die Sie schon betreiben: Lager, Transporter und Baustellenboxen, Mengen und eine append-only Buchungshistorie. Mindestbestand früh sehen, Etiketten drucken, Inventuren fahren — optional nutzt InventoryCheck Mobile dasselbe Journal für Scan im Regal oder Transporter.
+
+**Kostenlose Web-App** (AGPL-3.0-or-later). Companion-Apps: https://nextcloud.software-by-design.de/
+
+### Warum Teams es einsetzen
+
+- Wissen, was wo liegt — Lagerorte und Artikel mit SKU, Scan-Code, Einheit und Mindestbestand
+- Buchen ohne Historie zu überschreiben — Zugang, Abgang, Umbuchung, Korrektur (Gegenbuchungen)
+- Auf Mindestbestand reagieren — Dashboard, Buchungshistorie und druckbare Etiketten
+- Regal zählen — Inventur von Anlegen → Zählen → Abschließen
+- Zugriff steuern — Büro-/Außendienst-Rollen und optionale Zugriffsbeschränkung
+- Optional Mobile — Sitze und gekoppelte Scan-Geräte
+
+### Klare Grenzen
+
+- Buchungen sind append-only — Korrekturen laufen über Gegenbuchungen.
+- Deklarierte Datenbanken: MySQL und PostgreSQL.
+
+### Voraussetzungen
+
+- Nextcloud 32–34 · PHP 8.2–8.5 · MySQL oder PostgreSQL
+
+### Installation von Git
+
+```bash
+cd /path/to/nextcloud/apps/
+git clone https://github.com/aSoftwareByDesignRepository/nextcloud-inventorycheck.git inventorycheck
+cd inventorycheck
+composer install --no-dev
+```
+
+App in Nextcloud aktivieren (Apps → InventoryCheck) oder `php occ app:enable inventorycheck`.
+
+### Sicherheit
+
+Keine öffentlichen Issues mit Produktionsgeheimnissen, personenbezogenen Daten oder internen Hostnamen. Sensible Funde privat an den Maintainer (siehe `appinfo/info.xml`). Siehe [SECURITY.md](SECURITY.md).
+
+### Projekt & Support
+
+**Software by Design GbR** · [nextcloud.software-by-design.de](https://nextcloud.software-by-design.de/de/) · [info@software-by-design.de](mailto:info@software-by-design.de)  
+[Support-Pakete](https://nextcloud.software-by-design.de/de/support.html#packages)
+
+### Lizenz
+
+[AGPL-3.0-or-later](LICENSE).

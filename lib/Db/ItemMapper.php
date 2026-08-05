@@ -158,6 +158,26 @@ class ItemMapper extends QBMapper
 		return ['data' => $this->findEntities($qb), 'total' => $total];
 	}
 
+	/**
+	 * Keyset page of active items by ascending id (phantom-safe inventur create).
+	 * Offset pages can re-emit the same id when concurrent inserts shift name order.
+	 *
+	 * @return list<\OCA\InventoryCheck\Db\Item>
+	 */
+	public function searchActiveAfterId(int $afterId, int $limit): array
+	{
+		if ($limit < 1) {
+			return [];
+		}
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')->from($this->getTableName())
+			->where($qb->expr()->eq('active', $qb->createNamedParameter(true, \PDO::PARAM_BOOL)))
+			->andWhere($qb->expr()->gt('id', $qb->createNamedParameter($afterId, \PDO::PARAM_INT)))
+			->orderBy('id', 'ASC')
+			->setMaxResults($limit);
+		return $this->findEntities($qb);
+	}
+
 	public function countMovementsReferencing(int $itemId): int
 	{
 		$qb = $this->db->getQueryBuilder();

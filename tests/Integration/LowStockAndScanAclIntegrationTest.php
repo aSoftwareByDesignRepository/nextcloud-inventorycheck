@@ -69,7 +69,7 @@ final class LowStockAndScanAclIntegrationTest extends TestCase
 		$this->movements->receive($this->uid, (int)$equal['id'], $locId, 5, null);
 		$this->movements->receive($this->uid, (int)$zero['id'], $locId, 1, null);
 		$this->movements->receive($this->uid, (int)$inactive['id'], $locId, 1, null);
-		$this->movements->adjust($this->uid, (int)$inactive['id'], $locId, 'set', 0, null, 'clear');
+		$this->movements->adjust($this->uid, (int)$inactive['id'], $locId, 'set', 0, null, 'clear', null, true, 'correction');
 		$this->items->update($this->uid, (int)$inactive['id'], ['active' => false]);
 
 		$list = $this->lowStock->list($this->uid, 200, 0);

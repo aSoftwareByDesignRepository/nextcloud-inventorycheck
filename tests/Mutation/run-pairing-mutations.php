@@ -32,4 +32,10 @@ runMutations(dirname(__DIR__, 2), 'DevicePairingServiceTest', [
 		'search' => "if (\$count >= self::RATE_MAX) {\n\t\t\t\tthrow new MobileGateException('rate_limited');\n\t\t\t}\n\t\t\t\$data['count'] = \$count + 1;",
 		'replace' => "if (false && \$count >= self::RATE_MAX) {\n\t\t\t\tthrow new MobileGateException('rate_limited');\n\t\t\t}\n\t\t\t\$data['count'] = \$count + 1;",
 	],
+	[
+		'name' => 'rate-bucket-ignores-ip',
+		'file' => $file,
+		'search' => "return self::RATE_KEY_PREFIX . substr(hash('sha256', \$ip), 0, 32);",
+		'replace' => "return self::RATE_KEY_PREFIX . 'global';",
+	],
 ]);

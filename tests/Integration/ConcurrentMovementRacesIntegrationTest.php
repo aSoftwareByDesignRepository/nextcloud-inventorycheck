@@ -104,7 +104,7 @@ if (!is_file(\$go)) { file_put_contents('$resultFile', "timeout\\n"); exit(3); }
 try {
 	\$app = new \\OCA\\InventoryCheck\\AppInfo\\Application();
 	\$movements = \$app->getContainer()->get(\\OCA\\InventoryCheck\\Service\\MovementService::class);
-	\$movements->adjust('admin', $itemId, $locId, 'set', $target, null, 'race-set');
+	\$movements->adjust('admin', $itemId, $locId, 'set', $target, null, 'race-set', null, true, 'correction');
 	file_put_contents('$resultFile', "ok:$target\\n");
 	exit(0);
 } catch (\\Throwable \$e) {

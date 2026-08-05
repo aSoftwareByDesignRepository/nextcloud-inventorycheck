@@ -71,5 +71,5 @@ foreach ($mutations as $m) {
 		$killed++;
 	}
 }
-echo "Done: killed={$killed} failed={$failed} total=" . count($mutations) . "\n";
+echo "Killed {$killed} / " . count($mutations) . "\n";
 exit($failed === 0 ? 0 : 1);
