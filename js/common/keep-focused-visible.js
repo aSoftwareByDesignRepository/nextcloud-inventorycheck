@@ -69,6 +69,7 @@
 		'.mc-dialog',
 		'.azc-dialog',
 		'.pc-dialog',
+		'.dk-dialog',
 		'.helpdesk-dialog',
 		'.dialog',
 	].join(', ');
@@ -622,6 +623,8 @@
 		function scheduleReveal() {
 			clearTimers();
 			if (!softKeyboardLikelyOpen(win)) {
+				// Keyboard dismissed / desktop: never leave sticky IME padding behind.
+				ensureKeyboardScrollRoom(doc, 0, null);
 				return;
 			}
 			const epoch = ++focusEpoch;

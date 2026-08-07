@@ -55,7 +55,7 @@ describe('inventorycheck keep-focused-visible', () => {
 		);
 	});
 
-	it('needsImeReveal ignores buttons and checkbox inputs', () => {
+	it('needsImeReveal ignores buttons, checkboxes, selects, and date pickers', () => {
 		function Element() {}
 		function HTMLButtonElement() {}
 		function HTMLInputElement() {}
@@ -76,6 +76,15 @@ describe('inventorycheck keep-focused-visible', () => {
 		checkbox.type = 'checkbox';
 		checkbox.matches = () => true;
 		assert.equal(needsImeReveal(checkbox), false);
+
+		const select = new HTMLSelectElement();
+		select.matches = () => true;
+		assert.equal(needsImeReveal(select), false);
+
+		const date = new HTMLInputElement();
+		date.type = 'date';
+		date.matches = () => true;
+		assert.equal(needsImeReveal(date), false);
 
 		const search = new HTMLInputElement();
 		search.type = 'search';
