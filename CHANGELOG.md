@@ -5,8 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
-
+## 1.3.6 - 2026-08-13
 ### Changed
 
 - **Bachus UX:** prefilled receive/issue/adjust opens a confirm-only booking strip (qty + confirm) when item, location, and quantity are known; scan codes resolve on Enter; dashboard keeps Receive/Issue primary and tucks Transfer/Adjust under “More stock actions”; tables use card reflow (`.iv-table--responsive`) on narrow screens; empty item/location balances offer one-tap Receive; stocktake create auto-starts counting; settings restore deep-linkable `#iv-license` / `#iv-app-admins` anchors; fractional qty enable auto-reloads.
