@@ -1,0 +1,7 @@
+{
+	"Ask a Nextcloud or InventoryCheck administrator to add you in Settings → Access.": "Poproś administratora Nextcloud lub InventoryCheck o dodanie do Ustawienia → Dostęp.",
+	"These users and groups get a notification the first time an item drops below its reorder level (at most once a day per item).": "Wymienieni użytkownicy i grupy otrzymują powiadomienie po raz pierwszy, gdy pozycja spada poniżej poziomu zamówienia (maksymalnie raz dziennie na pozycję).",
+	"We check your file automatically as you paste or choose it.": "Plik jest sprawdzany automatycznie podczas wklejania lub wyboru.",
+	"You are not allowed to use InventoryCheck right now.": "Korzystanie z InventoryCheck jest obecnie niedozwolone.",
+	"Your organisation restricts InventoryCheck access. You are not on the allow-list.": "Organizacja ogranicza dostęp do InventoryCheck. Brak wpisu na liście dozwolonych."
+}

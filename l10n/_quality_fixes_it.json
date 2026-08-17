@@ -1,0 +1,9 @@
+{
+	"2. Support development if the app helps you": "2. Sostenere lo sviluppo se l'app è utile",
+	"App administrators can change access policy, office lists, and the license. Only delegate to people you trust.": "Gli amministratori dell'app possono modificare criteri di accesso, elenchi ufficio e licenza. Delegare solo a persone fidate.",
+	"Choose the location you are standing in. We snapshot every active item there, then open the count screen.": "Scegliere la posizione in cui ci si trova. Viene acquisita un'istantanea di ogni articolo attivo, quindi si apre la schermata di conteggio.",
+	"MaintenanceCheck and ProjectCheck can ask InventoryCheck to issue stock automatically for their work. Nothing changes unless you turn this on.": "MaintenanceCheck e ProjectCheck possono chiedere a InventoryCheck di prelevare stock automaticamente per il loro lavoro. Nulla cambia finché questa opzione non è attivata.",
+	"Scan a barcode or type a SKU. Choose the location you are standing at.": "Scansionare un codice a barre o digitare una SKU. Scegliere la posizione in cui ci si trova.",
+	"Use the key from your licence email. Invalid keys are rejected with a clear error.": "Utilizzare la chiave dell'e-mail di licenza. Le chiavi non valide vengono rifiutate con un messaggio chiaro.",
+	"When on, stocktake start asks you to scan the location label first.": "Se attivo, l'avvio dell'inventario richiede prima la scansione dell'etichetta della posizione."
+}
