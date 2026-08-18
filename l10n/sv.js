@@ -779,7 +779,18 @@ OC.L10N.register(
 	"{count} line(s) changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities." : "{count} rad(er) ändrades efter start av denna inventering. Aktuell kvantitet skiljer sig från ögonblicksbilden — lös före avslut, eller bekräfta att de räknade mängderna accepteras.",
 	"{ok} row(s) look fine." : "{ok} rad(s) ser bra ut.",
 	"★ Remove from favourites" : "★ Ta bort från favoriter",
-	"☆ Add to favourites" : "Lägg till favoriter"
+	"☆ Add to favourites" : "Lägg till favoriter",
+	"(opens in a new tab)" : "(öppnas i en ny flik)",
+	"Email is best-effort — no reply SLA. Need booked help? Use Support & us." : "E-post utan svars-SLA. Behöver du bokad hjälp? Använd Support & vi.",
+	"Report a problem" : "Rapportera ett problem",
+	"Suggest an improvement" : "Föreslå en förbättring",
+	"Report this problem" : "Rapportera det här problemet",
+	"Open GitHub Issues" : "Öppna GitHub Issues",
+	"Help" : "Hjälp",
+	"Get the App" : "Hämta appen",
+	"Setup & training" : "Installation och utbildning",
+	"Commissioned feature" : "Beställd funktion",
+	"Mobile & terminal" : "Mobil och terminal"
 	},
 	"nplurals=2; plural=(n != 1);"
 );

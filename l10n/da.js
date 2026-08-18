@@ -779,7 +779,18 @@ OC.L10N.register(
 	"{count} line(s) changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities." : "{count} linje(r) ændrede sig efter start af denne optælling. Aktuel mængde afviger fra snapshot — løs før lukning, eller bekræft, at de talte mængder accepteres.",
 	"{ok} row(s) look fine." : "{ok} række (r) ser fint ud.",
 	"★ Remove from favourites" : "• Fjern fra favoritter",
-	"☆ Add to favourites" : "Name"
+	"☆ Add to favourites" : "Name",
+	"(opens in a new tab)" : "(åbner i en ny fane)",
+	"Email is best-effort — no reply SLA. Need booked help? Use Support & us." : "E-mail uden svar-SLA. Brug for booket hjælp? Brug Support & os.",
+	"Report a problem" : "Rapportér et problem",
+	"Suggest an improvement" : "Foreslå en forbedring",
+	"Report this problem" : "Rapportér dette problem",
+	"Open GitHub Issues" : "Åbn GitHub Issues",
+	"Help" : "Hjælp",
+	"Get the App" : "Hent appen",
+	"Setup & training" : "Opsætning og træning",
+	"Commissioned feature" : "Bestilt funktion",
+	"Mobile & terminal" : "Mobil og terminal"
 	},
 	"nplurals=2; plural=(n != 1);"
 );

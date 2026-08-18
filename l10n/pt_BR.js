@@ -667,7 +667,7 @@ OC.L10N.register(
 	"Suggested" : "Sugerido",
 	"Supplier note" : "Nota do fornecedor",
 	"Supplier note (optional)" : "Nota do fornecedor (opcional)",
-	"Support & us" : "Apoie-nos e nós",
+	"Support & us" : "Support e nós",
 	"System qty" : "Quantidade do sistema",
 	"Tap a location below to start counting — favourites appear first" : "Toque em um local abaixo para começar a contar – os favoritos aparecem primeiro",
 	"Tap a location in the list. Favourites appear first. Search if you have many warehouses or vans." : "Toque em um local na lista. Favoritos aparecem primeiro. Pesquise se houver muitos armazéns ou vans.",
@@ -779,7 +779,18 @@ OC.L10N.register(
 	"{count} line(s) changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities." : "{count} linha(s) alterada(s) após o início deste inventário. A quantidade ativa difere do instantâneo — resolva antes de fechar ou confirme que as quantidades contadas são aceitas.",
 	"{ok} row(s) look fine." : "As linhas {ok} parecem boas.",
 	"★ Remove from favourites" : "★ Remover dos favoritos",
-	"☆ Add to favourites" : "☆ Adicionar aos favoritos"
+	"☆ Add to favourites" : "☆ Adicionar aos favoritos",
+	"(opens in a new tab)" : "(abre em uma nova aba)",
+	"Email is best-effort — no reply SLA. Need booked help? Use Support & us." : "E-mail sem SLA de resposta. Precisa de ajuda agendada? Use Support e nós.",
+	"Report a problem" : "Relatar um problema",
+	"Suggest an improvement" : "Sugerir uma melhoria",
+	"Report this problem" : "Relatar este problema",
+	"Open GitHub Issues" : "Abrir GitHub Issues",
+	"Help" : "Ajuda",
+	"Get the App" : "Baixar o app",
+	"Setup & training" : "Implantação e treinamento",
+	"Commissioned feature" : "Funcionalidade sob encomenda",
+	"Mobile & terminal" : "Celular e terminal"
 	},
 	"nplurals=2; plural=(n > 1);"
 );

@@ -779,7 +779,18 @@ OC.L10N.register(
 	"{count} line(s) changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities." : "La línea {count}(s) cambió después de que esta acción comenzó. La cantidad en vivo difiere de la instantánea — resolver antes de cerrar, o confirmar que acepta las cantidades contadas.",
 	"{ok} row(s) look fine." : "Las filas {ok} se ven bien.",
 	"★ Remove from favourites" : "★ Eliminar de favoritos",
-	"☆ Add to favourites" : "☆ Añadir a favoritos"
+	"☆ Add to favourites" : "☆ Añadir a favoritos",
+	"(opens in a new tab)" : "(se abre en una pestaña nueva)",
+	"Email is best-effort — no reply SLA. Need booked help? Use Support & us." : "El correo no incluye un SLA de respuesta. Si necesita ayuda concertada, use Soporte y nosotros.",
+	"Report a problem" : "Notificar un problema",
+	"Suggest an improvement" : "Sugerir una mejora",
+	"Report this problem" : "Notificar este problema",
+	"Open GitHub Issues" : "Abrir GitHub Issues",
+	"Help" : "Ayuda",
+	"Get the App" : "Obtener la app",
+	"Setup & training" : "Puesta en marcha y formación",
+	"Commissioned feature" : "Función por encargo",
+	"Mobile & terminal" : "Móvil y terminal"
 	},
 	"nplurals=2; plural=(n != 1);"
 );

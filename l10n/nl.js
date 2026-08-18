@@ -779,7 +779,18 @@ OC.L10N.register(
 	"{count} line(s) changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities." : "{count}-regel(s) is veranderd nadat deze voorraad is gestart. De levende hoeveelheid verschilt van de snapshot",
 	"{ok} row(s) look fine." : "{ok} rij(s) ziet er prima uit.",
 	"★ Remove from favourites" : "★ Uit favorieten verwijderen",
-	"☆ Add to favourites" : "Aan favorieten toevoegen"
+	"☆ Add to favourites" : "Aan favorieten toevoegen",
+	"(opens in a new tab)" : "(opent in een nieuw tabblad)",
+	"Email is best-effort — no reply SLA. Need booked help? Use Support & us." : "E-mail zonder antwoord-SLA. Geboekte hulp nodig? Gebruik Support en wij.",
+	"Report a problem" : "Probleem melden",
+	"Suggest an improvement" : "Verbetering voorstellen",
+	"Report this problem" : "Dit probleem melden",
+	"Open GitHub Issues" : "GitHub Issues openen",
+	"Help" : "Hulp",
+	"Get the App" : "App downloaden",
+	"Setup & training" : "Inrichting en training",
+	"Commissioned feature" : "Functie in opdracht",
+	"Mobile & terminal" : "Mobiel en terminal"
 	},
 	"nplurals=2; plural=(n != 1);"
 );
