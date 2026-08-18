@@ -157,4 +157,5 @@ $isSettings = $activeNavId === 'settings';
 				</li>
 			<?php endif; ?>
 		</ul>
+	<?php include __DIR__ . '/../parts/feedback-nav-footer.php'; ?>
 	</div>
