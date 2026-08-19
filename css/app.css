@@ -670,6 +670,7 @@ label.iv-switch-field {
 	align-items: center;
 	gap: var(--iv-space-2, 8px);
 	min-height: 44px;
+	min-width: 160px;
 	margin-top: 0;
 }
 #app-content.iv-app .iv-filter-grid--simple .iv-filter-field__control--actions .iv-btn,
@@ -679,21 +680,10 @@ label.iv-switch-field {
 	white-space: nowrap;
 }
 @media (max-width: 768px) {
-	#app-content.iv-app .iv-filter-grid.iv-filter-grid--simple {
-		grid-template-columns: 1fr;
-		grid-template-areas:
-			'search'
-			'actions';
-	}
-	#app-content.iv-app .iv-filter-grid--simple .iv-filter-field--actions .iv-filter-field__control--actions {
-		margin-top: 0;
-		width: 100%;
-		flex-wrap: wrap;
-	}
 	#app-content.iv-app .iv-filter-grid--simple .iv-filter-field__control--actions .iv-btn,
 	#app-content.iv-app .iv-filter-grid--simple .iv-filter-field__control--actions .btn,
 	#app-content.iv-app .iv-filter-grid--simple .iv-filter-field__control--actions .button {
-		flex: 1 1 auto;
+		flex: 0 1 auto;
 	}
 }
 
@@ -784,22 +774,20 @@ label.iv-switch-field {
 }
 @media (max-width: 768px) {
 	#app-content.iv-app .iv-filter-grid.iv-filter-grid--movements {
-		grid-template-columns: 1fr;
+		grid-template-columns: minmax(0, 1fr) max-content;
 		grid-template-areas:
-			'kind'
-			'item'
-			'location'
-			'dates'
-			'actions';
+			'kind actions'
+			'item item'
+			'location location'
+			'dates dates';
 	}
 	#app-content.iv-app .iv-filter-grid--movements .iv-filter-field--actions .iv-filter-field__control--actions {
 		margin-top: 0;
-		width: 100%;
 	}
 	#app-content.iv-app .iv-filter-grid--movements .iv-filter-field__control--actions .iv-btn,
 	#app-content.iv-app .iv-filter-grid--movements .iv-filter-field__control--actions .btn,
 	#app-content.iv-app .iv-filter-grid--movements .iv-filter-field__control--actions .button {
-		flex: 1 1 auto;
+		flex: 0 0 auto;
 	}
 	#app-content.iv-app .iv-filter-grid--movements .iv-date-range__part {
 		max-width: none;
@@ -1243,8 +1231,7 @@ button.iv-hint-dismiss:focus-visible {
 .iv-quickstart__intro .iv-section__sub {
 	margin: 0.35rem 0 0;
 	max-width: 65ch;
-	color: var(--color-main-text, #1d1d1d);
-	opacity: 0.85;
+	color: var(--color-text-maxcontrast, #767676);
 }
 
 .iv-howto .iv-quickstart,
@@ -2918,76 +2905,111 @@ textarea {
 #app-navigation .iv-nav-footer,
 .iv-nav .iv-nav-footer,
 .iv-app-nav .iv-nav-footer {
+	position: relative;
 	margin-top: auto;
 	flex-shrink: 0;
 	min-width: 0;
 	width: 100%;
 	box-sizing: border-box;
-	padding: var(--iv-space-4, 1rem)
+	padding: var(--iv-space-3, 0.75rem)
 		var(--iv-space-3, 0.75rem)
-		max(var(--iv-space-5, 1.5rem), env(safe-area-inset-bottom, 0px));
-	border-top: 1px solid var(--iv-border, color-mix(in srgb, var(--color-main-text) 12%, var(--color-main-background)));
-	background: var(--color-main-background);
+		max(var(--iv-space-4, 1rem), env(safe-area-inset-bottom, 0px));
+	background: transparent;
+	display: flex;
+	justify-content: center;
 	z-index: 1;
 }
 
-.iv-nav-footer__title {
-	margin: 0 0 var(--iv-space-2, 0.5rem);
-	font-size: var(--iv-fs-xs, 0.75rem);
-	font-weight: 600;
-	letter-spacing: 0.04em;
-	text-transform: uppercase;
+.iv-nav-footer__trigger {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--iv-space-2, 0.5rem);
+	min-height: 44px;
+	min-width: 44px;
+	padding: var(--iv-space-2, 0.5rem) var(--iv-space-3, 0.75rem);
+	border: 1px solid var(--iv-border, color-mix(in srgb, var(--color-main-text) 12%, var(--color-main-background)));
+	border-radius: var(--iv-radius-pill, 9999px);
+	background: var(--color-main-background);
 	color: var(--color-text-maxcontrast);
+	font: inherit;
+	font-size: var(--iv-fs-sm, 0.875rem);
+	line-height: var(--iv-line-base, 1.45);
+	cursor: pointer;
+	white-space: nowrap;
+	transition: background 0.15s ease, color 0.15s ease;
 }
 
-.iv-nav-footer__list {
-	list-style: none;
-	margin: 0;
-	padding: 0;
+.iv-nav-footer__trigger:hover {
+	background: var(--color-background-hover);
+	color: var(--color-main-text);
+}
+
+.iv-nav-footer__trigger:focus-visible {
+	outline: 2px solid var(--color-primary-element);
+	outline-offset: 2px;
+}
+
+.iv-nav-footer__trigger:focus:not(:focus-visible) {
+	outline: none;
+}
+
+.iv-nav-footer__trigger[aria-expanded="true"] {
+	background: var(--color-background-hover);
+	color: var(--color-main-text);
+}
+
+.iv-nav-footer__menu {
+	position: absolute;
+	bottom: calc(100% + var(--iv-space-2, 0.5rem));
+	left: 50%;
+	transform: translateX(-50%);
+	min-width: 220px;
+	max-width: calc(100% - var(--iv-space-4, 1rem));
+	padding: var(--iv-space-2, 0.5rem);
+	border-radius: var(--iv-radius-md, 8px);
+	background: var(--color-main-background);
+	border: 1px solid var(--iv-border, color-mix(in srgb, var(--color-main-text) 12%, var(--color-main-background)));
+	box-shadow: 0 4px 16px rgb(0 0 0 / 0.12);
+	box-sizing: border-box;
 	display: flex;
 	flex-direction: column;
 	gap: var(--iv-space-1, 0.25rem);
+	z-index: 10;
 }
 
-.iv-nav-footer__link {
+.iv-nav-footer__menu[hidden] {
+	display: none;
+}
+
+.iv-nav-footer__menu-item {
 	display: flex;
 	align-items: center;
-	width: 100%;
-	/* WCAG 2.5.5: px, not rem — Nextcloud root font is 15px (2.75rem = 41.25px). */
+	gap: var(--iv-space-2, 0.5rem);
 	min-height: 44px;
 	min-width: 44px;
 	padding: var(--iv-space-2, 0.5rem);
 	border-radius: var(--iv-radius-sm, 6px);
 	box-sizing: border-box;
-	color: var(--color-text-maxcontrast);
+	color: var(--color-main-text);
 	text-decoration: none;
 	font-size: var(--iv-fs-sm, 0.875rem);
 	line-height: var(--iv-line-base, 1.45);
-	white-space: normal;
-	overflow-wrap: anywhere;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
-.iv-nav-footer__link:hover {
+.iv-nav-footer__menu-item:hover {
 	background: var(--color-background-hover);
-	color: var(--color-main-text);
 }
 
-.iv-nav-footer__link:focus-visible {
+.iv-nav-footer__menu-item:focus-visible {
 	outline: 2px solid var(--color-primary-element);
-	outline-offset: 2px;
+	outline-offset: -2px;
 }
 
-.iv-nav-footer__link:focus:not(:focus-visible),
-.iv-nav-footer__toast-link:focus:not(:focus-visible) {
+.iv-nav-footer__menu-item:focus:not(:focus-visible) {
 	outline: none;
-}
-
-.iv-nav-footer__hint {
-	margin: var(--iv-space-2, 0.5rem) 0 0;
-	font-size: var(--iv-fs-xs, 0.75rem);
-	line-height: 1.45;
-	color: var(--color-text-maxcontrast);
-	overflow-wrap: anywhere;
 }
 
 .iv-nav-footer__new-tab {
@@ -3023,35 +3045,58 @@ textarea {
 	outline-offset: 2px;
 }
 
+.iv-nav-footer__toast-link:focus:not(:focus-visible) {
+	outline: none;
+}
+
 @media (prefers-contrast: more) {
-	#app-navigation .iv-nav-footer,
-	.iv-nav .iv-nav-footer,
-	.iv-app-nav .iv-nav-footer {
-		border-top-width: 2px;
-		border-top-color: var(--color-main-text);
+	.iv-nav-footer__trigger {
+		border-width: 2px;
+		border-color: var(--color-main-text);
 	}
 
-	.iv-nav-footer__link:focus-visible,
+	.iv-nav-footer__menu {
+		border-width: 2px;
+		border-color: var(--color-main-text);
+	}
+
+	.iv-nav-footer__trigger:focus-visible,
+	.iv-nav-footer__menu-item:focus-visible,
 	.iv-nav-footer__toast-link:focus-visible {
 		outline-width: 3px;
 	}
 }
 
 @media (forced-colors: active) {
-	.iv-nav-footer__link,
+	.iv-nav-footer__trigger {
+		forced-color-adjust: none;
+		color: ButtonText;
+		border-color: ButtonText;
+		background: ButtonFace;
+	}
+
+	.iv-nav-footer__menu {
+		forced-color-adjust: none;
+		border-color: ButtonText;
+		background: Canvas;
+	}
+
+	.iv-nav-footer__menu-item,
 	.iv-nav-footer__toast-link {
 		forced-color-adjust: none;
 		color: LinkText;
 	}
 
-	.iv-nav-footer__link:focus-visible,
+	.iv-nav-footer__trigger:focus-visible,
+	.iv-nav-footer__menu-item:focus-visible,
 	.iv-nav-footer__toast-link:focus-visible {
 		outline: 3px solid Highlight;
 	}
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.iv-nav-footer__link,
+	.iv-nav-footer__trigger,
+	.iv-nav-footer__menu-item,
 	.iv-nav-footer__toast-link {
 		transition: none;
 	}

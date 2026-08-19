@@ -54,10 +54,11 @@
 		"test:mutation:wave": "php tests/Mutation/run-wave-mutations.php",
 		"test:mutation:label": "php tests/Mutation/run-label-mutations.php",
 		"test:mutation:qtyscale": "php tests/Mutation/run-qty-scale-mutations.php",
+		"test:mutation:boolparam": "php tests/Mutation/run-bool-param-mutations.php",
 		"test:mutation:facade": "php tests/Mutation/run-stock-issue-facade-mutations.php",
 		"test:mutation:filters": "php tests/Mutation/run-filter-panel-mutations.php",
 		"test:mutation:directory": "php tests/Mutation/run-directory-mutations.php",
-		"test:mutation": "composer test:mutation:math && composer test:mutation:adjust && composer test:mutation:codes && composer test:mutation:access && composer test:mutation:config && composer test:mutation:license && composer test:mutation:hash && composer test:mutation:rank && composer test:mutation:support && composer test:mutation:middleware && composer test:mutation:movement && composer test:mutation:pairing && composer test:mutation:lifecycle && composer test:mutation:balance && composer test:mutation:csv && composer test:mutation:wave && composer test:mutation:label && composer test:mutation:qtyscale && composer test:mutation:facade && composer test:mutation:filters && composer test:mutation:directory",
+		"test:mutation": "composer test:mutation:math && composer test:mutation:adjust && composer test:mutation:codes && composer test:mutation:access && composer test:mutation:config && composer test:mutation:license && composer test:mutation:hash && composer test:mutation:rank && composer test:mutation:support && composer test:mutation:middleware && composer test:mutation:movement && composer test:mutation:pairing && composer test:mutation:lifecycle && composer test:mutation:balance && composer test:mutation:csv && composer test:mutation:wave && composer test:mutation:label && composer test:mutation:qtyscale && composer test:mutation:boolparam && composer test:mutation:facade && composer test:mutation:filters && composer test:mutation:directory",
 		"test:msi": "php tests/Mutation/msi-report.php",
 		"test:gauntlet": "composer test:all && composer test:js && composer test:a11y && composer test:msi"
 	},

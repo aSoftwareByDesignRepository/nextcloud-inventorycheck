@@ -13,6 +13,8 @@ final class LabelSheet
 	public const MIN_LABELS_PER_A4 = 12;
 	public const COLS = 3;
 	public const ROWS = 4;
+	/** Hard cap on one GET /labels request — each tile encodes QR + Code 128. */
+	public const MAX_BULK_LABELS = 500;
 
 	/**
 	 * @param list<array{scanCode: string, sku: string, name: string}> $items

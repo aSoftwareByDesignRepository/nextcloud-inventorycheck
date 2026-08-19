@@ -63,6 +63,19 @@ final class AdjustSemanticsTest extends TestCase
 		AdjustSemantics::compute('delta', 0, null, 1_000_001, true);
 	}
 
+	public function testSetTargetAboveMovementMaxRejected(): void
+	{
+		$this->expectException(ValidationException::class);
+		AdjustSemantics::compute('set', 0, 1_000_001, null, true);
+	}
+
+	public function testSetTargetAtMovementMaxAllowed(): void
+	{
+		$result = AdjustSemantics::compute('set', 0, 1_000_000, null, true);
+		$this->assertSame(1_000_000, $result['delta']);
+		$this->assertSame(1_000_000, $result['qtyAfter']);
+	}
+
 	public function testInvalidMode(): void
 	{
 		$this->expectException(ValidationException::class);

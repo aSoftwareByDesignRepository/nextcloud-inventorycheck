@@ -1180,6 +1180,8 @@
 		while (node.firstChild) node.removeChild(node.firstChild);
 	}
 
+	var CLS_SR_FALLBACK = 'iv-btn--sr-fallback';
+
 	function btn(label, opts) {
 		opts = opts || {};
 		var attrs = {
@@ -2707,8 +2709,6 @@
 							el('div', { className: 'iv-filter-field__control iv-filter-field__control--actions' }, [
 								btn(tr('Search'), {
 									type: 'submit',
-									className: 'iv-btn--sr-fallback',
-									'aria-label': tr('Search'),
 								}),
 								(function () {
 									var clearBtn = btn(tr('Clear'), {
@@ -3208,8 +3208,6 @@
 							el('div', { className: 'iv-filter-field__control iv-filter-field__control--actions' }, [
 								btn(tr('Search'), {
 									type: 'submit',
-									className: 'iv-btn--sr-fallback',
-									'aria-label': tr('Search'),
 								}),
 								(function () {
 									var clearBtn = btn(tr('Clear'), {
@@ -3977,10 +3975,9 @@
 							el('div', { className: 'iv-filter-field iv-filter-field--actions' }, [
 								el('span', { className: 'iv-filter-field__label iv-sr-only', text: tr('Actions') }),
 								el('div', { className: 'iv-filter-field__control iv-filter-field__control--actions' }, [
-									btn(tr('Apply'), {
-										type: 'submit',
-										'aria-label': tr('Apply filters'),
-									}),
+								btn(tr('Apply'), {
+									type: 'submit',
+								}),
 									btn(tr('Clear'), {
 										type: 'button',
 										onclick: function () { renderMovements(ctx, null); },
@@ -4660,7 +4657,7 @@
 					className: 'iv-field__hint',
 					id: 'iv-app-admins-hint',
 					text: canEditAppAdmins
-						? tr('People who may change settings (in addition to system admins).')
+						? tr('People who may change settings (in addition to system admins).') + ' ' + tr('Search and pick colleagues who may change access policy, office lists, and the license (in addition to system administrators). Never type a raw user id.')
 						: tr('Only Nextcloud system administrators can change the app administrator list.'),
 				}),
 			];

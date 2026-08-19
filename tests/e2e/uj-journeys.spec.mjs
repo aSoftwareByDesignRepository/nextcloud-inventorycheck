@@ -229,6 +229,7 @@ test('UJ-4 adjust set + no-op rejection', async ({ page }) => {
 		mode: 'set',
 		qty: 12,
 		reason: 'Inventur UJ-4',
+		reasonCode: 'inventur',
 	})
 	expectOk(set, 'adjust set')
 	expect(set.data.movements[0].qtyDelta).toBe(-2)
@@ -239,6 +240,7 @@ test('UJ-4 adjust set + no-op rejection', async ({ page }) => {
 		locationId: loc.data.id,
 		mode: 'set',
 		qty: 12,
+		reasonCode: 'inventur',
 	})
 	expect(noop.status).toBe(422)
 	expect(noop.data?.error?.code || noop.data?.code).toMatch(/invalid_qty/)

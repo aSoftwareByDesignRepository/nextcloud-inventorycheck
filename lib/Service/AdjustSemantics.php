@@ -39,6 +39,11 @@ final class AdjustSemantics
 			if (!MovementMath::isValidBalance($qty)) {
 				throw new ValidationException('qty_out_of_range');
 			}
+			// S1: the target itself is a client qty — same ceiling as receive/issue.
+			// Without this, mode=set from 0 to 2e9 posts one mega-movement.
+			if ($qty > $maxMovementQty || $qty < -$maxMovementQty) {
+				throw new ValidationException('invalid_qty');
+			}
 			$delta = $qty - $currentQty;
 			$qtyAfter = $qty;
 		} elseif ($mode === 'delta') {

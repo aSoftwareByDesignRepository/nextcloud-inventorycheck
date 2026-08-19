@@ -5,7 +5,14 @@ declare(strict_types=1);
 /**
  * Unit-test bootstrap: prefer live Nextcloud (Docker), else OCP stubs.
  * Integration tests load lib/base.php the same way.
+ *
+ * PHPUNIT_RUN must be defined before lib/base.php. Nextcloud Config treats
+ * any prior stdout (PHPUnit's banner) as "config.php has leading content"
+ * unless this constant is set.
  */
+if (!defined('PHPUNIT_RUN')) {
+	define('PHPUNIT_RUN', 1);
+}
 
 $candidates = [];
 $nextcloudRoot = getenv('NEXTCLOUD_ROOT') ?: '';

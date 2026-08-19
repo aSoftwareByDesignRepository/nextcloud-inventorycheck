@@ -253,7 +253,21 @@ final class AppAccessMiddlewareEnvelopeTest extends TestCase
 		$this->assertSame('unknown_location', $response->getData()['error']['code']);
 	}
 
-	public function testConflictCodeExists(): void
+	public function testLicenseBusyConflictIs409NotCapacity(): void
+	{
+		$this->apiPath();
+		$response = $this->middleware->afterException(
+			$this->itemController,
+			'createDevice',
+			new ConflictException('license_busy'),
+		);
+		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertSame(Http::STATUS_CONFLICT, $response->getStatus());
+		$this->assertSame('license_busy', $response->getData()['error']['code']);
+		$this->assertStringContainsString('in progress', strtolower($response->getData()['error']['message']));
+	}
+
+	public function testCodeExistsConflict(): void
 	{
 		$this->apiPath();
 		$response = $this->middleware->afterException(

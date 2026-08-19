@@ -222,4 +222,41 @@ final class WaveContractsTest extends TestCase
 		self::assertStringContainsString('location_in_open_stocktake', $src);
 		self::assertSame(2, substr_count($src, 'countOpenForLocation'));
 	}
+
+	public function testActiveFlagMustNotUsePhpBoolCast(): void
+	{
+		$item = (string)file_get_contents(dirname(__DIR__, 3) . '/lib/Service/ItemService.php');
+		$loc = (string)file_get_contents(dirname(__DIR__, 3) . '/lib/Service/LocationService.php');
+		self::assertStringNotContainsString("(bool)\$input['active']", $item);
+		self::assertStringNotContainsString("(bool)\$input['active']", $loc);
+		self::assertStringContainsString('BoolParam::parse', $item);
+		self::assertStringContainsString('BoolParam::parse', $loc);
+	}
+
+	public function testLowStockScansEveryActiveItemViaKeyset(): void
+	{
+		$low = (string)file_get_contents(dirname(__DIR__, 3) . '/lib/Service/LowStockService.php');
+		$item = (string)file_get_contents(dirname(__DIR__, 3) . '/lib/Service/ItemService.php');
+		$mapper = (string)file_get_contents(dirname(__DIR__, 3) . '/lib/Db/ItemMapper.php');
+		self::assertStringContainsString('function iterateActive', $mapper);
+		self::assertStringContainsString('iterateActive()', $low);
+		self::assertStringContainsString('iterateActive()', $item);
+		self::assertStringNotContainsString("search('', true, 100000, 0)", $low);
+		self::assertStringNotContainsString("search('', true, 100000, 0)", $item);
+	}
+
+	public function testCsvImportLastPriceSharesApiCeiling(): void
+	{
+		$src = (string)file_get_contents(dirname(__DIR__, 3) . '/lib/Service/CsvImportService.php');
+		self::assertStringContainsString('100_000_000', $src);
+	}
+
+	public function testLicenseLockTimeoutIsNotReportedAsCapacity(): void
+	{
+		$src = (string)file_get_contents(dirname(__DIR__, 3) . '/lib/Service/LicenseService.php');
+		self::assertStringContainsString("self::DEVICE_LOCK, 'license_busy'", $src);
+		self::assertStringContainsString("self::SEAT_LOCK, 'license_busy'", $src);
+		self::assertStringNotContainsString("self::DEVICE_LOCK, 'device_limit_reached'", $src);
+		self::assertStringNotContainsString("self::SEAT_LOCK, 'seat_limit_reached'", $src);
+	}
 }

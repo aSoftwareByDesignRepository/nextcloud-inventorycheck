@@ -58,6 +58,34 @@ final class QtyScaleTest extends TestCase
 		QtyScale::toStorage($c, '1.0001');
 	}
 
+	public function testIntScaleAcceptsDisplayMaxAndRejectsMaxPlusOne(): void
+	{
+		$c = $this->config('0');
+		self::assertSame(QtyScale::MAX_DISPLAY, QtyScale::toStorage($c, QtyScale::MAX_DISPLAY));
+		self::assertSame(QtyScale::MAX_DISPLAY, QtyScale::toStorage($c, (string)QtyScale::MAX_DISPLAY));
+		self::assertSame(-QtyScale::MAX_DISPLAY, QtyScale::toStorage($c, -QtyScale::MAX_DISPLAY));
+		try {
+			QtyScale::toStorage($c, QtyScale::MAX_DISPLAY + 1);
+			self::fail('integer 1_000_001 must be rejected at the client qty boundary');
+		} catch (ValidationException $e) {
+			self::assertSame('invalid_qty', $e->getErrorCode());
+		}
+		try {
+			QtyScale::toStorage($c, (string)(QtyScale::MAX_DISPLAY + 1));
+			self::fail('string 1000001 must be rejected at the client qty boundary');
+		} catch (ValidationException $e) {
+			self::assertSame('invalid_qty', $e->getErrorCode());
+		}
+	}
+
+	public function testMilliScaleRejectsDisplayAboveOneMillion(): void
+	{
+		$c = $this->config('3');
+		self::assertSame(QtyScale::MAX_DISPLAY * QtyScale::FACTOR, QtyScale::toStorage($c, '1000000'));
+		$this->expectException(ValidationException::class);
+		QtyScale::toStorage($c, '1000000.001');
+	}
+
 	public function testFormattersOnlyTouchQtyFields(): void
 	{
 		$c = $this->config('3');

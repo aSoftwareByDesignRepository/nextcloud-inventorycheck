@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Nav footer: Report a problem / Suggest an improvement / Open GitHub Issues.
+ * Nav footer: popover with Report / Suggest / GitHub links.
  *
  * Expected variables (set by the including template):
  * @var \OCP\IL10N $l
@@ -50,51 +50,60 @@ $ctx = [
 $links = $appFeedbackLinks->forLocale($lang, $ctx);
 $github = (string)($links['githubIssuesUrl'] ?? '');
 $footerId = $prefix . '-nav-footer';
-$titleId = $prefix . '-nav-footer-title';
+$menuId = $prefix . '-nav-footer-menu';
 $newTab = $l->t('(opens in a new tab)');
 ?>
-<nav
+<div
 	class="<?php p($prefix); ?>-nav-footer"
 	id="<?php p($footerId); ?>"
 	data-app-feedback="1"
 	data-app-feedback-app="<?php p((string)$links['appId']); ?>"
-	aria-labelledby="<?php p($titleId); ?>"
 >
-	<p class="<?php p($prefix); ?>-nav-footer__title" id="<?php p($titleId); ?>">
-		<?php p($l->t('Help')); ?>
-	</p>
-	<ul class="<?php p($prefix); ?>-nav-footer__list">
-		<li>
-			<a
-				class="<?php p($prefix); ?>-nav-footer__link"
-				id="<?php p($prefix); ?>-feedback-problem"
-				href="<?php p((string)$links['problemMailto']); ?>"
-				data-app-feedback-kind="problem"
-			><?php p($l->t('Report a problem')); ?></a>
-		</li>
-		<li>
-			<a
-				class="<?php p($prefix); ?>-nav-footer__link"
-				id="<?php p($prefix); ?>-feedback-idea"
-				href="<?php p((string)$links['ideaMailto']); ?>"
-				data-app-feedback-kind="idea"
-			><?php p($l->t('Suggest an improvement')); ?></a>
-		</li>
+	<button
+		type="button"
+		class="<?php p($prefix); ?>-nav-footer__trigger"
+		aria-expanded="false"
+		aria-controls="<?php p($menuId); ?>"
+		aria-haspopup="true"
+	><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="iv-icon" width="20" height="20" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg><?php p($l->t('Help & Feedback')); ?></button>
+
+	<nav
+		class="<?php p($prefix); ?>-nav-footer__menu"
+		id="<?php p($menuId); ?>"
+		role="menu"
+		aria-label="<?php p($l->t('Help & Feedback')); ?>"
+		hidden
+	>
+		<a
+			class="<?php p($prefix); ?>-nav-footer__menu-item"
+			id="<?php p($prefix); ?>-feedback-problem"
+			href="<?php p((string)$links['problemMailto']); ?>"
+			role="menuitem"
+			data-app-feedback-kind="problem"
+		><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="iv-icon" width="20" height="20" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg><?php p($l->t('Report a problem')); ?></a>
+
+		<a
+			class="<?php p($prefix); ?>-nav-footer__menu-item"
+			id="<?php p($prefix); ?>-feedback-idea"
+			href="<?php p((string)$links['ideaMailto']); ?>"
+			role="menuitem"
+			data-app-feedback-kind="idea"
+		><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="iv-icon" width="20" height="20" aria-hidden="true" focusable="false"><path d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg><?php p($l->t('Suggest an improvement')); ?></a>
+
 		<?php if ($github !== ''): ?>
-		<li>
-			<a
-				class="<?php p($prefix); ?>-nav-footer__link"
-				id="<?php p($prefix); ?>-feedback-github"
-				href="<?php p($github); ?>"
-				target="_blank"
-				rel="noopener noreferrer"
-			><?php p($l->t('Open GitHub Issues')); ?><span class="<?php p($prefix); ?>-nav-footer__new-tab"><?php p($newTab); ?></span></a>
-		</li>
+		<a
+			class="<?php p($prefix); ?>-nav-footer__menu-item"
+			id="<?php p($prefix); ?>-feedback-github"
+			href="<?php p($github); ?>"
+			target="_blank"
+			rel="noopener noreferrer"
+			role="menuitem"
+		><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="iv-icon" width="20" height="20" aria-hidden="true" focusable="false"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg><?php p($l->t('Open GitHub Issues')); ?><span class="<?php p($prefix); ?>-nav-footer__new-tab"><?php p($newTab); ?></span></a>
 		<?php endif; ?>
-	</ul>
-	<p class="<?php p($prefix); ?>-nav-footer__hint">
-		<?php p($l->t('Email is best-effort — no reply SLA. Need booked help? Use Support & us.')); ?>
-	</p>
+
+		<p class="<?php p($prefix); ?>-nav-footer__disclaimer"><?php p($l->t('Email is best-effort — no reply SLA. Need booked help? Use Support & us.')); ?></p>
+	</nav>
+
 	<script type="application/json" id="<?php p($prefix); ?>-app-feedback-config"><?php
 		print_unescaped(json_encode([
 			'appId' => $links['appId'],
@@ -107,4 +116,4 @@ $newTab = $l->t('(opens in a new tab)');
 			'cssPrefix' => $prefix,
 		], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP));
 	?></script>
-</nav>
+</div>

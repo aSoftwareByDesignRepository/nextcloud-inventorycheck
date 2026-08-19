@@ -164,7 +164,7 @@ class LicenseService
 			return $this->seatRow($existing);
 		}
 
-		return $this->withExclusiveLock(self::SEAT_LOCK, 'seat_limit_reached', function () use ($adminUid, $userId): array {
+		return $this->withExclusiveLock(self::SEAT_LOCK, 'license_busy', function () use ($adminUid, $userId): array {
 			$existing = $this->seats->findByUid($userId);
 			if ($existing !== null) {
 				return $this->seatRow($existing);
@@ -192,6 +192,11 @@ class LicenseService
 
 	public function removeSeat(string $uid): void
 	{
+		// User-delete must not fatal when a sibling install never created the
+		// companion seat table (migrations marked complete without effect).
+		if (!$this->db->tableExists(MobileSeatMapper::TABLE)) {
+			return;
+		}
 		$seat = $this->seats->findByUid($uid);
 		if ($seat === null) {
 			return;
@@ -213,7 +218,7 @@ class LicenseService
 			]);
 		}
 
-		return $this->withExclusiveLock(self::DEVICE_LOCK, 'device_limit_reached', function () use ($adminUid, $label): array {
+		return $this->withExclusiveLock(self::DEVICE_LOCK, 'license_busy', function () use ($adminUid, $label): array {
 			$limit = $this->licenseState->findSingleton()?->getScanDevices() ?? 0;
 			if ($this->devices->countActive() >= $limit) {
 				throw new ConflictException('device_limit_reached');

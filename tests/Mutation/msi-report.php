@@ -26,6 +26,7 @@ $runners = [
 	['file' => 'tests/Mutation/run-label-mutations.php', 'bucket' => 'hot'],
 	['file' => 'tests/Mutation/run-wave-mutations.php', 'bucket' => 'hot'],
 	['file' => 'tests/Mutation/run-qty-scale-mutations.php', 'bucket' => 'hot'],
+	['file' => 'tests/Mutation/run-bool-param-mutations.php', 'bucket' => 'hot'],
 	['file' => 'tests/Mutation/run-license-mutations.php', 'bucket' => 'hot'],
 	['file' => 'tests/Mutation/run-hash-secret-mutations.php', 'bucket' => 'hot'],
 	['file' => 'tests/Mutation/run-rank-mutations.php', 'bucket' => 'hot'],

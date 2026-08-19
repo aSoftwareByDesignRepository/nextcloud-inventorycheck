@@ -63,9 +63,8 @@ class ItemService
 	{
 		$visible = $this->locationAcl->visibleLocationIds($actorUid);
 		$sums = $this->balances->sumQtyByItem($visible);
-		$all = $this->items->search('', true, 100000, 0);
 		$ids = [];
-		foreach ($all['data'] as $item) {
+		foreach ($this->items->iterateActive() as $item) {
 			$total = $sums[(int)$item->getId()] ?? 0;
 			if (LowStockQuery::isLowStock(true, $item->getReorderLevel(), $total)) {
 				$ids[] = (int)$item->getId();
@@ -263,7 +262,7 @@ class ItemService
 				$item->setScanCode($scan);
 			}
 			if (array_key_exists('active', $input)) {
-				$active = (bool)$input['active'];
+				$active = BoolParam::parse($input['active'], 'active');
 				if (!$active && $item->getActive()) {
 					if ($this->items->hasNonZeroBalance($id)) {
 						throw new ConflictException('item_has_stock');

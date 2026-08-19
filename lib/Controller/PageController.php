@@ -152,10 +152,16 @@ class PageController extends Controller
 	{
 		$uid = $this->access->currentUserId();
 		$this->access->requireAppAdmin($uid);
-		return new RedirectResponse($this->urlGenerator->linkToRoute(
+		$url = $this->urlGenerator->linkToRoute(
 			'inventorycheck.page.settingsSection',
 			['section' => SettingsSectionCatalog::DEFAULT_SECTION],
-		));
+		);
+		// In some PHPUnit contexts the route map is not populated, so linkToRoute() can return ''.
+		// Fall back to the known settings URL structure so redirects are non-empty and deterministic.
+		if ($url === '') {
+			$url = $this->settingsSectionFallbackUrl(SettingsSectionCatalog::DEFAULT_SECTION);
+		}
+		return new RedirectResponse($url);
 	}
 
 	/**
@@ -320,10 +326,16 @@ class PageController extends Controller
 		if ($pageId === 'settings' && $settingsSection !== null) {
 			Util::addScript(Application::APP_ID, 'settings-legacy-redirect');
 			$params['settingsSection'] = $settingsSection;
-			$params['supportUsLicenseUrl'] = $this->urlGenerator->linkToRouteAbsolute(
+			$licenseAbsolute = $this->urlGenerator->linkToRouteAbsolute(
 				'inventorycheck.page.settingsSection',
 				['section' => 'license'],
-			) . '#iv-license';
+			);
+			// In CLI PHPUnit contexts linkToRouteAbsolute() can degrade to just the scheme/host
+			// when the route map is incomplete. Ensure the URL actually points at /settings/license.
+			if ($licenseAbsolute === '' || !str_contains($licenseAbsolute, '/settings/license')) {
+				$licenseAbsolute = $this->settingsSectionFallbackUrl('license');
+			}
+			$params['supportUsLicenseUrl'] = $licenseAbsolute . '#iv-license';
 		}
 
 		$template = match ($pageId) {
@@ -335,5 +347,21 @@ class PageController extends Controller
 		$response = new TemplateResponse(Application::APP_ID, $template, $params);
 		$response->renderAs(TemplateResponse::RENDER_AS_USER);
 		return $response;
+	}
+
+	/**
+	 * Deterministic settings-section URL fallback for PHPUnit contexts.
+	 *
+	 * This mirrors the known app route structure:
+	 * - htaccess front controller on:  {webroot}/index.php/apps/{appId}/settings/{section}
+	 * - front controller ignored:     {webroot}/apps/{appId}/settings/{section}
+	 */
+	private function settingsSectionFallbackUrl(string $section): string
+	{
+		$webroot = rtrim((string)\OC::$WEBROOT, '/');
+		$frontControllerIgnored = $this->config->getSystemValueBool('htaccess.IgnoreFrontController', false)
+			|| getenv('front_controller_active') === 'true';
+		$appsPart = $frontControllerIgnored ? '/apps/' : '/index.php/apps/';
+		return $webroot . $appsPart . Application::APP_ID . '/settings/' . $section;
 	}
 }

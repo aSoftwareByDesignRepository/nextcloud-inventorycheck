@@ -178,6 +178,33 @@ class ItemMapper extends QBMapper
 		return $this->findEntities($qb);
 	}
 
+	/**
+	 * Walk every active item in id order. Low-stock scans must not silently
+	 * stop at a magic OFFSET limit (100000) and miss later SKUs.
+	 *
+	 * @return \Generator<int, Item>
+	 */
+	public function iterateActive(int $pageSize = 500): \Generator
+	{
+		if ($pageSize < 1) {
+			return;
+		}
+		$afterId = 0;
+		while (true) {
+			$page = $this->searchActiveAfterId($afterId, $pageSize);
+			if ($page === []) {
+				return;
+			}
+			foreach ($page as $item) {
+				$afterId = (int)$item->getId();
+				yield $item;
+			}
+			if (count($page) < $pageSize) {
+				return;
+			}
+		}
+	}
+
 	public function countMovementsReferencing(int $itemId): int
 	{
 		$qb = $this->db->getQueryBuilder();

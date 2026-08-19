@@ -439,7 +439,9 @@ final class PermissionMatrixIntegrationTest extends TestCase
 	{
 		$this->loginAs(self::ADMIN);
 		$page = Server::get(PageController::class);
-		$this->apiMiddleware()->beforeController($page, 'settingsSection');
+		// Page URL generation depends on request context (pathInfo / app webroot).
+		// Using apiMiddleware() with an /api/* path makes linkToRouteAbsolute fragile in CLI PHPUnit.
+		$this->pageMiddleware()->beforeController($page, 'settingsSection');
 		$response = $page->settingsSection('support');
 		$this->assertInstanceOf(TemplateResponse::class, $response);
 		$params = $response->getParams();
@@ -454,7 +456,7 @@ final class PermissionMatrixIntegrationTest extends TestCase
 	{
 		$this->loginAs(self::ADMIN);
 		$page = Server::get(PageController::class);
-		$this->apiMiddleware()->beforeController($page, 'settings');
+		$this->pageMiddleware()->beforeController($page, 'settings');
 		$response = $page->settings();
 		$this->assertInstanceOf(\OCP\AppFramework\Http\RedirectResponse::class, $response);
 		$this->assertStringContainsString('/settings/access', $response->getRedirectURL());

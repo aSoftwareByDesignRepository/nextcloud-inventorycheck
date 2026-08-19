@@ -310,7 +310,7 @@ class ConfigController extends Controller
 
 	/**
 	 * Accept JSON booleans and the appconfig-style 0/1 wire forms.
-	 * Never use bare `(bool)$value` — in PHP `(bool)'0'` is true.
+	 * Never use bare `(bool)$value` — in PHP `(bool)'false'` is true.
 	 */
 	private function parseBool(mixed $value, string $field): bool
 	{

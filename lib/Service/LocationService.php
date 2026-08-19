@@ -183,7 +183,7 @@ class LocationService
 				$loc->setNotes($notes === '' ? null : $notes);
 			}
 			if (array_key_exists('active', $input)) {
-				$active = (bool)$input['active'];
+				$active = BoolParam::parse($input['active'], 'active');
 				if (!$active && $loc->getActive()) {
 					if ($this->locations->hasNonZeroBalance($id)) {
 						throw new ConflictException('location_has_stock');

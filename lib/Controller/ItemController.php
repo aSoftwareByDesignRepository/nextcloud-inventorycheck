@@ -135,6 +135,9 @@ class ItemController extends Controller
 		if ($ids === []) {
 			throw new ValidationException('validation_failed', '', [['field' => 'ids', 'code' => 'validation_failed']]);
 		}
+		if (count($ids) > LabelSheet::MAX_BULK_LABELS) {
+			throw new ValidationException('validation_failed', '', [['field' => 'ids', 'code' => 'too_many']]);
+		}
 
 		$items = [];
 		foreach ($ids as $id) {

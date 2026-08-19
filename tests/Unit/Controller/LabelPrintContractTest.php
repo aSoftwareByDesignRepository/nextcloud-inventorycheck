@@ -53,4 +53,21 @@ final class LabelPrintContractTest extends TestCase
 		self::assertStringContainsString('DataDownloadResponse', $src);
 		self::assertStringContainsString('LabelSvg::forItem', $src);
 	}
+
+	public function testLocationBulkLabelsPassesLabelsHtmlMatchingTemplate(): void
+	{
+		$controller = (string)file_get_contents(dirname(__DIR__, 3) . '/lib/Controller/LocationController.php');
+		$tpl = (string)file_get_contents(dirname(__DIR__, 3) . '/templates/label-sheet-print.php');
+		self::assertStringContainsString("\$_['labelsHtml']", $tpl);
+		self::assertStringContainsString("'labelsHtml' => \$html", $controller);
+		self::assertStringNotContainsString("'sheetHtml'", $controller);
+		self::assertStringContainsString('LabelSheet::MAX_BULK_LABELS', $controller);
+	}
+
+	public function testItemBulkLabelsCapsIds(): void
+	{
+		$src = (string)file_get_contents(dirname(__DIR__, 3) . '/lib/Controller/ItemController.php');
+		self::assertStringContainsString('LabelSheet::MAX_BULK_LABELS', $src);
+		self::assertStringContainsString("'labelsHtml' => \$html", $src);
+	}
 }

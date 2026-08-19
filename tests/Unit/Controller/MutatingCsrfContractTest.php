@@ -16,15 +16,16 @@ final class MutatingCsrfContractTest extends TestCase
 	private function controllerFiles(): array
 	{
 		$root = dirname(__DIR__, 3) . '/lib/Controller';
-		return [
-			$root . '/ItemController.php',
-			$root . '/LocationController.php',
-			$root . '/MovementController.php',
-			$root . '/ConfigController.php',
-			$root . '/LicenseController.php',
-			$root . '/BalanceController.php',
-			$root . '/LowStockController.php',
-		];
+		$files = glob($root . '/*.php');
+		self::assertNotFalse($files);
+		$out = [];
+		foreach ($files as $file) {
+			if (basename($file) === 'MobileController.php') {
+				continue;
+			}
+			$out[] = $file;
+		}
+		return $out;
 	}
 
 	public function testMutatingMethodsAreNotCsrfExempt(): void
@@ -32,9 +33,13 @@ final class MutatingCsrfContractTest extends TestCase
 		$mutating = [
 			'create', 'update', 'destroy',
 			'receive', 'issue', 'transfer', 'adjust', 'scan',
-			'saveAccess', 'saveOffice',
+			'saveAccess', 'saveOffice', 'saveNotify', 'saveFractional', 'saveWaveD', 'saveLocationAcl',
 			'apply', 'remove', 'assignSeat', 'removeSeat',
 			'createDevice', 'regeneratePairCode', 'removeDevice',
+			'start', 'setCount', 'close',
+			'dryRun', 'commit',
+			'upload',
+			'issueMaintWo', 'issueProject', 'saveSettings',
 		];
 
 		foreach ($this->controllerFiles() as $file) {

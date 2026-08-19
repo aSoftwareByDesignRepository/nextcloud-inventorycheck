@@ -127,6 +127,110 @@
 		}
 	}
 
+	function installPopover() {
+		var triggers = document.querySelectorAll('.' + PREFIX + '-nav-footer__trigger');
+		for (var i = 0; i < triggers.length; i++) {
+			(function (trigger) {
+				if (trigger.getAttribute('data-app-feedback-popover') === '1') {
+					return;
+				}
+				trigger.setAttribute('data-app-feedback-popover', '1');
+
+				var menuId = trigger.getAttribute('aria-controls');
+				if (!menuId) {
+					return;
+				}
+				var menu = document.getElementById(menuId);
+				if (!menu) {
+					return;
+				}
+
+				function open() {
+					menu.hidden = false;
+					trigger.setAttribute('aria-expanded', 'true');
+					var first = menu.querySelector('a, button');
+					if (first) {
+						first.focus();
+					}
+				}
+
+				function close(returnFocus) {
+					menu.hidden = true;
+					trigger.setAttribute('aria-expanded', 'false');
+					if (returnFocus) {
+						trigger.focus();
+					}
+				}
+
+				trigger.addEventListener('click', function (e) {
+					e.preventDefault();
+					if (trigger.getAttribute('aria-expanded') === 'true') {
+						close(true);
+					} else {
+						open();
+					}
+				});
+
+				trigger.addEventListener('keydown', function (e) {
+					if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+						e.preventDefault();
+						if (trigger.getAttribute('aria-expanded') !== 'true') {
+							open();
+						}
+					}
+				});
+
+				menu.addEventListener('keydown', function (e) {
+					if (e.key === 'Escape') {
+						e.preventDefault();
+						e.stopPropagation();
+						close(true);
+						return;
+					}
+
+					var items = menu.querySelectorAll('[role="menuitem"]');
+					if (!items.length) {
+						return;
+					}
+					var idx = -1;
+					for (var j = 0; j < items.length; j++) {
+						if (items[j] === document.activeElement) {
+							idx = j;
+							break;
+						}
+					}
+
+					if (e.key === 'ArrowDown') {
+						e.preventDefault();
+						items[(idx + 1) % items.length].focus();
+					} else if (e.key === 'ArrowUp') {
+						e.preventDefault();
+						items[(idx - 1 + items.length) % items.length].focus();
+					} else if (e.key === 'Home') {
+						e.preventDefault();
+						items[0].focus();
+					} else if (e.key === 'End') {
+						e.preventDefault();
+						items[items.length - 1].focus();
+					} else if (e.key === 'Tab') {
+						close(false);
+					}
+				});
+
+				document.addEventListener('click', function (e) {
+					if (trigger.getAttribute('aria-expanded') !== 'true') {
+						return;
+					}
+					var footer = trigger.closest('.' + PREFIX + '-nav-footer');
+					if (footer && footer.contains(e.target)) {
+						return;
+					}
+					close(false);
+				});
+			})(triggers[i]);
+		}
+	}
+
 	function attachReportLink(toast, errorCode) {
 		if (!toast || toast.getAttribute('data-app-feedback-bound') === '1') {
 			return;
@@ -202,6 +306,7 @@
 		buildMailto: buildMailto,
 		install: function () {
 			refreshNavHrefs();
+			installPopover();
 			installToastHooks();
 		},
 	};

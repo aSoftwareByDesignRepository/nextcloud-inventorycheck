@@ -55,21 +55,30 @@ final class QtyScale
 
 	/**
 	 * Parse a client-facing qty into storage int.
+	 *
+	 * Client display values may not exceed {@see MAX_DISPLAY} (1e6 whole units,
+	 * or 1e6.000 when fractional). Without this check, adjust mode=set and
+	 * inventur counts could post a 2e9 movement in one request and bypass S1.
 	 */
 	public static function toStorage(IConfig $config, mixed $display): int
 	{
 		if (self::current($config) === self::SCALE_INT) {
 			if (is_int($display)) {
+				self::assertStorageWithinClientMax($config, $display);
 				return $display;
 			}
 			if (is_float($display) && is_finite($display) && floor($display) === $display) {
-				return (int)$display;
+				$storage = (int)$display;
+				self::assertStorageWithinClientMax($config, $storage);
+				return $storage;
 			}
 			$raw = trim((string)$display);
 			if ($raw === '' || preg_match('/^-?\d+$/', $raw) !== 1) {
 				throw new ValidationException('invalid_qty', '', [['field' => 'qty', 'code' => 'invalid_qty']]);
 			}
-			return (int)$raw;
+			$storage = (int)$raw;
+			self::assertStorageWithinClientMax($config, $storage);
+			return $storage;
 		}
 
 		$raw = trim((string)$display);
@@ -83,7 +92,17 @@ final class QtyScale
 		[$whole, $frac] = array_pad(explode('.', $raw, 2), 2, '');
 		$frac = str_pad($frac, 3, '0');
 		$milli = ((int)$whole) * self::FACTOR + (int)$frac;
-		return $negative ? -$milli : $milli;
+		$storage = $negative ? -$milli : $milli;
+		self::assertStorageWithinClientMax($config, $storage);
+		return $storage;
+	}
+
+	private static function assertStorageWithinClientMax(IConfig $config, int $storage): void
+	{
+		$max = self::maxStorage($config);
+		if ($storage > $max || $storage < -$max) {
+			throw new ValidationException('invalid_qty', '', [['field' => 'qty', 'code' => 'invalid_qty']]);
+		}
 	}
 
 	/**

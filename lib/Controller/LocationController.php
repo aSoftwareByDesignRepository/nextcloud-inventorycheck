@@ -137,6 +137,9 @@ class LocationController extends Controller
 		if ($ids === []) {
 			throw new ValidationException('validation_failed', '', [['field' => 'ids', 'code' => 'validation_failed']]);
 		}
+		if (count($ids) > LabelSheet::MAX_BULK_LABELS) {
+			throw new ValidationException('validation_failed', '', [['field' => 'ids', 'code' => 'too_many']]);
+		}
 
 		$uid = $this->access->currentUserId();
 		$locs = [];
@@ -161,7 +164,7 @@ class LocationController extends Controller
 			Application::APP_ID,
 			'label-sheet-print',
 			[
-				'sheetHtml' => $html,
+				'labelsHtml' => $html,
 				'count' => count($locs),
 				'backUrl' => $this->urlGenerator->linkToRoute('inventorycheck.page.locations'),
 			],

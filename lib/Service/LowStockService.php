@@ -32,9 +32,8 @@ class LowStockService
 	{
 		$visible = $this->locationAcl->visibleLocationIds($actorUid);
 		$sums = $this->balances->sumQtyByItem($visible);
-		$all = $this->items->search('', true, 100000, 0);
 		$rows = [];
-		foreach ($all['data'] as $item) {
+		foreach ($this->items->iterateActive() as $item) {
 			$total = $sums[(int)$item->getId()] ?? 0;
 			if (!LowStockQuery::isLowStock(true, $item->getReorderLevel(), $total)) {
 				continue;
@@ -85,10 +84,9 @@ class LowStockService
 		if ($visible !== null && $visible === []) {
 			return ['data' => [], 'total' => 0, 'limit' => $limit, 'offset' => $offset];
 		}
-		$all = $this->items->search('', true, 100000, 0);
 		$perLocationQty = $this->balances->sumQtyByItemAndLocation();
 		$rows = [];
-		foreach ($all['data'] as $item) {
+		foreach ($this->items->iterateActive() as $item) {
 			$itemId = (int)$item->getId();
 			$reorder = $item->getReorderLevel();
 			if ($reorder <= 0 || !isset($perLocationQty[$itemId])) {

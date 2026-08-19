@@ -202,7 +202,6 @@ class MovementService
 		$this->access->requireOffice($actorUid);
 		$this->assertLocationAccess($actorUid, $locationId);
 		$reason = $this->normalizeReason($reason);
-		$reasonCode = ReasonCodes::requireForAdjust($this->config, $reasonCode);
 		$allowNeg = $this->access->allowNegativeStock();
 		$now = $this->clock->now();
 
@@ -233,6 +232,8 @@ class MovementService
 				}
 				throw $e;
 			}
+
+			$reasonCode = ReasonCodes::requireForAdjust($this->config, $reasonCode);
 
 			// An adjust can increase on-hand qty exactly like a receive (e.g.
 			// a cycle-count correction) — the serial uniqueness invariant

@@ -25,6 +25,12 @@ runMutations(dirname(__DIR__, 2), 'QtyScaleTest', [
 		'replace' => "if (false) {\n\t\t\treturn \$storage;\n\t\t}",
 	],
 	[
+		'name' => 'to-storage-drops-client-max',
+		'file' => 'lib/Service/QtyScale.php',
+		'search' => "if (\$storage > \$max || \$storage < -\$max) {\n\t\t\tthrow new ValidationException('invalid_qty', '', [['field' => 'qty', 'code' => 'invalid_qty']]);\n\t\t}",
+		'replace' => "if (false) {\n\t\t\tthrow new ValidationException('invalid_qty', '', [['field' => 'qty', 'code' => 'invalid_qty']]);\n\t\t}",
+	],
+	[
 		'name' => 'format-balance-skips-qty',
 		'file' => 'lib/Service/QtyScale.php',
 		'search' => "if (array_key_exists('qty', \$balance) && is_int(\$balance['qty'])) {\n\t\t\t\$balance['qty'] = self::toDisplay(\$config, \$balance['qty']);\n\t\t}",

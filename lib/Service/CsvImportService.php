@@ -193,8 +193,8 @@ class CsvImportService
 					continue;
 				}
 				$lastPriceMinor = (int)$lastPriceRaw;
-				if ($lastPriceMinor < 0) {
-					$errors[] = ['line' => $line, 'code' => 'invalid_last_price', 'message' => 'last_price_minor must be ≥ 0'];
+				if ($lastPriceMinor < 0 || $lastPriceMinor > 100_000_000) {
+					$errors[] = ['line' => $line, 'code' => 'invalid_last_price', 'message' => 'last_price_minor must be ≥ 0 and ≤ 100000000'];
 					continue;
 				}
 			}

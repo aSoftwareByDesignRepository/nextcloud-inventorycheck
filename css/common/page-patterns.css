@@ -142,6 +142,7 @@
 	align-items: center;
 	gap: var(--iv-space-2);
 	min-height: 44px;
+	min-width: 160px;
 	margin-top: 0;
 }
 
@@ -340,21 +341,13 @@
 		grid-template-rows: auto;
 	}
 
-	#app-content.iv-app .iv-filter-grid.iv-filter-grid--simple {
-		grid-template-columns: 1fr;
-		grid-template-areas:
-			'search'
-			'actions';
-	}
-
 	#app-content.iv-app .iv-filter-grid.iv-filter-grid--movements {
-		grid-template-columns: 1fr;
+		grid-template-columns: minmax(0, 1fr) max-content;
 		grid-template-areas:
-			'kind'
-			'item'
-			'location'
-			'dates'
-			'actions';
+			'kind actions'
+			'item item'
+			'location location'
+			'dates dates';
 	}
 
 	#app-content.iv-app .iv-filter-field {

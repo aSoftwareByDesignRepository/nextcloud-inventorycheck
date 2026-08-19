@@ -83,6 +83,7 @@ final class CsvAndLabelSheetTest extends TestCase
 	public function testLabelSheetCapacityAndHtml(): void
 	{
 		self::assertSame(12, LabelSheet::capacity());
+		self::assertSame(500, LabelSheet::MAX_BULK_LABELS);
 		self::assertGreaterThanOrEqual(LabelSheet::MIN_LABELS_PER_A4, LabelSheet::capacity());
 		$html = LabelSheet::html([
 			['scanCode' => 'FILTER-42', 'sku' => 'FILTER-42', 'name' => 'Air filter'],

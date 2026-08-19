@@ -216,6 +216,7 @@ class AppAccessMiddleware extends Middleware
 			'location_in_open_stocktake' => $l->t('This location has an open stocktake. Close or finish that stocktake first.'),
 			'seat_limit_reached' => $l->t('All licensed seats are assigned. Remove a seat or upgrade the license.'),
 			'device_limit_reached' => $l->t('All licensed device slots are used. Remove a device or upgrade the license.'),
+			'license_busy' => $l->t('Another license change is in progress. Try again in a moment.'),
 			'campaign_not_open' => $l->t('This cycle count has already been started or closed.'),
 			'campaign_not_counting' => $l->t('This cycle count is not open for counting right now.'),
 			'line_already_posted' => $l->t('This line was already posted and cannot be counted again.'),
