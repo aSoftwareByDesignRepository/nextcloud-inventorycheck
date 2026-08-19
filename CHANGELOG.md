@@ -41,6 +41,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Companion bootstrap `companionApi` uses an explicit `max()` ladder (item-photo floor + fractional bump) instead of a dead branch.
 
+## 1.3.8 - 2026-08-19
+### Changed
+
+- English product name only everywhere (App Store metadata and in-app navigation): `InventoryCheck` — no localized `<name lang="...">` variants.
+- App Store descriptions remain localized; added `AppBrandNameContractTest` to prevent brand-name drift.
+
+## 1.3.7 - 2026-08-19
+### Changed
+
+- App Store release description updated to mark this as an early release and invite feedback (feedback link + messaging).
+
 ## 1.3.5 - 2026-08-02
 
 ### Changed
