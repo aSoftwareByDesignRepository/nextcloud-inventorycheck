@@ -68,6 +68,46 @@ function boot(extra) {
 	nodes.set('iv-feedback-problem', problem);
 	nodes.set('iv-feedback-idea', idea);
 
+	const trigger = {
+		className: 'iv-nav-footer__trigger',
+		getAttribute(k) {
+			return this[k] || null;
+		},
+		setAttribute(k, v) {
+			this[k] = v;
+		},
+		contains() {
+			return false;
+		},
+		addEventListener() {},
+		focus() {},
+	};
+	trigger['aria-expanded'] = 'false';
+	trigger['aria-controls'] = 'iv-feedback-menu';
+	const menu = {
+		id: 'iv-feedback-menu',
+		hidden: true,
+		contains() {
+			return false;
+		},
+		querySelector() {
+			return null;
+		},
+	};
+	nodes.set('iv-feedback-menu', menu);
+	doc.querySelector = (sel) => {
+		if (sel === '.iv-nav-footer__trigger') {
+			return trigger;
+		}
+		return null;
+	};
+	doc.getElementById = (id) => {
+		if (id === 'iv-feedback-menu') {
+			return menu;
+		}
+		return nodes.get(id) || null;
+	};
+
 	const sandbox = {
 		console,
 		URL,
@@ -99,7 +139,7 @@ function boot(extra) {
 	};
 	sandbox.window = sandbox;
 	vm.runInNewContext(SRC, sandbox, { filename: 'app-feedback.js' });
-	return { sandbox, problem, idea, doc };
+	return { sandbox, problem, idea, doc, trigger, menu };
 }
 
 function decodeBody(mailto) {
@@ -109,6 +149,13 @@ function decodeBody(mailto) {
 }
 
 function main() {
+	assert(SRC.includes('installPopover'), 'popover installer present in source');
+	const installed = boot();
+	assert(typeof installed.sandbox.SbdAppFeedback.install === 'function', 'install exported');
+	installed.sandbox.SbdAppFeedback.install();
+	assert(installed.trigger['aria-expanded'] === 'false', 'popover starts collapsed');
+	assert(installed.menu.hidden === true, 'menu starts hidden');
+
 	const { sandbox, problem, doc } = boot();
 	assert(typeof sandbox.SbdAppFeedback === 'object', 'SbdAppFeedback exported');
 	assert(typeof sandbox.SbdAppFeedback.sanitizePageUrl === 'function', 'sanitizePageUrl present');
@@ -121,6 +168,10 @@ function main() {
 	assert(!clean.includes('password='), 'strips password query key');
 	assert(sandbox.SbdAppFeedback.sanitizePageUrl('javascript:alert(1)') === '', 'blocks javascript:');
 	assert(sandbox.SbdAppFeedback.sanitizePageUrl('data:text/html,hi') === '', 'blocks data:');
+	const upgradeAck = sandbox.SbdAppFeedback.sanitizePageUrl(
+		'/apps/inventorycheck/?IKnowThatThisIsABigInstanceAndTheUpdateRequestCouldRunIntoATimeoutAndHowToRestoreABackup=IAmSuperSureToDoThis'
+	);
+	assert(upgradeAck === '/apps/inventorycheck/', 'strips Nextcloud web-upgrade ack query key');
 
 	const mailto = sandbox.SbdAppFeedback.buildMailto('problem', { errorCode: 'CONFLICT' });
 	assert(mailto.startsWith('mailto:dev@software-by-design.de'), 'mailto uses dev@ inbox');

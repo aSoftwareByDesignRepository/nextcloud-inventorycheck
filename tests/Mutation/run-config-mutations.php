@@ -43,12 +43,6 @@ runMutations(dirname(__DIR__, 2), 'ConfigDirectoryValidationTest', [
 		'replace' => 'return $out;',
 	],
 	[
-		'name' => 'string-zero-treated-as-true',
-		'file' => $file,
-		'search' => "if (\$value === 0 || \$value === '0') {\n\t\t\treturn false;\n\t\t}",
-		'replace' => "if (\$value === 0) {\n\t\t\treturn false;\n\t\t}",
-	],
-	[
 		'name' => 'commit-before-group-validation',
 		'file' => $file,
 		'search' => "\$allowedUsers = array_key_exists('allowedUsers', \$p)\n\t\t\t? \$this->validatedUserIds(\$p['allowedUsers'], 'allowedUsers')\n\t\t\t: null;\n\t\t\$allowedGroups = array_key_exists('allowedGroups', \$p)\n\t\t\t? \$this->validatedGroupIds(\$p['allowedGroups'], 'allowedGroups')\n\t\t\t: null;",

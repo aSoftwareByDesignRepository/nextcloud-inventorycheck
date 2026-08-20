@@ -11,7 +11,6 @@ use OCP\IConfig;
 use OCP\IDBConnection;
 use OCP\Migration\IOutput;
 use OCP\Server;
-use ReflectionClass;
 use Test\TestCase;
 
 /**
@@ -46,9 +45,15 @@ final class LiveUninstallDropIntegrationTest extends TestCase
 
 		try {
 			$step = Server::get(UninstallDropTables::class);
-			$method = (new ReflectionClass(UninstallDropTables::class))->getMethod('dropAllTablesAndMetadata');
-			$method->setAccessible(true);
-			$method->invoke($step, $this->createMock(IOutput::class));
+			// Access the private test-only path without ReflectionMethod::setAccessible()
+			// (PHP 8.5 deprecates setAccessible()).
+			\Closure::bind(
+				function (IOutput $output): void {
+					$this->dropAllTablesAndMetadata($output);
+				},
+				$step,
+				UninstallDropTables::class,
+			)($this->createMock(IOutput::class));
 
 			foreach (UninstallDropTables::TABLES as $table) {
 				$this->assertFalse($db->tableExists($table), "AC-20: $table must be gone after removal drop");

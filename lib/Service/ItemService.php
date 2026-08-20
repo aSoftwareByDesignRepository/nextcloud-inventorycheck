@@ -46,7 +46,10 @@ class ItemService
 		}
 		$result = $this->items->search($q, $active, $limit, $offset, $idFilter);
 		return [
-			'data' => array_map(static fn (Item $i) => $i->toApi(), $result['data']),
+			'data' => array_map(
+				fn (Item $i) => $this->stripConfidentialItemFields($i->toApi(), $actorUid),
+				$result['data'],
+			),
 			'total' => $result['total'],
 			'limit' => $limit,
 			'offset' => $offset,
@@ -73,10 +76,27 @@ class ItemService
 		return $ids;
 	}
 
-	/** @return array<string, mixed> */
-	public function get(int $id): array
+	/**
+	 * Field users/scanning devices may read the shared item catalog, but must
+	 * not see cost-ish properties.
+	 *
+	 * @param array<string, mixed> $item
+	 * @return array<string, mixed>
+	 */
+	private function stripConfidentialItemFields(array $item, string $actorUid): array
 	{
-		return $this->items->findById($id)->toApi();
+		if ($this->access->isOffice($actorUid)) {
+			return $item;
+		}
+		unset($item['supplierNote'], $item['lastPriceMinor']);
+		return $item;
+	}
+
+	/** @return array<string, mixed> */
+	public function get(string $actorUid, int $id): array
+	{
+		$item = $this->items->findById($id)->toApi();
+		return $this->stripConfidentialItemFields($item, $actorUid);
 	}
 
 	/**
@@ -92,7 +112,7 @@ class ItemService
 		if ($item === null) {
 			throw new NotFoundException('code_not_found');
 		}
-		$api = $item->toApi();
+		$api = $this->stripConfidentialItemFields($item->toApi(), $actorUid);
 		$visible = $this->locationAcl->visibleLocationIds($actorUid);
 		$bal = $this->balances->search((int)$item->getId(), null, false, 200, 0, false, $visible);
 		$api['balances'] = array_map(static fn ($b) => $b->toApi(), $bal['data']);

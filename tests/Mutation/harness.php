@@ -43,8 +43,13 @@ function runMutations(string $appRoot, string $testFilter, array $mutants): neve
 		. ' -c ' . escapeshellarg($config)
 		. ' --filter ' . escapeshellarg($testFilter)
 		. ' 2>&1';
+	$baselineAttempts = 3;
 	$baselineOut = [];
-	exec($baselineCmd, $baselineOut, $baselineCode);
+	$baselineCode = 1;
+	for ($attempt = 1; $attempt <= $baselineAttempts && $baselineCode !== 0; $attempt++) {
+		$baselineOut = [];
+		exec($baselineCmd, $baselineOut, $baselineCode);
+	}
 	if ($baselineCode !== 0) {
 		fwrite(STDERR, "BASELINE FAILED for filter {$testFilter} — refusing to mutate.\n");
 		fwrite(STDERR, implode("\n", $baselineOut) . "\n");

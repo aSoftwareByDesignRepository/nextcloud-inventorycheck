@@ -179,6 +179,7 @@
 		"Code or name": "Code or name",
 		"Columns: sku, scan_code, name, description, uom, reorder_level, active, supplier_note, last_price_minor, opening_location_code, opening_qty. German headers also work.": "Columns: sku, scan_code, name, description, uom, reorder_level, active, supplier_note, last_price_minor, opening_location_code, opening_qty. German headers also work.",
 		"Columns: sku, scan_code, name, description, uom, reorder_level, active, supplier_note, last_price_minor.": "Columns: sku, scan_code, name, description, uom, reorder_level, active, supplier_note, last_price_minor.",
+		"Commissioned feature": "Commissioned feature",
 		"Compare shelf quantities with system stock, then close to post adjustments": "Compare shelf quantities with system stock, then close to post adjustments",
 		"Compare system stock with what is actually on the shelf — then post the difference in one close.": "Compare system stock with what is actually on the shelf — then post the difference in one close.",
 		"Confirm both location codes.": "Confirm both location codes.",
@@ -390,6 +391,7 @@
 		"Low stock: %s": "Low stock: %s",
 		"Main navigation": "Main navigation",
 		"MaintenanceCheck and ProjectCheck can ask InventoryCheck to issue stock automatically for their work. Nothing changes unless you turn this on.": "MaintenanceCheck and ProjectCheck can ask InventoryCheck to issue stock automatically for their work. Nothing changes unless you turn this on.",
+		"Mobile & terminal": "Mobile & terminal",
 		"Mobile seats": "Mobile seats",
 		"More": "More",
 		"More Check apps": "More Check apps",
@@ -624,6 +626,7 @@
 		"Settings": "Settings",
 		"Settings pages": "Settings pages",
 		"Settings saved.": "Settings saved.",
+		"Setup & training": "Setup & training",
 		"Shelf": "Shelf",
 		"Showing transfer group": "Showing transfer group",
 		"Showing {from}–{to} of {total}": "Showing {from}–{to} of {total}",
@@ -786,9 +789,6 @@
 		"{count} line(s) changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities.": "{count} line(s) changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities.",
 		"{ok} row(s) look fine.": "{ok} row(s) look fine.",
 		"★ Remove from favourites": "★ Remove from favourites",
-		"☆ Add to favourites": "☆ Add to favourites",
-		"Setup & training": "Setup & training",
-		"Commissioned feature": "Commissioned feature",
-		"Mobile & terminal": "Mobile & terminal"
+		"☆ Add to favourites": "☆ Add to favourites"
 	}
 }

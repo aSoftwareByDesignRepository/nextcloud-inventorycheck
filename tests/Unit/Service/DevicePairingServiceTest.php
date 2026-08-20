@@ -214,7 +214,6 @@ final class DevicePairingServiceTest extends TestCase
 			'count' => 10,
 		]);
 		$method = new \ReflectionMethod(DevicePairingService::class, 'recordFailureOrThrowRateLimited');
-		$method->setAccessible(true);
 		try {
 			$method->invoke($this->pairing);
 			$this->fail('expected MobileGateException when window is full');

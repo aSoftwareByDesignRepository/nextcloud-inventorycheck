@@ -7,6 +7,7 @@ namespace OCA\InventoryCheck\Controller;
 use OCA\InventoryCheck\AppInfo\Application;
 use OCA\InventoryCheck\Exception\ValidationException;
 use OCA\InventoryCheck\Service\AccessControlService;
+use OCA\InventoryCheck\Service\BoolParam;
 use OCA\InventoryCheck\Service\LocationAclService;
 use OCA\InventoryCheck\Service\LocationScanPolicy;
 use OCA\InventoryCheck\Service\LowStockNotifyService;
@@ -314,18 +315,7 @@ class ConfigController extends Controller
 	 */
 	private function parseBool(mixed $value, string $field): bool
 	{
-		if (is_bool($value)) {
-			return $value;
-		}
-		if ($value === 1 || $value === '1') {
-			return true;
-		}
-		if ($value === 0 || $value === '0') {
-			return false;
-		}
-		throw new ValidationException('validation_failed', $field . ' must be a boolean.', [
-			['field' => $field, 'code' => 'invalid_type'],
-		]);
+		return BoolParam::parse($value, $field);
 	}
 
 	/**

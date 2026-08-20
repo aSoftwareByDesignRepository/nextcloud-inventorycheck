@@ -56,7 +56,7 @@ class ItemController extends Controller
 	#[NoAdminRequired]
 	public function show(int $id): JSONResponse
 	{
-		return new JSONResponse(QtyScale::formatItem($this->items->get($id), $this->config));
+		return new JSONResponse(QtyScale::formatItem($this->items->get($this->access->currentUserId(), $id), $this->config));
 	}
 
 	#[NoAdminRequired]
@@ -72,7 +72,7 @@ class ItemController extends Controller
 	#[NoCSRFRequired]
 	public function label(int $id): DataDownloadResponse
 	{
-		$item = $this->items->get($id);
+		$item = $this->items->get($this->access->currentUserId(), $id);
 		$svg = LabelSvg::forItem(
 			(string)$item['scanCode'],
 			(string)$item['sku'],
@@ -96,7 +96,7 @@ class ItemController extends Controller
 	#[NoCSRFRequired]
 	public function labelPrint(int $id): TemplateResponse
 	{
-		$item = $this->items->get($id);
+		$item = $this->items->get($this->access->currentUserId(), $id);
 		$svg = LabelSvg::forItem(
 			(string)$item['scanCode'],
 			(string)$item['sku'],
@@ -140,9 +140,10 @@ class ItemController extends Controller
 		}
 
 		$items = [];
+		$actorUid = $this->access->currentUserId();
 		foreach ($ids as $id) {
 			try {
-				$items[] = $this->items->get($id);
+				$items[] = $this->items->get($actorUid, $id);
 			} catch (\Throwable) {
 				continue;
 			}

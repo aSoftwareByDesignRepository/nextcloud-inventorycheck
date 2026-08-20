@@ -40,6 +40,9 @@ async function axeScan(name) {
 		url: `https://inventorycheck.test/apps/inventorycheck/${name}`,
 		runScripts: 'dangerously',
 		pretendToBeVisual: true,
+		beforeParse(window) {
+			window.HTMLCanvasElement.prototype.getContext = () => null;
+		},
 	});
 	dom.window.eval(axeSource);
 	assert.equal(typeof dom.window.axe?.run, 'function', `${name}: axe must load`);

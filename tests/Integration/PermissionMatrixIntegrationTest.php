@@ -265,6 +265,38 @@ final class PermissionMatrixIntegrationTest extends TestCase
 		$this->assertInstanceOf(JSONResponse::class, $lowStock->index());
 	}
 
+	// ── P2 contract: shared catalog must not leak cost to field ─────────
+
+	public function testP2FieldCannotSeeSupplierNoteAndLastPrice(): void
+	{
+		$itemsService = Server::get(ItemService::class);
+		$itemsController = Server::get(ItemController::class);
+
+		// Seed a catalog row with confidential keys.
+		$created = $itemsService->create(self::OFFICE, [
+			'sku' => 'PM-COST-' . bin2hex(random_bytes(3)),
+			'name' => 'Cost Item',
+			'supplierNote' => 'internal supplier note',
+			'lastPriceMinor' => 12345,
+		]);
+		$itemId = (int)$created['id'];
+		$code = (string)$created['scanCode'];
+
+		// Field user: must not receive cost-ish properties.
+		$this->loginAs(self::FIELD);
+		$mw = $this->apiMiddleware();
+
+		$mw->beforeController($itemsController, 'show');
+		$show = $itemsController->show($itemId)->getData();
+		$this->assertArrayNotHasKey('supplierNote', $show);
+		$this->assertArrayNotHasKey('lastPriceMinor', $show);
+
+		$mw->beforeController($itemsController, 'byCode');
+		$byCode = $itemsController->byCode($code)->getData();
+		$this->assertArrayNotHasKey('supplierNote', $byCode);
+		$this->assertArrayNotHasKey('lastPriceMinor', $byCode);
+	}
+
 	// ── P3 issue / transfer (field+) ─────────────────────────────────────
 
 	public function testP3FieldCanIssueAndTransfer(): void
