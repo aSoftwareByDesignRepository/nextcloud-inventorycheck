@@ -180,6 +180,7 @@ OC.L10N.register(
 	"Code or name" : "Kode eller navn",
 	"Columns: sku, scan_code, name, description, uom, reorder_level, active, supplier_note, last_price_minor, opening_location_code, opening_qty. German headers also work." : "Kolonner: sku, scan _ code, navn, beskrivelse, uom, reorder _ level, aktiv, leverandør _ note, last _ price _ minor, åbning _ location _ code, åbning _ qty. De tyske ledere arbejder også.",
 	"Columns: sku, scan_code, name, description, uom, reorder_level, active, supplier_note, last_price_minor." : "Kolonner: sku, scan _ code, navn, beskrivelse, uom, reorder _ level, aktiv, leverandør _ note, last _ price _ minor.",
+	"Commissioned feature" : "Bestilt funktion",
 	"Compare shelf quantities with system stock, then close to post adjustments" : "Sammenlign hyldemængder med systemlager, derefter tæt på efter justeringer",
 	"Compare system stock with what is actually on the shelf — then post the difference in one close." : "Sammenlign systemlager med hvad der rent faktisk er på hylden - og læg så forskellen i den ene lukning.",
 	"Confirm both location codes." : "Bekræft begge stedkoder.",
@@ -391,6 +392,7 @@ OC.L10N.register(
 	"Low stock: %s" : "Lavt lager: %s",
 	"Main navigation" : "Hovednavigation",
 	"MaintenanceCheck and ProjectCheck can ask InventoryCheck to issue stock automatically for their work. Nothing changes unless you turn this on." : "MaintenanceCheck og ProjectCheck kan bede InventoryCheck om automatisk at udstede lager til deres arbejde. Intet ændres, før dette aktiveres.",
+	"Mobile & terminal" : "Mobil og terminal",
 	"Mobile seats" : "Mobilpladser",
 	"More" : "Mere",
 	"More Check apps" : "Flere Check-apps",
@@ -625,6 +627,7 @@ OC.L10N.register(
 	"Settings" : "Indstillinger",
 	"Settings pages" : "Indstillingssider",
 	"Settings saved." : "Indstillinger gemt.",
+	"Setup & training" : "Opsætning og træning",
 	"Shelf" : "Opbevaringstid",
 	"Showing transfer group" : "Viser overførselsgruppe",
 	"Showing {from}–{to} of {total}" : "Viser {from}- {to} af {total}",
@@ -787,9 +790,7 @@ OC.L10N.register(
 	"{count} line(s) changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities." : "{count} linje(r) ændrede sig efter start af denne optælling. Aktuel mængde afviger fra snapshot — løs før lukning, eller bekræft, at de talte mængder accepteres.",
 	"{ok} row(s) look fine." : "{ok} række (r) ser fint ud.",
 	"★ Remove from favourites" : "• Fjern fra favoritter",
-	"☆ Add to favourites" : "Name",
-	"Setup & training" : "Opsætning og træning",
-	"Commissioned feature" : "Bestilt funktion",
-	"Mobile & terminal" : "Mobil og terminal",
-},
-"nplurals=2; plural=(n != 1);");
+	"☆ Add to favourites" : "Name"
+	},
+	"nplurals=2; plural=(n != 1);"
+);

@@ -180,6 +180,7 @@ OC.L10N.register(
 	"Code or name" : "Kod eller namn",
 	"Columns: sku, scan_code, name, description, uom, reorder_level, active, supplier_note, last_price_minor, opening_location_code, opening_qty. German headers also work." : "Kolumner: sku, scan code, namn, beskrivning, uom, reorder level, aktiv, leverantör note, Last price minor, opening location code, opening qty. Tyska rubriker arbetar också.",
 	"Columns: sku, scan_code, name, description, uom, reorder_level, active, supplier_note, last_price_minor." : "Kolumner: sku, scan code, namn, beskrivning, uom, reorder level, aktiv, leverantör note, Last price minor.",
+	"Commissioned feature" : "Beställd funktion",
 	"Compare shelf quantities with system stock, then close to post adjustments" : "Jämför hyllor med systemlager, sedan nära postjusteringar",
 	"Compare system stock with what is actually on the shelf — then post the difference in one close." : "Jämför systemlager med vad som faktiskt finns på hyllan - sedan posta skillnaden i en nära.",
 	"Confirm both location codes." : "Bekräfta båda platskoderna.",
@@ -391,6 +392,7 @@ OC.L10N.register(
 	"Low stock: %s" : "Lågt lager: %s",
 	"Main navigation" : "Huvudnavigering",
 	"MaintenanceCheck and ProjectCheck can ask InventoryCheck to issue stock automatically for their work. Nothing changes unless you turn this on." : "MaintenanceCheck och ProjectCheck kan be InventoryCheck att automatiskt utfärda lager för sitt arbete. Inget ändras förrän detta aktiveras.",
+	"Mobile & terminal" : "Mobil och terminal",
 	"Mobile seats" : "Mobilplatser",
 	"More" : "Mer",
 	"More Check apps" : "Fler Check-appar",
@@ -625,6 +627,7 @@ OC.L10N.register(
 	"Settings" : "Inställningar",
 	"Settings pages" : "Inställningssidor",
 	"Settings saved." : "Inställningar sparade.",
+	"Setup & training" : "Installation och utbildning",
 	"Shelf" : "Hylla",
 	"Showing transfer group" : "Visa överföringsgrupp",
 	"Showing {from}–{to} of {total}" : "Visa {from}-{to} av {total}",
@@ -787,9 +790,7 @@ OC.L10N.register(
 	"{count} line(s) changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities." : "{count} rad(er) ändrades efter start av denna inventering. Aktuell kvantitet skiljer sig från ögonblicksbilden — lös före avslut, eller bekräfta att de räknade mängderna accepteras.",
 	"{ok} row(s) look fine." : "{ok} rad(s) ser bra ut.",
 	"★ Remove from favourites" : "★ Ta bort från favoriter",
-	"☆ Add to favourites" : "Lägg till favoriter",
-	"Setup & training" : "Installation och utbildning",
-	"Commissioned feature" : "Beställd funktion",
-	"Mobile & terminal" : "Mobil och terminal",
-},
-"nplurals=2; plural=(n != 1);");
+	"☆ Add to favourites" : "Lägg till favoriter"
+	},
+	"nplurals=2; plural=(n != 1);"
+);

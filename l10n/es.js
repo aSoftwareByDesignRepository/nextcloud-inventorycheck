@@ -180,6 +180,7 @@ OC.L10N.register(
 	"Code or name" : "Código o nombre",
 	"Columns: sku, scan_code, name, description, uom, reorder_level, active, supplier_note, last_price_minor, opening_location_code, opening_qty. German headers also work." : "Columnas: sku, scan code, name, description, uom, reorder level, active, provider note, last price minor, opening location code, opening qty. Los encabezados alemanes también trabajan.",
 	"Columns: sku, scan_code, name, description, uom, reorder_level, active, supplier_note, last_price_minor." : "Columnas: sku, scan code, name, description, uom, reorder level, active, provider note, last price minor.",
+	"Commissioned feature" : "Función por encargo",
 	"Compare shelf quantities with system stock, then close to post adjustments" : "Compare las cantidades de estanterías con stock del sistema, luego cerca de los ajustes de correo",
 	"Compare system stock with what is actually on the shelf — then post the difference in one close." : "Compare el stock del sistema con lo que está realmente en el estante — y luego publique la diferencia en uno cercano.",
 	"Confirm both location codes." : "Confirme ambos códigos de ubicación.",
@@ -391,6 +392,7 @@ OC.L10N.register(
 	"Low stock: %s" : "Stock bajo: %s",
 	"Main navigation" : "Navegación principal",
 	"MaintenanceCheck and ProjectCheck can ask InventoryCheck to issue stock automatically for their work. Nothing changes unless you turn this on." : "MaintenanceCheck y ProjectCheck pueden pedir a InventoryCheck que emita acciones automáticamente para su trabajo. Nada cambia a menos que enciendas esto.",
+	"Mobile & terminal" : "Móvil y terminal",
 	"Mobile seats" : "Puestos móviles",
 	"More" : "Más",
 	"More Check apps" : "Más apps Check",
@@ -625,6 +627,7 @@ OC.L10N.register(
 	"Settings" : "Ajustes",
 	"Settings pages" : "Páginas de ajustes",
 	"Settings saved." : "Configuración guardada.",
+	"Setup & training" : "Puesta en marcha y formación",
 	"Shelf" : "Estante",
 	"Showing transfer group" : "Mostrando grupo de transferencia",
 	"Showing {from}–{to} of {total}" : "Mostrando {from}-{to} de {total}",
@@ -787,9 +790,7 @@ OC.L10N.register(
 	"{count} line(s) changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities." : "La línea {count}(s) cambió después de que esta acción comenzó. La cantidad en vivo difiere de la instantánea — resolver antes de cerrar, o confirmar que acepta las cantidades contadas.",
 	"{ok} row(s) look fine." : "Las filas {ok} se ven bien.",
 	"★ Remove from favourites" : "★ Eliminar de favoritos",
-	"☆ Add to favourites" : "☆ Añadir a favoritos",
-	"Setup & training" : "Puesta en marcha y formación",
-	"Commissioned feature" : "Función por encargo",
-	"Mobile & terminal" : "Móvil y terminal",
-},
-"nplurals=2; plural=(n != 1);");
+	"☆ Add to favourites" : "☆ Añadir a favoritos"
+	},
+	"nplurals=2; plural=(n != 1);"
+);

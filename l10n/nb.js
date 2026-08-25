@@ -180,6 +180,7 @@ OC.L10N.register(
 	"Code or name" : "Kode eller navn",
 	"Columns: sku, scan_code, name, description, uom, reorder_level, active, supplier_note, last_price_minor, opening_location_code, opening_qty. German headers also work." : "Kolonner: sku, scan code, navn, beskrivelse, uom, reorder level, aktiv, leverandør note, last price minor, åpning location code, åpning qty. Tyske overskrifter fungerer også.",
 	"Columns: sku, scan_code, name, description, uom, reorder_level, active, supplier_note, last_price_minor." : "Kolonner: sku, scan code, navn, beskrivelse, uom, reorder level, aktiv, leverandør note, last price minor.",
+	"Commissioned feature" : "Bestilt funksjon",
 	"Compare shelf quantities with system stock, then close to post adjustments" : "Sammenlign hyllemengder med systemaksjen, så nær etter justeringer",
 	"Compare system stock with what is actually on the shelf — then post the difference in one close." : "Sammenlign systemets lager med det som faktisk er på hyllen - og legg deretter forskjellen i én.",
 	"Confirm both location codes." : "Bekreft begge stedskodene.",
@@ -391,6 +392,7 @@ OC.L10N.register(
 	"Low stock: %s" : "Lavt lager: %s",
 	"Main navigation" : "Hovednavigasjon",
 	"MaintenanceCheck and ProjectCheck can ask InventoryCheck to issue stock automatically for their work. Nothing changes unless you turn this on." : "MaintenanceCheck og ProjectCheck kan be InventoryCheck om automatisk å utstede lager for sitt arbeid. Ingenting endres før dette aktiveres.",
+	"Mobile & terminal" : "Mobil og terminal",
 	"Mobile seats" : "Mobilseter",
 	"More" : "Mer",
 	"More Check apps" : "Flere Check-apper",
@@ -625,6 +627,7 @@ OC.L10N.register(
 	"Settings" : "Innstillinger",
 	"Settings pages" : "Innstillingssider",
 	"Settings saved." : "Innstillinger lagret.",
+	"Setup & training" : "Oppsett og opplæring",
 	"Shelf" : "Skjold",
 	"Showing transfer group" : "Viser overføringsgruppe",
 	"Showing {from}–{to} of {total}" : "Viser {from}-{to} av {total}",
@@ -787,9 +790,7 @@ OC.L10N.register(
 	"{count} line(s) changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities." : "{count} linje(r) endret seg etter start av denne tellingen. Aktuell mengde avviker fra øyeblikksbildet — løs før lukking, eller bekreft at de talte mengdene aksepteres.",
 	"{ok} row(s) look fine." : "{ok} rad(er) ser bra ut.",
 	"★ Remove from favourites" : "★ Fjern fra favoritter",
-	"☆ Add to favourites" : "☆ Legg til i favoritter",
-	"Setup & training" : "Oppsett og opplæring",
-	"Commissioned feature" : "Bestilt funksjon",
-	"Mobile & terminal" : "Mobil og terminal",
-},
-"nplurals=2; plural=(n != 1);");
+	"☆ Add to favourites" : "☆ Legg til i favoritter"
+	},
+	"nplurals=2; plural=(n != 1);"
+);

@@ -180,6 +180,7 @@ OC.L10N.register(
 	"Code or name" : "Code of naam",
 	"Columns: sku, scan_code, name, description, uom, reorder_level, active, supplier_note, last_price_minor, opening_location_code, opening_qty. German headers also work." : "Kolommen: sku, scan code, naam, beschrijving, uom, reorder level, active, supplier note, last price minor, opening location code, opening qty. Duitse headers werken ook.",
 	"Columns: sku, scan_code, name, description, uom, reorder_level, active, supplier_note, last_price_minor." : "Kolommen: sku, scan code, naam, beschrijving, uom, reorder level, active, supplier note, last price minor.",
+	"Commissioned feature" : "Functie in opdracht",
 	"Compare shelf quantities with system stock, then close to post adjustments" : "Vergelijk plank hoeveelheden met systeem voorraad, dan dicht bij post aanpassingen",
 	"Compare system stock with what is actually on the shelf — then post the difference in one close." : "Vergelijk systeemvoorraad met wat er eigenlijk op de plank staat en plaats dan het verschil in één dicht.",
 	"Confirm both location codes." : "Bevestig beide locatiecodes.",
@@ -391,6 +392,7 @@ OC.L10N.register(
 	"Low stock: %s" : "Lage voorraad: %s",
 	"Main navigation" : "Hoofdnavigatie",
 	"MaintenanceCheck and ProjectCheck can ask InventoryCheck to issue stock automatically for their work. Nothing changes unless you turn this on." : "MaintenanceCheck en ProjectCheck kunnen InventoryCheck vragen om automatisch voorraad uit te geven voor hun werk. Er verandert niets totdat dit wordt ingeschakeld.",
+	"Mobile & terminal" : "Mobiel en terminal",
 	"Mobile seats" : "Mobiele seats",
 	"More" : "Meer",
 	"More Check apps" : "Meer Check-apps",
@@ -625,6 +627,7 @@ OC.L10N.register(
 	"Settings" : "Instellingen",
 	"Settings pages" : "Instellingenpagina’s",
 	"Settings saved." : "Instellingen opgeslagen.",
+	"Setup & training" : "Inrichting en training",
 	"Shelf" : "Plank",
 	"Showing transfer group" : "Overdrachtsgroep tonen",
 	"Showing {from}–{to} of {total}" : "{from} tonen {to} van {total}",
@@ -787,9 +790,7 @@ OC.L10N.register(
 	"{count} line(s) changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities." : "{count}-regel(s) is veranderd nadat deze voorraad is gestart. De levende hoeveelheid verschilt van de snapshot",
 	"{ok} row(s) look fine." : "{ok} rij(s) ziet er prima uit.",
 	"★ Remove from favourites" : "★ Uit favorieten verwijderen",
-	"☆ Add to favourites" : "Aan favorieten toevoegen",
-	"Setup & training" : "Inrichting en training",
-	"Commissioned feature" : "Functie in opdracht",
-	"Mobile & terminal" : "Mobiel en terminal",
-},
-"nplurals=2; plural=(n != 1);");
+	"☆ Add to favourites" : "Aan favorieten toevoegen"
+	},
+	"nplurals=2; plural=(n != 1);"
+);

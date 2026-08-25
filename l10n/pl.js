@@ -180,6 +180,7 @@ OC.L10N.register(
 	"Code or name" : "Kod lub nazwa",
 	"Columns: sku, scan_code, name, description, uom, reorder_level, active, supplier_note, last_price_minor, opening_location_code, opening_qty. German headers also work." : "Kolumny: sku, scan _ code, name, description, uom, reorder _ level, active, supply _ note, last _ price _ minor, open _ location _ code, open _ qty. Niemieckie nagłówki również działają.",
 	"Columns: sku, scan_code, name, description, uom, reorder_level, active, supplier_note, last_price_minor." : "Kolumny: Snu, scan _ code, name, description, uom, reorder _ level, active, supply _ note, last _ price _ minor.",
+	"Commissioned feature" : "Funkcja na zlecenie",
 	"Compare shelf quantities with system stock, then close to post adjustments" : "Porównaj ilości półek z zapasami systemu, a następnie blisko korekt pocztowych",
 	"Compare system stock with what is actually on the shelf — then post the difference in one close." : "Porównaj zasoby systemowe z tym, co faktycznie znajduje się na półce - następnie umieść różnicę w jednym zamknięciu.",
 	"Confirm both location codes." : "Potwierdź oba kody lokalizacji.",
@@ -391,6 +392,7 @@ OC.L10N.register(
 	"Low stock: %s" : "Niskie zapasy: %s",
 	"Main navigation" : "Główna nawigacja",
 	"MaintenanceCheck and ProjectCheck can ask InventoryCheck to issue stock automatically for their work. Nothing changes unless you turn this on." : "MaintenanceCheck i ProjectCheck mogą poprosić InventoryCheck o automatyczne wydanie zapasów do ich pracy. Nic się nie zmieni, jeśli tego nie włączysz.",
+	"Mobile & terminal" : "Mobilnie i terminal",
 	"Mobile seats" : "Stanowiska mobilne",
 	"More" : "Więcej",
 	"More Check apps" : "Więcej aplikacji Check",
@@ -625,6 +627,7 @@ OC.L10N.register(
 	"Settings" : "Ustawienia",
 	"Settings pages" : "Strony ustawień",
 	"Settings saved." : "Ustawienia zostały zapisane.",
+	"Setup & training" : "Wdrożenie i szkolenie",
 	"Shelf" : "Okres ważności",
 	"Showing transfer group" : "Pokazywanie grupy transferu",
 	"Showing {from}–{to} of {total}" : "Pokazuje {from}- {to} {total}",
@@ -787,9 +790,7 @@ OC.L10N.register(
 	"{count} line(s) changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities." : "Linia (-y) {count} zmieniła się po rozpoczęciu przechowywania. Live ilość różni się od migawki - rozwiązać przed zamknięciem, lub potwierdzić akceptację liczonych ilości.",
 	"{ok} row(s) look fine." : "Wiersze {ok} wyglądają dobrze.",
 	"★ Remove from favourites" : "-------------------------------------------------- Usuń z ulubionych",
-	"☆ Add to favourites" : "Dodaj do ulubionych",
-	"Setup & training" : "Wdrożenie i szkolenie",
-	"Commissioned feature" : "Funkcja na zlecenie",
-	"Mobile & terminal" : "Mobilnie i terminal",
-},
-"nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);");
+	"☆ Add to favourites" : "Dodaj do ulubionych"
+	},
+	"nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);"
+);
