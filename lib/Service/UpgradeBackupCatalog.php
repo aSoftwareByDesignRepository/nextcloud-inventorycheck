@@ -48,6 +48,7 @@ final class UpgradeBackupCatalog
 		'iv_movements',
 		'iv_notif_log',
 		'iv_scan_devices',
+		'iv_scan_idem',
 	];
 
 	/** @var list<string> */
@@ -64,6 +65,7 @@ final class UpgradeBackupCatalog
 		'iv_movements',
 		'iv_notif_log',
 		'iv_scan_devices',
+		'iv_scan_idem',
 	];
 
 	public static function isBackupTable(string $table): bool

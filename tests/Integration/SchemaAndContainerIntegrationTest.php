@@ -23,7 +23,7 @@ final class SchemaAndContainerIntegrationTest extends TestCase
 		foreach (UninstallDropTables::TABLES as $table) {
 			$this->assertTrue($db->tableExists($table), "missing table $table");
 		}
-		$this->assertCount(12, UninstallDropTables::TABLES);
+		$this->assertCount(13, UninstallDropTables::TABLES);
 	}
 
 	public function testCoreServicesResolve(): void

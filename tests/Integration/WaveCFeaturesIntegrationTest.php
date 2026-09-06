@@ -415,12 +415,12 @@ final class WaveCFeaturesIntegrationTest extends TestCase
 		$this->config->setAppValue(Application::APP_ID, LocationAclService::KEY_ENABLED, '0');
 	}
 
-	public function testDeviceActorsRemainUnrestrictedWhenAclOnWithoutGrants(): void
+	public function testDeviceActorsFailClosedWhenAclOnWithoutGrants(): void
 	{
 		$this->config->setAppValue(Application::APP_ID, LocationAclService::KEY_ENABLED, '1');
 		$this->config->setAppValue(Application::APP_ID, LocationAclService::KEY_DEVICES_STRICT, '0');
-		self::assertNull($this->acl->visibleLocationIds('device:42'));
-		self::assertTrue($this->acl->canAccessLocation('device:42', 999999));
+		self::assertSame([], $this->acl->visibleLocationIds('device:42'));
+		self::assertFalse($this->acl->canAccessLocation('device:42', 999999));
 		$this->config->setAppValue(Application::APP_ID, LocationAclService::KEY_ENABLED, '0');
 	}
 
@@ -477,10 +477,11 @@ final class WaveCFeaturesIntegrationTest extends TestCase
 		self::assertNotContains((int)$hidden['id'], $ids);
 
 		$this->acl->setForSubject(LocationAclService::TYPE_DEVICE, (string)$deviceId, []);
-		self::assertNull($this->acl->visibleLocationIds($actor), 'clearing grants restores unrestricted BC');
+		self::assertSame([], $this->acl->visibleLocationIds($actor), 'clearing grants fail-closes (no org-wide access)');
+		self::assertFalse($this->acl->canAccessLocation($actor, (int)$visible['id']));
 
 		$this->config->setAppValue(Application::APP_ID, LocationAclService::KEY_DEVICES_STRICT, '1');
-		self::assertSame([], $this->acl->visibleLocationIds($actor), 'strict empty grants deny all');
+		self::assertSame([], $this->acl->visibleLocationIds($actor), 'strict empty grants still deny all');
 		self::assertFalse($this->acl->canAccessLocation($actor, (int)$visible['id']));
 
 		$this->config->setAppValue(Application::APP_ID, LocationAclService::KEY_DEVICES_STRICT, '0');

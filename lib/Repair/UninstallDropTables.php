@@ -57,6 +57,7 @@ final class UninstallDropTables implements IRepairStep
 		'iv_movements',
 		'iv_notif_log',
 		'iv_scan_devices',
+		'iv_scan_idem',
 	];
 
 	public function __construct(

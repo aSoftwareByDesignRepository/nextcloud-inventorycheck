@@ -1986,6 +1986,26 @@
 		});
 		var reason = el('input', { type: 'text', maxlength: '512', className: 'iv-input' });
 		var reasonCode = el('select', { className: 'iv-input', 'aria-label': tr('Reason code') });
+		var locCodeInput = el('input', {
+			type: 'text',
+			className: 'iv-input',
+			'data-iv-location-code': '1',
+			placeholder: tr('Scan or type location barcode'),
+			'aria-label': tr('Scan or type location barcode'),
+			autocomplete: 'off',
+			spellcheck: 'false',
+			autocapitalize: 'characters',
+		});
+		var toLocCodeInput = el('input', {
+			type: 'text',
+			className: 'iv-input',
+			'data-iv-to-location-code': '1',
+			placeholder: tr('Scan or type destination barcode'),
+			'aria-label': tr('Scan or type destination barcode'),
+			autocomplete: 'off',
+			spellcheck: 'false',
+			autocapitalize: 'characters',
+		});
 		var hint = el('p', {
 			className: 'iv-field__hint',
 			id: 'iv-bycode-hint',
@@ -2077,7 +2097,9 @@
 			var confirmOnly = !opts.forceFullForm
 				&& !needsLotPref
 				&& mastersKnown
-				&& !(opts.adjust && ctx.requireAdjustReason);
+				&& !(opts.adjust && ctx.requireAdjustReason)
+				// AF-IV12 honesty: never skip the barcode fields when policy requires a real scan.
+				&& !(ctx.requireLocationScan && (opts.path === 'issue' || opts.transfer));
 
 			var lotWrap = el('div', {
 				className: 'iv-lot-fields',
@@ -2158,6 +2180,17 @@
 				if (toSelect) {
 					fields.push(field(tr('To location'), toSelect, { name: 'toLocationId' }));
 				}
+				if (ctx.requireLocationScan && (opts.path === 'issue' || opts.transfer)) {
+					fields.push(field(tr('Scan from-location barcode'), locCodeInput, { name: 'locationCode' }));
+					fields.push(el('p', {
+						className: 'iv-field__hint',
+						'data-iv-location-code-hint': '1',
+						text: tr('Type or scan the barcode on the shelf or van — picking a name alone is not enough.'),
+					}));
+					if (opts.transfer) {
+						fields.push(field(tr('Scan to-location barcode'), toLocCodeInput, { name: 'toLocationCode' }));
+					}
+				}
 				if (isDeltaReverse) {
 					fields.push(el('p', {
 						className: 'iv-field__hint iv-delta-reverse-hint',
@@ -2234,7 +2267,7 @@
 				return v === '' ? null : v;
 			}
 
-			/** AF-IV12: send location master code for the selected id (exact match server-side). */
+			/** Kept for display helpers only — never auto-fill booking locationCode (AF-IV12). */
 			function codeForLocationId(id) {
 				var row = (masters.locations || []).find(function (r) { return Number(r.id) === Number(id); });
 				return row && row.code ? String(row.code) : null;
@@ -2261,8 +2294,9 @@
 						reason: reason.value || null,
 					};
 					if (ctx.requireLocationScan) {
-						transferBody.locationCode = codeForLocationId(locationId);
-						transferBody.toLocationCode = codeForLocationId(toLocationId);
+						// AF-IV12 honesty: typed/scanned codes only — never invent from the picker.
+						transferBody.locationCode = (locCodeInput.value || '').trim();
+						transferBody.toLocationCode = (toLocCodeInput.value || '').trim();
 						if (!transferBody.locationCode || !transferBody.toLocationCode) {
 							return Promise.reject(new ApiError('validation_failed', tr('Confirm both location codes.')));
 						}
@@ -2314,9 +2348,9 @@
 					lotCode: lotPayload(),
 					reason: reason.value || null,
 				};
-				// AF-IV12: issue (and any non-adjust path using this branch) must send locationCode.
+				// AF-IV12: issue must send a typed/scanned locationCode (not picker auto-fill).
 				if (ctx.requireLocationScan && opts.path === 'issue') {
-					body.locationCode = codeForLocationId(locationId);
+					body.locationCode = (locCodeInput.value || '').trim();
 					if (!body.locationCode) {
 						return Promise.reject(new ApiError('validation_failed', tr('Confirm the location code.')));
 					}

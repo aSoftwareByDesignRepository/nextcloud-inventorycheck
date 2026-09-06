@@ -168,7 +168,12 @@ final class AfIvWalkthroughContractTest extends TestCase
 	{
 		$mobile = $this->src('lib/Controller/MobileController.php');
 		self::assertStringContainsString('AF-IV13', $mobile);
-		self::assertStringContainsString("unset(\$formatted['systemQty'], \$formatted['currentQty'])", $mobile);
+		self::assertStringContainsString("\$formatted['systemQty']", $mobile);
+		self::assertStringContainsString("\$formatted['currentQty']", $mobile);
+		self::assertStringContainsString("\$formatted['conflict']", $mobile);
+		self::assertStringContainsString("unset(\$campaign['hasConflicts'], \$campaign['conflictCount'])", $mobile);
+		self::assertStringContainsString('idempotency_in_flight', $mobile);
+		self::assertStringContainsString('clientRequestId', $mobile);
 	}
 
 	public function testAfIv14GateOnMutations(): void
@@ -183,13 +188,14 @@ final class AfIvWalkthroughContractTest extends TestCase
 		self::assertStringContainsString("str_starts_with(\$url, 'https://')", $links);
 	}
 
-	public function testAfIv16DeviceAclUnrestricted(): void
+	public function testAfIv16DeviceAclFailClosed(): void
 	{
 		$acl = $this->src('lib/Service/LocationAclService.php');
 		self::assertStringContainsString("str_starts_with(\$uid, 'device:')", $acl);
 		self::assertStringContainsString('visibleLocationIdsForDevice', $acl);
 		self::assertStringContainsString('TYPE_DEVICE', $acl);
-		self::assertStringContainsString('zero grants → unrestricted', $acl);
+		self::assertStringContainsString('empty → [] (fail closed)', $acl);
+		self::assertStringNotContainsString('zero grants → unrestricted', $acl);
 	}
 
 	public function testAfIv17SuggestedOrder(): void

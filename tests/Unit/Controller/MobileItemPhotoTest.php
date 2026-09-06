@@ -18,6 +18,7 @@ use OCA\InventoryCheck\Service\LocationFavouriteService;
 use OCA\InventoryCheck\Service\LocationService;
 use OCA\InventoryCheck\Service\MobileGateService;
 use OCA\InventoryCheck\Service\MovementService;
+use OCA\InventoryCheck\Service\ScanIdempotencyService;
 use OCP\AppFramework\Http\DataDisplayResponse;
 use OCP\IConfig;
 use OCP\IRequest;
@@ -62,6 +63,7 @@ final class MobileItemPhotoTest extends TestCase
 			$this->createMock(LocationFavouriteService::class),
 			$this->createMock(CycleCountService::class),
 			$this->photos,
+			$this->createMock(ScanIdempotencyService::class),
 			$this->session,
 			$this->createMock(IConfig::class),
 		);

@@ -19,6 +19,7 @@ use OCA\InventoryCheck\Service\LocationFavouriteService;
 use OCA\InventoryCheck\Service\LocationService;
 use OCA\InventoryCheck\Service\MobileGateService;
 use OCA\InventoryCheck\Service\MovementService;
+use OCA\InventoryCheck\Service\ScanIdempotencyService;
 use OCA\InventoryCheck\Service\Pagination;
 use OCA\InventoryCheck\Service\QtyScale;
 use OCP\AppFramework\Controller;
@@ -58,6 +59,7 @@ class MobileController extends Controller
 		private readonly LocationFavouriteService $favourites,
 		private readonly CycleCountService $cycles,
 		private readonly ItemPhotoService $photos,
+		private readonly ScanIdempotencyService $scanIdempotency,
 		private readonly IUserSession $userSession,
 		private readonly IConfig $config,
 	) {
@@ -209,34 +211,90 @@ class MobileController extends Controller
 		$p = $this->request->getParams();
 		$asOffice = $device === null && $uid !== null && $this->access->isOffice($uid);
 		$actor = $this->actorUid($uid, $device);
+		$clientRequestId = $this->scanIdempotency->normalizeClientRequestId(
+			$p['clientRequestId'] ?? ($p['client_request_id'] ?? null),
+		);
+		$payloadHash = $this->scanIdempotency->fingerprintFromParams($p);
+		if ($clientRequestId !== null) {
+			$prior = $this->scanIdempotency->lookup($actor, $clientRequestId);
+			if ($prior['status'] === ScanIdempotencyService::STATUS_DONE && is_array($prior['response'])) {
+				if (!$this->scanIdempotency->payloadMatches($prior['payloadHash'], $payloadHash)) {
+					throw new MobileGateException('idempotency_payload_mismatch');
+				}
+				return new JSONResponse($prior['response']);
+			}
+			if ($prior['status'] === ScanIdempotencyService::STATUS_PENDING) {
+				if (!$this->scanIdempotency->releaseStalePending($actor, $clientRequestId)) {
+					throw new MobileGateException('idempotency_in_flight');
+				}
+			}
+			if (!$this->scanIdempotency->tryClaim($actor, $clientRequestId, $payloadHash)) {
+				$again = $this->scanIdempotency->lookup($actor, $clientRequestId);
+				if ($again['status'] === ScanIdempotencyService::STATUS_DONE && is_array($again['response'])) {
+					if (!$this->scanIdempotency->payloadMatches($again['payloadHash'], $payloadHash)) {
+						throw new MobileGateException('idempotency_payload_mismatch');
+					}
+					return new JSONResponse($again['response']);
+				}
+				if ($again['status'] === ScanIdempotencyService::STATUS_PENDING
+					&& $this->scanIdempotency->releaseStalePending($actor, $clientRequestId)
+					&& $this->scanIdempotency->tryClaim($actor, $clientRequestId, $payloadHash)) {
+					// Reclaimed stale twin — proceed with scan.
+				} else {
+					throw new MobileGateException('idempotency_in_flight');
+				}
+			}
+		}
 		$lotCode = null;
 		if (isset($p['lotCode']) && $p['lotCode'] !== '') {
 			$lotCode = (string)$p['lotCode'];
 		}
-		$result = $this->movements->scan(
-			$actor,
-			(string)($p['code'] ?? ''),
-			(string)($p['kind'] ?? ''),
-			(int)($p['locationId'] ?? 0),
-			isset($p['toLocationId']) ? (int)$p['toLocationId'] : null,
-			isset($p['qty']) ? QtyScale::toStorage($this->config, $p['qty']) : null,
-			isset($p['qtyDelta']) ? QtyScale::toStorage($this->config, $p['qtyDelta']) : null,
-			isset($p['reason']) ? (string)$p['reason'] : null,
-			$asOffice,
-			$lotCode,
-			isset($p['reasonCode']) ? (string)$p['reasonCode'] : (isset($p['reason_code']) ? (string)$p['reason_code'] : null),
-			isset($p['locationCode']) ? (string)$p['locationCode'] : (isset($p['location_code']) ? (string)$p['location_code'] : null),
-			isset($p['toLocationCode']) ? (string)$p['toLocationCode'] : (isset($p['to_location_code']) ? (string)$p['to_location_code'] : null),
-		);
-		$result['movements'] = array_map(
-			fn (array $m) => QtyScale::formatMovement($m, $this->config),
-			$result['movements'],
-		);
-		$result['balances'] = array_map(
-			fn (array $b) => QtyScale::formatBalance($b, $this->config),
-			$result['balances'],
-		);
-		return new JSONResponse($result);
+		try {
+			$result = $this->movements->scan(
+				$actor,
+				(string)($p['code'] ?? ''),
+				(string)($p['kind'] ?? ''),
+				(int)($p['locationId'] ?? 0),
+				isset($p['toLocationId']) ? (int)$p['toLocationId'] : null,
+				isset($p['qty']) ? QtyScale::toStorage($this->config, $p['qty']) : null,
+				isset($p['qtyDelta']) ? QtyScale::toStorage($this->config, $p['qtyDelta']) : null,
+				isset($p['reason']) ? (string)$p['reason'] : null,
+				$asOffice,
+				$lotCode,
+				isset($p['reasonCode']) ? (string)$p['reasonCode'] : (isset($p['reason_code']) ? (string)$p['reason_code'] : null),
+				isset($p['locationCode']) ? (string)$p['locationCode'] : (isset($p['location_code']) ? (string)$p['location_code'] : null),
+				isset($p['toLocationCode']) ? (string)$p['toLocationCode'] : (isset($p['to_location_code']) ? (string)$p['to_location_code'] : null),
+			);
+		} catch (\Throwable $e) {
+			if ($clientRequestId !== null) {
+				$this->scanIdempotency->release($actor, $clientRequestId);
+			}
+			throw $e;
+		}
+
+		// Ledger is committed. Never leave the claim pending past this point —
+		// a format/complete failure must still record DONE so retries can ACK
+		// instead of hanging on idempotency_in_flight forever.
+		$formatted = $result;
+		try {
+			$formatted['movements'] = array_map(
+				fn (array $m) => QtyScale::formatMovement($m, $this->config),
+				$result['movements'],
+			);
+			$formatted['balances'] = array_map(
+				fn (array $b) => QtyScale::formatBalance($b, $this->config),
+				$result['balances'],
+			);
+		} catch (\Throwable $e) {
+			if ($clientRequestId !== null) {
+				$this->scanIdempotency->complete($actor, $clientRequestId, $result);
+			}
+			throw $e;
+		}
+		if ($clientRequestId !== null) {
+			$this->scanIdempotency->complete($actor, $clientRequestId, $formatted);
+		}
+		return new JSONResponse($formatted);
 	}
 
 	#[PublicPage]
@@ -325,12 +383,19 @@ class MobileController extends Controller
 		[$uid] = $this->requireSessionUser();
 		$this->gate->assertGate($uid, null);
 		$p = $this->request->getParams();
+		$blind = filter_var($p['blind'] ?? $this->request->getParam('blind', '0'), FILTER_VALIDATE_BOOLEAN);
 		$line = $this->cycles->setCount(
 			$uid,
 			$lineId,
 			QtyScale::toStorage($this->config, $p['qtyCounted'] ?? 0),
 		);
-		return new JSONResponse(QtyScale::formatCycleLine($line, $this->config));
+		$formatted = QtyScale::formatCycleLine($line, $this->config);
+		if ($blind) {
+			// AF-IV13: mutation responses must not leak book qty either.
+			unset($formatted['systemQty'], $formatted['currentQty'], $formatted['conflict']);
+			$formatted['blind'] = true;
+		}
+		return new JSONResponse($formatted);
 	}
 
 	/**
@@ -374,14 +439,21 @@ class MobileController extends Controller
 				function (array $line) use ($blind): array {
 					$formatted = QtyScale::formatCycleLine($line, $this->config);
 					if ($blind) {
-						// AF-IV13: never leak system/current qty in blind mode.
-						unset($formatted['systemQty'], $formatted['currentQty']);
+						// AF-IV13: never leak system/current qty OR conflict side-channels.
+						unset(
+							$formatted['systemQty'],
+							$formatted['currentQty'],
+							$formatted['conflict'],
+						);
 						$formatted['blind'] = true;
 					}
 					return $formatted;
 				},
 				$campaign['lines'],
 			);
+		}
+		if ($blind) {
+			unset($campaign['hasConflicts'], $campaign['conflictCount']);
 		}
 		$campaign['blind'] = $blind;
 		return $campaign;

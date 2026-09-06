@@ -789,6 +789,11 @@
 		"{count} line(s) changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities.": "{count} line(s) changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities.",
 		"{ok} row(s) look fine.": "{ok} row(s) look fine.",
 		"★ Remove from favourites": "★ Remove from favourites",
-		"☆ Add to favourites": "☆ Add to favourites"
+		"☆ Add to favourites": "☆ Add to favourites",
+		"Scan or type location barcode": "Scan or type location barcode",
+		"Scan or type destination barcode": "Scan or type destination barcode",
+		"Scan from-location barcode": "Scan from-location barcode",
+		"Type or scan the barcode on the shelf or van — picking a name alone is not enough.": "Type or scan the barcode on the shelf or van — picking a name alone is not enough.",
+		"Scan to-location barcode": "Scan to-location barcode"
 	}
 }

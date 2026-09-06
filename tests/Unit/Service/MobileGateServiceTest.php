@@ -157,7 +157,7 @@ final class MobileGateServiceTest extends TestCase
 		$this->assertFalse($boot['deviceLocationUnbound']);
 	}
 
-	public function testBootstrapReportsUnboundDeviceWhenAclOnNonStrict(): void
+	public function testBootstrapReportsUnboundDeviceWhenAclOnEmptyGrants(): void
 	{
 		$state = $this->validState(0, 1);
 		$device = new ScanDevice();
@@ -168,7 +168,7 @@ final class MobileGateServiceTest extends TestCase
 		$acl = $this->createMock(LocationAclService::class);
 		$acl->method('isEnabled')->willReturn(true);
 		$acl->method('isDevicesStrict')->willReturn(false);
-		$acl->method('visibleLocationIds')->with('device:7')->willReturn(null);
+		$acl->method('visibleLocationIds')->with('device:7')->willReturn([]);
 		$gate = new MobileGateService(
 			$this->license,
 			$this->access,
@@ -177,11 +177,11 @@ final class MobileGateServiceTest extends TestCase
 			$acl,
 		);
 		$boot = $gate->bootstrap(null, $device);
-		$this->assertNull($boot['deviceLocationIds']);
+		$this->assertSame([], $boot['deviceLocationIds']);
 		$this->assertTrue($boot['deviceLocationUnbound']);
 	}
 
-	public function testBootstrapReportsEmptyGrantsWhenDevicesStrict(): void
+	public function testBootstrapReportsUnboundWhenDevicesStrictAndEmptyGrants(): void
 	{
 		$state = $this->validState(0, 1);
 		$device = new ScanDevice();
@@ -203,7 +203,7 @@ final class MobileGateServiceTest extends TestCase
 		$boot = $gate->bootstrap(null, $device);
 		$this->assertTrue($boot['locationAclDevicesStrict']);
 		$this->assertSame([], $boot['deviceLocationIds']);
-		$this->assertFalse($boot['deviceLocationUnbound']);
+		$this->assertTrue($boot['deviceLocationUnbound']);
 	}
 
 	private function validState(int $seats, int $devices): LicenseState

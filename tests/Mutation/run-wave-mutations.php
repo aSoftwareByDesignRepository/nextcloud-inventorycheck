@@ -132,20 +132,20 @@ runMutations(dirname(__DIR__, 2), 'WaveContractsTest|LowStockNotifyServiceTest|S
 	[
 		'name' => 'device-acl-ignore-grants',
 		'file' => 'lib/Service/LocationAclService.php',
-		'search' => "if (\$ids === []) {\n\t\t\treturn \$this->isDevicesStrict() ? [] : null;\n\t\t}\n\t\treturn array_values(array_unique(\$ids));",
+		'search' => "if (\$ids === []) {\n\t\t\treturn [];\n\t\t}\n\t\treturn array_values(array_unique(\$ids));",
 		'replace' => "return null;",
 	],
 	[
-		'name' => 'device-acl-strict-ignored',
+		'name' => 'device-acl-empty-fail-open',
 		'file' => 'lib/Service/LocationAclService.php',
-		'search' => "if (\$ids === []) {\n\t\t\treturn \$this->isDevicesStrict() ? [] : null;\n\t\t}",
+		'search' => "if (\$ids === []) {\n\t\t\treturn [];\n\t\t}",
 		'replace' => "if (\$ids === []) {\n\t\t\treturn null;\n\t\t}",
 	],
 	[
-		'name' => 'device-acl-empty-always-none',
+		'name' => 'device-acl-invalid-device-fail-open',
 		'file' => 'lib/Service/LocationAclService.php',
-		'search' => "if (\$ids === []) {\n\t\t\treturn \$this->isDevicesStrict() ? [] : null;\n\t\t}",
-		'replace' => "if (\$ids === []) {\n\t\t\treturn [];\n\t\t}",
+		'search' => "if (\$raw === '' || !ctype_digit(\$raw) || (int)\$raw <= 0) {\n\t\t\treturn [];\n\t\t}",
+		'replace' => "if (\$raw === '' || !ctype_digit(\$raw) || (int)\$raw <= 0) {\n\t\t\treturn null;\n\t\t}",
 	],
 	[
 		'name' => 'create-device-skips-location-bind',

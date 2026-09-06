@@ -10,6 +10,8 @@ namespace OCA\InventoryCheck\Exception;
  * Most codes map to HTTP 402. Special cases:
  * - `auth_required` → 401 (rung 1)
  * - `rate_limited` → 429
+ * - `idempotency_in_flight` → 409
+ * - `idempotency_payload_mismatch` → 409
  */
 class MobileGateException extends \Exception
 {

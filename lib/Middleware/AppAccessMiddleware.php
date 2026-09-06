@@ -144,6 +144,20 @@ class AppAccessMiddleware extends Middleware
 					429,
 				);
 			}
+			if ($exception->getErrorCode() === 'idempotency_in_flight') {
+				return $this->envelope(
+					'idempotency_in_flight',
+					$l->t('This booking is already being processed. Retry shortly.'),
+					Http::STATUS_CONFLICT,
+				);
+			}
+			if ($exception->getErrorCode() === 'idempotency_payload_mismatch') {
+				return $this->envelope(
+					'idempotency_payload_mismatch',
+					$l->t('This booking id was already used with different details. Discard the row and book again.'),
+					Http::STATUS_CONFLICT,
+				);
+			}
 			return $this->envelope(
 				$exception->getErrorCode(),
 				$this->gateMessage($exception->getErrorCode(), $l),

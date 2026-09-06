@@ -43,6 +43,7 @@ use OCA\InventoryCheck\Service\LowStockNotifyService;
 use OCA\InventoryCheck\Service\LowStockService;
 use OCA\InventoryCheck\Service\MobileGateService;
 use OCA\InventoryCheck\Service\MovementService;
+use OCA\InventoryCheck\Service\ScanIdempotencyService;
 use OCA\InventoryCheck\Service\QtyScaleService;
 use OCA\InventoryCheck\Service\UpgradeBackupService;
 use OCP\Activity\IManager as IActivityManager;
@@ -184,6 +185,12 @@ class Application extends App implements IBootstrap
 				$c->get(LocationAclService::class),
 				$c->get(IConfig::class),
 				$c->get(LowStockNotifyService::class),
+			);
+		});
+		$context->registerService(ScanIdempotencyService::class, static function ($c): ScanIdempotencyService {
+			return new ScanIdempotencyService(
+				$c->get(IDBConnection::class),
+				$c->get(Clock::class),
 			);
 		});
 		$context->registerService(LowStockService::class, static function ($c): LowStockService {

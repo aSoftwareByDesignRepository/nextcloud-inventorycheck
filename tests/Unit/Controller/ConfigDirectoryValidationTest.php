@@ -69,10 +69,9 @@ final class ConfigDirectoryValidationTest extends TestCase
 	{
 		$this->access->method('currentUserId')->willReturn('admin');
 		$this->access->expects($this->once())->method('requireAppAdmin')->with('admin');
-		$this->users->method('userExists')->willReturnMap([
-			['alice', true],
-			['no-such-user', false],
-		]);
+		$this->users->method('userExists')->willReturnCallback(
+			static fn (string $uid): bool => $uid === 'alice',
+		);
 		$this->request->method('getParams')->willReturn([
 			'allowedUsers' => ['alice', 'no-such-user'],
 		]);

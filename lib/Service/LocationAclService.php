@@ -23,12 +23,12 @@ use OCP\IUserManager;
  * - office/app-admin/system-admin still see all
  * - field users only see grants (uid or groups); zero grants → none
  * - device actors (`device:N`) with ≥1 grants → those locations only;
- *   with zero grants → unrestricted (BC) unless devices-strict is on (then none)
+ *   with zero grants → none (fail closed — never org-wide)
  */
 class LocationAclService
 {
 	public const KEY_ENABLED = 'location_acl_enabled';
-	/** When '1', unbound scanners (zero grants) see no locations. Default off = BC. */
+	/** Retained for bootstrap/UI; empty device grants always deny when ACL is on. */
 	public const KEY_DEVICES_STRICT = 'location_acl_devices_strict';
 	public const TYPE_USER = 'user';
 	public const TYPE_GROUP = 'group';
@@ -119,8 +119,9 @@ class LocationAclService
 	}
 
 	/**
-	 * Device grants: empty → null (unrestricted BC) unless devices-strict is on
-	 * (then empty → [] so scanners cannot book org-wide without an explicit grant).
+	 * Device grants: empty → [] (fail closed). Unbound scanners must never
+	 * inherit org-wide access when location ACL is enabled — bind each device
+	 * or leave ACL off. (Legacy “unrestricted BC” when strict was off is gone.)
 	 *
 	 * @return list<int>|null
 	 */
@@ -128,7 +129,7 @@ class LocationAclService
 	{
 		$raw = substr($uid, strlen('device:'));
 		if ($raw === '' || !ctype_digit($raw) || (int)$raw <= 0) {
-			return $this->isDevicesStrict() ? [] : null;
+			return [];
 		}
 		$subjectId = (string)(int)$raw;
 		$ids = [];
@@ -142,7 +143,7 @@ class LocationAclService
 		}
 		$res->closeCursor();
 		if ($ids === []) {
-			return $this->isDevicesStrict() ? [] : null;
+			return [];
 		}
 		return array_values(array_unique($ids));
 	}

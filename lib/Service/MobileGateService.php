@@ -75,9 +75,10 @@ class MobileGateService
 		$deviceLocationUnbound = false;
 		if ($device !== null) {
 			$deviceLocationIds = $this->locationAcl->visibleLocationIds('device:' . (int)$device->getId());
+			// Empty grant list under ACL = unbound / blocked scanner (fail closed).
 			$deviceLocationUnbound = $this->locationAcl->isEnabled()
-				&& !$this->locationAcl->isDevicesStrict()
-				&& $deviceLocationIds === null;
+				&& is_array($deviceLocationIds)
+				&& $deviceLocationIds === [];
 		}
 		return [
 			'licensing' => $licensing,

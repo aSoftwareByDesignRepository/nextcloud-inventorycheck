@@ -20,6 +20,7 @@ use OCA\InventoryCheck\Service\LocationFavouriteService;
 use OCA\InventoryCheck\Service\LocationService;
 use OCA\InventoryCheck\Service\MobileGateService;
 use OCA\InventoryCheck\Service\MovementService;
+use OCA\InventoryCheck\Service\ScanIdempotencyService;
 use OCA\InventoryCheck\Tests\Support\Iv2TestSigning;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -176,6 +177,7 @@ final class MobileGateLadderIntegrationTest extends TestCase
 			Server::get(LocationFavouriteService::class),
 			Server::get(CycleCountService::class),
 			Server::get(ItemPhotoService::class),
+			Server::get(ScanIdempotencyService::class),
 			Server::get(IUserSession::class),
 			Server::get(IConfig::class),
 		);

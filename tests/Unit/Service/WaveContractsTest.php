@@ -101,13 +101,14 @@ final class WaveContractsTest extends TestCase
 		self::assertTrue(class_exists(CsvImportService::class));
 	}
 
-	public function testLocationAclDeviceActorsStayUnrestricted(): void
+	public function testLocationAclDeviceActorsFailClosedWhenUnbound(): void
 	{
 		$src = (string)file_get_contents(dirname(__DIR__, 3) . '/lib/Service/LocationAclService.php');
 		self::assertStringContainsString("str_starts_with(\$uid, 'device:')", $src);
 		self::assertStringContainsString('TYPE_DEVICE', $src);
 		self::assertStringContainsString('visibleLocationIdsForDevice', $src);
-		self::assertStringContainsString('zero grants → unrestricted', $src);
+		self::assertStringContainsString('empty → [] (fail closed)', $src);
+		self::assertStringNotContainsString('zero grants → unrestricted', $src);
 	}
 
 	public function testCycleCountAclDenyMapsToSameNotFoundCode(): void

@@ -789,6 +789,11 @@
 		"{count} line(s) changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities.": "{count} Zeile(n) haben sich nach Start der Inventur geändert. Die aktuelle Menge weicht vom Snapshot ab — vor dem Abschließen prüfen oder die gezählten Mengen bestätigen.",
 		"{ok} row(s) look fine.": "{ok} Zeile(n) sehen in Ordnung aus.",
 		"★ Remove from favourites": "★ Aus Favoriten entfernen",
-		"☆ Add to favourites": "☆ Zu Favoriten hinzufügen"
+		"☆ Add to favourites": "☆ Zu Favoriten hinzufügen",
+		"Scan or type location barcode": "Standort-Barcode scannen oder tippen",
+		"Scan or type destination barcode": "Ziel-Barcode scannen oder tippen",
+		"Scan from-location barcode": "Von-Standort-Barcode scannen",
+		"Type or scan the barcode on the shelf or van — picking a name alone is not enough.": "Barcode am Regal oder Transporter tippen oder scannen — nur den Namen wählen reicht nicht.",
+		"Scan to-location barcode": "Nach-Standort-Barcode scannen"
 	}
 }

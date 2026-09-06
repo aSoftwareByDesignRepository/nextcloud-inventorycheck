@@ -351,10 +351,14 @@ test('Wave D adjust honesty + dashboard table captions are wired', () => {
 
 test('Wave D location-scan honesty wires issue/transfer locationCode on web', () => {
 	assert.match(appJs, /requireLocationScan/);
-	assert.match(appJs, /codeForLocationId/);
+	assert.match(appJs, /data-iv-location-code/);
 	assert.match(appJs, /toLocationCode/);
 	assert.match(appJs, /Confirm both location codes/);
 	assert.match(appJs, /opts\.path === 'issue'/);
+	assert.match(appJs, /Type or scan the barcode on the shelf/);
+	// Must not invent barcodes from the location picker when policy is on.
+	assert.doesNotMatch(appJs, /transferBody\.locationCode = codeForLocationId/);
+	assert.doesNotMatch(appJs, /body\.locationCode = codeForLocationId/);
 });
 test('Wave C UI surfaces are wired in app.js', () => {
 	assert.match(appJs, /configFractional/);

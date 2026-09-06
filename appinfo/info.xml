@@ -43,7 +43,7 @@ This is the first App Store release. The app is fully functional and tested, but
 
 ## Requirements
 
-- Nextcloud 32–34 · PHP 8.2–8.5 · MySQL or PostgreSQL
+- Nextcloud 32–35 · PHP 8.2–8.5 · MySQL or PostgreSQL
 	]]></description>
 	<description lang="de"><![CDATA[
 # Bestände. Lagerorte. Klare Buchungen.
@@ -72,7 +72,7 @@ Dies ist die erste App-Store-Version. Die App ist voll funktionsfähig und getes
 
 ## Voraussetzungen
 
-- Nextcloud 32–34 · PHP 8.2–8.5 · MySQL oder PostgreSQL
+- Nextcloud 32–35 · PHP 8.2–8.5 · MySQL oder PostgreSQL
 	]]></description>
 	<description lang="fr"><![CDATA[
 # Stock. Emplacements. Réservations claires.
@@ -101,7 +101,7 @@ C’est la première publication App Store. L’application est entièrement fon
 
 ## Exigences
 
-- Nextcloud 32–34 · PHP 8.2–8.5 · MySQL ou PostgreSQL
+- Nextcloud 32–35 · PHP 8.2–8.5 · MySQL ou PostgreSQL
 	]]></description>
 	<description lang="es"><![CDATA[
 # Existencias. Ubicaciones. Movimientos claros.
@@ -130,7 +130,7 @@ Se trata de la primera publicación en App Store. La aplicación es totalmente f
 
 ## Requisitos
 
-- Nextcloud 32–34 · PHP 8.2–8.5 · MySQL o PostgreSQL
+- Nextcloud 32–35 · PHP 8.2–8.5 · MySQL o PostgreSQL
 	]]></description>
 	<description lang="da"><![CDATA[
 # Lager. Lokationer. Klare bookinger.
@@ -159,7 +159,7 @@ Dette er den første App Store-udgivelse. Appen er fuldt funktionel og testet, m
 
 ## Krav
 
-- Nextcloud 32–34 · PHP 8.2–8.5 · MySQL eller PostgreSQL
+- Nextcloud 32–35 · PHP 8.2–8.5 · MySQL eller PostgreSQL
 	]]></description>
 	<description lang="nl"><![CDATA[
 # Voorraad. Locaties. Duidelijke boekingen.
@@ -188,7 +188,7 @@ Dit is de eerste App Store-release. De app is volledig functioneel en getest, ma
 
 ## Vereisten
 
-- Nextcloud 32–34 · PHP 8.2–8.5 · MySQL of PostgreSQL
+- Nextcloud 32–35 · PHP 8.2–8.5 · MySQL of PostgreSQL
 	]]></description>
 	<description lang="it"><![CDATA[
 # Scorte. Località. Prenotazioni chiare.
@@ -217,7 +217,7 @@ Questa è la prima pubblicazione su App Store. L’app è pienamente funzionante
 
 ## Requisiti
 
-- Nextcloud 32–34 · PHP 8.2–8.5 · MySQL o PostgreSQL
+- Nextcloud 32–35 · PHP 8.2–8.5 · MySQL o PostgreSQL
 	]]></description>
 	<description lang="pl"><![CDATA[
 # Zapasy. Lokalizacje. Jasne rezerwacje.
@@ -246,7 +246,7 @@ To pierwsza publikacja w App Store. Aplikacja jest w pełni funkcjonalna i przet
 
 ## Wymagania
 
-- Nextcloud 32–34 · PHP 8.2–8.5 · MySQL lub PostgreSQL
+- Nextcloud 32–35 · PHP 8.2–8.5 · MySQL lub PostgreSQL
 	]]></description>
 	<description lang="sv"><![CDATA[
 # Lager. Platser. Tydliga bokningar.
@@ -275,7 +275,7 @@ Detta är den första App Store-versionen. Appen är fullt fungerande och testad
 
 ## Krav
 
-- Nextcloud 32–34 · PHP 8.2–8.5 · MySQL eller PostgreSQL
+- Nextcloud 32–35 · PHP 8.2–8.5 · MySQL eller PostgreSQL
 	]]></description>
 	<description lang="nb"><![CDATA[
 # Lager. Lokasjoner. Tydelige bookinger.
@@ -304,9 +304,9 @@ Dette er den første App Store-utgivelsen. Appen er fullt funksjonell og testet,
 
 ## Krav
 
-- Nextcloud 32–34 · PHP 8.2–8.5 · MySQL eller PostgreSQL
+- Nextcloud 32–35 · PHP 8.2–8.5 · MySQL eller PostgreSQL
 	]]></description>
-	<version>1.3.8</version>
+	<version>1.4.0</version>
 	<licence>AGPL-3.0-or-later</licence>
 	<author mail="info@software-by-design.de" homepage="https://nextcloud.software-by-design.de">Software by Design GbR</author>
 	<namespace>InventoryCheck</namespace>
@@ -321,7 +321,7 @@ Dette er den første App Store-utgivelsen. Appen er fullt funksjonell og testet,
 	<screenshot>https://raw.githubusercontent.com/aSoftwareByDesignRepository/nextcloud-inventorycheck/refs/heads/main/screenshots/inventorycheck-screenshot-04.png</screenshot>
 	<donation type="other" title="Software by Design">https://nextcloud.software-by-design.de/</donation>
 	<dependencies>
-		<nextcloud min-version="32" max-version="34"/>
+		<nextcloud min-version="32" max-version="35"/>
 		<php min-version="8.2" max-version="8.5"/>
 		<!-- Required under <dependencies>: MigrationService reads these for schema naming checks -->
 		<database>mysql</database>
