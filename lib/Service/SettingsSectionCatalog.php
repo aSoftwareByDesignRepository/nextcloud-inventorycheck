@@ -103,7 +103,7 @@ final class SettingsSectionCatalog
 			'connections' => $l->t('Connections'),
 			'policies' => $l->t('Policies'),
 			'license' => $l->t('License'),
-			'support' => $l->t('Support us'),
+			'support' => $l->t('Support & us'),
 			default => $l->t('Settings'),
 		};
 	}
