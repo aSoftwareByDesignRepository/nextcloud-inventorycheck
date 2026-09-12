@@ -78,6 +78,20 @@ require __DIR__ . '/navigation.php';
 	<div id="iv-toast-region" class="iv-toast-region" role="region" aria-label="<?php p($l->t('Notifications')); ?>"></div>
 	<div id="app-content-wrapper" class="iv-shell">
 		<header class="iv-page-header" aria-labelledby="iv-page-title">
+			<button type="button"
+				class="ivc-nav-toggle"
+				id="ivc-nav-toggle"
+				data-ivc-nav-toggle
+				aria-controls="app-navigation"
+				aria-expanded="false"
+				aria-label="<?php p($l->t('Open navigation menu')); ?>"
+				data-aria-label-open="<?php p($l->t('Open navigation menu')); ?>"
+				data-aria-label-close="<?php p($l->t('Close navigation menu')); ?>">
+				<span class="ivc-nav-toggle__icon" aria-hidden="true">
+					<?php print_unescaped(IconCatalog::render('menu', 'ivc-nav-toggle__icon-svg')); ?>
+				</span>
+				<span class="ivc-nav-toggle__label"><?php p($l->t('Menu')); ?></span>
+			</button>
 			<nav class="iv-breadcrumb" aria-label="<?php p($l->t('Breadcrumb')); ?>">
 				<ol class="iv-breadcrumb__list">
 					<li class="iv-breadcrumb__item">

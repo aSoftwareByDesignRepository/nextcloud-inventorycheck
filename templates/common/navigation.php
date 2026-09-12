@@ -21,6 +21,7 @@ use OCP\Util;
  */
 
 Util::addScript('inventorycheck', 'common/navigation');
+Util::addScript('inventorycheck', 'common/mobile-nav');
 
 $decodedUrls = json_decode($urlsJson, true);
 $navUrls = is_array($decodedUrls) ? ($decodedUrls['pages'] ?? []) : [];
@@ -61,7 +62,7 @@ $isSettings = $activeNavId === 'settings';
 <div id="inventorycheck-app" class="inventorycheck-app">
 	<a href="#app-navigation" class="skip-link iv-skip-link--nav"><?php p($l->t('Skip to app navigation')); ?></a>
 
-	<div id="app-navigation" class="iv-nav" role="navigation" aria-label="<?php p($l->t('Main navigation')); ?>">
+	<div id="app-navigation" class="iv-nav ivc-nav" role="navigation" aria-label="<?php p($l->t('Main navigation')); ?>">
 		<div class="sidebar-header">
 			<div class="app-brand">
 				<div class="app-icon" aria-hidden="true">

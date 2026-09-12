@@ -1,0 +1,144 @@
+/**
+ * Mobile navigation drawer + in-page Menu button (<1024px).
+ * Hides broken core #app-navigation-toggle; drawer opens via .ivc-nav--open.
+ */
+
+@media (width < 1024px) {
+	#content.app-inventorycheck #app-navigation-toggle {
+		display: none !important;
+		visibility: hidden !important;
+		pointer-events: none !important;
+	}
+}
+
+.ivc-nav-toggle {
+	display: none;
+	align-items: center;
+	justify-content: center;
+	gap: var(--iv-space-2, 0.5rem);
+	/* Touch target floor (WCAG 2.5.5 / Atlas ATLAS_MOBILE_NAV_CONTRACT ≥40px) */
+	min-height: 44px !important;
+	height: 44px;
+	min-width: 44px !important;
+	padding: 0 var(--iv-space-3, 0.75rem);
+	margin: 0 0 var(--iv-space-3, 0.75rem);
+	border: 1px solid var(--color-border, var(--iv-border));
+	border-radius: var(--iv-radius-md, 8px);
+	background-color: var(--color-main-background);
+	color: var(--color-main-text);
+	font-family: inherit;
+	font-size: var(--iv-fs-sm, 0.875rem);
+	font-weight: 600;
+	line-height: 1.2;
+	box-sizing: border-box;
+	cursor: pointer;
+	touch-action: manipulation;
+	flex-shrink: 0;
+	box-shadow: 0 1px 2px color-mix(in srgb, var(--color-main-text, #000) 8%, transparent);
+}
+
+.ivc-nav-toggle__icon {
+	display: inline-flex;
+	width: 1.25rem;
+	height: 1.25rem;
+	color: inherit;
+}
+
+.ivc-nav-toggle__icon .iv-icon,
+.ivc-nav-toggle__icon svg {
+	width: 1.25rem;
+	height: 1.25rem;
+}
+
+.ivc-nav-toggle:hover {
+	background-color: var(--color-background-hover);
+	border-color: var(--color-primary-element);
+}
+
+.ivc-nav-toggle:focus-visible {
+	outline: 2px solid var(--color-primary-element);
+	outline-offset: 2px;
+}
+
+.ivc-nav-toggle[aria-expanded='true'] {
+	background-color: color-mix(
+		in srgb,
+		var(--color-primary-element, #0082c9) 12%,
+		var(--color-main-background)
+	);
+	border-color: var(--color-primary-element);
+}
+
+.ivc-nav-backdrop {
+	display: none;
+	position: fixed;
+	inset: 0;
+	z-index: 1998;
+	background: color-mix(in srgb, var(--color-main-text, #000) 35%, transparent);
+	border: 0;
+	padding: 0;
+	margin: 0;
+	cursor: pointer;
+}
+
+body.ivc-nav-open .ivc-nav-backdrop {
+	display: block;
+}
+
+@media (width < 1024px) {
+	.ivc-nav-toggle {
+		display: inline-flex;
+	}
+
+	#content.app-inventorycheck #app-navigation.ivc-nav:not(.vue),
+	body > #app-navigation.ivc-nav:not(.vue) {
+		position: fixed !important;
+		top: var(--header-height, 50px) !important;
+		inset-inline-start: 0;
+		width: min(18rem, 88vw) !important;
+		max-width: 88vw;
+		height: var(--body-height, calc(100dvh - var(--header-height, 50px))) !important;
+		z-index: 1999;
+		transform: translateX(-105%) !important;
+		transition: transform 180ms ease;
+		box-shadow:
+			0 4px 16px color-mix(in srgb, var(--color-main-text, #000) 18%, transparent),
+			0 0 0 1px var(--color-border);
+		overflow-x: hidden;
+		overflow-y: auto;
+		-webkit-overflow-scrolling: touch;
+		background: var(--color-main-background);
+	}
+
+	#content.app-inventorycheck #app-navigation.ivc-nav.ivc-nav--open,
+	body > #app-navigation.ivc-nav.ivc-nav--open {
+		transform: translateX(0) !important;
+	}
+
+	body.ivc-nav-open {
+		overflow: hidden;
+	}
+}
+
+@media (min-width: 1024px) {
+	.ivc-nav-toggle {
+		display: none !important;
+	}
+
+	.ivc-nav-backdrop {
+		display: none !important;
+	}
+}
+
+@media (width < 1024px) and (forced-colors: active) {
+	.ivc-nav-toggle {
+		border: 2px solid ButtonText;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	#content.app-inventorycheck #app-navigation.ivc-nav:not(.vue),
+	body > #app-navigation.ivc-nav:not(.vue) {
+		transition: none;
+	}
+}

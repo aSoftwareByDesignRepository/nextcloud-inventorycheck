@@ -37,9 +37,9 @@ InventoryCheck keeps parts and supplies on the Nextcloud you already host: wareh
 - Movements are append-only — corrections use compensating bookings.
 - Declared databases: MySQL and PostgreSQL.
 
-## Early release — feedback welcome
+## Feedback welcome
 
-This is the first App Store release. The app is fully functional and tested, but has not yet seen wide real-world use. Bug reports and feature requests are very welcome: https://github.com/aSoftwareByDesignRepository/nextcloud-inventorycheck/issues
+We improve this app with real-world use. Bug reports, rough edges, and ideas help — open a GitHub Issue (https://github.com/aSoftwareByDesignRepository/nextcloud-inventorycheck/issues) or write to info@software-by-design.de. Your feedback directly shapes what we build next.
 
 ## Requirements
 
@@ -66,9 +66,9 @@ InventoryCheck verwaltet Teile und Verbrauchsmaterial in der Nextcloud, die Sie 
 - Buchungen sind append-only — Korrekturen laufen über Gegenbuchungen.
 - Deklarierte Datenbanken: MySQL und PostgreSQL.
 
-## Erste Veröffentlichung — Feedback willkommen
+## Feedback willkommen
 
-Dies ist die erste App-Store-Version. Die App ist voll funktionsfähig und getestet, wurde aber noch nicht breit im Praxiseinsatz erprobt. Fehlerberichte und Funktionswünsche sind sehr willkommen: https://github.com/aSoftwareByDesignRepository/nextcloud-inventorycheck/issues
+Wir verbessern diese App mit Rückmeldungen aus der Praxis. Fehlerberichte, Stolpersteine und Ideen helfen — öffnen Sie ein GitHub Issue (https://github.com/aSoftwareByDesignRepository/nextcloud-inventorycheck/issues) oder schreiben Sie an info@software-by-design.de. Ihr Feedback prägt direkt, was wir als Nächstes bauen.
 
 ## Voraussetzungen
 
@@ -95,9 +95,9 @@ InventoryCheck conserve vos pièces et consommables dans la Nextcloud que vous h
 - Les mouvements sont append-only — les corrections utilisent des réservations compensatoires.
 - Bases de données déclarées : MySQL et PostgreSQL.
 
-## Première version — retours bienvenus
+## Retours bienvenus
 
-C’est la première publication App Store. L’application est entièrement fonctionnelle et testée, mais n’a pas encore connu une utilisation réelle à grande échelle. Les rapports de bugs et demandes de fonctionnalités sont très bienvenus : https://github.com/aSoftwareByDesignRepository/nextcloud-inventorycheck/issues
+Nous améliorons cette app grâce à votre usage réel. Bugs, frottements et idées aident — ouvrez une GitHub Issue (https://github.com/aSoftwareByDesignRepository/nextcloud-inventorycheck/issues) ou écrivez à info@software-by-design.de. Vos retours façonnent directement la suite.
 
 ## Exigences
 
@@ -124,9 +124,9 @@ InventoryCheck mantiene piezas y suministros en la Nextcloud que ya tiene: almac
 - Los movimientos son append-only — las correcciones usan reservas compensatorias.
 - Bases de datos declaradas: MySQL y PostgreSQL.
 
-## Primera versión — comentarios bienvenidos
+## Comentarios bienvenidos
 
-Se trata de la primera publicación en App Store. La aplicación es totalmente funcional y está probada, pero aún no se ha utilizado ampliamente en situaciones reales. Agradecemos mucho los informes de errores y las solicitudes de funciones: https://github.com/aSoftwareByDesignRepository/nextcloud-inventorycheck/issues
+Mejoramos esta app con el uso real. Informes de errores, fricciones e ideas ayudan — abra un GitHub Issue (https://github.com/aSoftwareByDesignRepository/nextcloud-inventorycheck/issues) o escriba a info@software-by-design.de. Su feedback da forma directa a lo que construimos después.
 
 ## Requisitos
 
@@ -153,9 +153,9 @@ InventoryCheck holder dele og forbrugsvarer i den Nextcloud, I allerede hoster: 
 - Bevægelser er append-only — korrektioner bruger modgående bogføringer.
 - Deklarerede databaser: MySQL og PostgreSQL.
 
-## Tidlig release — feedback velkommen
+## Feedback er velkommen
 
-Dette er den første App Store-udgivelse. Appen er fuldt funktionel og testet, men har endnu ikke set bred anvendelse i den virkelige verden. Bugrapporter og funktionsønsker modtages meget gerne: https://github.com/aSoftwareByDesignRepository/nextcloud-inventorycheck/issues
+Vi forbedrer denne app med brug i praksis. Fejlrapporter, friktioner og idéer hjælper — åbn et GitHub Issue (https://github.com/aSoftwareByDesignRepository/nextcloud-inventorycheck/issues) eller skriv til info@software-by-design.de. Jeres feedback former direkte det, vi bygger næste gang.
 
 ## Krav
 
@@ -182,9 +182,9 @@ InventoryCheck beheert onderdelen en verbruiksartikelen in de Nextcloud die u al
 - Bewegingen zijn append-only — correcties gebruiken compenserende boekingen.
 - Gedeclareerde databases: MySQL en PostgreSQL.
 
-## Eerste release — feedback welkom
+## Feedback welkom
 
-Dit is de eerste App Store-release. De app is volledig functioneel en getest, maar is nog niet breed gebruikt in de echte wereld. Bugmeldingen en feature requests zijn zeer welkom: https://github.com/aSoftwareByDesignRepository/nextcloud-inventorycheck/issues
+We verbeteren deze app met gebruik in de praktijk. Bugmeldingen, struikelblokken en ideeën helpen — open een GitHub Issue (https://github.com/aSoftwareByDesignRepository/nextcloud-inventorycheck/issues) of mail naar info@software-by-design.de. Uw feedback bepaalt mede wat we als volgende bouwen.
 
 ## Vereisten
 
@@ -211,9 +211,9 @@ InventoryCheck tiene parti e materiali di consumo nella Nextcloud che gestite gi
 - I movimenti sono append-only — le correzioni usano prenotazioni compensative.
 - Database dichiarati: MySQL e PostgreSQL.
 
-## Prima release — feedback benvenuto
+## Feedback benvenuto
 
-Questa è la prima pubblicazione su App Store. L’app è pienamente funzionante e testata, ma non ha ancora visto un uso reale diffuso. I report di bug e le richieste di nuove funzionalità sono molto graditi: https://github.com/aSoftwareByDesignRepository/nextcloud-inventorycheck/issues
+Miglioriamo questa app con l’uso reale. Segnalazioni di bug, punti deboli e idee aiutano — aprite una GitHub Issue (https://github.com/aSoftwareByDesignRepository/nextcloud-inventorycheck/issues) o scrivete a info@software-by-design.de. Il vostro feedback guida direttamente ciò che costruiamo dopo.
 
 ## Requisiti
 
@@ -240,9 +240,9 @@ InventoryCheck przechowuje części i materiały eksploatacyjne w Nextcloud, kt�
 - Ruchy są append-only — korekty wykonuje się przez rezerwacje kompensujące.
 - Deklarowane bazy danych: MySQL i PostgreSQL.
 
-## Wczesne wydanie — feedback mile widziany
+## Feedback mile widziany
 
-To pierwsza publikacja w App Store. Aplikacja jest w pełni funkcjonalna i przetestowana, ale nie miała jeszcze szerokiego zastosowania w realnym świecie. Zgłaszanie błędów i prośby o funkcje są bardzo mile widziane: https://github.com/aSoftwareByDesignRepository/nextcloud-inventorycheck/issues
+Ulepszamy tę aplikację dzięki realnemu użyciu. Zgłoszenia błędów, tarcia i pomysły pomagają — otwórz GitHub Issue (https://github.com/aSoftwareByDesignRepository/nextcloud-inventorycheck/issues) lub napisz na info@software-by-design.de. Wasza opinia bezpośrednio kształtuje to, co budujemy dalej.
 
 ## Wymagania
 
@@ -269,9 +269,9 @@ InventoryCheck håller delar och förnödenheter i den Nextcloud ni redan hostar
 - Rörelser är append-only — korrigeringar använder kompenserande bokningar.
 - Deklarerade databaser: MySQL och PostgreSQL.
 
-## Tidig release — feedback välkommen
+## Feedback välkomnas
 
-Detta är den första App Store-versionen. Appen är fullt fungerande och testad, men har ännu inte fått bred användning i verkligheten. Felrapporter och önskemål om funktioner tas mycket gärna emot: https://github.com/aSoftwareByDesignRepository/nextcloud-inventorycheck/issues
+Vi förbättrar den här appen med verklig användning. Felrapporter, friktioner och idéer hjälper — öppna en GitHub Issue (https://github.com/aSoftwareByDesignRepository/nextcloud-inventorycheck/issues) eller skriv till info@software-by-design.de. Er feedback formar direkt det vi bygger härnäst.
 
 ## Krav
 
@@ -301,6 +301,10 @@ InventoryCheck holder deler og forbruksmateriell i Nextclouden dere allerede hos
 ## Tidlig utgivelse — tilbakemelding velkommen
 
 Dette er den første App Store-utgivelsen. Appen er fullt funksjonell og testet, men har ennå ikke sett bred bruk i virkelige scenarier. Feilrapporter og forslag til funksjoner er veldig velkomne: https://github.com/aSoftwareByDesignRepository/nextcloud-inventorycheck/issues
+
+## Feedback er velkommen
+
+Vi forbedrer denne appen med bruk i praksis. Feilrapporter, friksjon og idéer hjelper — åpne en GitHub Issue (https://github.com/aSoftwareByDesignRepository/nextcloud-inventorycheck/issues) eller skriv til info@software-by-design.de. Tilbakemeldingen deres former direkte det vi bygger videre.
 
 ## Krav
 
