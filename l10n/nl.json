@@ -794,7 +794,9 @@
 		"Scan or type destination barcode": "Scan of typ bestemmingsbarcode",
 		"Scan from-location barcode": "Scan van-locatiebarcode",
 		"Type or scan the barcode on the shelf or van — picking a name alone is not enough.": "Typ of scan de barcode op het schap of in de bus — alleen een naam kiezen is niet genoeg.",
-		"Scan to-location barcode": "Scan naar-locatiebarcode"
+		"Scan to-location barcode": "Scan naar-locatiebarcode",
+		"License": "Licentie",
+		"Support us": "Support en wij"
 	},
 	"pluralForm": "nplurals=2; plural=(n != 1);"
 }

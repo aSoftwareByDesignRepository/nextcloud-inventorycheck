@@ -794,7 +794,9 @@
 		"Scan or type destination barcode": "Scanner ou saisir le code-barres de destination",
 		"Scan from-location barcode": "Scanner le code-barres de l’emplacement source",
 		"Type or scan the barcode on the shelf or van — picking a name alone is not enough.": "Saisir ou scanner le code-barres sur l’étagère ou le fourgon — choisir un nom seul ne suffit pas.",
-		"Scan to-location barcode": "Scanner le code-barres de l’emplacement cible"
+		"Scan to-location barcode": "Scanner le code-barres de l’emplacement cible",
+		"License": "Licence",
+		"Support us": "Aide et support"
 	},
 	"pluralForm": "nplurals=2; plural=(n > 1);"
 }

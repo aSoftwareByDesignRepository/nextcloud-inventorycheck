@@ -794,7 +794,9 @@
 		"Scan or type destination barcode": "Digitalize ou digite o código de destino",
 		"Scan from-location barcode": "Digitalizar código da localização de origem",
 		"Type or scan the barcode on the shelf or van — picking a name alone is not enough.": "Digite ou digitalize o código na prateleira ou van — só escolher um nome não basta.",
-		"Scan to-location barcode": "Digitalizar código da localização de destino"
+		"Scan to-location barcode": "Digitalizar código da localização de destino",
+		"License": "Licença",
+		"Support us": "Support e nós"
 	},
 	"pluralForm": "nplurals=2; plural=(n > 1);"
 }

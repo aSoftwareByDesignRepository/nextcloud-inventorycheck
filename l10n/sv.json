@@ -794,7 +794,9 @@
 		"Scan or type destination barcode": "Skanna eller skriv destinationsstreckkod",
 		"Scan from-location barcode": "Skanna från-platsstreckkod",
 		"Type or scan the barcode on the shelf or van — picking a name alone is not enough.": "Skriv eller skanna streckkoden på hyllan eller skåpbilen — att bara välja ett namn räcker inte.",
-		"Scan to-location barcode": "Skanna till-platsstreckkod"
+		"Scan to-location barcode": "Skanna till-platsstreckkod",
+		"License": "Licens",
+		"Support us": "Support & vi"
 	},
 	"pluralForm": "nplurals=2; plural=(n != 1);"
 }
