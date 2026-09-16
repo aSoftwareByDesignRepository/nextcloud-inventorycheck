@@ -2833,7 +2833,9 @@ body > .iv-dialog-overlay > .iv-dialog {
 	#content.app-inventorycheck,
 	#content.app-inventorycheck #app-content.iv-app,
 	#content.app-inventorycheck #app-content-wrapper.iv-shell {
+		/* Pair overflow-x:clip with overflow-y:auto (CSS Overflow L3) so tall pages stay reachable. */
 		overflow-x: clip;
+		overflow-y: auto;
 		max-width: 100%;
 	}
 

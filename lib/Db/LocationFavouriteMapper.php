@@ -73,9 +73,24 @@ class LocationFavouriteMapper extends QBMapper
 		if ($userId === '') {
 			return;
 		}
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId)));
-		$qb->executeStatement();
+		// Sibling-app PHPUnit / LiveUninstallDrop on the shared farm DB may have
+		// dropped this table mid-suite. Never fail cross-app user-delete listeners.
+		if (!$this->db->tableExists(self::TABLE)) {
+			return;
+		}
+		try {
+			$qb = $this->db->getQueryBuilder();
+			$qb->delete($this->getTableName())
+				->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId)));
+			$qb->executeStatement();
+		} catch (\Throwable $e) {
+			$msg = $e->getMessage();
+			if (stripos($msg, 'iv_loc_fav') !== false
+				|| stripos($msg, 'Base table or view not found') !== false
+				|| stripos($msg, 'no such table') !== false) {
+				return;
+			}
+			throw $e;
+		}
 	}
 }

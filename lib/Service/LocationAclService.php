@@ -170,11 +170,24 @@ class LocationAclService
 		if ($userId === '') {
 			return;
 		}
-		$del = $this->db->getQueryBuilder();
-		$del->delete('iv_loc_acl')
-			->where($del->expr()->eq('subject_type', $del->createNamedParameter(self::TYPE_USER)))
-			->andWhere($del->expr()->eq('subject_id', $del->createNamedParameter($userId)))
-			->executeStatement();
+		if (!$this->db->tableExists('iv_loc_acl')) {
+			return;
+		}
+		try {
+			$del = $this->db->getQueryBuilder();
+			$del->delete('iv_loc_acl')
+				->where($del->expr()->eq('subject_type', $del->createNamedParameter(self::TYPE_USER)))
+				->andWhere($del->expr()->eq('subject_id', $del->createNamedParameter($userId)))
+				->executeStatement();
+		} catch (\Throwable $e) {
+			$msg = $e->getMessage();
+			if (stripos($msg, 'iv_loc_acl') !== false
+				|| stripos($msg, 'Base table or view not found') !== false
+				|| stripos($msg, 'no such table') !== false) {
+				return;
+			}
+			throw $e;
+		}
 	}
 
 	/** Drop grants when a scanner slot is deleted. */

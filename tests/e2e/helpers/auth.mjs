@@ -6,68 +6,62 @@ import { expect } from '@playwright/test'
  * session expired or a test needs a different user.
  */
 export async function login(page, { username, password }) {
-	const base = process.env.NC_BASE_URL || 'http://localhost:8081'
-	const request = page.context().request
+	const base = (process.env.NC_BASE_URL || 'http://localhost:8081').replace(/\/$/, '')
 	let lastError = 'login_failed'
 
 	for (let attempt = 1; attempt <= 3; attempt++) {
-		const loginPage = await request.get(`${base}/login`)
-		const html = await loginPage.text()
+		// UI form login (not API+follow-redirects): NC may set overwritehost to
+		// 10.0.2.2 for emulator reachability; following that Location from the
+		// host hangs. Stay on localhost baseURL after cookies are set.
+		await page.goto(`${base}/login`, { waitUntil: 'domcontentloaded', timeout: 45_000 })
+		const html = await page.content()
 		if (/maintenance mode|update is in progress|needs to be updated/i.test(html)) {
 			throw new Error('Nextcloud is in maintenance/upgrade mode — finish `occ upgrade` before E2E')
 		}
-		// Real throttle copy only — do NOT match loginThrottleDelay initial-state keys.
 		if (/Too many tries|try again in|Account locked/i.test(html)) {
 			lastError = 'bruteforce_throttled'
 			await page.waitForTimeout(2000 * attempt)
 			continue
 		}
 
-		const tokenMatch = html.match(/data-requesttoken="([^"]+)"/)
-			|| html.match(/name="requesttoken"[^>]*value="([^"]*)"/)
-			|| html.match(/value="([^"]*)"[^>]*name="requesttoken"/)
-		if (!tokenMatch || !tokenMatch[1]) {
-			throw new Error('Login page missing requesttoken')
+		if (!page.url().includes('/login')) {
+			// Already authenticated storage/cookies
+			await page.goto(`${base}/apps/dashboard/`, { waitUntil: 'domcontentloaded', timeout: 45_000 })
+			if (!page.url().includes('/login')) {
+				return
+			}
 		}
 
-		const resp = await request.post(`${base}/login`, {
-			form: {
-				user: username,
-				password,
-				timezone: 'UTC',
-				timezone_offset: '0',
-				requesttoken: tokenMatch[1],
-			},
-			headers: {
-				Origin: base,
-				Referer: `${base}/login`,
-			},
-			maxRedirects: 5,
-		})
+		const user = page.locator('input[name="user"], #user')
+		const pass = page.locator('input[name="password"], #password')
+		await expect(user.first()).toBeVisible({ timeout: 30_000 })
+		await user.first().fill(username)
+		await pass.first().fill(password)
 
-		const body = await resp.text()
-		if (/CSRF check failed|Access forbidden/i.test(body) && !/data-user="/i.test(body)) {
-			lastError = 'csrf'
+		const wrong = page.getByText(/Wrong login or password|Falscher Benutzername oder Passwort/i)
+		await page.locator('button[type="submit"], input[type="submit"], #submit-form').first().click()
+
+		// Do not follow overwritehost (10.0.2.2) redirects — they hang from the host.
+		// Give NC a moment to set session cookies, then re-enter via localhost baseURL.
+		await page.waitForTimeout(1500)
+		if (await wrong.first().isVisible({ timeout: 500 }).catch(() => false)) {
+			lastError = 'bad_credentials'
 			await page.waitForTimeout(500 * attempt)
 			continue
 		}
-		if (/data-user="/i.test(body) || (!resp.url().includes('/login') && resp.ok())) {
-			await page.goto(`${base}/apps/dashboard/`, { waitUntil: 'domcontentloaded' })
-			if (page.url().includes('/login')) {
-				lastError = 'session_not_established'
-				continue
-			}
-			const forbidden = page.getByText(/CSRF check failed|Access forbidden/i)
-			if (await forbidden.first().isVisible({ timeout: 1000 }).catch(() => false)) {
-				lastError = 'dashboard_csrf'
-				continue
-			}
-			return
+
+		await page.goto(`${base}/apps/dashboard/`, { waitUntil: 'domcontentloaded', timeout: 45_000 })
+		if (page.url().includes('/login')) {
+			lastError = 'session_not_established'
+			await page.waitForTimeout(500 * attempt)
+			continue
 		}
-		lastError = /Wrong password|Login failed|incorrect/i.test(body)
-			? 'bad_credentials'
-			: `still_on_login status=${resp.status()}`
-		await page.waitForTimeout(500 * attempt)
+		const forbidden = page.getByText(/CSRF check failed|Access forbidden/i)
+		if (await forbidden.first().isVisible({ timeout: 1000 }).catch(() => false)) {
+			lastError = 'dashboard_csrf'
+			continue
+		}
+		return
 	}
 
 	throw new Error(`Login failed for ${username}: ${lastError}`)

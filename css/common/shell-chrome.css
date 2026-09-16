@@ -325,7 +325,9 @@
 		calc(var(--iv-space-7) + env(safe-area-inset-bottom, 0px))
 		calc(var(--iv-space-5) + env(safe-area-inset-left, 0px));
 	box-sizing: border-box;
+	/* Pair overflow-x:clip with overflow-y:auto (CSS Overflow L3) so tall pages stay reachable. */
 	overflow-x: clip;
+	overflow-y: auto;
 }
 #app-content.iv-app--dashboard .iv-dashboard-alerts .iv-callout {
 	margin: 0;
