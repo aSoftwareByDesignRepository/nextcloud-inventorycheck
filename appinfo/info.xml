@@ -363,6 +363,7 @@ Vi forbedrer denne appen med bruk i praksis. Feilrapporter, friksjon og idéer h
 		</pre-migration>
 		<post-migration>
 			<step>OCA\InventoryCheck\Repair\EnsureInventoryCheckSchema</step>
+			<step>OCA\InventoryCheck\Repair\ScrubStaleAclSubjects</step>
 		</post-migration>
 		<uninstall>
 			<step>OCA\InventoryCheck\Repair\UninstallDropTables</step>

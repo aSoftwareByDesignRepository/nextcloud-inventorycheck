@@ -31,6 +31,7 @@ class ItemService
 		private readonly IConfig $config,
 		private readonly CycleLineMapper $cycleLines,
 		private readonly LocationMapper $locations,
+		private readonly ?ItemPhotoService $photos = null,
 	) {
 	}
 
@@ -198,6 +199,7 @@ class ItemService
 	public function delete(string $actorUid, int $id): void
 	{
 		$this->access->requireOffice($actorUid);
+		$photoName = null;
 		$this->db->beginTransaction();
 		try {
 			// Exclusive lock conflicts with the shared lock held by any
@@ -209,11 +211,16 @@ class ItemService
 			if ($this->cycleLines->countOpenCampaignsForItem($id) > 0) {
 				throw new ConflictException('item_in_open_stocktake');
 			}
+			$photoName = $item->getPhotoName();
 			$this->items->delete($item);
 			$this->db->commit();
 		} catch (\Throwable $e) {
 			$this->db->rollBack();
 			throw $e;
+		}
+		// Post-commit: the AppData blob must not outlive the item row.
+		if ($photoName !== null && $photoName !== '') {
+			$this->photos?->purgeFile($photoName);
 		}
 	}
 
@@ -270,7 +277,14 @@ class ItemService
 			}
 			if ($sku !== $item->getSku() || $scan !== $item->getScanCode()) {
 				if (!CodeRules::isValidSku($sku) || !CodeRules::isValidScanCode($scan)) {
-					throw new ValidationException('invalid_code_format');
+					$bad = [];
+					if (!CodeRules::isValidSku($sku)) {
+						$bad[] = ['field' => 'sku', 'code' => 'invalid_code_format'];
+					}
+					if (!CodeRules::isValidScanCode($scan)) {
+						$bad[] = ['field' => 'scanCode', 'code' => 'invalid_code_format'];
+					}
+					throw new ValidationException('invalid_code_format', '', $bad);
 				}
 				if (CodeRules::conflictsWithOthers($id, $sku, $scan, $this->items->allCodePairs())) {
 					throw new ConflictException('code_exists');
@@ -458,7 +472,14 @@ class ItemService
 	private function validateItemFields(string $sku, string $scan, string $name, string $uom, ?string $desc, int $reorder): void
 	{
 		if (!CodeRules::isValidSku($sku) || !CodeRules::isValidScanCode($scan)) {
-			throw new ValidationException('invalid_code_format');
+			$bad = [];
+			if (!CodeRules::isValidSku($sku)) {
+				$bad[] = ['field' => 'sku', 'code' => 'invalid_code_format'];
+			}
+			if (!CodeRules::isValidScanCode($scan)) {
+				$bad[] = ['field' => 'scanCode', 'code' => 'invalid_code_format'];
+			}
+			throw new ValidationException('invalid_code_format', '', $bad);
 		}
 		if ($name === '' || mb_strlen($name) > 255) {
 			throw new ValidationException('validation_failed', '', [['field' => 'name', 'code' => 'name_required']]);

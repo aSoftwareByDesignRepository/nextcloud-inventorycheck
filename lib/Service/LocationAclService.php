@@ -190,6 +190,53 @@ class LocationAclService
 		}
 	}
 
+	/**
+	 * Drop every per-group location ACL grant for a deleted GID. Without this a
+	 * stale grant silently re-activates if the same gid is ever recreated.
+	 */
+	public function purgeGroup(string $groupId): void
+	{
+		if ($groupId === '') {
+			return;
+		}
+		if (!$this->db->tableExists('iv_loc_acl')) {
+			return;
+		}
+		try {
+			$del = $this->db->getQueryBuilder();
+			$del->delete('iv_loc_acl')
+				->where($del->expr()->eq('subject_type', $del->createNamedParameter(self::TYPE_GROUP)))
+				->andWhere($del->expr()->eq('subject_id', $del->createNamedParameter($groupId)))
+				->executeStatement();
+		} catch (\Throwable $e) {
+			$msg = $e->getMessage();
+			if (stripos($msg, 'iv_loc_acl') !== false
+				|| stripos($msg, 'Base table or view not found') !== false
+				|| stripos($msg, 'no such table') !== false) {
+				return;
+			}
+			throw $e;
+		}
+	}
+
+	/**
+	 * Drop every grant pointing at a deleted location. Stale location_ids would
+	 * silently reattach to an unrelated location after InnoDB id reuse.
+	 */
+	public function purgeLocation(int $locationId): void
+	{
+		if ($locationId <= 0) {
+			return;
+		}
+		if (!$this->db->tableExists('iv_loc_acl')) {
+			return;
+		}
+		$del = $this->db->getQueryBuilder();
+		$del->delete('iv_loc_acl')
+			->where($del->expr()->eq('location_id', $del->createNamedParameter($locationId, IQueryBuilder::PARAM_INT)))
+			->executeStatement();
+	}
+
 	/** Drop grants when a scanner slot is deleted. */
 	public function purgeDevice(int $deviceId): void
 	{

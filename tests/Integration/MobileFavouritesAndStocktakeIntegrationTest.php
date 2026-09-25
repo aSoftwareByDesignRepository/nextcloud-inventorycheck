@@ -22,6 +22,7 @@ use OCA\InventoryCheck\Service\ScanIdempotencyService;
 use OCA\InventoryCheck\Tests\Support\Iv2TestSigning;
 use OCP\IConfig;
 use OCP\IRequest;
+use OCP\ISession;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use OCP\Server;
@@ -42,6 +43,7 @@ final class MobileFavouritesAndStocktakeIntegrationTest extends TestCase
 
 	protected function setUp(): void
 	{
+		parent::setUp();
 		if (!class_exists(\OC::class) || !isset(\OC::$server)) {
 			$this->markTestSkipped('Nextcloud runtime required');
 		}
@@ -116,6 +118,7 @@ final class MobileFavouritesAndStocktakeIntegrationTest extends TestCase
 			Server::get(ItemPhotoService::class),
 			Server::get(ScanIdempotencyService::class),
 			$session,
+			Server::get(ISession::class),
 			Server::get(IConfig::class),
 		);
 	}
@@ -174,6 +177,7 @@ final class MobileFavouritesAndStocktakeIntegrationTest extends TestCase
 			Server::get(ItemPhotoService::class),
 			Server::get(ScanIdempotencyService::class),
 			$session,
+			Server::get(ISession::class),
 			Server::get(IConfig::class),
 		);
 
@@ -210,6 +214,7 @@ final class MobileFavouritesAndStocktakeIntegrationTest extends TestCase
 			Server::get(ItemPhotoService::class),
 			Server::get(ScanIdempotencyService::class),
 			$session,
+			Server::get(ISession::class),
 			Server::get(IConfig::class),
 		);
 
@@ -255,6 +260,7 @@ final class MobileFavouritesAndStocktakeIntegrationTest extends TestCase
 			Server::get(ItemPhotoService::class),
 			Server::get(ScanIdempotencyService::class),
 			Server::get(IUserSession::class),
+			Server::get(ISession::class),
 			Server::get(IConfig::class),
 		);
 

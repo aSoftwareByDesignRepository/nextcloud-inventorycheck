@@ -7,6 +7,7 @@ namespace OCA\InventoryCheck\Service;
 use OCA\InventoryCheck\Db\CycleCampaignMapper;
 use OCA\InventoryCheck\Db\ItemMapper;
 use OCA\InventoryCheck\Db\Location;
+use OCA\InventoryCheck\Db\LocationFavouriteMapper;
 use OCA\InventoryCheck\Db\LocationMapper;
 use OCA\InventoryCheck\Db\UniqueViolation;
 use OCA\InventoryCheck\Exception\ConflictException;
@@ -27,6 +28,7 @@ class LocationService
 		private readonly CycleCampaignMapper $cycleCampaigns,
 		private readonly ItemMapper $items,
 		private readonly ILockingProvider $locking,
+		private readonly LocationFavouriteMapper $favourites,
 	) {
 	}
 
@@ -150,7 +152,9 @@ class LocationService
 			if (array_key_exists('code', $input)) {
 				$code = CodeRules::trim((string)$input['code']);
 				if (!CodeRules::isValidLocationCode($code)) {
-					throw new ValidationException('invalid_code_format');
+					throw new ValidationException('invalid_code_format', '', [
+						['field' => 'code', 'code' => 'invalid_code_format'],
+					]);
 				}
 				$existing = $this->locations->findByCode($code);
 				if ($existing !== null && (int)$existing->getId() !== $id) {
@@ -218,6 +222,10 @@ class LocationService
 			if ($this->cycleCampaigns->countOpenForLocation($id) > 0) {
 				throw new ConflictException('location_in_open_stocktake');
 			}
+			// Orphaned grants/favourites would silently reattach to an
+			// unrelated location after InnoDB auto-increment id reuse.
+			$this->locationAcl->purgeLocation($id);
+			$this->favourites->deleteAllForLocation($id);
 			$this->locations->delete($loc);
 			$this->db->commit();
 		} catch (\Throwable $e) {
@@ -229,7 +237,9 @@ class LocationService
 	private function validateMaster(string $code, string $name, string $kind, ?string $notes): void
 	{
 		if (!CodeRules::isValidLocationCode($code)) {
-			throw new ValidationException('invalid_code_format');
+			throw new ValidationException('invalid_code_format', '', [
+				['field' => 'code', 'code' => 'invalid_code_format'],
+			]);
 		}
 		if ($name === '' || mb_strlen($name) > 255) {
 			throw new ValidationException('validation_failed', '', [['field' => 'name', 'code' => 'name_required']]);

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace OCA\InventoryCheck\AppInfo;
 
+use OCA\InventoryCheck\Listener\GroupDeletedListener;
 use OCA\InventoryCheck\Listener\UserDeletedListener;
+use OCP\Group\Events\GroupDeletedEvent;
 use OCP\User\Events\UserDeletedEvent;
 use OCA\InventoryCheck\Command\RebuildBalancesCommand;
 use OCA\InventoryCheck\Db\BalanceMapper;
@@ -23,6 +25,7 @@ use OCA\InventoryCheck\Notification\Notifier;
 use OCA\InventoryCheck\Public\StockIssueFacade;
 use OCA\InventoryCheck\Repair\BackupBeforeUpdate;
 use OCA\InventoryCheck\Repair\EnsureInventoryCheckSchema;
+use OCA\InventoryCheck\Repair\ScrubStaleAclSubjects;
 use OCA\InventoryCheck\Repair\UninstallDropTables;
 use OCA\InventoryCheck\Service\AccessControlService;
 use OCA\InventoryCheck\Service\BalanceService;
@@ -65,6 +68,39 @@ use OCP\L10N\IFactory;
 use OCP\Lock\ILockingProvider;
 use OCP\Notification\IManager as INotificationManager;
 
+// Bundled splitbrain/phpQRCode lives under lib/Vendor. Nextcloud only autoloads
+// OCA\* classes, so the app must load its own composer autoloader — otherwise
+// every label route (LabelSvg::forItem/forLocation) fatals at runtime while
+// tests stay green because tests/bootstrap.php requires vendor/autoload.php.
+//
+// CRITICAL: composer's autoload.php registers itself *prepended*. When the
+// vendor tree was installed with dev dependencies (nextcloud/ocp stubs), a
+// prepended loader would shadow the server's real OCP interfaces and break
+// the entire instance. Re-register appended so Nextcloud's own autoloader
+// always wins for OCP\*/OC\* while splitbrain\phpQRCode still resolves here.
+$inventorycheckAutoload = __DIR__ . '/../../vendor/autoload.php';
+if (!class_exists(\splitbrain\phpQRCode\QRCode::class, false) && is_file($inventorycheckAutoload)) {
+	$inventorycheckLoader = require $inventorycheckAutoload;
+	if ($inventorycheckLoader instanceof \Composer\Autoload\ClassLoader) {
+		$inventorycheckLoader->unregister();
+		$inventorycheckLoader->register(false);
+	}
+	unset($inventorycheckLoader);
+}
+unset($inventorycheckAutoload);
+// Fallback for production installs where dev-vendor/ is not shipped: map the
+// vendored prefix straight onto lib/Vendor (appended — never shadows OCP/OC).
+spl_autoload_register(static function (string $class): void {
+	$prefix = 'splitbrain\\phpQRCode\\';
+	if (str_starts_with($class, $prefix)) {
+		$file = __DIR__ . '/../Vendor/splitbrain/phpQRCode/'
+			. str_replace('\\', '/', substr($class, strlen($prefix))) . '.php';
+		if (is_file($file)) {
+			require_once $file;
+		}
+	}
+}, true, false);
+
 class Application extends App implements IBootstrap
 {
 	public const APP_ID = 'inventorycheck';
@@ -77,6 +113,7 @@ class Application extends App implements IBootstrap
 	public function register(IRegistrationContext $context): void
 	{
 		$context->registerEventListener(UserDeletedEvent::class, UserDeletedListener::class);
+		$context->registerEventListener(GroupDeletedEvent::class, GroupDeletedListener::class);
 		$context->registerService(LocationMapper::class, static fn ($c) => new LocationMapper($c->get(IDBConnection::class)));
 		$context->registerService(ItemMapper::class, static fn ($c) => new ItemMapper($c->get(IDBConnection::class)));
 		$context->registerService(BalanceMapper::class, static fn ($c) => new BalanceMapper($c->get(IDBConnection::class)));
@@ -132,6 +169,7 @@ class Application extends App implements IBootstrap
 				$c->get(CycleCampaignMapper::class),
 				$c->get(ItemMapper::class),
 				$c->get(ILockingProvider::class),
+				$c->get(LocationFavouriteMapper::class),
 			);
 		});
 		$context->registerService(ItemService::class, static function ($c): ItemService {
@@ -146,6 +184,7 @@ class Application extends App implements IBootstrap
 				$c->get(IConfig::class),
 				$c->get(CycleLineMapper::class),
 				$c->get(LocationMapper::class),
+				$c->get(ItemPhotoService::class),
 			);
 		});
 		$context->registerService(BalanceService::class, static function ($c): BalanceService {
@@ -228,6 +267,12 @@ class Application extends App implements IBootstrap
 				$c->get(AccessControlService::class),
 				$c->get(LicenseService::class),
 				$c->get(LocationFavouriteMapper::class),
+				$c->get(LocationAclService::class),
+			);
+		});
+		$context->registerService(GroupDeletedListener::class, static function ($c): GroupDeletedListener {
+			return new GroupDeletedListener(
+				$c->get(AccessControlService::class),
 				$c->get(LocationAclService::class),
 			);
 		});
@@ -317,6 +362,14 @@ class Application extends App implements IBootstrap
 
 		$context->registerService(EnsureInventoryCheckSchema::class, static function ($c): EnsureInventoryCheckSchema {
 			return new EnsureInventoryCheckSchema($c->get(IDBConnection::class), $c->get(IConfig::class));
+		});
+		$context->registerService(ScrubStaleAclSubjects::class, static function ($c): ScrubStaleAclSubjects {
+			return new ScrubStaleAclSubjects(
+				$c->get(IDBConnection::class),
+				$c->get(IUserManager::class),
+				$c->get(IGroupManager::class),
+				$c->get(IConfig::class),
+			);
 		});
 		$context->registerService(UninstallDropTables::class, static function ($c): UninstallDropTables {
 			return new UninstallDropTables(

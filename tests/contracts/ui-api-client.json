@@ -2,5 +2,251 @@
   "schemaVersion": 1,
   "appId": "inventorycheck",
   "companionDir": "mobile/inventorycheck",
-  "contracts": []
+  "contracts": [
+    {
+      "id": "adjust-reason-code",
+      "param": "reasonCode",
+      "description": "Adjust movements require a reasonCode from the fixed catalog whenever require_adjust_reason=1 (default). Server rejects with 422 reason_code_required / invalid_reason_code; web adjust form shows a select fed by GET /api/reason-codes; companion scan/bag review carries reasonCode per line.",
+      "errorCodes": ["reason_code_required", "invalid_reason_code"],
+      "server": [
+        {
+          "file": "lib/Service/ReasonCodes.php",
+          "needles": ["requireForAdjust", "reason_code_required", "invalid_reason_code"]
+        },
+        {
+          "file": "lib/Service/MovementService.php",
+          "needles": ["ReasonCodes::requireForAdjust($this->config, $reasonCode)"]
+        }
+      ],
+      "web": [
+        {
+          "file": "js/app.js",
+          "needles": ["reasonCode", "ctx.urls.api.reasonCodes"]
+        }
+      ],
+      "mobile": [
+        {
+          "file": "src/bag/buildBagScanRequest.ts",
+          "needles": ["reasonCode: line.reasonCode?.trim() || null"]
+        },
+        {
+          "file": "src/screens/ConfirmScreen.tsx",
+          "needles": ["reasonCode"]
+        }
+      ]
+    },
+    {
+      "id": "location-scan-code",
+      "param": "locationCode",
+      "description": "When require_location_scan=1, scan/issue/transfer must confirm the from-location by scanning its barcode. Server enforces 422 location_code_required / location_code_mismatch via LocationScanPolicy::assertMatches; web scan form collects locationCode; companion ScanScreen/BagReview collects it per booking.",
+      "errorCodes": ["location_code_required", "location_code_mismatch"],
+      "server": [
+        {
+          "file": "lib/Service/LocationScanPolicy.php",
+          "needles": ["assertMatches", "location_code_required", "location_code_mismatch"]
+        },
+        {
+          "file": "lib/Controller/MobileController.php",
+          "needles": ["locationCode", "location_code"]
+        }
+      ],
+      "web": [
+        {
+          "file": "js/app.js",
+          "needles": ["locationCode", "name: 'locationCode'"]
+        }
+      ],
+      "mobile": [
+        {
+          "file": "src/screens/ScanScreen.tsx",
+          "needles": ["locationCode"]
+        },
+        {
+          "file": "src/bag/buildBagScanRequest.ts",
+          "needles": ["locationCode: line.locationCode?.trim() || null"]
+        }
+      ]
+    },
+    {
+      "id": "to-location-scan-code",
+      "param": "toLocationCode",
+      "description": "Transfers under require_location_scan must also confirm the destination barcode (toLocationCode). Server validates via LocationScanPolicy::assertMatches with field toLocationCode; web transfer form collects it; companion carries it on transfer lines.",
+      "errorCodes": ["location_code_required", "location_code_mismatch"],
+      "server": [
+        {
+          "file": "lib/Service/LocationScanPolicy.php",
+          "needles": ["toLocationCode", "location_code_required"]
+        },
+        {
+          "file": "lib/Controller/MovementController.php",
+          "needles": ["toLocationCodeParam", "to_location_code"]
+        }
+      ],
+      "web": [
+        {
+          "file": "js/app.js",
+          "needles": ["toLocationCode", "transferBody.toLocationCode"]
+        }
+      ],
+      "mobile": [
+        {
+          "file": "src/screens/BagReviewScreen.tsx",
+          "needles": ["toLocationCode"]
+        }
+      ]
+    },
+    {
+      "id": "cycle-count-qty-counted",
+      "param": "qtyCounted",
+      "description": "Counting a stocktake line posts PUT .../cycle-counts/lines/{id} with qtyCounted (integer >= 0). Server validates CycleCountSemantics::isQtyCountedValid -> 422; web stocktake table posts it; companion StocktakeDetailScreen sends it via client.setCycleCount.",
+      "errorCodes": ["validation_failed"],
+      "server": [
+        {
+          "file": "lib/Service/CycleCountService.php",
+          "needles": ["qtyCounted", "isQtyCountedValid"]
+        }
+      ],
+      "web": [
+        {
+          "file": "js/app.js",
+          "needles": ["qtyCounted", "cycleCountSetCount"]
+        }
+      ],
+      "mobile": [
+        {
+          "file": "src/api/client.ts",
+          "needles": ["qtyCounted", "setCycleCount"]
+        },
+        {
+          "file": "src/screens/StocktakeDetailScreen.tsx",
+          "needles": ["qtyCounted"]
+        }
+      ]
+    },
+    {
+      "id": "scan-idempotency-key",
+      "param": "clientRequestId",
+      "description": "Companion scan bookings carry clientRequestId so retries replay the stored response instead of double-booking. Server claims/replays via ScanIdempotencyService (409 idempotency_in_flight / idempotency_payload_mismatch); web bookings are single-shot and do not use the key.",
+      "errorCodes": ["idempotency_in_flight", "idempotency_payload_mismatch"],
+      "server": [
+        {
+          "file": "lib/Controller/MobileController.php",
+          "needles": ["clientRequestId", "client_request_id", "idempotency_payload_mismatch"]
+        },
+        {
+          "file": "lib/Service/ScanIdempotencyService.php",
+          "needles": ["normalizeClientRequestId", "tryClaim", "releaseStalePending"]
+        }
+      ],
+      "web": [],
+      "mobile": [
+        {
+          "file": "src/bag/buildBagScanRequest.ts",
+          "needles": ["clientRequestId"]
+        },
+        {
+          "file": "src/screens/ConfirmScreen.tsx",
+          "needles": ["clientRequestId"]
+        }
+      ]
+    },
+    {
+      "id": "device-token-header",
+      "param": "X-IV-Device-Token",
+      "description": "Paired scan devices authenticate every /mobile/v1 call with the X-IV-Device-Token header (hash compared server-side). Garbage tokens -> 401 auth_required; deactivated slots -> 402 device_required. Companion request layer sets the header from the paired session.",
+      "errorCodes": ["auth_required", "device_required"],
+      "server": [
+        {
+          "file": "lib/Controller/MobileController.php",
+          "needles": ["X-IV-Device-Token", "findDeviceByTokenHash", "device_required"]
+        }
+      ],
+      "web": [],
+      "mobile": [
+        {
+          "file": "src/api/request.ts",
+          "needles": ["X-IV-Device-Token", "session.deviceToken"]
+        }
+      ]
+    },
+    {
+      "id": "stocktake-close-flags",
+      "param": "abandonUncounted",
+      "description": "Closing a stocktake accepts abandonUncounted (skip uncounted lines) and acknowledgeConflicts (book qty moved mid-count). Server enforces 422 count_incomplete / count_conflict without them; web close dialog sends both flags; companion close flow sends them on /mobile/v1 equivalent.",
+      "errorCodes": ["count_incomplete", "count_conflict", "campaign_not_counting"],
+      "server": [
+        {
+          "file": "lib/Controller/CycleCountController.php",
+          "needles": ["abandonUncounted", "acknowledgeConflicts"]
+        },
+        {
+          "file": "lib/Service/CycleCountService.php",
+          "needles": ["count_incomplete", "count_conflict"]
+        }
+      ],
+      "web": [
+        {
+          "file": "js/app.js",
+          "needles": ["abandonUncounted", "acknowledgeConflicts", "stocktakeCloseQuery"]
+        }
+      ],
+      "mobile": []
+    },
+    {
+      "id": "device-pair-code",
+      "param": "code",
+      "description": "Pairing a scan device posts {code} to /mobile/v1/devices/pair; server rate-limits failures (429 rate_limited after 10/h/IP) and validates the hashed pair code. Admin settings web surface shows/regenerates the pairCode; companion PairDeviceScreen collects the code.",
+      "errorCodes": ["invalid_pair_code", "rate_limited"],
+      "server": [
+        {
+          "file": "lib/Controller/MobileController.php",
+          "needles": ["pairDevice", "'code'"]
+        },
+        {
+          "file": "lib/Service/DevicePairingService.php",
+          "needles": ["pair(", "rate_limited"]
+        }
+      ],
+      "web": [
+        {
+          "file": "js/app.js",
+          "needles": ["pairCode", "pairCodeHost"]
+        }
+      ],
+      "mobile": [
+        {
+          "file": "src/screens/PairDeviceScreen.tsx",
+          "needles": ["pairCode", "code"]
+        }
+      ]
+    },
+    {
+      "id": "stocktake-blind-mode",
+      "param": "blind",
+      "description": "Blind counting hides systemQty server-side: GET/PUT cycle-count responses strip book qty when blind=1 (AF-IV13). Web stocktake view toggles it; companion list/detail screens send blind on show/setCount.",
+      "errorCodes": [],
+      "server": [
+        {
+          "file": "lib/Controller/MobileController.php",
+          "needles": ["blind", "systemQty"]
+        }
+      ],
+      "web": [
+        {
+          "file": "js/app.js",
+          "needles": ["blind", "iv-stocktake-blind"]
+        }
+      ],
+      "mobile": [
+        {
+          "file": "src/api/client.ts",
+          "needles": ["blind"]
+        },
+        {
+          "file": "src/screens/StocktakeDetailScreen.tsx",
+          "needles": ["blind"]
+        }
+      ]
+    }
+  ]
 }

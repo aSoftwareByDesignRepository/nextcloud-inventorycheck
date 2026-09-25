@@ -266,6 +266,11 @@
 				}
 				return data;
 			});
+		}).catch(function (err) {
+			if (err instanceof ApiError || (err && err.name === 'AbortError')) {
+				throw err;
+			}
+			throw new ApiError('network_error', tr('No internet connection or the server cannot be reached.'), null, 0);
 		});
 	}
 
@@ -290,6 +295,23 @@
 	function setBusy(root, busy) {
 		if (!root) return;
 		root.setAttribute('aria-busy', busy ? 'true' : 'false');
+	}
+
+	/**
+	 * Honest click feedback: masters-dependent dialogs fetch before opening —
+	 * mark the triggering button busy/disabled until the dialog mounts (or the
+	 * load fails), so a queued API call never looks like a dead click.
+	 */
+	function busyTriggerUntil(node, promise) {
+		if (!node || node.tagName !== 'BUTTON') return;
+		node.setAttribute('aria-busy', 'true');
+		node.disabled = true;
+		var release = function () {
+			if (!node.isConnected) return;
+			node.removeAttribute('aria-busy');
+			node.disabled = false;
+		};
+		promise.then(release, release);
 	}
 
 	function emptyState(title, hint, cta) {
@@ -1247,12 +1269,22 @@
 			wrap._ivInput.setAttribute('aria-invalid', 'true');
 			wrap._ivError.hidden = false;
 			var text = d.message || fallbackMessage || '';
-			if (!text && d.code === 'unknown_user') {
-				text = tr('This Nextcloud user does not exist.');
-			} else if (!text && d.code === 'unknown_group') {
-				text = tr('This Nextcloud group does not exist.');
-			} else if (!text) {
-				text = d.code || tr('Please check this field.');
+			if (!text) {
+				// Server details carry {field, code} only — translate known codes,
+				// never leak a raw machine code into the UI.
+				var codeMessages = {
+					invalid_code_format: tr('The code format is not valid. Use letters, digits, and . _ / - only.'),
+					name_required: tr('Please check this field.'),
+					unknown_user: tr('This Nextcloud user does not exist.'),
+					unknown_group: tr('This Nextcloud group does not exist.'),
+					unknown_location: tr('Choose a location'),
+					inactive_item: tr('This item is deactivated.'),
+					inactive_location: tr('This location is deactivated.'),
+					required: tr('Please check this field.'),
+					same_location: tr('Transfer source and destination must be different.'),
+					validation_failed: tr('Please check this field.'),
+				};
+				text = codeMessages[d.code] || tr('Please check this field.');
 			}
 			wrap._ivError.textContent = text;
 			applied = true;
@@ -1295,7 +1327,13 @@
 				}
 			}
 		}
-		var previouslyFocused = document.activeElement;
+		// Dialogs that open after an async wait (loadMasters) must restore focus to
+		// the element that triggered them: busyTriggerUntil disables that trigger
+		// while waiting, which blurs it, so document.activeElement here would be
+		// <body>. Callers pass their pre-captured trigger via opts.restoreFocusTo.
+		var previouslyFocused = (opts.restoreFocusTo && typeof opts.restoreFocusTo.focus === 'function')
+			? opts.restoreFocusTo
+			: document.activeElement;
 		var hideConfirm = !!opts.hideConfirm || typeof onConfirm !== 'function';
 		var overlay = el('div', { className: 'modal-backdrop iv-dialog-overlay', role: 'presentation' });
 		var dialogEl = el('div', {
@@ -1330,7 +1368,24 @@
 				setChromeInert(false);
 			}
 			if (previouslyFocused && typeof previouslyFocused.focus === 'function') {
-				try { previouslyFocused.focus(); } catch (e) { /* ignore */ }
+				try {
+					var restoreTarget = previouslyFocused;
+					// Trigger may live inside an auto-closed <details> (e.g. the
+					// "More" overflow menu) — a hidden node cannot take focus and
+					// the browser drops to <body>. Fall back to the summary.
+					if (restoreTarget.isConnected && typeof restoreTarget.closest === 'function') {
+						var closedDetails = restoreTarget.closest('details:not([open])');
+						if (closedDetails) {
+							var summary = closedDetails.querySelector('summary');
+							if (summary) {
+								restoreTarget = summary;
+							}
+						}
+					}
+					if (restoreTarget.isConnected) {
+						restoreTarget.focus();
+					}
+				} catch (e) { /* ignore */ }
 			}
 		};
 		dialogEl.appendChild(el('header', { className: 'iv-dialog__header' }, [
@@ -2032,7 +2087,8 @@
 			}
 		});
 
-		loadMasters(ctx).then(function (masters) {
+		var moveTrigger = document.activeElement;
+		var moveDialogReady = loadMasters(ctx).then(function (masters) {
 			fillSelect(itemSelect, masters.items, 'id', function (r) {
 				return r.name + ' — ' + r.sku;
 			}, tr('Choose an item'));
@@ -2278,12 +2334,18 @@
 				var itemId = Number(itemSelect.value);
 				var locationId = Number(locSelect.value);
 				if (!itemId || !locationId) {
-					return Promise.reject(new ApiError('validation_failed', tr('Choose an item and location.')));
+					var missing = [];
+					if (!itemId) missing.push({ field: 'itemId', code: 'required', message: tr('Choose an item') });
+					if (!locationId) missing.push({ field: 'locationId', code: 'required', message: tr('Choose a location') });
+					return Promise.reject(new ApiError('validation_failed', tr('Choose an item and location.'), missing));
 				}
 				if (opts.transfer) {
 					var toLocationId = Number(toSelect.value);
 					if (!toLocationId || toLocationId === locationId) {
-						return Promise.reject(new ApiError('validation_failed', tr('Choose two different locations.')));
+						var destDetails = toLocationId === locationId
+							? [{ field: 'toLocationId', code: 'same_location', message: tr('Choose two different locations.') }]
+							: [{ field: 'toLocationId', code: 'required', message: tr('Choose destination') }];
+						return Promise.reject(new ApiError('validation_failed', tr('Choose two different locations.'), destDetails));
 					}
 					var transferBody = {
 						itemId: itemId,
@@ -2298,7 +2360,14 @@
 						transferBody.locationCode = (locCodeInput.value || '').trim();
 						transferBody.toLocationCode = (toLocCodeInput.value || '').trim();
 						if (!transferBody.locationCode || !transferBody.toLocationCode) {
-							return Promise.reject(new ApiError('validation_failed', tr('Confirm both location codes.')));
+							var scanMissing = [];
+							if (!transferBody.locationCode) {
+								scanMissing.push({ field: 'locationCode', code: 'required', message: tr('Confirm the location code.') });
+							}
+							if (!transferBody.toLocationCode) {
+								scanMissing.push({ field: 'toLocationCode', code: 'required', message: tr('Confirm the location code.') });
+							}
+							return Promise.reject(new ApiError('validation_failed', tr('Confirm both location codes.'), scanMissing));
 						}
 					}
 					return api('POST', movementApi(ctx, 'transfer'), transferBody).then(function (result) {
@@ -2308,10 +2377,14 @@
 				}
 				if (opts.adjust) {
 					if (ctx.requireAdjustReason && !reasonCodePayload()) {
-						return Promise.reject(new ApiError('validation_failed', tr('Choose a reason code.')));
+						return Promise.reject(new ApiError('validation_failed', tr('Choose a reason code.'), [
+							{ field: 'reasonCode', code: 'required', message: tr('Choose a reason code.') },
+						]));
 					}
 					if (reasonCode.dataset.loadFailed === '1' && ctx.requireAdjustReason) {
-						return Promise.reject(new ApiError('validation_failed', tr('Could not load reason codes. Try again.')));
+						return Promise.reject(new ApiError('validation_failed', tr('Could not load reason codes. Try again.'), [
+							{ field: 'reasonCode', code: 'load_failed', message: tr('Could not load reason codes. Try again.') },
+						]));
 					}
 					// Reverse of an adjust posts delta mode; stocktake UI posts set mode.
 					if (opts.prefill && opts.prefill.mode === 'delta') {
@@ -2352,14 +2425,16 @@
 				if (ctx.requireLocationScan && opts.path === 'issue') {
 					body.locationCode = (locCodeInput.value || '').trim();
 					if (!body.locationCode) {
-						return Promise.reject(new ApiError('validation_failed', tr('Confirm the location code.')));
+						return Promise.reject(new ApiError('validation_failed', tr('Confirm the location code.'), [
+							{ field: 'locationCode', code: 'required', message: tr('Confirm the location code.') },
+						]));
 					}
 				}
 				return api('POST', movementApi(ctx, opts.path), body).then(function (result) {
 					toast(opts.okToast || tr('Stock updated.'));
 					refreshAfterMutation(ctx, result);
 				});
-			}, opts.confirm);
+			}, opts.confirm, { restoreFocusTo: moveTrigger });
 			if (confirmOnly && changeBtn) {
 				changeBtn.addEventListener('click', function () {
 					if (changeBtn.disabled) {
@@ -2395,6 +2470,7 @@
 			}
 			toast(err.message || tr('Could not load items.'), true);
 		});
+		busyTriggerUntil(moveTrigger, moveDialogReady);
 	}
 
 	function openReceiveDialog(ctx, prefill) {
@@ -2605,7 +2681,9 @@
 		], function () {
 			return readSelectedCsv().then(function (text) {
 				if (!text.trim()) {
-					return Promise.reject(new ApiError('validation_failed', tr('Choose a file or paste CSV text.')));
+					return Promise.reject(new ApiError('validation_failed', tr('Choose a file or paste CSV text.'), [
+						{ field: 'csv', code: 'required', message: tr('Choose a file or paste CSV text.') },
+					]));
 				}
 				// Re-check when the pasted/file text no longer matches the last dry-run.
 				var ensure = (lastDry.done && lastDry.csv === text) ? Promise.resolve(null) : runDryRun();
@@ -2806,7 +2884,7 @@
 				var columns = [];
 				if (ctx.isOffice) {
 					columns.push({ label: tr('Select'), render: function (r) {
-						return el('input', {
+						return el('label', { className: 'iv-check-hit' }, [el('input', {
 							type: 'checkbox',
 							'aria-label': tr('Select {name} for bulk labels', { name: r.name }),
 							checked: selected[r.id] ? '' : null,
@@ -2818,7 +2896,7 @@
 								}
 								syncBulkBtn();
 							},
-						});
+						})]);
 					} });
 				}
 				columns.push(
@@ -2907,7 +2985,8 @@
 			type: 'number', className: 'iv-input', min: '0', step: '1',
 			value: existing && existing.lastPriceMinor != null ? String(existing.lastPriceMinor) : '',
 		});
-		loadMasters(ctx).then(function (masters) {
+		var itemTrigger = document.activeElement;
+		var itemDialogReady = loadMasters(ctx).then(function (masters) {
 		clear(defaultLocation);
 		defaultLocation.appendChild(el('option', { value: '', text: tr('No default location') }));
 		(masters.locations || []).forEach(function (r) {
@@ -2966,8 +3045,9 @@
 				toast(tr('Item created.'));
 				renderItems(ctx);
 			});
-		});
+		}, undefined, { restoreFocusTo: itemTrigger });
 		}).catch(function (err) { toast(err.message || tr('Could not load items.'), true); });
+		busyTriggerUntil(itemTrigger, itemDialogReady);
 	}
 
 	/** Wave A4: one primary item photo. Office may upload/replace/remove; everyone may view. */
@@ -5228,23 +5308,31 @@
 							var actions = [];
 							if (d.active) {
 								actions.push(btn(tr('Regenerate code'), {
-									onclick: function () {
-										api('POST', ctx.urls.api.licenseDevices.replace(/\/?$/, '/') + d.id + '/pair-code')
-											.then(function (res) {
-												showPairCodeOnce(res.pairCode || '');
-												return refreshSeatsAndDevices();
-											})
-											.catch(function (err) { toast(err.message, true); });
+									onclick: function (ev) {
+										var trigger = ev && ev.currentTarget ? ev.currentTarget : null;
+										dialog(tr('Regenerate the pairing code?'), [
+											el('p', { className: 'iv-muted', text: tr('The current code stops working immediately. Show the new one-time code on this device and pair it again.') }),
+										], function () {
+											return api('POST', ctx.urls.api.licenseDevices.replace(/\/?$/, '/') + d.id + '/pair-code')
+												.then(function (res) {
+													showPairCodeOnce(res.pairCode || '');
+													return refreshSeatsAndDevices();
+												});
+										}, tr('Regenerate'), { restoreFocusTo: trigger });
 									},
 								}));
 								actions.push(btn(tr('Deactivate'), {
-									onclick: function () {
-										api('DELETE', ctx.urls.api.licenseDevices.replace(/\/?$/, '/') + d.id)
-											.then(function () {
-												toast(tr('Device deactivated.'));
-												renderSettings(ctx);
-											})
-											.catch(function (err) { toast(err.message, true); });
+									onclick: function (ev) {
+										var trigger = ev && ev.currentTarget ? ev.currentTarget : null;
+										dialog(tr('Deactivate this device?'), [
+											el('p', { className: 'iv-muted', text: tr('The device slot is deactivated and its location access grants are removed. It can be reactivated later with a new pairing code.') }),
+										], function () {
+											return api('DELETE', ctx.urls.api.licenseDevices.replace(/\/?$/, '/') + d.id)
+												.then(function () {
+													toast(tr('Device deactivated.'));
+													renderSettings(ctx);
+												});
+										}, tr('Deactivate'), { restoreFocusTo: trigger });
 									},
 								}));
 							}
@@ -5689,7 +5777,8 @@
 			return;
 		}
 		stocktakeOpenBusy = true;
-		loadMasters(ctx).then(function (masters) {
+		var campaignTrigger = document.activeElement;
+		var campaignReady = loadMasters(ctx).then(function (masters) {
 			var locs = (masters.locations || []).filter(function (r) { return r.active !== false; });
 			var today = new Date();
 			var defaultName = tr('Stocktake {date}', { date: today.toISOString().slice(0, 10) });
@@ -5722,6 +5811,7 @@
 			stocktakeOpenBusy = false;
 			toast(err.message || tr('Could not load locations.'), true);
 		});
+		busyTriggerUntil(campaignTrigger, campaignReady);
 	}
 
 	function renderStocktakeNewPage(ctx, mastersOpt, locsOpt, defaultNameOpt) {

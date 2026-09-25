@@ -11,7 +11,8 @@
 	--iv-form-border-focus: var(--color-primary-element, #0082c9);
 	--iv-form-ring: color-mix(in srgb, var(--color-primary-element, #0082c9) 28%, transparent);
 	--iv-form-disabled-bg: var(--color-background-dark, var(--color-background-hover));
-	--iv-form-error: var(--color-error-text, var(--color-error, #db0606));
+	/* NC35: --color-error is a pale tint — error borders use the element-error token. */
+	--iv-form-error: var(--iv-danger-border, var(--color-error-text, var(--color-element-error, #c90000)));
 	--iv-form-error-ring: color-mix(in srgb, var(--color-error-text, var(--color-error, #db0606)) 28%, transparent);
 	--iv-form-success: var(--color-success, #2d7b46);
 	--iv-form-radius: var(--iv-radius-sm, 6px);
@@ -192,10 +193,7 @@
 #content.app-inventorycheck #app-content input[type="button"],
 #content.app-inventorycheck #app-content input[type="submit"],
 #content.app-inventorycheck #app-content input[type="reset"],
-#content.app-inventorycheck #app-content input[type="image"] {
-	/* checkbox/radio keep size rules above; reset text-field chrome for others */
-}
-
+/* (checkbox/radio keep size rules above; other inputs get text-field chrome below) */
 #content.app-inventorycheck #app-content input[type="file"],
 #content.app-inventorycheck #app-content input[type="color"],
 #content.app-inventorycheck #app-content input[type="range"],

@@ -89,7 +89,8 @@ final class SupportUsSectionContractTest extends TestCase {
 		self::assertStringContainsString('iv-support-us', $css);
 		self::assertStringContainsString(':focus-visible', $css);
 		self::assertStringContainsString('prefers-reduced-motion', $css);
-		self::assertStringContainsString('min-height: 2.75rem', $css);
+		// DSCH-02: px not rem — NC root font is 15px so 2.75rem = 41.25px < 44px touch target.
+		self::assertStringContainsString('min-height: 44px', $css);
 		self::assertStringContainsString('support-us__option', $css);
 		self::assertStringContainsString('support-us__benefit', $css);
 	}

@@ -452,7 +452,7 @@ final class WaveCFeaturesIntegrationTest extends TestCase
 		$device->setLabel('Bound Scanner ' . $suffix);
 		$device->setPairCodeHash(null);
 		$device->setPairCodeExpires(null);
-		$device->setTokenHash('tok_' . $suffix);
+		$device->setTokenHash(hash('sha256', 'iv-fixture-token-' . $suffix));
 		$device->setPairedAt($now);
 		$device->setLastSeenAt($now);
 		$device->setActive(true);
@@ -517,7 +517,7 @@ final class WaveCFeaturesIntegrationTest extends TestCase
 		$device->setLabel('Scan Probe ' . $suffix);
 		$device->setPairCodeHash(null);
 		$device->setPairCodeExpires(null);
-		$device->setTokenHash('tok_sc_' . $suffix);
+		$device->setTokenHash(hash('sha256', 'iv-fixture-scan-token-' . $suffix));
 		$device->setPairedAt($now);
 		$device->setLastSeenAt($now);
 		$device->setActive(true);

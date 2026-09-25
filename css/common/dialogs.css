@@ -375,16 +375,31 @@
 .form-input--error,
 .form-group input.error,
 .form-group select.error,
-.form-group textarea.error {
-  border-color: var(--inventorycheck-color-form-border-error, var(--color-error));
+.form-group textarea.error,
+/* aria-invalid is set by applyFieldErrors() — dialogs mount on <body>, so the
+ * app-scoped rules never reach these inputs. NC35: --color-error is a pale
+ * tint (#FFE7E7) — use the error-text/element-error tokens for borders. */
+.iv-dialog-overlay input[aria-invalid='true'],
+.iv-dialog-overlay select[aria-invalid='true'],
+.iv-dialog-overlay textarea[aria-invalid='true'],
+.iv-dialog input[aria-invalid='true'],
+.iv-dialog select[aria-invalid='true'],
+.iv-dialog textarea[aria-invalid='true'] {
+  border-color: var(--inventorycheck-color-form-border-error, var(--iv-danger-border, var(--color-error-text, var(--color-element-error, #c90000))));
 }
 
 .form-input--error:focus,
 .form-group input.error:focus,
 .form-group select.error:focus,
-.form-group textarea.error:focus {
-  border-color: var(--inventorycheck-color-form-border-error, var(--color-error));
-  box-shadow: 0 0 0 3px var(--inventorycheck-color-error-light, color-mix(in srgb, var(--color-error) 28%, transparent));
+.form-group textarea.error:focus,
+.iv-dialog-overlay input[aria-invalid='true']:focus,
+.iv-dialog-overlay select[aria-invalid='true']:focus,
+.iv-dialog-overlay textarea[aria-invalid='true']:focus,
+.iv-dialog input[aria-invalid='true']:focus,
+.iv-dialog select[aria-invalid='true']:focus,
+.iv-dialog textarea[aria-invalid='true']:focus {
+  border-color: var(--inventorycheck-color-form-border-error, var(--iv-danger-border, var(--color-error-text, var(--color-element-error, #c90000))));
+  box-shadow: 0 0 0 3px var(--inventorycheck-color-error-light, color-mix(in srgb, var(--color-element-error, #c90000) 28%, transparent));
 }
 
 .form-input--success {

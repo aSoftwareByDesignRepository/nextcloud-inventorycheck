@@ -30,6 +30,7 @@ use OCP\AppFramework\Http\DataDisplayResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IConfig;
 use OCP\IRequest;
+use OCP\ISession;
 use OCP\IUserSession;
 
 /**
@@ -61,6 +62,7 @@ class MobileController extends Controller
 		private readonly ItemPhotoService $photos,
 		private readonly ScanIdempotencyService $scanIdempotency,
 		private readonly IUserSession $userSession,
+		private readonly ISession $session,
 		private readonly IConfig $config,
 	) {
 		parent::__construct(Application::APP_ID, $request);
@@ -126,6 +128,8 @@ class MobileController extends Controller
 	{
 		[$uid, $device] = $this->resolveCaller(true);
 		$this->gate->assertGate($uid, $device);
+		// Release the PHP session lock before streaming — auth already ran.
+		$this->session->close();
 		$photo = $this->photos->read($id);
 		$response = new DataDisplayResponse($photo['content'], 200, ['Content-Type' => $photo['mime']]);
 		$response->cacheFor(3600, false, true);

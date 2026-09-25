@@ -67,6 +67,24 @@ class LocationFavouriteMapper extends QBMapper
 		$qb->executeStatement();
 	}
 
+	/**
+	 * Location-delete: drop every favourite row pointing at a deleted
+	 * location id — InnoDB id reuse would otherwise reattach them.
+	 */
+	public function deleteAllForLocation(int $locationId): void
+	{
+		if ($locationId <= 0) {
+			return;
+		}
+		if (!$this->db->tableExists(self::TABLE)) {
+			return;
+		}
+		$qb = $this->db->getQueryBuilder();
+		$qb->delete($this->getTableName())
+			->where($qb->expr()->eq('location_id', $qb->createNamedParameter($locationId, IQueryBuilder::PARAM_INT)));
+		$qb->executeStatement();
+	}
+
 	/** GDPR / user-delete: drop every favourite row for a deleted UID. */
 	public function deleteAllForUser(string $userId): void
 	{

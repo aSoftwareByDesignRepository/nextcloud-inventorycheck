@@ -62,6 +62,7 @@ final class PermissionMatrixIntegrationTest extends TestCase
 
 	protected function setUp(): void
 	{
+		parent::setUp();
 		if (!class_exists(\OC::class) || !isset(\OC::$server)) {
 			$this->markTestSkipped('Nextcloud runtime required');
 		}
@@ -101,20 +102,25 @@ final class PermissionMatrixIntegrationTest extends TestCase
 
 	protected function tearDown(): void
 	{
-		if (!isset(\OC::$server)) {
-			return;
-		}
-		$config = Server::get(IConfig::class);
-		foreach ($this->prevConfig as $key => $value) {
-			if ($value === '') {
-				$config->deleteAppValue(Application::APP_ID, $key);
-			} else {
-				$config->setAppValue(Application::APP_ID, $key, $value);
+		try {
+			if (!isset(\OC::$server)) {
+				return;
 			}
+			$config = Server::get(IConfig::class);
+			foreach ($this->prevConfig as $key => $value) {
+				if ($value === '') {
+					$config->deleteAppValue(Application::APP_ID, $key);
+				} else {
+					$config->setAppValue(Application::APP_ID, $key, $value);
+				}
+			}
+			$this->deleteUsers();
+			Server::get(IUserSession::class)->setUser(null);
+			\OC_User::setIncognitoMode(false);
+		} finally {
+			parent::tearDown();
 		}
-		$this->deleteUsers();
-		Server::get(IUserSession::class)->setUser(null);
-		\OC_User::setIncognitoMode(false);
+
 	}
 
 	private function deleteUsers(): void

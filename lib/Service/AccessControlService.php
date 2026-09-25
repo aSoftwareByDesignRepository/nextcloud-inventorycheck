@@ -203,6 +203,32 @@ class AccessControlService
 		}
 	}
 
+	/**
+	 * Group-delete: strip the deleted GID from every authorization JSON list.
+	 * A stale gid would silently re-grant access if the group is recreated.
+	 * Idempotent — missing gid is a no-op.
+	 */
+	public function purgeGroup(string $groupId): void
+	{
+		if ($groupId === '') {
+			return;
+		}
+		foreach ([
+			self::KEY_ACCESS_ALLOWED_GROUP_IDS,
+			self::KEY_OFFICE_GROUP_IDS,
+			LowStockNotifyService::KEY_NOTIFY_GROUP_IDS,
+		] as $key) {
+			$ids = $this->getJsonIdList($key);
+			$filtered = array_values(array_filter(
+				$ids,
+				static fn (string $id): bool => $id !== $groupId,
+			));
+			if ($filtered !== $ids) {
+				$this->setJsonIdList($key, $filtered);
+			}
+		}
+	}
+
 	public function setAccessRestrictionEnabled(bool $enabled): void
 	{
 		$this->config->setAppValue(Application::APP_ID, self::KEY_ACCESS_RESTRICTION, $enabled ? '1' : '0');

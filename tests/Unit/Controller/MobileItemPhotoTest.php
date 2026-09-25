@@ -22,6 +22,7 @@ use OCA\InventoryCheck\Service\ScanIdempotencyService;
 use OCP\AppFramework\Http\DataDisplayResponse;
 use OCP\IConfig;
 use OCP\IRequest;
+use OCP\ISession;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -40,6 +41,8 @@ final class MobileItemPhotoTest extends TestCase
 	private ItemPhotoService $photos;
 	/** @var IUserSession&MockObject */
 	private IUserSession $session;
+	/** @var ISession&MockObject */
+	private ISession $appSession;
 	private MobileController $controller;
 
 	protected function setUp(): void
@@ -49,6 +52,7 @@ final class MobileItemPhotoTest extends TestCase
 		$this->gate = $this->createMock(MobileGateService::class);
 		$this->photos = $this->createMock(ItemPhotoService::class);
 		$this->session = $this->createMock(IUserSession::class);
+		$this->appSession = $this->createMock(ISession::class);
 
 		$this->controller = new MobileController(
 			$this->request,
@@ -65,6 +69,7 @@ final class MobileItemPhotoTest extends TestCase
 			$this->photos,
 			$this->createMock(ScanIdempotencyService::class),
 			$this->session,
+			$this->appSession,
 			$this->createMock(IConfig::class),
 		);
 	}

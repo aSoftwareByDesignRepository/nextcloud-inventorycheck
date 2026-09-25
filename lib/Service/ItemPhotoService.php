@@ -143,6 +143,12 @@ class ItemPhotoService
 		}
 	}
 
+	/** Best-effort blob removal (item-delete cleanup); never throws. */
+	public function purgeFile(string $fileName): void
+	{
+		$this->tryDeleteFile($fileName);
+	}
+
 	private function tryDeleteFile(string $fileName): void
 	{
 		try {

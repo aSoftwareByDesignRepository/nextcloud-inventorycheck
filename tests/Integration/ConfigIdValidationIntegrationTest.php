@@ -47,6 +47,7 @@ final class ConfigIdValidationIntegrationTest extends TestCase
 
 	protected function setUp(): void
 	{
+		parent::setUp();
 		if (!class_exists(\OC::class) || !isset(\OC::$server)) {
 			$this->markTestSkipped('Nextcloud runtime required');
 		}

@@ -99,4 +99,38 @@ final class UninstallDropTablesBehaviorTest extends TestCase
 		$method->setAccessible(true);
 		$method->invoke($step, $this->output);
 	}
+
+	public function testRemovalPurgesEntireAppDataDir(): void
+	{
+		// item_photos blobs must not survive app removal (CRIT-02 residual):
+		// the purge targets the appdata_<instanceid>/inventorycheck root, not
+		// just upgrade-backups.
+		$this->connection->method('getDatabaseProvider')->willReturn(IDBConnection::PLATFORM_SQLITE);
+		$this->connection->method('tableExists')->willReturn(false);
+
+		$qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+		$expr = $this->createMock(\OCP\DB\QueryBuilder\IExpressionBuilder::class);
+		$qb->method('delete')->willReturnSelf();
+		$qb->method('where')->willReturnSelf();
+		$qb->method('expr')->willReturn($expr);
+		$expr->method('eq')->willReturn('app = :app');
+		$qb->method('createNamedParameter')->willReturn(UninstallDropTables::APP_ID);
+		$qb->method('executeStatement')->willReturn(0);
+		$this->connection->method('getQueryBuilder')->willReturn($qb);
+
+		$this->config->method('getSystemValue')->willReturnCallback(
+			static fn (string $key, mixed $default = ''): mixed => $key === 'instanceid' ? 'abc123' : $default,
+		);
+		$folder = $this->createMock(\OCP\Files\Folder::class);
+		$folder->expects(self::once())->method('delete');
+		$this->rootFolder->expects(self::once())
+			->method('get')
+			->with('appdata_abc123/inventorycheck')
+			->willReturn($folder);
+
+		$step = new UninstallDropTables($this->connection, $this->config, $this->rootFolder);
+		$method = (new ReflectionClass(UninstallDropTables::class))->getMethod('dropAllTablesAndMetadata');
+		$method->setAccessible(true);
+		$method->invoke($step, $this->output);
+	}
 }

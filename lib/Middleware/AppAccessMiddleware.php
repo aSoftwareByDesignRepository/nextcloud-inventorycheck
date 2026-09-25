@@ -24,6 +24,7 @@ use OCP\IRequest;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use OCP\L10N\IFactory;
+use OCP\Util;
 
 class AppAccessMiddleware extends Middleware
 {
@@ -202,6 +203,7 @@ class AppAccessMiddleware extends Middleware
 				$l->t('If you believe this is a mistake, contact your InventoryCheck administrator.'),
 			],
 		};
+		Util::addStyle(Application::APP_ID, 'app');
 		$response = new TemplateResponse(
 			Application::APP_ID,
 			'access-denied',

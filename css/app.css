@@ -53,6 +53,10 @@ a.button {
 	left: -9999px;
 	top: 0;
 	z-index: 3000;
+	display: inline-flex;
+	align-items: center;
+	box-sizing: border-box;
+	min-height: var(--iv-touch, 44px);
 	padding: var(--iv-space-2, 8px) var(--iv-space-4, 16px);
 	background: var(--color-primary-element);
 	color: var(--color-primary-element-text);
@@ -330,7 +334,9 @@ a.button {
 }
 
 .iv-input[aria-invalid='true'] {
-	border-color: var(--color-error);
+	/* NC35: --color-error is a pale tint (#FFE7E7) — invisible on inputs.
+	 * Foreground/border danger must use error-text/element-error. */
+	border-color: var(--iv-danger-border, var(--color-error-text, var(--color-element-error, #c90000)));
 }
 
 textarea.iv-input {
@@ -981,7 +987,7 @@ label.iv-switch-field {
 }
 
 .iv-bucket--overdue .iv-bucket__title {
-	border-inline-start-color: var(--color-error);
+	border-inline-start-color: var(--iv-danger-border, var(--color-error-text, var(--color-element-error, #c90000)));
 }
 
 .iv-bucket--today .iv-bucket__title {
@@ -1359,6 +1365,9 @@ button.iv-hint-dismiss:focus-visible {
 }
 
 .iv-breadcrumb__link {
+	display: inline-flex;
+	align-items: center;
+	min-height: var(--iv-touch, 44px);
 	color: var(--color-primary-element);
 	text-decoration: none;
 }
@@ -1366,6 +1375,32 @@ button.iv-hint-dismiss:focus-visible {
 .iv-breadcrumb__link:hover,
 .iv-breadcrumb__link:focus-visible {
 	text-decoration: underline;
+}
+
+/* Touch hit areas (≥44px): dense-table links and bare checkboxes keep compact
+   visuals but the interactive box must meet the family touch floor. */
+.iv-table td a,
+.iv-table-wrap td a {
+	display: inline-flex;
+	align-items: center;
+	min-height: var(--iv-touch, 44px);
+}
+
+.iv-check-hit {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: var(--iv-touch, 44px);
+	height: var(--iv-touch, 44px);
+	margin: -6px 0;
+	cursor: pointer;
+}
+
+.iv-check-hit input[type='checkbox'] {
+	width: 18px;
+	height: 18px;
+	margin: 0;
+	cursor: pointer;
 }
 
 .iv-detail {
@@ -1852,7 +1887,7 @@ button.iv-hint-dismiss:focus-visible {
 }
 
 .iv-toast--error {
-	border-inline-start-color: var(--color-error);
+	border-inline-start-color: var(--iv-danger-border, var(--color-error-text, var(--color-element-error, #c90000)));
 }
 
 .iv-toast__message {
@@ -2377,7 +2412,14 @@ button.iv-hint-dismiss:focus-visible {
 }
 
 .iv-denied__icon {
-	color: var(--color-error);
+	color: var(--iv-danger-ink, var(--color-error-text, var(--color-element-error, #8a0000)));
+}
+
+/* Live denied page uses .iv-empty--denied — danger semantics for the icon well. */
+.iv-empty--denied .iv-empty__icon,
+.iv-empty--denied .iv-empty-state__icon {
+	background-color: var(--iv-tint-danger);
+	color: var(--iv-danger-ink, var(--color-error-text, var(--color-element-error, #8a0000)));
 }
 
 .iv-denied__title {
@@ -2604,7 +2646,8 @@ button.iv-hint-dismiss:focus-visible {
 }
 
 .iv-support-us__cta {
-	min-height: 2.75rem;
+	/* px, not rem — NC root is 15px so 2.75rem collapses to 41.25px < 44px */
+	min-height: 44px;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -2723,6 +2766,17 @@ button.iv-hint-dismiss:focus-visible {
 	background: var(--color-main-background);
 	color: var(--color-main-text);
 	box-sizing: border-box;
+}
+/* Same specificity as the reset above + later in the file — keeps the
+ * danger border alive in-app (form-controls' ID-scoped rule ties and loses). */
+#content.app-inventorycheck #app-content .iv-input[aria-invalid='true'],
+#content.app-inventorycheck #app-content input.iv-input[aria-invalid='true'],
+#content.app-inventorycheck #app-content select.iv-input[aria-invalid='true'],
+#content.app-inventorycheck #app-content textarea.iv-input[aria-invalid='true'],
+#content.app-inventorycheck #app-content input[aria-invalid='true'],
+#content.app-inventorycheck #app-content select[aria-invalid='true'],
+#content.app-inventorycheck #app-content textarea[aria-invalid='true'] {
+	border-color: var(--iv-danger-border, var(--color-error-text, var(--color-element-error, #c90000)));
 }
 #content.app-inventorycheck #app-content select.iv-input {
 	height: 44px;
@@ -2928,7 +2982,9 @@ textarea {
 	gap: var(--iv-space-2, 0.5rem);
 }
 
-.iv-nav-footer__trigger {
+/* Two-class specificity (0,2,0) — beats NC server.css button:not() (0,1,1)
+ * min-height: var(--default-clickable-area)=34px reset. */
+.iv-nav-footer .iv-nav-footer__trigger {
 	display: inline-flex;
 	gap: var(--iv-space-3, 0.75rem);
 	min-height: 44px;
