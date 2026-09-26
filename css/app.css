@@ -1241,6 +1241,15 @@ button.iv-hint-dismiss:focus-visible {
 	color: var(--color-text-maxcontrast, #767676);
 }
 
+/* [hidden] must beat the !important display:flex overrides below — otherwise the
+ * "Hide tips" dismiss sets the attribute but the card stays visible. */
+.iv-howto[hidden],
+.iv-stocktake-howto[hidden],
+#content.app-inventorycheck #app-content .iv-howto[hidden],
+#content.app-inventorycheck #app-content .iv-stocktake-howto[hidden] {
+	display: none !important;
+}
+
 .iv-howto .iv-quickstart,
 .iv-stocktake-howto .iv-quickstart {
 	list-style: none;
