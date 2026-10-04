@@ -307,6 +307,7 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 			$url,
 			$factory,
 			$this->createMock(IConfig::class),
+			$this->createMock(\Psr\Log\LoggerInterface::class),
 		);
 		// Real controller instance so get_class() keeps OCA\InventoryCheck\Controller\ prefix.
 		$ctrl = $this->buildController($class, allow: true, mode: 'happy');

@@ -274,22 +274,50 @@
 		});
 	}
 
+	/**
+	 * Toast dedup (Atlas learned class): identical kind+text toasts must not
+	 * stack — re-announcing the same toast resets its dismiss timer instead of
+	 * appending a duplicate node. Keyed on kind|text; entries are dropped when
+	 * the toast is removed.
+	 */
+	var liveToasts = new Map();
+	var TOAST_TTL_ERROR = 5000;
+	var TOAST_TTL_OK = 3000;
+
 	function toast(message, isError) {
+		var text = String(message || '');
 		var region = $('#iv-toast-region');
 		var live = isError ? $('#iv-alert-region') : $('#iv-live-region');
 		if (live) {
 			live.textContent = '';
-			window.setTimeout(function () { live.textContent = message; }, 10);
+			window.setTimeout(function () { live.textContent = text; }, 10);
 		}
 		if (!region) return;
+		var key = (isError ? 'error' : 'ok') + '|' + text;
+		var ttl = isError ? TOAST_TTL_ERROR : TOAST_TTL_OK;
+		var existing = liveToasts.get(key);
+		if (existing && existing.node.isConnected) {
+			// Re-announce: restart the dismiss timer, keep the single node.
+			window.clearTimeout(existing.timer);
+			existing.timer = window.setTimeout(function () {
+				existing.node.remove();
+				liveToasts.delete(key);
+			}, ttl);
+			return;
+		}
 		var node = el('div', {
 			className: 'toast iv-toast ' + (isError ? 'toast--error iv-toast--error' : 'toast--success iv-toast--ok'),
 			role: isError ? 'alert' : 'status',
 		}, [
-			el('div', { className: 'toast-content iv-toast__message' }, [message]),
+			el('div', { className: 'toast-content iv-toast__message' }, [text]),
 		]);
+		var entry = { node: node, timer: 0 };
+		entry.timer = window.setTimeout(function () {
+			node.remove();
+			liveToasts.delete(key);
+		}, ttl);
+		liveToasts.set(key, entry);
 		region.appendChild(node);
-		setTimeout(function () { node.remove(); }, isError ? 5000 : 3000);
 	}
 
 	function setBusy(root, busy) {
@@ -560,6 +588,7 @@
 						body: tr('Choose the location you are standing in. We snapshot every active item there, then open the count screen.'),
 						cta: canStart
 							? btn(tr('New stocktake'), {
+							'data-iv-action': 'stocktake-new',
 								primary: true,
 								onclick: function () { openNewCampaignDialog(ctx); },
 							})
@@ -659,6 +688,7 @@
 							title: tr('2. Receive stock'),
 							body: tr('Scan or pick an item and location, enter the quantity, and confirm. That starts the ledger.'),
 							cta: btn(tr('Receive stock'), {
+							'data-iv-action': 'receive',
 								primary: true,
 								onclick: function () { openReceiveDialog(ctx); },
 							}),
@@ -668,6 +698,7 @@
 							title: tr('3. Issue or transfer as needed'),
 							body: tr('Field users issue from vans. Transfer moves stock between locations. Every booking lands under Recent movements.'),
 							cta: btn(tr('Issue stock'), {
+							'data-iv-action': 'issue',
 								onclick: function () { openIssueDialog(ctx); },
 							}),
 						},
@@ -685,6 +716,7 @@
 						title: tr('1. Tap Issue stock'),
 						body: tr('Use the primary button above. Favourites put your usual locations first.'),
 						cta: btn(tr('Issue stock'), {
+							'data-iv-action': 'issue',
 							primary: true,
 							onclick: function () { openIssueDialog(ctx); },
 						}),
@@ -780,10 +812,12 @@
 						body: tr('Use Receive or Issue above (or from the Dashboard). Transfers and adjusts sit under More.'),
 						cta: canOffice
 							? btn(tr('Receive stock'), {
+							'data-iv-action': 'receive',
 								primary: true,
 								onclick: function () { openReceiveDialog(ctx); },
 							})
 							: btn(tr('Issue stock'), {
+							'data-iv-action': 'issue',
 								primary: true,
 								onclick: function () { openIssueDialog(ctx); },
 							}),
@@ -819,12 +853,14 @@
 						body: tr('Use Receive / Issue on a balance line, or the buttons above. Favourites speed location pick.'),
 						cta: canOffice
 							? btn(tr('Receive stock'), {
+							'data-iv-action': 'receive',
 								primary: true,
 								onclick: function () {
 									openReceiveDialog(ctx, { itemId: Number(ctx.entityId) || undefined });
 								},
 							})
 							: btn(tr('Issue stock'), {
+							'data-iv-action': 'issue',
 								primary: true,
 								onclick: function () {
 									openIssueDialog(ctx, { itemId: Number(ctx.entityId) || undefined });
@@ -862,6 +898,7 @@
 						body: tr('Book from the row actions, or start a stocktake for this location from Stocktake.'),
 						cta: canOffice
 							? btn(tr('Receive stock'), {
+							'data-iv-action': 'receive',
 								primary: true,
 								onclick: function () {
 									openReceiveDialog(ctx, { locationId: Number(ctx.entityId) || undefined });
@@ -1212,7 +1249,7 @@
 			disabled: !!opts.disabled,
 			onclick: opts.onclick,
 		};
-		['aria-label', 'aria-pressed', 'aria-busy', 'title', 'id'].forEach(function (key) {
+		['aria-label', 'aria-pressed', 'aria-busy', 'title', 'id', 'data-iv-action'].forEach(function (key) {
 			if (opts[key] != null && opts[key] !== '') {
 				attrs[key] = opts[key];
 			}
@@ -1616,12 +1653,14 @@
 			// Bachus: role-aware primary — office receives, field issues; transfer/adjust under "More".
 			if (ctx.isOffice || ctx.isAppAdmin) {
 				ctx.actions.appendChild(btn(tr('Receive stock'), {
+							'data-iv-action': 'receive',
 					primary: true,
 					className: 'iv-btn--touch',
 					onclick: function () { openReceiveDialog(ctx); },
 				}));
 			}
 			ctx.actions.appendChild(btn(tr('Issue stock'), {
+							'data-iv-action': 'issue',
 				primary: !(ctx.isOffice || ctx.isAppAdmin),
 				className: 'iv-btn--touch',
 				onclick: function () { openIssueDialog(ctx); },
@@ -1817,7 +1856,8 @@
 							tr('No movements yet'),
 							tr('Receive stock to start the ledger.'),
 							(ctx.isOffice || ctx.isAppAdmin)
-								? btn(tr('Receive stock'), { primary: true, onclick: function () { openReceiveDialog(ctx); } })
+								? btn(tr('Receive stock'), {
+							'data-iv-action': 'receive', primary: true, onclick: function () { openReceiveDialog(ctx); } })
 								: null
 						)
 						: tableOrCards(
@@ -2820,10 +2860,12 @@
 							el('span', { className: 'iv-filter-field__label iv-sr-only', text: tr('Actions') }),
 							el('div', { className: 'iv-filter-field__control iv-filter-field__control--actions' }, [
 								btn(tr('Search'), {
+							'data-iv-action': 'filter-search',
 									type: 'submit',
 								}),
 								(function () {
 									var clearBtn = btn(tr('Clear'), {
+							'data-iv-action': 'filter-clear',
 										type: 'button',
 										onclick: function () {
 											q.value = '';
@@ -2869,6 +2911,7 @@
 							: tr('Create an item with a SKU and reorder level.'),
 						term
 							? btn(tr('Clear'), {
+							'data-iv-action': 'filter-clear',
 								primary: true,
 								onclick: function () {
 									q.value = '';
@@ -3204,6 +3247,7 @@
 						tr('Receive stock at a location to start tracking this item.'),
 						(ctx.isOffice || ctx.isAppAdmin)
 							? btn(tr('Receive stock'), {
+							'data-iv-action': 'receive',
 								primary: true,
 								className: 'iv-btn--touch',
 								onclick: function () { openReceiveDialog(ctx, { itemId: id }); },
@@ -3321,10 +3365,12 @@
 							el('span', { className: 'iv-filter-field__label iv-sr-only', text: tr('Actions') }),
 							el('div', { className: 'iv-filter-field__control iv-filter-field__control--actions' }, [
 								btn(tr('Search'), {
+							'data-iv-action': 'filter-search',
 									type: 'submit',
 								}),
 								(function () {
 									var clearBtn = btn(tr('Clear'), {
+							'data-iv-action': 'filter-clear',
 										type: 'button',
 										onclick: function () {
 											q.value = '';
@@ -3369,6 +3415,7 @@
 							: tr('Add a warehouse or van to hold stock.'),
 						term
 							? btn(tr('Clear'), {
+							'data-iv-action': 'filter-clear',
 								primary: true,
 								onclick: function () {
 									q.value = '';
@@ -3548,6 +3595,7 @@
 					tr('Receive stock here, or transfer from another location.'),
 					(ctx.isOffice || ctx.isAppAdmin)
 						? btn(tr('Receive stock'), {
+							'data-iv-action': 'receive',
 							primary: true,
 							className: 'iv-btn--touch',
 							onclick: function () { openReceiveDialog(ctx, { locationId: id }); },
@@ -3745,6 +3793,7 @@
 							text: tr('Showing transfer group') + ': ' + state.transferGroup,
 						}),
 						btn(tr('Clear'), {
+							'data-iv-action': 'filter-clear',
 							onclick: function () { renderMovements(ctx, null); },
 						}),
 					]));
@@ -3756,10 +3805,13 @@
 							? tr('Clear filters or widen the date range.')
 							: tr('Bookings appear here after receive, issue, transfer, or adjust.'),
 						filtersActive
-							? btn(tr('Clear'), { primary: true, onclick: function () { renderMovements(ctx, null); } })
+							? btn(tr('Clear'), {
+							'data-iv-action': 'filter-clear', primary: true, onclick: function () { renderMovements(ctx, null); } })
 							: ((ctx.isOffice || ctx.isAppAdmin)
-								? btn(tr('Receive stock'), { primary: true, onclick: function () { openReceiveDialog(ctx); } })
-								: btn(tr('Issue stock'), { primary: true, onclick: function () { openIssueDialog(ctx); } }))
+								? btn(tr('Receive stock'), {
+							'data-iv-action': 'receive', primary: true, onclick: function () { openReceiveDialog(ctx); } })
+								: btn(tr('Issue stock'), {
+							'data-iv-action': 'issue', primary: true, onclick: function () { openIssueDialog(ctx); } }))
 					));
 					return;
 				}
@@ -3806,6 +3858,7 @@
 							return el('span', { className: 'iv-muted', text: '—' });
 						}
 						return btn(tr('Reverse'), {
+							'data-iv-action': 'reverse',
 							onclick: function () { openReverseFromMovement(ctx, r); },
 						});
 					} },
@@ -4090,9 +4143,11 @@
 								el('span', { className: 'iv-filter-field__label iv-sr-only', text: tr('Actions') }),
 								el('div', { className: 'iv-filter-field__control iv-filter-field__control--actions' }, [
 								btn(tr('Apply'), {
+							'data-iv-action': 'filter-apply',
 									type: 'submit',
 								}),
 									btn(tr('Clear'), {
+							'data-iv-action': 'filter-clear',
 										type: 'button',
 										onclick: function () { renderMovements(ctx, null); },
 									}),
@@ -5984,6 +6039,7 @@
 		clear(ctx.actions);
 		if (ctx.isOffice || ctx.isAppAdmin) {
 			ctx.actions.appendChild(btn(tr('New stocktake'), {
+							'data-iv-action': 'stocktake-new',
 				primary: true,
 				onclick: function () { openNewCampaignDialog(ctx); },
 			}));
@@ -6007,7 +6063,8 @@
 					tr('No stocktakes yet'),
 					tr('Start a cycle count to compare system stock with what is actually on the shelf.'),
 					canStart
-						? btn(tr('New stocktake'), { primary: true, onclick: function () { openNewCampaignDialog(ctx); } })
+						? btn(tr('New stocktake'), {
+							'data-iv-action': 'stocktake-new', primary: true, onclick: function () { openNewCampaignDialog(ctx); } })
 						: null
 				));
 				return;

@@ -6,6 +6,7 @@ namespace OCA\InventoryCheck\Controller;
 
 use OCA\InventoryCheck\AppInfo\Application;
 use OCA\InventoryCheck\Service\AccessControlService;
+use OCA\InventoryCheck\Service\BoolParam;
 use OCA\InventoryCheck\Service\FlangeService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -69,10 +70,10 @@ class FlangeController extends Controller
 		$this->access->requireAppAdmin($this->access->currentUserId());
 		$p = $this->request->getParams();
 		if (array_key_exists('maintFlangeEnabled', $p)) {
-			$this->flange->setMaintEnabled(filter_var($p['maintFlangeEnabled'], FILTER_VALIDATE_BOOLEAN));
+			$this->flange->setMaintEnabled(BoolParam::parse($p['maintFlangeEnabled'], 'maintFlangeEnabled'));
 		}
 		if (array_key_exists('projectFlangeEnabled', $p)) {
-			$this->flange->setProjectEnabled(filter_var($p['projectFlangeEnabled'], FILTER_VALIDATE_BOOLEAN));
+			$this->flange->setProjectEnabled(BoolParam::parse($p['projectFlangeEnabled'], 'projectFlangeEnabled'));
 		}
 		if (array_key_exists('defaultIssueLocationId', $p)) {
 			$raw = $p['defaultIssueLocationId'];

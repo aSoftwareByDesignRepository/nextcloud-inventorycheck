@@ -32,6 +32,14 @@ use OCA\InventoryCheck\Service\AccessControlService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
+use OCP\Files\EntityTooLargeException as FilesEntityTooLargeException;
+use OCP\Files\ForbiddenException as FilesForbiddenException;
+use OCP\Files\GenericFileException;
+use OCP\Files\LockNotAcquiredException;
+use OCP\Files\NotEnoughSpaceException;
+use OCP\Files\NotPermittedException as FilesNotPermittedException;
+use OCP\Files\StorageNotAvailableException;
+use OCP\Files\StorageTimeoutException;
 use OCP\IL10N;
 use OCP\IConfig;
 use OCP\IRequest;
@@ -85,6 +93,7 @@ final class AppAccessMiddlewareEnvelopeTest extends TestCase
 			$url,
 			$factory,
 			$this->createMock(IConfig::class),
+			$this->createMock(\Psr\Log\LoggerInterface::class),
 		);
 
 		$this->itemController = new EnvelopeTestItemController();
@@ -409,6 +418,131 @@ final class AppAccessMiddlewareEnvelopeTest extends TestCase
 			$this->itemController,
 			'index',
 			new \RuntimeException('boom'),
+		);
+	}
+
+	/**
+	 * must_fix F1: POST /api/items/{id}/photo — an unwritable appdata
+	 * item_photos folder threw OCP\Files\NotPermittedException, which escaped
+	 * afterException's `throw $exception` tail and surfaced as a raw
+	 * framework HTML 500 to JSON clients. Storage/permission faults must now
+	 * serialize as the standard error envelope.
+	 */
+	public function testPhotoUploadStorageNotPermittedReturnsJson403(): void
+	{
+		$this->request->method('getPathInfo')->willReturn('/apps/inventorycheck/api/items/12/photo');
+		$this->request->method('getMethod')->willReturn('POST');
+		$response = $this->middleware->afterException(
+			$this->itemController,
+			'upload',
+			new FilesNotPermittedException('appdata item_photos is not writable'),
+		);
+		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+		$data = $response->getData();
+		$this->assertSame('storage_permission_denied', $data['error']['code']);
+		$this->assertSame([], $data['error']['details'], 'SPEC §7.1: details is always present');
+		$this->assertNotSame('', (string)$data['error']['message']);
+	}
+
+	public function testStorageForbiddenReturnsJson403(): void
+	{
+		$this->apiPath();
+		$response = $this->middleware->afterException(
+			$this->itemController,
+			'upload',
+			new FilesForbiddenException('denied', false),
+		);
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+		$this->assertSame('storage_permission_denied', $response->getData()['error']['code']);
+	}
+
+	public function testStorageEntityTooLargeReturnsJson413(): void
+	{
+		$this->apiPath();
+		$response = $this->middleware->afterException(
+			$this->itemController,
+			'upload',
+			new FilesEntityTooLargeException('too big'),
+		);
+		$this->assertSame(Http::STATUS_REQUEST_ENTITY_TOO_LARGE, $response->getStatus());
+		$this->assertSame('storage_entity_too_large', $response->getData()['error']['code']);
+	}
+
+	public function testStorageLockNotAcquiredReturnsJson423(): void
+	{
+		$this->apiPath();
+		// Ctor calls \OCP\Util::getL10N — bypass it so the test also runs in
+		// vendor-only (stub) mode without a live server container.
+		$lock = (new \ReflectionClass(LockNotAcquiredException::class))->newInstanceWithoutConstructor();
+		$response = $this->middleware->afterException(
+			$this->itemController,
+			'upload',
+			$lock,
+		);
+		$this->assertSame(Http::STATUS_LOCKED, $response->getStatus());
+		$this->assertSame('storage_locked', $response->getData()['error']['code']);
+	}
+
+	public function testStorageFullReturnsJson507(): void
+	{
+		$this->apiPath();
+		$response = $this->middleware->afterException(
+			$this->itemController,
+			'upload',
+			new NotEnoughSpaceException('disk full'),
+		);
+		$this->assertSame(Http::STATUS_INSUFFICIENT_STORAGE, $response->getStatus());
+		$this->assertSame('storage_full', $response->getData()['error']['code']);
+	}
+
+	public function testStorageUnavailableReturnsJson503(): void
+	{
+		$this->apiPath();
+		$response = $this->middleware->afterException(
+			$this->itemController,
+			'show',
+			new StorageNotAvailableException('backend down'),
+		);
+		$this->assertSame(Http::STATUS_SERVICE_UNAVAILABLE, $response->getStatus());
+		$this->assertSame('storage_unavailable', $response->getData()['error']['code']);
+	}
+
+	/** StorageTimeoutException subclasses StorageNotAvailableException — same mapping. */
+	public function testStorageTimeoutSubclassReturnsJson503(): void
+	{
+		$this->apiPath();
+		$response = $this->middleware->afterException(
+			$this->itemController,
+			'show',
+			new StorageTimeoutException('backend timed out'),
+		);
+		$this->assertSame(Http::STATUS_SERVICE_UNAVAILABLE, $response->getStatus());
+		$this->assertSame('storage_unavailable', $response->getData()['error']['code']);
+	}
+
+	public function testStorageGenericFileErrorReturnsJson500(): void
+	{
+		$this->apiPath();
+		$response = $this->middleware->afterException(
+			$this->itemController,
+			'upload',
+			new GenericFileException('write failed'),
+		);
+		$this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
+		$this->assertSame('storage_error', $response->getData()['error']['code']);
+		$this->assertSame([], $response->getData()['error']['details']);
+	}
+
+	/** The namespace guard still applies: storage faults from foreign controllers rethrow. */
+	public function testStorageExceptionOnForeignControllerStillRethrows(): void
+	{
+		$this->apiPath();
+		$this->expectException(FilesNotPermittedException::class);
+		$this->middleware->afterException(
+			$this, // test-class object — not under OCA\InventoryCheck\Controller\
+			'upload',
+			new FilesNotPermittedException('denied'),
 		);
 	}
 }

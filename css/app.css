@@ -917,7 +917,7 @@ label.iv-switch-field {
 
 .iv-badge--scheduled {
 	background: var(--iv-tint-info);
-	color: var(--color-primary-element);
+	color: var(--iv-info-ink, var(--color-primary-element));
 	border: 1px solid color-mix(in srgb, var(--color-primary-element) 40%, transparent);
 }
 
@@ -1387,11 +1387,13 @@ button.iv-hint-dismiss:focus-visible {
 }
 
 /* Touch hit areas (≥44px): dense-table links and bare checkboxes keep compact
-   visuals but the interactive box must meet the family touch floor. */
+   visuals but the interactive box must meet the family touch floor on both
+   axes — short names ("Twice") must still offer a 44px-wide hit area. */
 .iv-table td a,
 .iv-table-wrap td a {
 	display: inline-flex;
 	align-items: center;
+	min-width: var(--iv-touch, 44px);
 	min-height: var(--iv-touch, 44px);
 }
 
@@ -2991,9 +2993,10 @@ textarea {
 	gap: var(--iv-space-2, 0.5rem);
 }
 
-/* Two-class specificity (0,2,0) — beats NC server.css button:not() (0,1,1)
- * min-height: var(--default-clickable-area)=34px reset. */
-.iv-nav-footer .iv-nav-footer__trigger {
+/* Scoped under #content: bare .{p}-nav-footer__trigger loses to NC core
+ * `#app-content button` / `#app-navigation button` min-height rules
+ * (var(--default-clickable-area) → 34px) — Atlas touch-target defect. */
+#content .iv-nav-footer__trigger {
 	display: inline-flex;
 	gap: var(--iv-space-3, 0.75rem);
 	min-height: 44px;
@@ -3055,7 +3058,7 @@ textarea {
 	display: none;
 }
 
-.iv-nav-footer__menu-item {
+#content .iv-nav-footer__menu-item {
 	display: flex;
 	align-items: center;
 	gap: var(--iv-space-3, 0.75rem);
@@ -3120,7 +3123,7 @@ textarea {
 	border: 0;
 }
 
-.iv-nav-footer__toast-link {
+#content .iv-nav-footer__toast-link {
 	display: inline-flex;
 	align-items: center;
 	min-height: 44px;

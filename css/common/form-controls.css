@@ -202,6 +202,9 @@
 #content.app-inventorycheck #app-content input[type="reset"],
 #content.app-inventorycheck #app-content input[type="image"] {
 	width: auto;
+	/* Native file inputs carry an intrinsic ~320px preferred width — cap them
+	 * to their container so 320px viewports do not overflow (#main overflow). */
+	max-width: 100%;
 	min-height: 44px;
 	padding: var(--iv-space-2, 0.5rem) var(--iv-space-3, 0.75rem);
 	background-image: none;

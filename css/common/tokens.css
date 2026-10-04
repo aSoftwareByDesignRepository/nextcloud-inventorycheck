@@ -91,6 +91,10 @@ body,
 	--iv-tint-warning: color-mix(in srgb, var(--color-warning-text, var(--color-warning)) 22%, var(--color-main-background));
 	--iv-tint-danger: color-mix(in srgb, var(--color-error-text, var(--color-error)) 18%, var(--color-main-background));
 	--iv-tint-info: color-mix(in srgb, var(--color-primary-element) 16%, var(--color-main-background));
+	/* Info ink on --iv-tint-info chips/badges. Raw --color-primary-element is
+	 * theme-tuned for the main background, not for a 16% self-tint — dark
+	 * themes need a lightened mix to keep ≥4.5:1 (axe color-contrast). */
+	--iv-info-ink: var(--color-primary-element);
 
 	/*
 	 * Notification icon wells — pale tint + semantic stroke (see .iv-page-header__icon).
@@ -186,6 +190,7 @@ body[data-theme-dark-highcontrast],
 	--iv-danger-fill: color-mix(in srgb, var(--color-element-error, #ff5050) 52%, var(--color-main-background));
 	--iv-danger-fill-hover: color-mix(in srgb, var(--color-element-error, #ff5050) 64%, var(--color-main-background));
 	--iv-danger-border: var(--color-element-error, #ff5050);
+	--iv-info-ink: color-mix(in srgb, var(--color-primary-element) 62%, #ffffff);
 }
 
 @media (prefers-contrast: more) {

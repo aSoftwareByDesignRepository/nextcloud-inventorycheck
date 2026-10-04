@@ -172,6 +172,7 @@ class UpgradeBackupService
 			try {
 				$snapshots[] = $this->readManifest($this->getSnapshotFolder($snapshotId), $snapshotId);
 			} catch (\Throwable $e) {
+				// best-effort: one corrupt folder must not break the snapshot listing
 				$this->logger->warning('InventoryCheck: skipping unreadable upgrade backup folder', [
 					'app' => UpgradeBackupCatalog::APP_ID,
 					'folder' => $snapshotId,
@@ -243,6 +244,8 @@ class UpgradeBackupService
 				$this->db->executeStatement('ALTER SESSION SET CONSTRAINTS = DEFERRED');
 				$oracleConstraintsDeferred = true;
 			} catch (\Throwable $e) {
+				// best-effort: sortedRestoreTables() orders clears/restores to satisfy FK
+				// constraints, so proceeding without DEFERRED is the designed fallback.
 				$this->logger->warning('InventoryCheck: Oracle constraints could not be deferred for restore; relying on restore table order.', [
 					'exception' => $e,
 				]);
@@ -828,6 +831,7 @@ class UpgradeBackupService
 					$folder->delete();
 				}
 			} catch (\Throwable $e) {
+				// best-effort: unreadable manifest counts as corrupt → delete and move on
 				$this->logger->warning('InventoryCheck: removing corrupt upgrade backup folder', [
 					'app' => UpgradeBackupCatalog::APP_ID,
 					'folder' => $snapshotId,

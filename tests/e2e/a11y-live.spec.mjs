@@ -49,7 +49,7 @@ test('movement dialog opens with labelled fields (A6)', async ({ page }) => {
 
 	await ensureLoggedIn(page, 'E2E')
 	await openInventory(page, '/apps/inventorycheck/')
-	const issue = page.getByRole('button', { name: /Issue stock|Abgang/i }).first()
+	const issue = page.locator('button[data-iv-action="issue"]').first()
 	await expect(issue).toBeVisible({ timeout: 30_000 })
 	await issue.click()
 	const dialog = page.locator('.iv-dialog, [aria-modal="true"]').first()

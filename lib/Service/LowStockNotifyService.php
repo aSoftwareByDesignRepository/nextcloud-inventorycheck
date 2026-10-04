@@ -103,6 +103,7 @@ class LowStockNotifyService
 					->setLink($this->urlGenerator->linkToRouteAbsolute('inventorycheck.page.item', ['id' => $itemId]));
 				$this->notificationManager->notify($n);
 			} catch (\Throwable $e) {
+				// best-effort: one recipient's notify failure must not stop the batch
 				$this->logger->warning('InventoryCheck low-stock notify failed', [
 					'app' => Application::APP_ID,
 					'uid' => $uid,
@@ -123,6 +124,7 @@ class LowStockNotifyService
 					->setTimestamp($now);
 				$this->activityManager->publish($event);
 			} catch (\Throwable $e) {
+				// best-effort: one recipient's activity failure must not stop the batch
 				$this->logger->warning('InventoryCheck low-stock activity failed', [
 					'app' => Application::APP_ID,
 					'uid' => $uid,

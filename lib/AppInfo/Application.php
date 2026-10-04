@@ -410,6 +410,7 @@ class Application extends App implements IBootstrap
 				$c->get(IURLGenerator::class),
 				$c->get(IFactory::class),
 				$c->get(IConfig::class),
+				$c->get(\Psr\Log\LoggerInterface::class),
 			);
 		});
 		$context->registerMiddleware(AppAccessMiddleware::class);

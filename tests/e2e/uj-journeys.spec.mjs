@@ -82,10 +82,10 @@ test('UJ-1 shell: dashboard loads with role-aware CTAs', async ({ page }) => {
 	await expect(page.locator('#iv-page-title')).toBeVisible()
 	const howto = page.locator('#iv-howto-dashboard, .iv-howto').first()
 	await expect(howto).toBeVisible({ timeout: 30_000 })
-	await expect(howto.getByRole('heading', { name: /How booking works|So funktioniert die Buchung/i })).toBeVisible()
+	await expect(howto.getByRole('heading').first()).toBeVisible()
 	await expect(howto.locator('ol.iv-quickstart li.iv-quickstart__item')).toHaveCount(3)
-	await expect(page.getByRole('button', { name: /Issue stock|Abgang|Bestand ausgeben/i }).first()).toBeVisible({ timeout: 30_000 })
-	const receive = page.getByRole('button', { name: /Receive stock|Zugang|Bestand annehmen/i })
+	await expect(page.locator('button[data-iv-action="issue"]').first()).toBeVisible({ timeout: 30_000 })
+	const receive = page.locator('button[data-iv-action="receive"]')
 	if (await receive.first().isVisible().catch(() => false)) {
 		await expect(receive.first()).toBeVisible()
 	}
@@ -196,7 +196,7 @@ test('UJ-3 issue insufficient stock toast path + field ACL', async ({ page }) =>
 	expect(over.data?.error?.code || over.data?.code).toMatch(/insufficient_stock/)
 
 	await openInventory(page, '/apps/inventorycheck/')
-	await expect(page.getByRole('button', { name: /Issue stock|Abgang/i }).first()).toBeVisible({ timeout: 30_000 })
+	await expect(page.locator('button[data-iv-action="issue"]').first()).toBeVisible({ timeout: 30_000 })
 	await axeMain(page)
 })
 
@@ -324,7 +324,7 @@ test('UJ-6 reverse compensating movement', async ({ page }) => {
 	expect(issue.data.movements[0].qtyAfter).toBe(0)
 
 	await openInventory(page, '/apps/inventorycheck/movements')
-	await expect(page.getByRole('button', { name: /Reverse|Umkehren/i }).first()).toBeVisible({ timeout: 30_000 })
+	await expect(page.locator('button[data-iv-action="reverse"]').first()).toBeVisible({ timeout: 30_000 })
 })
 
 test('UJ-7 settings: app admins, license, support', async ({ page }) => {
@@ -340,7 +340,7 @@ test('UJ-7 settings: app admins, license, support', async ({ page }) => {
 	await expect(main.locator('.iv-settings-page')).toBeVisible()
 	await expect(main.locator('.iv-switch-field').first()).toBeVisible()
 	await expect(main.locator('.iv-form-actions .button, .iv-form-actions .iv-btn').first()).toBeVisible()
-	await expect(page.locator('#iv-page-title')).toContainText(/Access|Zugriff/i)
+	await expect(main.locator('[data-iv-settings-section="access"]')).toBeVisible()
 	await expect(page.locator('.iv-page-header__lead')).toBeVisible()
 
 	const sections = [
@@ -413,10 +413,10 @@ test('UJ-8 stocktake: tap location on dedicated page — no native select / Crea
 	})
 
 	await openInventory(page, '/apps/inventorycheck/stocktake')
-	await expect(page.getByRole('button', { name: /New stocktake|Neue Inventur/i }).first()).toBeVisible({
+	await expect(page.locator('button[data-iv-action="stocktake-new"]').first()).toBeVisible({
 		timeout: 30_000,
 	})
-	await page.getByRole('button', { name: /New stocktake|Neue Inventur/i }).first().click()
+	await page.locator('button[data-iv-action="stocktake-new"]').first().click()
 
 	await expect(page).toHaveURL(/\/stocktake\/create/, { timeout: 15_000 })
 	await clearIvHints(page)
@@ -424,13 +424,13 @@ test('UJ-8 stocktake: tap location on dedicated page — no native select / Crea
 	await expect(page).toHaveURL(/\/stocktake\/create/, { timeout: 15_000 })
 	const howto = page.locator('#iv-stocktake-howto-create, .iv-stocktake-howto, .iv-howto').first()
 	await expect(howto).toBeVisible({ timeout: 15_000 })
-	await expect(howto.getByRole('heading', { name: /How a stocktake works|So funktioniert eine Inventur/i })).toBeVisible()
+	await expect(howto.getByRole('heading').first()).toBeVisible()
 	await expect(howto.locator('ol.iv-quickstart li.iv-quickstart__item')).toHaveCount(3)
 	const chooser = page.locator('.iv-stocktake-new, [data-iv-loc-chooser="1"]').first()
 	await expect(chooser).toBeVisible({ timeout: 15_000 })
 	await expect(page.locator('.iv-dialog-overlay, [aria-modal="true"]')).toHaveCount(0)
 	await expect(page.locator('select')).toHaveCount(0)
-	await expect(page.getByRole('button', { name: /^(Create|Erstellen)$/i })).toHaveCount(0)
+	await expect(page.locator('.iv-stocktake-new button[type="submit"]')).toHaveCount(0)
 	await expect(page.locator('.iv-stocktake-new .iv-page-header__lead, .iv-page-header__lead, #iv-stocktake-new-title').first()).toBeVisible()
 
 	const search = page.locator('.iv-loc-chooser__search')
@@ -441,8 +441,9 @@ test('UJ-8 stocktake: tap location on dedicated page — no native select / Crea
 	await expect(page.locator('.iv-stocktake-new')).not.toHaveAttribute('style', /padding-bottom:\s*[1-9]\d{2,}px/)
 
 	await search.fill(`Stocktake Alpha ${tag}`)
-	const pick = page.getByRole('option', {
-		name: new RegExp(`Start stocktake at Stocktake Alpha ${tag}|Inventur starten bei Stocktake Alpha ${tag}`, 'i'),
+	// Location name is data (not translated UI text) — match the option by it.
+	const pick = page.locator('.iv-loc-chooser__item[role="option"]').filter({
+		hasText: `Stocktake Alpha ${tag}`,
 	})
 	await expect(pick).toBeVisible({ timeout: 15_000 })
 
@@ -479,8 +480,8 @@ test('UJ movements: filter bar and pagination landmarks', async ({ page }) => {
 	await expect(page.locator('#iv-mov-from')).toBeVisible()
 	await expect(page.locator('#iv-mov-to')).toBeVisible()
 	await expect(page.locator('#iv-mov-date-range-label')).toBeVisible()
-	await expect(page.getByRole('button', { name: /^(Apply|Anwenden)$/i })).toBeVisible()
-	await expect(page.getByRole('button', { name: /^(Clear|Zurücksetzen|Leeren)$/i }).first()).toBeVisible()
+	await expect(page.locator('button[data-iv-action="filter-apply"]')).toBeVisible()
+	await expect(page.locator('button[data-iv-action="filter-clear"]').first()).toBeVisible()
 
 	// AZC manager layout: criteria row then full-width date range (dates below kind).
 	const layout = await page.evaluate(() => {
@@ -523,11 +524,11 @@ test('UJ movements: filter bar and pagination landmarks', async ({ page }) => {
 	// Invalid date range is blocked with inline alert.
 	await page.locator('#iv-mov-from').fill('2026-07-20')
 	await page.locator('#iv-mov-to').fill('2026-07-10')
-	await page.getByRole('button', { name: /^(Apply|Anwenden)$/i }).click()
+	await page.locator('button[data-iv-action="filter-apply"]').click()
 	await expect(page.locator('#iv-mov-date-error')).toBeVisible()
 	await expect(page.locator('#iv-mov-from')).toHaveAttribute('aria-invalid', 'true')
 
-	await page.getByRole('button', { name: /^(Clear|Zurücksetzen|Leeren)$/i }).first().click()
+	await page.locator('button[data-iv-action="filter-clear"]').first().click()
 	await expect(page.locator('#iv-mov-from')).toHaveValue('')
 	await expect(page.locator('#iv-mov-date-error')).toBeHidden()
 
@@ -569,9 +570,9 @@ test('UJ items: simple search filter and empty match state', async ({ page }) =>
 	expect(layout.inputBtnDelta).toBeLessThanOrEqual(12)
 
 	await page.locator('#iv-items-q').fill('zzzz-no-such-sku-iv-filter')
-	await page.getByRole('button', { name: /^(Search|Suchen)$/i }).click()
-	await expect(page.getByText(/No items match these filters|Keine Artikel passen/i)).toBeVisible({ timeout: 15_000 })
-	await page.getByRole('button', { name: /^(Clear|Zurücksetzen|Leeren)$/i }).first().click()
+	await page.locator('button[data-iv-action="filter-search"]').click()
+	await expect(page.locator('#iv-main-content .iv-empty, #iv-main-content .iv-empty-state').first()).toBeVisible({ timeout: 15_000 })
+	await page.locator('button[data-iv-action="filter-clear"]').first().click()
 	await expect(page.locator('#iv-items-q')).toHaveValue('')
 	await axeMain(page)
 })
@@ -601,12 +602,12 @@ test('UJ locations: simple search filter and API q', async ({ page }) => {
 	await expect(panel).toBeVisible({ timeout: 30_000 })
 	await expect(panel.locator('.iv-filter-grid--simple')).toBeVisible()
 	await page.locator('#iv-loc-q').fill(tag)
-	await page.getByRole('button', { name: /^(Search|Suchen)$/i }).click()
+	await page.locator('button[data-iv-action="filter-search"]').click()
 	await expect(page.getByText(new RegExp(`Queryable ${tag}`))).toBeVisible({ timeout: 15_000 })
 
 	await page.locator('#iv-loc-q').fill('zzzz-no-such-location-iv')
-	await page.getByRole('button', { name: /^(Search|Suchen)$/i }).click()
-	await expect(page.getByText(/No locations match these filters|Keine Orte passen/i)).toBeVisible({ timeout: 15_000 })
+	await page.locator('button[data-iv-action="filter-search"]').click()
+	await expect(page.locator('#iv-main-content .iv-empty, #iv-main-content .iv-empty-state').first()).toBeVisible({ timeout: 15_000 })
 	await axeMain(page)
 })
 

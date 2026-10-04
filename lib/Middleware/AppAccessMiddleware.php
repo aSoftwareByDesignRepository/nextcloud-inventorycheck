@@ -18,6 +18,13 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Middleware;
+use OCP\Files\EntityTooLargeException as FilesEntityTooLargeException;
+use OCP\Files\ForbiddenException as FilesForbiddenException;
+use OCP\Files\GenericFileException;
+use OCP\Files\LockNotAcquiredException;
+use OCP\Files\NotEnoughSpaceException;
+use OCP\Files\NotPermittedException as FilesNotPermittedException;
+use OCP\Files\StorageNotAvailableException;
 use OCP\IConfig;
 use OCP\IL10N;
 use OCP\IRequest;
@@ -25,6 +32,7 @@ use OCP\IURLGenerator;
 use OCP\IUserSession;
 use OCP\L10N\IFactory;
 use OCP\Util;
+use Psr\Log\LoggerInterface;
 
 class AppAccessMiddleware extends Middleware
 {
@@ -37,6 +45,7 @@ class AppAccessMiddleware extends Middleware
 		private readonly IURLGenerator $urlGenerator,
 		private readonly IFactory $l10nFactory,
 		private readonly IConfig $config,
+		private readonly LoggerInterface $logger,
 	) {
 	}
 
@@ -163,6 +172,71 @@ class AppAccessMiddleware extends Middleware
 				$exception->getErrorCode(),
 				$this->gateMessage($exception->getErrorCode(), $l),
 				self::HTTP_PAYMENT_REQUIRED,
+			);
+		}
+
+		// must_fix F1: OCP\Files storage/permission faults (e.g. an unwritable
+		// appdata item_photos folder on POST /api/items/{id}/photo) must keep
+		// the JSON wire contract — never a raw framework HTML 500. Only the
+		// storage-fault classes below are mapped; InvalidPathException-family
+		// and every other throwable is a programmer/unknown error and still
+		// rethrows to the core 500 handler.
+		if ($exception instanceof FilesNotPermittedException || $exception instanceof FilesForbiddenException) {
+			$this->logger->warning('inventorycheck storage denied the operation', [
+				'path' => (string)($this->request->getPathInfo() ?? ''),
+				'exception' => $exception,
+			]);
+			return $this->envelope(
+				'storage_permission_denied',
+				$l->t('Storage permission denied. Contact your administrator.'),
+				Http::STATUS_FORBIDDEN,
+			);
+		}
+		if ($exception instanceof FilesEntityTooLargeException) {
+			return $this->envelope(
+				'storage_entity_too_large',
+				$l->t('The file exceeds the storage size limit.'),
+				Http::STATUS_REQUEST_ENTITY_TOO_LARGE,
+			);
+		}
+		if ($exception instanceof LockNotAcquiredException) {
+			return $this->envelope(
+				'storage_locked',
+				$l->t('The file is locked. Try again shortly.'),
+				Http::STATUS_LOCKED,
+			);
+		}
+		if ($exception instanceof NotEnoughSpaceException) {
+			$this->logger->error('inventorycheck storage is full', [
+				'path' => (string)($this->request->getPathInfo() ?? ''),
+				'exception' => $exception,
+			]);
+			return $this->envelope(
+				'storage_full',
+				$l->t('Storage is full. Free up space and try again.'),
+				Http::STATUS_INSUFFICIENT_STORAGE,
+			);
+		}
+		if ($exception instanceof StorageNotAvailableException) {
+			$this->logger->error('inventorycheck storage backend unavailable', [
+				'path' => (string)($this->request->getPathInfo() ?? ''),
+				'exception' => $exception,
+			]);
+			return $this->envelope(
+				'storage_unavailable',
+				$l->t('Storage is temporarily unavailable. Try again later.'),
+				Http::STATUS_SERVICE_UNAVAILABLE,
+			);
+		}
+		if ($exception instanceof GenericFileException) {
+			$this->logger->error('inventorycheck storage write/read failed', [
+				'path' => (string)($this->request->getPathInfo() ?? ''),
+				'exception' => $exception,
+			]);
+			return $this->envelope(
+				'storage_error',
+				$l->t('A storage error occurred. Try again later.'),
+				Http::STATUS_INTERNAL_SERVER_ERROR,
 			);
 		}
 

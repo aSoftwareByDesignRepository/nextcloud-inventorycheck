@@ -52,46 +52,53 @@ function hasAnyCreds() {
 }
 
 /**
+ * Persist a theme server-side via the OCS theming API, then verify the
+ * *rendered* body attributes after a real navigation.
+ *
+ * Atlas learned class: client-side class/attribute fakes are forbidden —
+ * a theme must survive a full document round-trip so the capture proves the
+ * server-persisted user preference, not DOM cosmetics.
+ *
  * @param {import('@playwright/test').Page} page
  * @param {ThemeId} themeId
  */
 async function applyTheme(page, themeId) {
-	await page.evaluate((id) => {
-		const body = document.body
-		;[
-			'theme--light',
-			'theme--dark',
-			'theme--dark-highcontrast',
-			'theme--light-highcontrast',
-		].forEach((c) => body.classList.remove(c))
-		;[
-			'data-theme-default',
-			'data-theme-light',
-			'data-theme-dark',
-			'data-theme-dark-highcontrast',
-			'data-theme-light-highcontrast',
-		].forEach((a) => body.removeAttribute(a))
-
-		if (id === 'light') {
-			body.classList.add('theme--light')
-			body.setAttribute('data-theme-light', 'true')
-			body.setAttribute('data-themes', 'default')
-		} else if (id === 'dark') {
-			body.classList.add('theme--dark')
-			body.setAttribute('data-theme-dark', 'true')
-			body.setAttribute('data-themes', 'dark')
-		} else if (id === 'light-highcontrast') {
-			body.classList.add('theme--light', 'theme--light-highcontrast')
-			body.setAttribute('data-theme-light-highcontrast', 'true')
-			body.setAttribute('data-themes', 'light-highcontrast')
-		} else {
-			body.classList.add('theme--dark', 'theme--dark-highcontrast')
-			body.setAttribute('data-theme-dark-highcontrast', 'true')
-			body.setAttribute('data-themes', 'dark-highcontrast')
+	const all = themes.map((t) => t.id)
+	const failures = await page.evaluate(async ({ target, ids }) => {
+		const token =
+			(typeof window.OC !== 'undefined' && window.OC.requestToken)
+			|| document.querySelector('head[data-requesttoken]')?.getAttribute('data-requesttoken')
+			|| ''
+		const headers = { requesttoken: token, 'OCS-APIRequest': 'true', Accept: 'application/json' }
+		const problems = []
+		for (const id of ids.filter((t) => t !== target)) {
+			const res = await fetch(`/ocs/v2.php/apps/theming/api/v1/theme/${id}`, {
+				method: 'DELETE', credentials: 'same-origin', headers,
+			})
+			if (!res.ok && res.status !== 400) problems.push(`disable ${id}: HTTP ${res.status}`)
 		}
-		document.documentElement.style.colorScheme = id.includes('dark') ? 'dark' : 'light'
-	}, themeId)
-	await page.waitForTimeout(150)
+		const res = await fetch(`/ocs/v2.php/apps/theming/api/v1/theme/${target}/enable`, {
+			method: 'PUT', credentials: 'same-origin', headers,
+		})
+		if (!res.ok && res.status !== 400) problems.push(`enable ${target}: HTTP ${res.status}`)
+		return problems
+	}, { target: themeId, ids: all })
+	if (failures.length) {
+		throw new Error(`OCS theme persist failed for ${themeId}: ${failures.join(';')}`)
+	}
+	// Re-navigate so the page re-renders from the persisted preference, then
+	// assert the attribute the server actually emitted.
+	await page.reload({ waitUntil: 'domcontentloaded' })
+	const expectedAttr = themeId === 'light' ? 'data-theme-light' : `data-theme-${themeId}`
+	const rendered = await page.evaluate((attr) => ({
+		hasAttr: document.body.hasAttribute(attr),
+		dataThemes: document.body.getAttribute('data-themes') || '',
+	}), expectedAttr)
+	expect(
+		rendered.hasAttr || rendered.dataThemes.split(/\s+/).includes(themeId)
+			|| (themeId === 'light' && /default|light/.test(rendered.dataThemes)),
+		`post-navigation body theme attribute missing for ${themeId}: ${JSON.stringify(rendered)}`,
+	).toBeTruthy()
 }
 
 /**
@@ -217,6 +224,33 @@ test.describe('InventoryCheck theme × a11y matrix', () => {
 			expect(results.violations, JSON.stringify(results.violations, null, 2)).toEqual([])
 		})
 	}
+
+	// Learned class: pixel-identical "dark" captures once passed a farm —
+	// byte-compare server-persisted theme renders so identical output fails.
+	test('pixel-diff: light and dark renders differ on dashboard', async ({ page }) => {
+		const { createHash } = await import('node:crypto')
+		const shots = {}
+		for (const themeId of ['light', 'dark']) {
+			await openInventory(page, '/apps/inventorycheck/')
+			await applyTheme(page, themeId)
+			shots[themeId] = await page.locator('#app-content.iv-app').screenshot()
+		}
+		const sha = (b) => createHash('sha256').update(b).digest('hex').slice(0, 16)
+		expect(
+			sha(shots.light),
+			`light and dark captures are pixel-identical (sha ${sha(shots.light)}) — theme not applied`,
+		).not.toEqual(sha(shots.dark))
+		// And the dark render must not be the light render with a filter only:
+		// resolved main background must actually be dark in the dark theme.
+		const bg = await page.evaluate(() => {
+			const el = document.querySelector('#app-content.iv-app') || document.body
+			return getComputedStyle(el).backgroundColor
+		})
+		const m = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/)
+		expect(m, `unparseable background ${bg}`).toBeTruthy()
+		const lum = 0.2126 * Number(m[1]) + 0.7152 * Number(m[2]) + 0.0722 * Number(m[3])
+		expect(lum, `dark theme background luminance ${lum} (bg ${bg})`).toBeLessThan(128)
+	})
 })
 
 test.describe('InventoryCheck route a11y smoke', () => {
