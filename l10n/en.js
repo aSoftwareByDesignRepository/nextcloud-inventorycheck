@@ -818,6 +818,5 @@ OC.L10N.register(
 	"{ok} row(s) look fine." : "{ok} row(s) look fine.",
 	"★ Remove from favourites" : "★ Remove from favourites",
 	"☆ Add to favourites" : "☆ Add to favourites"
-	},
-	"nplurals=2; plural=(n != 1);"
+	}
 );

@@ -24,7 +24,7 @@ final class Csv
 			return $value;
 		}
 		$first = $value[0];
-		if ($first === '=' || $first === '+' || $first === '-' || $first === '@' || $first === "\t" || $first === "\r") {
+		if (in_array($first, ['=', '+', '-', '@', "\t", "\r", "\n", "\x0B"], true)) {
 			return "'" . $value;
 		}
 		return $value;

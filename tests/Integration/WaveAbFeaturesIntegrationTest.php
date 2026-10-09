@@ -100,6 +100,8 @@ final class WaveAbFeaturesIntegrationTest extends TestCase
 		self::assertSame('code_exists', $dup['errors'][0]['code']);
 
 		$commit = $this->import->commit($this->uid, $csv, false);
+		// Parity: the dry-run prediction equals what commit actually writes.
+		self::assertSame($dry['ok'], $commit['created']);
 		self::assertSame(2, $commit['created']);
 		self::assertSame(1, $commit['received']);
 

@@ -85,6 +85,9 @@ body,
 	--iv-muted: var(--color-text-maxcontrast);
 	--iv-border: color-mix(in srgb, var(--color-main-text) 12%, transparent);
 	--iv-border-strong: color-mix(in srgb, var(--color-main-text) 24%, transparent);
+	/* Interactive controls need >=3:1 (WCAG 1.4.11): maxcontrast is NC's own
+	   input border; --color-border / --iv-border stay surface-only. */
+	--iv-form-border: var(--color-border-maxcontrast, var(--iv-border-strong));
 
 	/* Mix with main background — not transparent — so callouts stay visible on all NC themes */
 	--iv-tint-success: color-mix(in srgb, var(--color-success-text, var(--color-success)) 18%, var(--color-main-background));
@@ -151,7 +154,7 @@ body,
 	--inventorycheck-color-modal-border: var(--iv-border, var(--color-border));
 	--inventorycheck-color-modal-footer-background: var(--iv-bg-soft, var(--color-background-dark));
 	--inventorycheck-color-form-background: var(--color-main-background);
-	--inventorycheck-color-form-border: var(--iv-border, var(--color-border));
+	--inventorycheck-color-form-border: var(--color-border-maxcontrast, var(--iv-border-strong));
 	--inventorycheck-color-form-border-focus: var(--color-primary-element);
 	--inventorycheck-color-form-border-error: var(--iv-danger-border, var(--color-error-text, var(--color-error)));
 	--inventorycheck-color-form-border-success: var(--color-success-text, var(--color-success));
@@ -190,7 +193,12 @@ body[data-theme-dark-highcontrast],
 	--iv-danger-fill: color-mix(in srgb, var(--color-element-error, #ff5050) 52%, var(--color-main-background));
 	--iv-danger-fill-hover: color-mix(in srgb, var(--color-element-error, #ff5050) 64%, var(--color-main-background));
 	--iv-danger-border: var(--color-element-error, #ff5050);
-	--iv-info-ink: color-mix(in srgb, var(--color-primary-element) 62%, #ffffff);
+	/* --color-primary-element-text is text-ON-accent ink — black under the
+	   dark themes' bright accents, so it darkens mixes/fills instead of
+	   lightening them. --color-main-text is the light ink in every dark
+	   variant (learned class, sealed azc/crm tokens.css). */
+	--iv-danger-on-fill: var(--color-main-text);
+	--iv-info-ink: color-mix(in srgb, var(--color-primary-element) 62%, var(--color-main-text));
 }
 
 @media (prefers-contrast: more) {
@@ -211,4 +219,10 @@ body[data-theme-dark-highcontrast],
 		--iv-shadow-md: 0 0 0 1px var(--iv-border-strong);
 		--iv-shadow-lg: 0 0 0 2px var(--iv-border-strong);
 	}
+}
+
+/* Aliases for dead-name refs (literal fallbacks masked them). */
+body {
+	--iv-bg: var(--iv-bg-card);
+	--iv-fs-base: var(--iv-fs-md);
 }

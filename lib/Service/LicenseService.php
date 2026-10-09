@@ -190,18 +190,19 @@ class LicenseService
 		});
 	}
 
-	public function removeSeat(string $uid): void
+	public function removeSeat(string $uid): ?MobileSeat
 	{
 		// User-delete must not fatal when a sibling install never created the
 		// companion seat table (migrations marked complete without effect).
 		if (!$this->db->tableExists(MobileSeatMapper::TABLE)) {
-			return;
+			return null;
 		}
 		$seat = $this->seats->findByUid($uid);
 		if ($seat === null) {
-			return;
+			return null;
 		}
 		$this->seats->delete($seat);
+		return $seat;
 	}
 
 	/**

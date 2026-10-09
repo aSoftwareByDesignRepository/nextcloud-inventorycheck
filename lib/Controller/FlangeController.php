@@ -12,6 +12,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use Psr\Log\LoggerInterface;
 
 /**
  * Soft flanges to sibling Check apps (Wave B2 / C5). Status/settings are
@@ -23,10 +24,13 @@ use OCP\IRequest;
  */
 class FlangeController extends Controller
 {
+	use PolicyAuditTrait;
+
 	public function __construct(
 		IRequest $request,
 		private readonly FlangeService $flange,
 		private readonly AccessControlService $access,
+		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(Application::APP_ID, $request);
 	}
@@ -67,7 +71,8 @@ class FlangeController extends Controller
 	#[NoAdminRequired]
 	public function saveSettings(): JSONResponse
 	{
-		$this->access->requireAppAdmin($this->access->currentUserId());
+		$uid = $this->access->currentUserId();
+		$this->access->requireAppAdmin($uid);
 		$p = $this->request->getParams();
 		if (array_key_exists('maintFlangeEnabled', $p)) {
 			$this->flange->setMaintEnabled(BoolParam::parse($p['maintFlangeEnabled'], 'maintFlangeEnabled'));
@@ -78,6 +83,13 @@ class FlangeController extends Controller
 		if (array_key_exists('defaultIssueLocationId', $p)) {
 			$raw = $p['defaultIssueLocationId'];
 			$this->flange->setDefaultLocationId($raw === null || $raw === '' ? null : (int)$raw);
+		}
+		$changed = array_values(array_intersect(
+			['maintFlangeEnabled', 'projectFlangeEnabled', 'defaultIssueLocationId'],
+			array_keys($p),
+		));
+		if ($changed !== []) {
+			$this->auditPolicyChange($uid, 'flange_settings_saved', ['keys' => $changed]);
 		}
 		return new JSONResponse($this->flange->status());
 	}

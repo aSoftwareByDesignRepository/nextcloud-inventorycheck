@@ -40,7 +40,7 @@ final class LicenseControllerDeviceBindTest extends TestCase
 		);
 		$license->expects($this->never())->method('deactivateDevice');
 
-		$controller = new LicenseController($request, $license, $access, $acl);
+		$controller = new LicenseController($request, $license, $access, $acl, new \Psr\Log\NullLogger());
 		$response = $controller->createDevice();
 		$this->assertSame(200, $response->getStatus());
 	}
@@ -65,7 +65,7 @@ final class LicenseControllerDeviceBindTest extends TestCase
 		]);
 		$acl->expects($this->never())->method('setForSubject');
 
-		$controller = new LicenseController($request, $license, $access, $acl);
+		$controller = new LicenseController($request, $license, $access, $acl, new \Psr\Log\NullLogger());
 		$controller->createDevice();
 	}
 
@@ -88,7 +88,7 @@ final class LicenseControllerDeviceBindTest extends TestCase
 			]));
 		$license->expects($this->never())->method('createDevice');
 
-		$controller = new LicenseController($request, $license, $access, $acl);
+		$controller = new LicenseController($request, $license, $access, $acl, new \Psr\Log\NullLogger());
 		$this->expectException(ValidationException::class);
 		$controller->createDevice();
 	}
@@ -116,7 +116,7 @@ final class LicenseControllerDeviceBindTest extends TestCase
 		$license->expects($this->once())->method('deactivateDevice')->with(77);
 		$acl->expects($this->once())->method('purgeDevice')->with(77);
 
-		$controller = new LicenseController($request, $license, $access, $acl);
+		$controller = new LicenseController($request, $license, $access, $acl, new \Psr\Log\NullLogger());
 		$this->expectException(RuntimeException::class);
 		$controller->createDevice();
 	}

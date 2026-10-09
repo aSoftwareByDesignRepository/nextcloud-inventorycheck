@@ -17,6 +17,10 @@ final class CsvAndLabelSheetTest extends TestCase
 		self::assertSame("'+cmd", Csv::sanitizeField('+cmd'));
 		self::assertSame("'-1", Csv::sanitizeField('-1'));
 		self::assertSame("'@x", Csv::sanitizeField('@x'));
+		self::assertSame("'\t=1+1", Csv::sanitizeField("\t=1+1"));
+		self::assertSame("'\r=1+1", Csv::sanitizeField("\r=1+1"));
+		self::assertSame("'\n=1+1", Csv::sanitizeField("\n=1+1"));
+		self::assertSame("'\x0B=1+1", Csv::sanitizeField("\x0B=1+1"));
 		self::assertSame("ok", Csv::sanitizeField('ok'));
 		self::assertSame('', Csv::sanitizeField(''));
 	}

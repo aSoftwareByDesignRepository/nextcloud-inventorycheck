@@ -22,7 +22,7 @@
 	min-width: 44px !important;
 	padding: 0 var(--iv-space-3, 0.75rem);
 	margin: 0 0 var(--iv-space-3, 0.75rem);
-	border: 1px solid var(--color-border, var(--iv-border));
+	border: 1px solid var(--iv-form-border, var(--iv-border));
 	border-radius: var(--iv-radius-md, 8px);
 	background-color: var(--color-main-background);
 	color: var(--color-main-text);

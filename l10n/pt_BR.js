@@ -3,7 +3,7 @@ OC.L10N.register(
 	{
 	"\"From\" must be on or before \"To\"." : "\"De\" deve estar ligado ou antes de \"Para\".",
 	"%1$s (%2$s) is below reorder level: %3$s on hand, reorder at %4$s." : "%1$s (%2$s) está abaixo do nível de novo pedido: %3$s disponível, reordene em %4$s.",
-	"%n label" : ["%n etiqueta","%n etiquetas"],
+	"%n label" : ["%n etiqueta", "%n etiquetas"],
 	"%n labels" : "%n etiquetas",
 	"%s stays free (AGPL) on your Nextcloud. Bug reports and ideas on GitHub stay welcome — that is free open-source care. If your organisation needs bookable help on an invoice — or official mobile licenses — choose an option below:" : "%s permanece grátis (AGPL) no seu Nextcloud. Relatórios de bugs e ideias sobre GitHub são bem-vindos - isso é atendimento gratuito de código aberto. Se sua organização precisar de ajuda reservável em uma fatura — ou licenças móveis oficiais — escolha uma opção abaixo:",
 	"%s stays free (AGPL) on your Nextcloud. Bug reports and ideas on GitHub stay welcome — that is free open-source care. If your organisation needs bookable help on an invoice, choose an option below:" : "%s permanece grátis (AGPL) no seu Nextcloud. Relatórios de bugs e ideias sobre GitHub são bem-vindos - isso é atendimento gratuito de código aberto. Se sua organização precisar de ajuda reservável em uma fatura, escolha uma opção abaixo:",
@@ -137,7 +137,7 @@ OC.L10N.register(
 	"Book from the row actions, or start a stocktake for this location from Stocktake." : "Lance pelas ações da linha ou inicie um inventário para este local em Inventário.",
 	"Booking history" : "Histórico de lançamentos",
 	"Bookings appear here after receive, issue, transfer, or adjust." : "Os lançamentos aparecem aqui após entradas, saídas, transferências ou ajustes.",
-	"Breadcrumb" : "Pão ralado",
+	"Breadcrumb" : "Trilha de navegação",
 	"Bugs, ideas, and paid help — without leaving this page." : "Bugs, ideias e ajuda paga — sem sair desta página.",
 	"By" : "Por",
 	"By default every logged-in user can open InventoryCheck. Turn on the restriction to limit access to the lists below. Administrators always keep access." : "Por padrão, todo usuário logado pode abrir InventoryCheck. Ative a restrição para limitar o acesso às listas abaixo. Os administradores sempre mantêm o acesso.",

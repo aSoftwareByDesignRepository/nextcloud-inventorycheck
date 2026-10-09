@@ -183,8 +183,8 @@ OC.L10N.register(
 	"Code and name are enough. Kind (warehouse, van, …) sits under More options." : "Code und Name reichen. Art (Lager, Fahrzeug, …) steht unter Weitere Optionen.",
 	"Code not found." : "Code nicht gefunden.",
 	"Code or name" : "Code oder Name",
-	"Columns: sku, scan_code, name, description, uom, reorder_level, active, supplier_note, last_price_minor, opening_location_code, opening_qty. German headers also work." : "Spalten: sku, scan_code, name, description, uom, reorder_level, active, supplier_note, last_price_minor, opening_location_code, opening_qty. Deutsche Überschriften funktionieren ebenfalls.",
-	"Columns: sku, scan_code, name, description, uom, reorder_level, active, supplier_note, last_price_minor." : "Spalten: sku, scan_code, name, description, uom, reorder_level, active, supplier_note, last_price_minor.",
+	"Columns: sku, scan_code, name, description, uom, reorder_level, active, supplier_note, last_price_minor, opening_location_code, opening_qty. German headers also work." : "Spalten: 'sku', 'scan_code', 'name', 'description', 'uom', 'reorder_level', 'active', 'supplier_note', 'last_price_minor', 'opening_location_code', 'opening_qty'. Deutsche Spaltenüberschriften funktionieren ebenfalls.",
+	"Columns: sku, scan_code, name, description, uom, reorder_level, active, supplier_note, last_price_minor." : "Spalten: 'sku', 'scan_code', 'name', 'description', 'uom', 'reorder_level', 'active', 'supplier_note', 'last_price_minor'.",
 	"Commissioned feature" : "Beauftragte Funktion",
 	"Compare shelf quantities with system stock, then close to post adjustments" : "Vergleiche Regalmengen mit dem Systembestand und schließe ab, um Korrekturen zu buchen",
 	"Compare system stock with what is actually on the shelf — then post the difference in one close." : "Vergleiche Systembestand mit dem, was wirklich im Regal liegt — und buche die Differenz mit dem Abschluss.",
@@ -818,6 +818,5 @@ OC.L10N.register(
 	"{ok} row(s) look fine." : "{ok} Zeile(n) sehen in Ordnung aus.",
 	"★ Remove from favourites" : "★ Aus Favoriten entfernen",
 	"☆ Add to favourites" : "☆ Zu Favoriten hinzufügen"
-	},
-	"nplurals=2; plural=(n != 1);"
+	}
 );

@@ -13,14 +13,18 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use Psr\Log\LoggerInterface;
 
 class LicenseController extends Controller
 {
+	use PolicyAuditTrait;
+
 	public function __construct(
 		IRequest $request,
 		private readonly LicenseService $license,
 		private readonly AccessControlService $access,
 		private readonly LocationAclService $locationAcl,
+		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(Application::APP_ID, $request);
 	}
@@ -38,14 +42,23 @@ class LicenseController extends Controller
 		$uid = $this->access->currentUserId();
 		$this->access->requireAppAdmin($uid);
 		$key = (string)$this->request->getParam('key', '');
-		return new JSONResponse($this->license->apply($uid, $key));
+		$status = $this->license->apply($uid, $key);
+		// Audit: license applied — never log the key material itself.
+		$this->auditPolicyChange($uid, 'license_applied', [
+			'seatLimit' => $status['seats']['limit'] ?? null,
+			'deviceLimit' => $status['devices']['limit'] ?? null,
+		]);
+		return new JSONResponse($status);
 	}
 
 	#[NoAdminRequired]
 	public function remove(): JSONResponse
 	{
-		$this->access->requireAppAdmin($this->access->currentUserId());
-		return new JSONResponse($this->license->remove());
+		$uid = $this->access->currentUserId();
+		$this->access->requireAppAdmin($uid);
+		$status = $this->license->remove();
+		$this->auditPolicyChange($uid, 'license_removed');
+		return new JSONResponse($status);
 	}
 
 	#[NoAdminRequired]
@@ -61,14 +74,20 @@ class LicenseController extends Controller
 	{
 		$uid = $this->access->currentUserId();
 		$this->access->requireAppAdmin($uid);
-		return new JSONResponse($this->license->assignSeat($uid, $this->request->getParam('uid')));
+		$target = $this->request->getParam('uid');
+		$result = $this->license->assignSeat($uid, $target);
+		$this->auditPolicyChange($uid, 'seat_assigned', ['targetUid' => is_scalar($target) ? (string)$target : null]);
+		return new JSONResponse($result);
 	}
 
 	#[NoAdminRequired]
 	public function removeSeat(string $uid): JSONResponse
 	{
-		$this->access->requireAppAdmin($this->access->currentUserId());
-		$this->license->removeSeat($uid);
+		$actor = $this->access->currentUserId();
+		$this->access->requireAppAdmin($actor);
+		if ($this->license->removeSeat($uid) !== null) {
+			$this->auditPolicyChange($actor, 'seat_removed', ['targetUid' => $uid]);
+		}
 		return new JSONResponse(['ok' => true]);
 	}
 
@@ -122,6 +141,10 @@ class LicenseController extends Controller
 			}
 		}
 
+		$this->auditPolicyChange($uid, 'device_created', [
+			'deviceId' => $created['device']['id'] ?? null,
+			'boundLocations' => $bindIds !== null ? count($bindIds) : 0,
+		]);
 		return new JSONResponse($created);
 	}
 
@@ -130,15 +153,20 @@ class LicenseController extends Controller
 	{
 		$uid = $this->access->currentUserId();
 		$this->access->requireAppAdmin($uid);
-		return new JSONResponse($this->license->regeneratePairCode($uid, $id));
+		$result = $this->license->regeneratePairCode($uid, $id);
+		// Audit: pair code rotated — never log the code itself.
+		$this->auditPolicyChange($uid, 'device_pair_code_regenerated', ['deviceId' => $id]);
+		return new JSONResponse($result);
 	}
 
 	#[NoAdminRequired]
 	public function removeDevice(int $id): JSONResponse
 	{
-		$this->access->requireAppAdmin($this->access->currentUserId());
+		$actor = $this->access->currentUserId();
+		$this->access->requireAppAdmin($actor);
 		$this->license->deactivateDevice($id);
 		$this->locationAcl->purgeDevice($id);
+		$this->auditPolicyChange($actor, 'device_removed', ['deviceId' => $id]);
 		return new JSONResponse(['ok' => true]);
 	}
 }

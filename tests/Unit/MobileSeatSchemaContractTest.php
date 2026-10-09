@@ -15,7 +15,7 @@ final class MobileSeatSchemaContractTest extends TestCase
 		$this->assertNotFalse($start);
 		$fn = substr($src, $start, 700);
 		$this->assertStringContainsString('tableExists(MobileSeatMapper::TABLE)', $fn);
-		$this->assertStringContainsString('return;', $fn);
+		$this->assertStringContainsString('return null;', $fn);
 		$this->assertStringContainsString('findByUid($uid)', $fn);
 		$this->assertStringNotContainsString('function status', $fn);
 	}

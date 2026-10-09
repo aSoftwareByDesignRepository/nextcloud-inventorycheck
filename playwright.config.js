@@ -24,7 +24,9 @@ if (existsSync(envFile)) {
 }
 
 const baseURL = process.env.NC_BASE_URL || 'http://localhost:8081'
-const authFile = resolve(configDir, 'tests/e2e/.auth/user.json')
+const authFile = process.env.E2E_STORAGE_STATE
+	? resolve(configDir, process.env.E2E_STORAGE_STATE)
+	: resolve(configDir, 'tests/e2e/.auth/user.json')
 
 module.exports = defineConfig({
 	testDir: 'tests/e2e',

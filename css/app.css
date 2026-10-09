@@ -288,7 +288,7 @@ a.button {
 
 .iv-btn--tertiary {
 	background: transparent;
-	border-color: var(--color-border-dark);
+	border-color: var(--iv-form-border, var(--color-border-maxcontrast, var(--color-border)));
 }
 
 .iv-btn--tertiary:hover:not(:disabled) {
@@ -319,7 +319,7 @@ a.button {
 	width: 100%;
 	min-height: 44px;
 	padding: var(--iv-space-2, 8px) var(--iv-space-3, 12px);
-	border: 1px solid var(--color-border, var(--iv-border));
+	border: 1px solid var(--iv-form-border, var(--iv-border));
 	border-radius: var(--iv-radius-sm, 6px);
 	background: var(--color-main-background);
 	color: var(--color-main-text);
@@ -450,7 +450,7 @@ label.iv-switch-field {
 	min-height: var(--iv-touch, 44px);
 	padding: var(--iv-space-2, 8px) var(--iv-space-3, 12px);
 	margin: 0;
-	border: 1px solid var(--iv-border, var(--color-border));
+	border: 1px solid var(--iv-form-border, var(--iv-border));
 	border-radius: var(--iv-radius-sm, 6px);
 	background: var(--iv-bg-card, var(--color-main-background));
 	color: var(--iv-text, var(--color-main-text));
@@ -991,7 +991,8 @@ label.iv-switch-field {
 }
 
 .iv-bucket--today .iv-bucket__title {
-	border-inline-start-color: var(--color-warning);
+	/* NC35: --color-warning is a pale tint — accent borders need the text token. */
+	border-inline-start-color: var(--color-warning-text, var(--color-warning));
 }
 
 .iv-bucket--next7 .iv-bucket__title {
@@ -1137,7 +1138,7 @@ button.iv-hint-dismiss {
 	box-sizing: border-box;
 	cursor: pointer;
 	background: transparent;
-	border: 1px solid var(--iv-border, var(--color-border, #ddd));
+	border: 1px solid var(--iv-form-border, var(--iv-border, #ddd));
 	border-radius: var(--iv-radius-sm, 8px);
 	color: var(--color-main-text, #1d1d1d);
 	text-align: center;
@@ -1893,8 +1894,11 @@ button.iv-hint-dismiss:focus-visible {
 	font-size: var(--iv-fs-sm);
 }
 
+/* JS emits iv-toast--ok; --success kept as alias. NC35: --color-success is a
+ * pale tint — accent borders need the text token. */
+.iv-toast--ok,
 .iv-toast--success {
-	border-inline-start-color: var(--color-success);
+	border-inline-start-color: var(--color-success-text, var(--color-success));
 }
 
 .iv-toast--error {
@@ -2260,7 +2264,7 @@ button.iv-hint-dismiss:focus-visible {
 	line-height: 1.25;
 	color: var(--color-primary-element-light-text, var(--color-main-text));
 	background: var(--color-primary-element-light, var(--color-background-hover));
-	border: 1px solid var(--iv-border, var(--color-border));
+	border: 1px solid var(--iv-form-border, var(--iv-border));
 	border-radius: var(--iv-radius-md, 12px);
 	user-select: none;
 }
@@ -2773,7 +2777,7 @@ button.iv-hint-dismiss:focus-visible {
 #content.app-inventorycheck #app-content textarea.iv-input {
 	min-height: 44px;
 	border-radius: var(--iv-radius-sm, 6px);
-	border: 1px solid var(--color-border, var(--iv-border));
+	border: 1px solid var(--iv-form-border, var(--iv-border));
 	background: var(--color-main-background);
 	color: var(--color-main-text);
 	box-sizing: border-box;
@@ -3188,3 +3192,29 @@ textarea {
 	}
 }
 /* === app-feedback:iv end === */
+
+/*
+ * Control-border baseline (WCAG 1.4.11 >= 3:1 vs background) — DESIGN-SYSTEM §3.6.0.
+ * NC core styles every button/input with the faint `--color-border-dark`, and its
+ * `button:disabled` rule (0,2,1) outranks page-level `.button.secondary` (0,2,0),
+ * so disabled controls silently lose their frame. This rule only re-colours
+ * borders that are already drawn — borderless icon buttons are unaffected —
+ * and state classes keep their semantic borders.
+ */
+#app-content input:not([type='range'], [type='hidden'], [type='color'], [type='file'], [type='image'], [type='submit'], [type='button'], [type='reset'], .form-input--error, .form-input--success, .form-input--warning, .has-error, [aria-invalid='true'], .has-error *),
+#app-content select:not(.form-input--error, .form-input--success, .form-input--warning, [aria-invalid='true'], .has-error *),
+#app-content textarea:not(.form-input--error, .form-input--success, .form-input--warning, [aria-invalid='true'], .has-error *),
+#app-content button:not(.primary, .error, .warning, .success, .danger, .button-vue),
+#app-content .button:not(.primary, .error, .warning, .success, .danger),
+.oc-dialog input:not([type='range'], [type='hidden'], [type='color'], [type='file']),
+.oc-dialog select,
+.oc-dialog textarea,
+.oc-dialog button:not(.primary, .error, .warning, .success, .danger, .button-vue),
+.oc-dialog .button:not(.primary, .error, .warning, .success, .danger),
+.iv-dialog-overlay input:not([type='range'], [type='hidden'], [type='color'], [type='file'], [type='image'], [type='submit'], [type='button'], [type='reset'], .form-input--error, .form-input--success, .form-input--warning, [aria-invalid='true'], .has-error *),
+.iv-dialog-overlay select:not(.form-input--error, .form-input--success, .form-input--warning, [aria-invalid='true'], .has-error *),
+.iv-dialog-overlay textarea:not(.form-input--error, .form-input--success, .form-input--warning, [aria-invalid='true'], .has-error *),
+.iv-dialog-overlay button:not(.primary, .error, .warning, .success, .danger, .button-vue),
+.iv-dialog-overlay .button:not(.primary, .error, .warning, .success, .danger) {
+	border-color: var(--iv-form-border, var(--color-border-maxcontrast, var(--color-border)));
+}

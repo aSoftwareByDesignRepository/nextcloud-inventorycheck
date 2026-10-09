@@ -1,6 +1,9 @@
 // @ts-check
 import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
+import { execFileSync } from 'node:child_process'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { ensureLoggedIn, credsFromEnv, openInventory } from './helpers/auth.mjs'
 
 /** Force DutyCheck-style how-to cards visible (dismiss state is per-user localStorage). */
@@ -68,9 +71,117 @@ async function axeMain(page) {
 	expect(results.violations, JSON.stringify(results.violations, null, 2)).toEqual([])
 }
 
+const createdTags = []
+
 function marker() {
-	return `uj${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
+	const tag = `uj${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
+	createdTags.push(tag)
+	return tag
 }
+
+// tests/e2e → apps dir; docker compose resolves the project from parents
+// (same convention as sibling specs).
+const COMPOSE_CWD = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
+
+/**
+ * DB access for teardown only — assertions always go through the real API/UI.
+ * Items/locations that carry movements and stocktake campaigns have no delete
+ * route BY DESIGN (ledger immutability), so tag-scoped rows are swept here.
+ */
+function dbSql(sql) {
+	try {
+		return execFileSync('docker', [
+			'compose', 'exec', '-T', 'mariadb', 'mariadb',
+			'-u', 'nextcloud', '-pnextcloud_password', 'nextcloud', '-N', '-B', '-e', sql,
+		], { cwd: COMPOSE_CWD, encoding: 'utf8', timeout: 60_000 })
+	} catch (err) {
+		// eslint-disable-next-line no-console
+		console.error('uj teardown dbSql failed:', String(err).slice(0, 400))
+		return ''
+	}
+}
+
+/**
+ * Teardown for every uj* fixture this spec created. Honours the stocktake
+ * confirm contract first: campaigns found on our locations are started and
+ * closed through the real endpoints (abandonUncounted + acknowledgeConflicts)
+ * before the tag-scoped rows are deleted — an open/counting campaign is real
+ * app state that must not be orphaned or silently dropped.
+ */
+test.afterAll(async ({ browser }) => {
+	if (createdTags.length === 0) return
+	// `page`/`context` are test-scoped fixtures — afterAll must build its own
+	// context from the suite storageState (same path resolution as the config).
+	const specDir = dirname(fileURLToPath(import.meta.url))
+	const authFile = process.env.E2E_STORAGE_STATE
+		? resolve(specDir, '../..', process.env.E2E_STORAGE_STATE)
+		: resolve(specDir, '.auth/user.json')
+	let page = null
+	let context = null
+	try {
+		context = await browser.newContext({
+			baseURL: process.env.NC_BASE_URL || 'http://localhost:8081',
+			storageState: authFile,
+		})
+		page = await context.newPage()
+	} catch (err) {
+		// eslint-disable-next-line no-console
+		console.error('uj teardown: no browser context (storageState missing?), skipping API close:', String(err).slice(0, 200))
+	}
+	for (const tag of createdTags) {
+		const like = `%${tag}%`
+		// Campaigns live on our tag's locations; their lines snapshot every active
+		// item, so lines are removed both by campaign and by our item SKUs.
+		const campIds = dbSql(
+			`SELECT c.id FROM oc_iv_cc_camp c JOIN oc_iv_locations l ON c.location_id = l.id `
+			+ `WHERE l.code LIKE '${like}' OR l.name LIKE '${like}'`,
+		).split('\n').map((s) => s.trim()).filter(Boolean)
+		if (campIds.length > 0 && page) {
+			try {
+				await ensureLoggedIn(page)
+				await openInventory(page)
+				for (const id of campIds) {
+					const show = await api(page, 'GET', `/index.php/apps/inventorycheck/api/cycle-counts/${id}`)
+					const status = show.data?.status
+					if (status === 'open') {
+						await api(page, 'POST', `/index.php/apps/inventorycheck/api/cycle-counts/${id}/start`)
+					}
+					if (status === 'open' || status === 'counting') {
+						const closed = await api(page, 'POST', `/index.php/apps/inventorycheck/api/cycle-counts/${id}/close`, {
+							abandonUncounted: true,
+							acknowledgeConflicts: true,
+						})
+						if (closed.status !== 200) {
+							// eslint-disable-next-line no-console
+							console.error(`uj teardown: close campaign ${id} -> ${closed.status}`, JSON.stringify(closed.data).slice(0, 200))
+						}
+					}
+				}
+			} catch (err) {
+				// eslint-disable-next-line no-console
+				console.error('uj teardown: campaign close failed, sweeping rows anyway:', String(err).slice(0, 300))
+			}
+		}
+		dbSql(
+			`DELETE l FROM oc_iv_cc_line l JOIN oc_iv_items i ON l.item_id = i.id `
+			+ `WHERE i.sku LIKE '${like}' OR i.scan_code LIKE '${like}';`
+			+ `DELETE l FROM oc_iv_cc_line l JOIN oc_iv_cc_camp c ON l.campaign_id = c.id `
+			+ `JOIN oc_iv_locations o ON c.location_id = o.id WHERE o.code LIKE '${like}' OR o.name LIKE '${like}';`
+			+ `DELETE c FROM oc_iv_cc_camp c JOIN oc_iv_locations o ON c.location_id = o.id `
+			+ `WHERE o.code LIKE '${like}' OR o.name LIKE '${like}';`
+			+ `DELETE n FROM oc_iv_notif_log n JOIN oc_iv_items i ON n.item_id = i.id WHERE i.sku LIKE '${like}';`
+			+ `DELETE m FROM oc_iv_movements m JOIN oc_iv_items i ON m.item_id = i.id WHERE i.sku LIKE '${like}';`
+			+ `DELETE m FROM oc_iv_movements m JOIN oc_iv_locations o ON m.location_id = o.id OR m.counterparty_loc_id = o.id WHERE o.code LIKE '${like}';`
+			+ `DELETE b FROM oc_iv_balances b JOIN oc_iv_items i ON b.item_id = i.id WHERE i.sku LIKE '${like}';`
+			+ `DELETE b FROM oc_iv_balances b JOIN oc_iv_locations o ON b.location_id = o.id WHERE o.code LIKE '${like}';`
+			+ `DELETE f FROM oc_iv_loc_fav f JOIN oc_iv_locations o ON f.location_id = o.id WHERE o.code LIKE '${like}';`
+			+ `DELETE a FROM oc_iv_loc_acl a JOIN oc_iv_locations o ON a.location_id = o.id WHERE o.code LIKE '${like}';`
+			+ `DELETE FROM oc_iv_items WHERE sku LIKE '${like}' OR scan_code LIKE '${like}' OR name LIKE '${like}';`
+			+ `DELETE FROM oc_iv_locations WHERE code LIKE '${like}' OR name LIKE '${like}';`,
+		)
+	}
+	await context?.close().catch(() => {})
+})
 
 test('UJ-1 shell: dashboard loads with role-aware CTAs', async ({ page }) => {
 	test.skip(!credsFromEnv('ADMIN') && !credsFromEnv('E2E'), 'Requires NC_ADMIN_* or NC_E2E_*')

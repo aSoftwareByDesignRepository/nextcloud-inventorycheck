@@ -14,6 +14,20 @@ class TestCase extends PhpUnitTestCase
 	/** @var array<string, true>|null */
 	private ?array $ivPreExistingUids = null;
 
+	/**
+	 * Per-table MAX(id) watermark at setUp — rows with id above it at tearDown
+	 * are this test's own writes and get swept, child tables included. The
+	 * table list is UpgradeBackupCatalog::BACKUP_TABLES, the app's canonical
+	 * registry (a new table must be added there for backup coverage, so the
+	 * sweep can never silently miss a new child table).
+	 * Same shared-instance caveat as the uid sweep below: a concurrent lane
+	 * row written inside the test window is indistinguishable — farm lanes tag
+	 * users, not rows; the window is one test.
+	 *
+	 * @var array<string, int>|null
+	 */
+	private ?array $ivRowWatermark = null;
+
 	protected function setUp(): void
 	{
 		parent::setUp();
@@ -41,6 +55,21 @@ class TestCase extends PhpUnitTestCase
 			$uids[$user->getUID()] = true;
 		}
 		$this->ivPreExistingUids = $uids;
+
+		$db = \OC::$server->get(\OCP\IDBConnection::class);
+		$marks = [];
+		foreach (\OCA\InventoryCheck\Service\UpgradeBackupCatalog::BACKUP_TABLES as $table) {
+			if (!$db->tableExists($table)) {
+				continue;
+			}
+			$max = $db->getQueryBuilder()
+				->select($db->getQueryBuilder()->func()->max('id'))
+				->from($table)
+				->executeQuery()
+				->fetchOne();
+			$marks[$table] = (int)($max ?: 0);
+		}
+		$this->ivRowWatermark = $marks;
 	}
 
 	protected function tearDown(): void
@@ -69,10 +98,27 @@ class TestCase extends PhpUnitTestCase
 						}
 					}
 				}
+				if ($this->ivRowWatermark !== null) {
+					$db = \OC::$server->get(\OCP\IDBConnection::class);
+					foreach ($this->ivRowWatermark as $table => $maxId) {
+						try {
+							if (!$db->tableExists($table)) {
+								continue; // drop-table tests (uninstall/repair)
+							}
+							$qb = $db->getQueryBuilder();
+							$qb->delete($table)
+								->where($qb->expr()->gt('id', $qb->createNamedParameter($maxId, \PDO::PARAM_INT)));
+							$qb->executeStatement();
+						} catch (\Throwable) {
+							// best-effort: teardown must never fail the suite on cleanup
+						}
+					}
+				}
 			}
 		} finally {
 			$this->ivConfigSnapshot = null;
 			$this->ivPreExistingUids = null;
+			$this->ivRowWatermark = null;
 			parent::tearDown();
 		}
 	}

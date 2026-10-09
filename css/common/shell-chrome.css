@@ -97,7 +97,7 @@
 #content.app-inventorycheck #app-content .iv-section,
 #content.app-inventorycheck #app-content .iv-filter-panel {
 	background: var(--iv-bg-card, var(--color-main-background));
-	border: 1px solid var(--iv-border, var(--color-border));
+	border: 1px solid var(--iv-border, var(--iv-form-border));
 	border-radius: var(--iv-radius-md, 12px);
 	box-shadow: var(--iv-shadow-sm, 0 1px 2px color-mix(in srgb, var(--color-main-text) 8%, transparent));
 	box-sizing: border-box;
@@ -548,7 +548,7 @@
 .iv-app .btn--secondary {
 	background: var(--color-background-dark, var(--iv-bg-soft));
 	color: var(--iv-text);
-	border-color: var(--iv-border);
+	border-color: var(--iv-form-border);
 }
 .iv-btn--danger,
 .iv-app .btn--danger {

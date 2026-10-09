@@ -22,6 +22,7 @@ use OCP\IConfig;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserManager;
+use Psr\Log\LoggerInterface;
 
 /**
  * Access / office policy (P6). Unknown user/group ids → 422 so typos never
@@ -32,6 +33,8 @@ use OCP\IUserManager;
  */
 class ConfigController extends Controller
 {
+	use PolicyAuditTrait;
+
 	public function __construct(
 		IRequest $request,
 		private readonly AccessControlService $access,
@@ -41,6 +44,7 @@ class ConfigController extends Controller
 		private readonly QtyScaleService $qtyScaleService,
 		private readonly LocationAclService $locationAcl,
 		private readonly IConfig $config,
+		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(Application::APP_ID, $request);
 	}
@@ -97,6 +101,7 @@ class ConfigController extends Controller
 		$uid = $this->access->currentUserId();
 		$this->access->requireAppAdmin($uid);
 		$result = $this->qtyScaleService->enableFractional();
+		$this->auditPolicyChange($uid, 'qty_scale_fractional_enabled');
 		return new JSONResponse(array_merge($result, ['qtyScale' => QtyScale::current($this->config)]));
 	}
 
@@ -112,6 +117,12 @@ class ConfigController extends Controller
 		}
 		if (array_key_exists('requireLocationScan', $p)) {
 			LocationScanPolicy::setRequired($this->config, $this->parseBool($p['requireLocationScan'], 'requireLocationScan'));
+		}
+		if (array_key_exists('requireAdjustReason', $p) || array_key_exists('requireLocationScan', $p)) {
+			$this->auditPolicyChange($uid, 'wave_d_policy_saved', [
+				'requireAdjustReason' => ReasonCodes::isRequired($this->config),
+				'requireLocationScan' => LocationScanPolicy::isRequired($this->config),
+			]);
 		}
 		return $this->index();
 	}
@@ -188,6 +199,14 @@ class ConfigController extends Controller
 			$this->locationAcl->setEnabled($enabled);
 		}
 
+		if ($assignments !== null || $subjectId !== null || $devicesStrict !== null || $enabled !== null) {
+			$this->auditPolicyChange($uid, 'location_acl_saved', [
+				'enabled' => $enabled,
+				'devicesStrict' => $devicesStrict,
+				'bulkAssignments' => $assignments !== null ? count($assignments) : null,
+				'subject' => $subjectId !== null && $subjectId !== '' ? $subjectType . ':' . $subjectId : null,
+			]);
+		}
 		return $this->locationAcl();
 	}
 
@@ -241,6 +260,14 @@ class ConfigController extends Controller
 			$this->access->setJsonIdList(AccessControlService::KEY_APP_ADMINS, $appAdmins);
 		}
 
+		if ($restriction !== null || $allowedUsers !== null || $allowedGroups !== null || $appAdmins !== null) {
+			$this->auditPolicyChange($uid, 'access_policy_saved', [
+				'accessRestrictionEnabled' => $restriction,
+				'allowedUsers' => $allowedUsers !== null ? count($allowedUsers) : null,
+				'allowedGroups' => $allowedGroups !== null ? count($allowedGroups) : null,
+				'appAdmins' => $appAdmins !== null ? count($appAdmins) : null,
+			]);
+		}
 		return $this->index();
 	}
 
@@ -271,6 +298,13 @@ class ConfigController extends Controller
 			$this->access->setAllowNegativeStock($allowNegative);
 		}
 
+		if ($officeUsers !== null || $officeGroups !== null || $allowNegative !== null) {
+			$this->auditPolicyChange($uid, 'office_policy_saved', [
+				'officeUsers' => $officeUsers !== null ? count($officeUsers) : null,
+				'officeGroups' => $officeGroups !== null ? count($officeGroups) : null,
+				'allowNegativeStock' => $allowNegative,
+			]);
+		}
 		return $this->index();
 	}
 
@@ -306,6 +340,13 @@ class ConfigController extends Controller
 			$this->lowStock->setPerLocationHintEnabled($reorderHint);
 		}
 
+		if ($notifyUsers !== null || $notifyGroups !== null || $reorderHint !== null) {
+			$this->auditPolicyChange($uid, 'notify_policy_saved', [
+				'notifyUsers' => $notifyUsers !== null ? count($notifyUsers) : null,
+				'notifyGroups' => $notifyGroups !== null ? count($notifyGroups) : null,
+				'locationReorderHintEnabled' => $reorderHint,
+			]);
+		}
 		return $this->index();
 	}
 

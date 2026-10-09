@@ -62,6 +62,7 @@ final class ConfigDirectoryValidationTest extends TestCase
 			$this->qtyScaleService,
 			$this->locationAcl,
 			$this->config,
+			$this->createMock(\Psr\Log\LoggerInterface::class),
 		);
 	}
 

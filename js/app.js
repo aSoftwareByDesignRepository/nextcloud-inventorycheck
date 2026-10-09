@@ -1467,7 +1467,14 @@
 					});
 				},
 			});
+			// Explicit Cancel beside every confirm — the header × alone is not a
+			// discoverable way out for novices (destructive-confirm bar), and
+			// close() restores focus to the captured trigger.
+			var cancelBtn = btn(tr('Cancel'), {
+				onclick: function () { close(); },
+			});
 			dialogEl.appendChild(el('div', { className: 'iv-dialog__actions' }, [
+				cancelBtn,
 				confirmBtn,
 			]));
 		}

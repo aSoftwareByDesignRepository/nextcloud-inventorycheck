@@ -124,6 +124,7 @@ final class ConfigIdValidationIntegrationTest extends TestCase
 			Server::get(QtyScaleService::class),
 			Server::get(LocationAclService::class),
 			Server::get(IConfig::class),
+			Server::get(\Psr\Log\LoggerInterface::class),
 		);
 	}
 
