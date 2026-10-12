@@ -114,10 +114,10 @@ final class UninstallDropTables implements IRepairStep
 
 		$this->config->deleteAppValues(self::APP_ID);
 
-		$this->purgeAppData($output);
+		$this->purgeUpgradeBackupSnapshots($output);
 
 		$output->info(sprintf(
-			'inventorycheck: dropped %d of %d table(s); removed %d migration row(s), app config, and app data.',
+			'inventorycheck: dropped %d of %d table(s); removed %d migration row(s), app config, and upgrade-backup snapshots.',
 			$dropped,
 			count(self::TABLES),
 			$migrationsRemoved,
@@ -148,18 +148,16 @@ final class UninstallDropTables implements IRepairStep
 	}
 
 	/**
-	 * The appdata dir holds user content (item_photos blobs) and pre-update
-	 * JSON snapshots — both must go on explicit app removal or the blobs are
-	 * orphaned forever.
+	 * Pre-update JSON snapshots contain full table exports — remove on explicit app removal.
 	 */
-	private function purgeAppData(IOutput $output): void
+	private function purgeUpgradeBackupSnapshots(IOutput $output): void
 	{
 		$instanceId = (string)$this->config->getSystemValue('instanceid', '');
 		if ($instanceId === '') {
 			return;
 		}
 
-		$path = 'appdata_' . $instanceId . '/' . self::APP_ID;
+		$path = 'appdata_' . $instanceId . '/' . self::APP_ID . '/upgrade-backups';
 		try {
 			$node = $this->rootFolder->get($path);
 		} catch (NotFoundException) {
@@ -171,6 +169,6 @@ final class UninstallDropTables implements IRepairStep
 		}
 
 		$node->delete();
-		$output->info('inventorycheck: removed app data directory (item photos, upgrade backups).');
+		$output->info('inventorycheck: removed upgrade-backup snapshots from app data.');
 	}
 }
