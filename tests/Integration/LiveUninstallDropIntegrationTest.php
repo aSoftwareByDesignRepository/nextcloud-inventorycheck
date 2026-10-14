@@ -48,15 +48,15 @@ final class LiveUninstallDropIntegrationTest extends TestCase
 		}
 
 		try {
-			// Stub the root folder: the real container instance would run
-			// purgeAppData() against the live appdata dir and permanently
-			// delete it on every suite run (CRIT-05). The stub still proves
-			// the drop path resolves appdata_<id>/<app> and calls delete().
+			// Stub the root folder: the real container instance would delete
+			// the live upgrade-backups dir on every suite run (CRIT-05). The
+			// stub still proves the drop path resolves
+			// appdata_<id>/<app>/upgrade-backups and calls delete().
 			$appDataDir = $this->createMock(Folder::class);
 			$appDataDir->expects($this->once())->method('delete');
 			$rootFolder = $this->createMock(IRootFolder::class);
 			$rootFolder->method('get')
-				->with('appdata_' . $config->getSystemValue('instanceid', '') . '/' . $appId)
+				->with('appdata_' . $config->getSystemValue('instanceid', '') . '/' . $appId . '/upgrade-backups')
 				->willReturn($appDataDir);
 			$step = new UninstallDropTables($db, $config, $rootFolder);
 			// Access the private test-only path without ReflectionMethod::setAccessible()

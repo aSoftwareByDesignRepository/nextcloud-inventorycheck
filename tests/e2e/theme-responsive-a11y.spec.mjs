@@ -21,6 +21,7 @@ const a11yRoutes = [
 	{ path: '/apps/inventorycheck/movements', ready: '#iv-page-title, .iv-filter-panel, .iv-filterbar, .iv-empty', creds: 'E2E' },
 	{ path: '/apps/inventorycheck/stocktake', ready: '#iv-page-title, .iv-section, .iv-empty, .iv-row', creds: 'E2E' },
 	{ path: '/apps/inventorycheck/settings/access', ready: '#iv-page-title, #iv-access-title, .iv-section', creds: 'ADMIN' },
+	{ path: '/apps/inventorycheck/settings/product-lookup', ready: '#iv-page-title, #iv-product-lookup-title, .iv-section', creds: 'ADMIN' },
 ]
 
 const viewports = [

@@ -11,6 +11,7 @@ use OCA\InventoryCheck\Middleware\AppAccessMiddleware;
 use OCA\InventoryCheck\Service\AccessControlService;
 use OCA\InventoryCheck\Service\LocationAclService;
 use OCA\InventoryCheck\Service\LowStockService;
+use OCA\InventoryCheck\Service\ProductLookupService;
 use OCA\InventoryCheck\Service\QtyScaleService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -123,6 +124,7 @@ final class ConfigIdValidationIntegrationTest extends TestCase
 			Server::get(LowStockService::class),
 			Server::get(QtyScaleService::class),
 			Server::get(LocationAclService::class),
+			Server::get(ProductLookupService::class),
 			Server::get(IConfig::class),
 			Server::get(\Psr\Log\LoggerInterface::class),
 		);

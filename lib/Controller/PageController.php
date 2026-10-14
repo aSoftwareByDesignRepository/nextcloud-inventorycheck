@@ -10,6 +10,7 @@ use OCA\InventoryCheck\Service\LicenseService;
 use OCA\InventoryCheck\Service\LocationAclService;
 use OCA\InventoryCheck\Service\LocationScanPolicy;
 use OCA\InventoryCheck\Service\LowStockService;
+use OCA\InventoryCheck\Service\ProductLookupService;
 use OCA\InventoryCheck\Service\QtyScale;
 use OCA\InventoryCheck\Service\ReasonCodes;
 use OCA\InventoryCheck\Service\SettingsSectionCatalog;
@@ -37,6 +38,7 @@ class PageController extends Controller
 		private readonly IFactory $l10nFactory,
 		private readonly IConfig $config,
 		private readonly SettingsSectionCatalog $settingsSections,
+		private readonly ProductLookupService $productLookup,
 	) {
 		parent::__construct(Application::APP_ID, $request);
 	}
@@ -197,6 +199,7 @@ class PageController extends Controller
 	): TemplateResponse {
 		Util::addScript(Application::APP_ID, 'app');
 		Util::addScript(Application::APP_ID, 'common/app-feedback');
+		Util::addScript(Application::APP_ID, 'common/product-lookup');
 		// Soft keyboard: keep focused notes/inputs above the IME on phones.
 		Util::addScript(Application::APP_ID, 'common/keep-focused-visible');
 
@@ -270,6 +273,8 @@ class PageController extends Controller
 				'configWaveD' => $this->urlGenerator->linkToRoute('inventorycheck.config.saveWaveD'),
 				'reasonCodes' => $this->urlGenerator->linkToRoute('inventorycheck.config.reasonCodes'),
 				'configLocationAcl' => $this->urlGenerator->linkToRoute('inventorycheck.config.locationAcl'),
+				'configProductLookup' => $this->urlGenerator->linkToRoute('inventorycheck.config.saveProductLookup'),
+				'productLookup' => $this->urlGenerator->linkToRoute('inventorycheck.productLookup.lookup'),
 				'locationLabel' => $this->urlGenerator->linkToRoute('inventorycheck.location.label', ['id' => 0]),
 				'locationLabelPrint' => $this->urlGenerator->linkToRoute('inventorycheck.location.labelPrint', ['id' => 0]),
 				'locationBulkLabels' => $this->urlGenerator->linkToRoute('inventorycheck.location.bulkLabels'),
@@ -305,6 +310,8 @@ class PageController extends Controller
 			// Always expose section labels so the Settings submenu is populated from every page
 			// (not only when already on a settings sub-page).
 			'settingsSectionLabels' => $settingsSectionLabels,
+			'productLookupEnabled' => $this->productLookup->isEnabled(),
+			'productLookupAutofire' => $this->productLookup->isAutofire(),
 			'allowNegativeStock' => $this->access->allowNegativeStock(),
 			'locationReorderHintEnabled' => $this->config->getAppValue(
 				Application::APP_ID,

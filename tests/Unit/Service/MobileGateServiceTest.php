@@ -14,6 +14,7 @@ use OCA\InventoryCheck\Service\Clock;
 use OCA\InventoryCheck\Service\LicenseService;
 use OCA\InventoryCheck\Service\LocationAclService;
 use OCA\InventoryCheck\Service\MobileGateService;
+use OCA\InventoryCheck\Service\ProductLookupService;
 use OCP\IConfig;
 use PHPUnit\Framework\TestCase;
 
@@ -24,6 +25,7 @@ final class MobileGateServiceTest extends TestCase
 	private Clock $clock;
 	private IConfig $config;
 	private LocationAclService $locationAcl;
+	private ProductLookupService $productLookup;
 	private MobileGateService $gate;
 
 	protected function setUp(): void
@@ -40,12 +42,14 @@ final class MobileGateServiceTest extends TestCase
 		$this->locationAcl->method('visibleLocationIds')->willReturn(null);
 		$this->locationAcl->method('isEnabled')->willReturn(false);
 		$this->locationAcl->method('isDevicesStrict')->willReturn(false);
+		$this->productLookup = $this->createMock(ProductLookupService::class);
 		$this->gate = new MobileGateService(
 			$this->license,
 			$this->access,
 			$this->clock,
 			$this->config,
 			$this->locationAcl,
+			$this->productLookup,
 		);
 	}
 
@@ -148,6 +152,7 @@ final class MobileGateServiceTest extends TestCase
 			$this->clock,
 			$this->config,
 			$acl,
+			$this->productLookup,
 		);
 		$boot = $gate->bootstrap(null, $device);
 		$this->assertTrue($boot['devicePaired']);
@@ -175,6 +180,7 @@ final class MobileGateServiceTest extends TestCase
 			$this->clock,
 			$this->config,
 			$acl,
+			$this->productLookup,
 		);
 		$boot = $gate->bootstrap(null, $device);
 		$this->assertSame([], $boot['deviceLocationIds']);
@@ -199,6 +205,7 @@ final class MobileGateServiceTest extends TestCase
 			$this->clock,
 			$this->config,
 			$acl,
+			$this->productLookup,
 		);
 		$boot = $gate->bootstrap(null, $device);
 		$this->assertTrue($boot['locationAclDevicesStrict']);

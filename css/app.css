@@ -3217,3 +3217,66 @@ textarea {
 .iv-dialog-overlay .button:not(.primary, .error, .warning, .success, .danger) {
 	border-color: var(--iv-form-border, var(--color-border-maxcontrast, var(--color-border)));
 }
+
+/* Online product lookup panel (item dialog) */
+.iv-lookup {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	margin: -4px 0 14px;
+	padding: var(--iv-space-2, 8px) var(--iv-space-3, 12px);
+	border: 1px solid var(--iv-border, var(--color-border));
+	border-radius: var(--border-radius-large, 10px);
+	background: var(--color-background-hover, transparent);
+}
+
+.iv-lookup__status {
+	margin: 0;
+	font-size: 13px;
+}
+
+.iv-lookup__brand {
+	margin: 0;
+	font-size: 13px;
+	color: var(--iv-muted, var(--color-text-maxcontrast));
+}
+
+.iv-lookup__brand[hidden] {
+	display: none;
+}
+
+.iv-lookup__source {
+	margin: 0;
+	font-size: 12.5px;
+}
+
+.iv-lookup__actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--iv-space-2, 8px);
+}
+
+.iv-lookup__web {
+	display: inline-flex;
+	align-items: center;
+	min-height: var(--iv-touch, 44px);
+}
+
+/* Settings: grouped provider checkboxes (product lookup) */
+.iv-fieldset {
+	border: 1px solid var(--iv-border, var(--color-border));
+	border-radius: var(--border-radius-large, 10px);
+	margin: 0 0 var(--iv-space-2, 8px);
+	padding: var(--iv-space-2, 8px) var(--iv-space-3, 12px) var(--iv-space-1, 4px);
+}
+
+.iv-fieldset__legend {
+	padding: 0 var(--iv-space-1, 4px);
+	font-weight: 600;
+	font-size: 14px;
+}
+
+.iv-checkbox__label {
+	line-height: 1.4;
+}

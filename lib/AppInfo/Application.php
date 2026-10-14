@@ -42,9 +42,12 @@ use OCA\InventoryCheck\Service\LicenseService;
 use OCA\InventoryCheck\Service\LocationAclService;
 use OCA\InventoryCheck\Service\LocationFavouriteService;
 use OCA\InventoryCheck\Service\LocationService;
+use OCA\InventoryCheck\Service\Lookup\OpenFactsProvider;
+use OCA\InventoryCheck\Service\Lookup\UpcItemDbProvider;
 use OCA\InventoryCheck\Service\LowStockNotifyService;
 use OCA\InventoryCheck\Service\LowStockService;
 use OCA\InventoryCheck\Service\MobileGateService;
+use OCA\InventoryCheck\Service\ProductLookupService;
 use OCA\InventoryCheck\Service\MovementService;
 use OCA\InventoryCheck\Service\ScanIdempotencyService;
 use OCA\InventoryCheck\Service\QtyScaleService;
@@ -283,6 +286,23 @@ class Application extends App implements IBootstrap
 				$c->get(Clock::class),
 				$c->get(IConfig::class),
 				$c->get(LocationAclService::class),
+				$c->get(ProductLookupService::class),
+			);
+		});
+		$context->registerService(ProductLookupService::class, static function ($c): ProductLookupService {
+			$http = $c->get(\OCP\Http\Client\IClientService::class);
+			return new ProductLookupService(
+				[
+					new OpenFactsProvider($http, 'openfoodfacts', 'https://world.openfoodfacts.org', 'Open Food Facts'),
+					new OpenFactsProvider($http, 'openbeautyfacts', 'https://world.openbeautyfacts.org', 'Open Beauty Facts'),
+					new OpenFactsProvider($http, 'openpetfoodfacts', 'https://world.openpetfoodfacts.org', 'Open Pet Food Facts'),
+					new OpenFactsProvider($http, 'openproductsfacts', 'https://world.openproductsfacts.org', 'Open Products Facts'),
+					new UpcItemDbProvider($http),
+				],
+				$c->get(\OCP\ICacheFactory::class),
+				$c->get(IConfig::class),
+				$c->get(IDBConnection::class),
+				$c->get(\Psr\Log\LoggerInterface::class),
 			);
 		});
 

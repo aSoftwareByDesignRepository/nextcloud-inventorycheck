@@ -23,6 +23,7 @@
 		'iv-flange-maint': 'connections',
 		'iv-flange-project': 'connections',
 		'iv-flange-default-loc': 'connections',
+		'iv-product-lookup': 'product-lookup',
 		'iv-require-adjust-reason': 'policies',
 		'iv-require-location-scan': 'policies',
 		'iv-license': 'license',

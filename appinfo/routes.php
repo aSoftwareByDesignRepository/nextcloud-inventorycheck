@@ -16,7 +16,7 @@ return [
 		['name' => 'page#settings', 'url' => '/settings', 'verb' => 'GET'],
 		// {section} allowlist pinned to SettingsSectionCatalog::routeRequirement() by SettingsPagesContractTest.
 		['name' => 'page#settingsSection', 'url' => '/settings/{section}', 'verb' => 'GET',
-			'requirements' => ['section' => 'access|office|notifications|quantities|location-access|connections|policies|license|support']],
+			'requirements' => ['section' => 'access|office|notifications|quantities|location-access|connections|product-lookup|policies|license|support']],
 
 		['name' => 'location#index', 'url' => '/api/locations', 'verb' => 'GET'],
 		['name' => 'location#byCode', 'url' => '/api/locations/by-code/{code}', 'verb' => 'GET', 'requirements' => ['code' => '[^/]+']],
@@ -39,6 +39,8 @@ return [
 		['name' => 'item#create', 'url' => '/api/items', 'verb' => 'POST'],
 		['name' => 'item#update', 'url' => '/api/items/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\\d+']],
 		['name' => 'item#destroy', 'url' => '/api/items/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\\d+']],
+
+		['name' => 'productLookup#lookup', 'url' => '/api/product-lookup', 'verb' => 'POST'],
 
 		['name' => 'itemPhoto#show', 'url' => '/api/items/{id}/photo', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
 		['name' => 'itemPhoto#upload', 'url' => '/api/items/{id}/photo', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
@@ -86,6 +88,7 @@ return [
 		['name' => 'config#reasonCodes', 'url' => '/api/reason-codes', 'verb' => 'GET'],
 		['name' => 'config#locationAcl', 'url' => '/api/config/location-acl', 'verb' => 'GET'],
 		['name' => 'config#saveLocationAcl', 'url' => '/api/config/location-acl', 'verb' => 'PUT'],
+		['name' => 'config#saveProductLookup', 'url' => '/api/config/product-lookup', 'verb' => 'POST'],
 
 		['name' => 'directory#searchUsers', 'url' => '/api/directory/users', 'verb' => 'GET'],
 		['name' => 'directory#searchGroups', 'url' => '/api/directory/groups', 'verb' => 'GET'],
@@ -116,5 +119,6 @@ return [
 		['name' => 'mobile#cycleCounts', 'url' => '/mobile/v1/cycle-counts', 'verb' => 'GET'],
 		['name' => 'mobile#cycleCountShow', 'url' => '/mobile/v1/cycle-counts/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
 		['name' => 'mobile#cycleCountSetCount', 'url' => '/mobile/v1/cycle-counts/lines/{lineId}', 'verb' => 'PUT', 'requirements' => ['lineId' => '\\d+']],
+		['name' => 'mobile#productLookup', 'url' => '/mobile/v1/product-lookup', 'verb' => 'POST'],
 	],
 ];

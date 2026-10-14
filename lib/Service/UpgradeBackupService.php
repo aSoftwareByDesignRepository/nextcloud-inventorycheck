@@ -33,12 +33,6 @@ class UpgradeBackupService
 {
 	private const LOCK_KEY = 'inventorycheck-upgrade-backup';
 
-	/**
-	 * JSON snapshots are for typical installs. Warehouse-scale tables must use a
-	 * DB dump — loading millions of rows into PHP OOMs mid-upgrade.
-	 */
-	public const MAX_TABLE_ROWS = 200_000;
-
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly IConfig $config,
@@ -172,7 +166,6 @@ class UpgradeBackupService
 			try {
 				$snapshots[] = $this->readManifest($this->getSnapshotFolder($snapshotId), $snapshotId);
 			} catch (\Throwable $e) {
-				// best-effort: one corrupt folder must not break the snapshot listing
 				$this->logger->warning('InventoryCheck: skipping unreadable upgrade backup folder', [
 					'app' => UpgradeBackupCatalog::APP_ID,
 					'folder' => $snapshotId,
@@ -244,8 +237,10 @@ class UpgradeBackupService
 				$this->db->executeStatement('ALTER SESSION SET CONSTRAINTS = DEFERRED');
 				$oracleConstraintsDeferred = true;
 			} catch (\Throwable $e) {
-				// best-effort: sortedRestoreTables() orders clears/restores to satisfy FK
-				// constraints, so proceeding without DEFERRED is the designed fallback.
+				// best-effort: deferred constraints are an optimization; when the
+				// ALTER SESSION fails the FK-safe table order from
+				// UpgradeBackupCatalog::sortedRestoreTables still keeps the
+				// restore consistent, so warn and continue.
 				$this->logger->warning('InventoryCheck: Oracle constraints could not be deferred for restore; relying on restore table order.', [
 					'exception' => $e,
 				]);
@@ -469,28 +464,10 @@ class UpgradeBackupService
 			throw new UpgradeBackupException('Refusing to export unknown table: ' . $table);
 		}
 
-		$countQb = $this->db->getQueryBuilder();
-		$countQb->select($countQb->func()->count('*', 'cnt'))->from($table);
-		$countRes = $countQb->executeQuery();
-		$rowCount = (int)($countRes->fetchOne() ?: 0);
-		$countRes->closeCursor();
-		if ($rowCount > self::MAX_TABLE_ROWS) {
-			throw new UpgradeBackupException(sprintf(
-				'Table %s has %d rows; exceeds backup row limit of %d. Use a database-level dump for large instances.',
-				$table,
-				$rowCount,
-				self::MAX_TABLE_ROWS,
-			));
-		}
-
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')->from($table);
 		$result = $qb->executeQuery();
-		// Stream row-by-row — never PDO::fetchAll on warehouse-scale tables.
-		$rows = [];
-		while (($row = $result->fetch()) !== false) {
-			$rows[] = $row;
-		}
+		$rows = $result->fetchAll();
 		$result->closeCursor();
 
 		return $rows;
@@ -831,7 +808,10 @@ class UpgradeBackupService
 					$folder->delete();
 				}
 			} catch (\Throwable $e) {
-				// best-effort: unreadable manifest counts as corrupt → delete and move on
+				// best-effort per snapshot: a corrupt/unreadable manifest or a
+				// failed ->delete() must not abort the purge sweep; the folder is
+				// still removed through the fallback path below so the corrupt
+				// snapshot cannot poison later listSnapshots() runs.
 				$this->logger->warning('InventoryCheck: removing corrupt upgrade backup folder', [
 					'app' => UpgradeBackupCatalog::APP_ID,
 					'folder' => $snapshotId,

@@ -157,6 +157,12 @@
       "get": { "responses": { "200": { "description": "OK" } } },
       "put": { "responses": { "200": { "description": "OK" } } }
     },
+    "/api/config/product-lookup": {
+      "post": { "responses": { "200": { "description": "OK" } } }
+    },
+    "/api/product-lookup": {
+      "post": { "responses": { "200": { "description": "OK" } } }
+    },
 
     "/api/directory/users": {
       "get": { "responses": { "200": { "description": "OK" } } }
@@ -230,6 +236,9 @@
     },
     "/mobile/v1/cycle-counts/lines/{lineId}": {
       "put": { "responses": { "200": { "description": "OK" } } }
+    },
+    "/mobile/v1/product-lookup": {
+      "post": { "responses": { "200": { "description": "OK" } } }
     }
   },
   "components": {

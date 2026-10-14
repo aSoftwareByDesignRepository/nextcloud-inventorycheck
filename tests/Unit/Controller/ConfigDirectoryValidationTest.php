@@ -61,6 +61,7 @@ final class ConfigDirectoryValidationTest extends TestCase
 			$this->lowStock,
 			$this->qtyScaleService,
 			$this->locationAcl,
+			$this->createMock(\OCA\InventoryCheck\Service\ProductLookupService::class),
 			$this->config,
 			$this->createMock(\Psr\Log\LoggerInterface::class),
 		);

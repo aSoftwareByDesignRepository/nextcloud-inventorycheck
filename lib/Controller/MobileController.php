@@ -17,8 +17,10 @@ use OCA\InventoryCheck\Service\ItemService;
 use OCA\InventoryCheck\Service\LicenseService;
 use OCA\InventoryCheck\Service\LocationFavouriteService;
 use OCA\InventoryCheck\Service\LocationService;
+use OCA\InventoryCheck\Service\Lookup\LookupException;
 use OCA\InventoryCheck\Service\MobileGateService;
 use OCA\InventoryCheck\Service\MovementService;
+use OCA\InventoryCheck\Service\ProductLookupService;
 use OCA\InventoryCheck\Service\ScanIdempotencyService;
 use OCA\InventoryCheck\Service\Pagination;
 use OCA\InventoryCheck\Service\QtyScale;
@@ -29,6 +31,7 @@ use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\DataDisplayResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IConfig;
+use OCP\IL10N;
 use OCP\IRequest;
 use OCP\ISession;
 use OCP\IUserSession;
@@ -61,9 +64,11 @@ class MobileController extends Controller
 		private readonly CycleCountService $cycles,
 		private readonly ItemPhotoService $photos,
 		private readonly ScanIdempotencyService $scanIdempotency,
+		private readonly ProductLookupService $productLookup,
 		private readonly IUserSession $userSession,
 		private readonly ISession $session,
 		private readonly IConfig $config,
+		private readonly IL10N $l10n,
 	) {
 		parent::__construct(Application::APP_ID, $request);
 	}
@@ -400,6 +405,41 @@ class MobileController extends Controller
 			$formatted['blind'] = true;
 		}
 		return new JSONResponse($formatted);
+	}
+
+	/**
+	 * Companion product lookup: identify an unknown barcode for a field user.
+	 * Read-only — no item is created. Same gate as every companion route
+	 * (seat or device token) plus the admin feature toggle.
+	 */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[NoAdminRequired]
+	public function productLookup(): JSONResponse
+	{
+		$this->assertSafeMutationChannel();
+		[$uid, $device] = $this->resolveCaller(true);
+		$this->gate->assertGate($uid, $device);
+		$barcode = $this->request->getParam('barcode', '');
+		try {
+			if (!is_string($barcode)) {
+				throw new LookupException('invalid_barcode', 'invalid', 422);
+			}
+			return new JSONResponse(
+				$this->productLookup->lookup($barcode, $this->actorUid($uid, $device)),
+			);
+		} catch (LookupException $e) {
+			$message = match ($e->errorCode) {
+				'invalid_barcode' => $this->l10n->t('Enter a valid EAN or UPC barcode (8, 12, 13 or 14 digits).'),
+				'rate_limited' => $this->l10n->t('Please wait a few seconds before searching again.'),
+				'feature_disabled' => $this->l10n->t('Online product lookup is disabled.'),
+				default => $this->l10n->t('Online product lookup is unavailable right now. Enter the item manually or try the web search link.'),
+			};
+			return new JSONResponse(
+				['error' => ['code' => $e->errorCode, 'message' => $message, 'details' => []]],
+				$e->status,
+			);
+		}
 	}
 
 	/**

@@ -1059,6 +1059,31 @@
 				],
 			});
 		}
+		if (page === 'settings-product-lookup') {
+			return howToCard(ctx, {
+				id: 'iv-howto-settings-product-lookup',
+				hintKey: 'settings_product_lookup_howto_v1',
+				title: tr('How online product lookup works'),
+				lead: tr('Optional. Free product databases can name an unknown barcode for you.'),
+				steps: [
+					{
+						key: 'enable',
+						title: tr('1. Turn lookup on'),
+						body: tr('Only the barcode leaves your server — never names, stock, or users.'),
+					},
+					{
+						key: 'scan',
+						title: tr('2. Create an item and scan the barcode'),
+						body: tr('Name, description, and an empty SKU fill in — everything else stays yours.'),
+					},
+					{
+						key: 'review',
+						title: tr('3. Review and save'),
+						body: tr('Suggestions never save by themselves. Not found? Enter the details manually as before.'),
+					},
+				],
+			});
+		}
 		if (page === 'settings-license') {
 			return howToCard(ctx, {
 				id: 'iv-howto-settings-license',
@@ -1228,6 +1253,8 @@
 			locationReorderHintEnabled: root.getAttribute('data-iv-location-reorder-hint') === '1',
 			requireAdjustReason: root.getAttribute('data-iv-require-adjust-reason') === '1',
 			requireLocationScan: root.getAttribute('data-iv-require-location-scan') === '1',
+			productLookupEnabled: root.getAttribute('data-iv-product-lookup') === '1',
+			productLookupAutofire: root.getAttribute('data-iv-product-lookup-autofire') === '1',
 			qtyScale: Number(root.getAttribute('data-iv-qty-scale') || '0') || 0,
 			urls: urls,
 			mount: $('#iv-page-root'),
@@ -3002,10 +3029,36 @@
 		load();
 	}
 
+	/**
+	 * Online product lookup (admin opt-in). Logic lives in
+	 * js/common/product-lookup.js — upstream text is untrusted and is only
+	 * ever assigned via .value / textContent, never innerHTML.
+	 */
+	function productLookupPanel(ctx, f) {
+		var mod = typeof window !== 'undefined' ? window.InventoryCheckProductLookup : null;
+		if (!mod || typeof mod.createPanel !== 'function') {
+			return null;
+		}
+		return mod.createPanel({
+			tr: tr,
+			el: el,
+			btn: btn,
+			clear: clear,
+			api: api,
+			lookupUrl: ctx.urls.api.productLookup,
+			autofire: ctx.productLookupAutofire === true,
+			fields: f,
+		});
+	}
+
 	function openItemDialog(ctx, existing) {
 		var sku = el('input', { type: 'text', className: 'iv-input', maxlength: '64', value: existing ? existing.sku : '', required: '' });
 		var scan = el('input', { type: 'text', className: 'iv-input', maxlength: '128', value: existing ? existing.scanCode : '' });
 		var name = el('input', { type: 'text', className: 'iv-input', maxlength: '255', value: existing ? existing.name : '', required: '' });
+		var description = el('textarea', {
+			className: 'iv-input', rows: '3', maxlength: '10000',
+		});
+		description.value = existing && existing.description ? existing.description : '';
 		var uom = el('input', { type: 'text', className: 'iv-input', maxlength: '32', value: existing ? existing.uom : 'pcs' });
 		var reorder = el('input', qtyInputAttrs(ctx, {
 			adjust: true,
@@ -3049,6 +3102,12 @@
 		];
 		var moreKids = [
 			field(tr('Scan code (optional)'), scan, { name: 'scanCode' }),
+			// Mirror the API's requireOffice gate: field users must never see
+			// a lookup affordance that can only 403 on them.
+			ctx.productLookupEnabled && ctx.isOffice
+				? productLookupPanel(ctx, { scan: scan, sku: sku, name: name, description: description })
+				: null,
+			field(tr('Description (optional)'), description, { name: 'description' }),
 			field(tr('Unit'), uom, { name: 'uom' }),
 			field(tr('Reorder level'), reorder, { name: 'reorderLevel' }),
 			field(tr('Target stock (optional)'), targetStock, { name: 'targetStock' }),
@@ -3083,6 +3142,7 @@
 				trackMode: trackMode.value,
 				supplierNote: supplierNote.value.trim() || null,
 				lastPriceMinor: lastPrice.value.trim() === '' ? null : Number(lastPrice.value),
+				description: description.value.trim() || null,
 			};
 			if (existing) {
 				return api('PUT', entityUrl(ctx.urls.api.items, existing.id), body).then(function () {
@@ -5242,6 +5302,144 @@
 						},
 					})),
 				])));
+			}
+
+			if (section === 'product-lookup') {
+				var lookupToggle = el('input', {
+					type: 'checkbox',
+					className: 'iv-switch__input',
+					id: 'iv-product-lookup',
+					checked: cfg.productLookupEnabled ? '' : null,
+				});
+				var lookupAutofireToggle = el('input', {
+					type: 'checkbox',
+					className: 'iv-switch__input',
+					id: 'iv-product-lookup-autofire',
+					checked: cfg.productLookupAutofire ? '' : null,
+				});
+				var providerIds = Array.isArray(cfg.productLookupProviders) ? cfg.productLookupProviders : [];
+				var enabledProviders = Array.isArray(cfg.productLookupEnabledProviders)
+					? cfg.productLookupEnabledProviders
+					: providerIds;
+				var providerNames = {
+					openfoodfacts: 'Open Food Facts',
+					openbeautyfacts: 'Open Beauty Facts',
+					openpetfoodfacts: 'Open Pet Food Facts',
+					openproductsfacts: 'Open Products Facts',
+					upcitemdb: 'UPCitemdb',
+				};
+				// Server-supplied labels win when present (non-admins get []).
+				(Array.isArray(cfg.productLookupAvailable) ? cfg.productLookupAvailable : [])
+					.forEach(function (p) {
+						if (p && p.id) {
+							providerNames[p.id] = p.label || p.id;
+						}
+					});
+				var providerBoxes = providerIds.map(function (pid) {
+					var box = el('input', {
+						type: 'checkbox',
+						className: 'iv-checkbox__input',
+						id: 'iv-product-lookup-provider-' + pid,
+						'data-provider-id': pid,
+						checked: enabledProviders.indexOf(pid) !== -1 ? '' : null,
+					});
+					return box;
+				});
+				var providerKids = providerBoxes.map(function (box, i) {
+					var pid = providerIds[i];
+					return el('label', {
+						className: 'iv-checkbox',
+						for: 'iv-product-lookup-provider-' + pid,
+					}, [
+						box,
+						el('span', { className: 'iv-checkbox__label', text: providerNames[pid] || pid }),
+					]);
+				});
+				var lookupStats = cfg.productLookupStats || null;
+				var statsKids = [];
+				if (lookupStats && lookupStats.totals) {
+					statsKids.push(el('p', {
+						className: 'iv-muted',
+						text: tr('Lookups so far: {total} — found: {hits}, not found: {misses}, errors: {errors}, rate-limited: {limited}, saved by cache: {cache}', {
+							total: lookupStats.totals.lookups || 0,
+							hits: lookupStats.totals.hits || 0,
+							misses: lookupStats.totals.misses || 0,
+							errors: lookupStats.totals.errors || 0,
+							limited: lookupStats.totals.rateLimited || 0,
+							cache: lookupStats.totals.cacheHits || 0,
+						}),
+					}));
+					if (lookupStats.dailyBudget && Number(lookupStats.dailyBudget.limit) > 0) {
+						statsKids.push(el('p', {
+							className: 'iv-muted',
+							text: tr('Broad product database today: {used} of {limit} requests used.', {
+								used: lookupStats.dailyBudget.used || 0,
+								limit: lookupStats.dailyBudget.limit,
+							}),
+						}));
+					}
+				}
+				mount.appendChild(settingsPageSection('product-lookup', 'iv-product-lookup-title', withSettingsHowTo(ctx, 'product-lookup', [
+					settingsSrTitle('iv-product-lookup-title', tr('Online product lookup')),
+					el('div', {
+						className: 'iv-callout iv-callout--info',
+						role: 'note',
+					}, [
+						el('p', {
+							className: 'iv-callout__text',
+							text: tr('When enabled, scanning an unknown barcode asks free product databases (Open Food Facts and friends, plus a broad barcode catalog) for a name and description. Only the barcode is sent — never user, location or stock data.'),
+						}),
+					]),
+					settingsSwitchField(
+						lookupToggle,
+						tr('Look up unknown barcodes online'),
+						tr('Suggestions only fill empty fields in the item dialog — nothing is saved automatically.')
+					),
+					settingsSwitchField(
+						lookupAutofireToggle,
+						tr('Search automatically while typing'),
+						tr('When off, the lookup only runs when the "Look up product" button is pressed.')
+					),
+					providerKids.length > 0
+						? el('fieldset', { className: 'iv-fieldset' }, [
+							el('legend', { className: 'iv-fieldset__legend', text: tr('Product databases to query') }),
+							el('p', {
+								className: 'iv-field__hint',
+								text: tr('Sources are tried in order; the first match wins.'),
+							}),
+						].concat(providerKids))
+						: null,
+					settingsFormActions(btn(tr('Save lookup settings'), {
+						primary: true,
+						className: 'iv-btn--touch',
+						onclick: function () {
+							if (!ctx.urls.api.configProductLookup) {
+								toast(tr('Lookup settings are unavailable on this server.'), true);
+								return;
+							}
+							var chosen = providerBoxes
+								.filter(function (box) { return box.checked; })
+								.map(function (box) { return box.getAttribute('data-provider-id'); });
+							clearFieldErrors(mount);
+							api('POST', ctx.urls.api.configProductLookup, {
+								enabled: lookupToggle.checked,
+								autofire: lookupAutofireToggle.checked,
+								providers: chosen,
+							}).then(function () {
+								// Keep the page-shell flags in sync so open dialogs
+								// honor the new state without a reload.
+								ctx.productLookupEnabled = lookupToggle.checked;
+								ctx.productLookupAutofire = lookupAutofireToggle.checked;
+								ctx.root.setAttribute('data-iv-product-lookup', lookupToggle.checked ? '1' : '0');
+								ctx.root.setAttribute('data-iv-product-lookup-autofire', lookupAutofireToggle.checked ? '1' : '0');
+								toast(tr('Lookup settings saved.'));
+							}).catch(function (err) {
+								applyFieldErrors(mount, err && err.details, err && err.message);
+								toast(err.message, true);
+							});
+						},
+					})),
+				].concat(statsKids))));
 			}
 
 			var keyInput = el('textarea', {

@@ -68,9 +68,11 @@ final class MobileItemPhotoTest extends TestCase
 			$this->createMock(CycleCountService::class),
 			$this->photos,
 			$this->createMock(ScanIdempotencyService::class),
+			$this->createMock(\OCA\InventoryCheck\Service\ProductLookupService::class),
 			$this->session,
 			$this->appSession,
 			$this->createMock(IConfig::class),
+			$this->createMock(\OCP\IL10N::class),
 		);
 	}
 

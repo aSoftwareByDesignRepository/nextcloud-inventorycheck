@@ -18,9 +18,11 @@ use OCA\InventoryCheck\Service\LocationFavouriteService;
 use OCA\InventoryCheck\Service\LocationService;
 use OCA\InventoryCheck\Service\MobileGateService;
 use OCA\InventoryCheck\Service\MovementService;
+use OCA\InventoryCheck\Service\ProductLookupService;
 use OCA\InventoryCheck\Service\ScanIdempotencyService;
 use OCA\InventoryCheck\Tests\Support\Iv2TestSigning;
 use OCP\IConfig;
+use OCP\IL10N;
 use OCP\IRequest;
 use OCP\ISession;
 use OCP\IUserManager;
@@ -117,9 +119,11 @@ final class MobileFavouritesAndStocktakeIntegrationTest extends TestCase
 			Server::get(CycleCountService::class),
 			Server::get(ItemPhotoService::class),
 			Server::get(ScanIdempotencyService::class),
+			Server::get(ProductLookupService::class),
 			$session,
 			Server::get(ISession::class),
 			Server::get(IConfig::class),
+			Server::get(\OCP\L10N\IFactory::class)->get(Application::APP_ID),
 		);
 	}
 
@@ -176,9 +180,11 @@ final class MobileFavouritesAndStocktakeIntegrationTest extends TestCase
 			Server::get(CycleCountService::class),
 			Server::get(ItemPhotoService::class),
 			Server::get(ScanIdempotencyService::class),
+			Server::get(ProductLookupService::class),
 			$session,
 			Server::get(ISession::class),
 			Server::get(IConfig::class),
+			Server::get(\OCP\L10N\IFactory::class)->get(Application::APP_ID),
 		);
 
 		$this->expectException(MobileGateException::class);
@@ -213,9 +219,11 @@ final class MobileFavouritesAndStocktakeIntegrationTest extends TestCase
 			Server::get(CycleCountService::class),
 			Server::get(ItemPhotoService::class),
 			Server::get(ScanIdempotencyService::class),
+			Server::get(ProductLookupService::class),
 			$session,
 			Server::get(ISession::class),
 			Server::get(IConfig::class),
+			Server::get(\OCP\L10N\IFactory::class)->get(Application::APP_ID),
 		);
 
 		$this->expectException(MobileGateException::class);
@@ -259,9 +267,11 @@ final class MobileFavouritesAndStocktakeIntegrationTest extends TestCase
 			Server::get(CycleCountService::class),
 			Server::get(ItemPhotoService::class),
 			Server::get(ScanIdempotencyService::class),
+			Server::get(ProductLookupService::class),
 			Server::get(IUserSession::class),
 			Server::get(ISession::class),
 			Server::get(IConfig::class),
+			Server::get(\OCP\L10N\IFactory::class)->get(Application::APP_ID),
 		);
 
 		try {

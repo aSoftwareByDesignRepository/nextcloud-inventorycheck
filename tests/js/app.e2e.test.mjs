@@ -380,3 +380,13 @@ test('Wave C UI surfaces are wired in app.js', () => {
 	assert.match(appJs, /aclLocationPicker\.getIds/);
 	assert.doesNotMatch(appJs, /disabled:\s*fracEnabled/);
 });
+
+test('product-lookup panel is gated on office like the API (requireOffice)', () => {
+	// A field user must never see a lookup affordance that can only 403 —
+	// the dialog render condition must mirror the server's requireOffice.
+	assert.match(
+		appJs,
+		/ctx\.productLookupEnabled\s*&&\s*ctx\.isOffice\s*\?\s*productLookupPanel/,
+		'lookup panel must be gated on office permission',
+	);
+});

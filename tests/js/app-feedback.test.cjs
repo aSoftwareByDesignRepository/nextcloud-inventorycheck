@@ -191,7 +191,12 @@ function main() {
 		getAttribute(k) {
 			return this[k] || null;
 		},
-		querySelector() {
+		querySelector(sel) {
+			// A toast that already carries a feedback link is skipped by
+			// attachReportLink — this stubbed toast has none.
+			if (sel.indexOf('toast__feedback') !== -1) {
+				return null;
+			}
 			return { appendChild() {} };
 		},
 	};

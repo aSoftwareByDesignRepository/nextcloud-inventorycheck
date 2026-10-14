@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OCA\InventoryCheck\Service;
 
+use OCA\InventoryCheck\AppInfo\Application;
 use OCA\InventoryCheck\Db\ScanDevice;
 use OCA\InventoryCheck\Exception\MobileGateException;
 use OCA\InventoryCheck\License\Iv2Codec;
@@ -30,6 +31,7 @@ class MobileGateService
 		private readonly Clock $clock,
 		private readonly IConfig $config,
 		private readonly LocationAclService $locationAcl,
+		private readonly ProductLookupService $productLookup,
 	) {
 	}
 
@@ -91,6 +93,7 @@ class MobileGateService
 			'requireLocationScan' => LocationScanPolicy::isRequired($this->config),
 			'locationAclEnabled' => $this->locationAcl->isEnabled(),
 			'locationAclDevicesStrict' => $this->locationAcl->isDevicesStrict(),
+			'productLookupEnabled' => $this->productLookup->isEnabled(),
 			/** null = unrestricted (ACL off or unbound device); list = restricted grants */
 			'deviceLocationIds' => $deviceLocationIds,
 			/** true when ACL is on, strict is off, and this scanner has zero grants */
@@ -106,6 +109,7 @@ class MobileGateService
 				'favourites' => true,
 				'deviceLocationAcl' => true,
 				'deviceLocationStrict' => true,
+				'productLookup' => true,
 				'qtyScale' => $qtyScale,
 			],
 			'reasonCodes' => ReasonCodes::catalog(),

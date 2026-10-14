@@ -27,6 +27,8 @@ $requireAdjustReason = !empty($_['requireAdjustReason']);
 $requireLocationScan = !empty($_['requireLocationScan']);
 $qtyScale = (int)($_['qtyScale'] ?? 0);
 $locationAclEnabled = !empty($_['locationAclEnabled']);
+$productLookupEnabled = !empty($_['productLookupEnabled']);
+$productLookupAutofire = !empty($_['productLookupAutofire']);
 $timezone = (string)($_['timezone'] ?? 'UTC');
 $roleLabel = (string)($_['roleLabel'] ?? ($isAppAdmin ? $l->t('Administrator') : ($isOffice ? $l->t('Office') : $l->t('Field'))));
 $htmlLang = str_replace('_', '-', $l->getLanguageCode());
@@ -69,6 +71,8 @@ require __DIR__ . '/navigation.php';
 	data-iv-require-location-scan="<?php p($requireLocationScan ? '1' : '0'); ?>"
 	data-iv-qty-scale="<?php p((string)$qtyScale); ?>"
 	data-iv-location-acl="<?php p($locationAclEnabled ? '1' : '0'); ?>"
+	data-iv-product-lookup="<?php p($productLookupEnabled ? '1' : '0'); ?>"
+	data-iv-product-lookup-autofire="<?php p($productLookupAutofire ? '1' : '0'); ?>"
 	data-iv-mobile-app-status="<?php p($mobileAppStatus); ?>"
 	data-iv-timezone="<?php p($timezone); ?>"
 	data-iv-urls="<?php p($urlsJson); ?>">

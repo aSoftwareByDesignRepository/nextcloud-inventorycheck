@@ -12,6 +12,7 @@ use OCA\InventoryCheck\Service\LocationAclService;
 use OCA\InventoryCheck\Service\LocationScanPolicy;
 use OCA\InventoryCheck\Service\LowStockNotifyService;
 use OCA\InventoryCheck\Service\LowStockService;
+use OCA\InventoryCheck\Service\ProductLookupService;
 use OCA\InventoryCheck\Service\QtyScale;
 use OCA\InventoryCheck\Service\QtyScaleService;
 use OCA\InventoryCheck\Service\ReasonCodes;
@@ -43,6 +44,7 @@ class ConfigController extends Controller
 		private readonly LowStockService $lowStock,
 		private readonly QtyScaleService $qtyScaleService,
 		private readonly LocationAclService $locationAcl,
+		private readonly ProductLookupService $productLookup,
 		private readonly IConfig $config,
 		private readonly LoggerInterface $logger,
 	) {
@@ -88,6 +90,12 @@ class ConfigController extends Controller
 			'locationAclEnabled' => $this->locationAcl->isEnabled(),
 			'requireAdjustReason' => ReasonCodes::isRequired($this->config),
 			'requireLocationScan' => LocationScanPolicy::isRequired($this->config),
+			'productLookupEnabled' => $this->productLookup->isEnabled(),
+			'productLookupAutofire' => $this->productLookup->isAutofire(),
+			'productLookupProviders' => $this->productLookup->providerIds(),
+			'productLookupEnabledProviders' => $this->productLookup->enabledProviderIds(),
+			'productLookupAvailable' => $isAppAdmin ? $this->productLookup->availableProviders() : [],
+			'productLookupStats' => $isAppAdmin ? $this->productLookup->stats() : null,
 		]);
 	}
 
@@ -351,6 +359,46 @@ class ConfigController extends Controller
 	}
 
 	/**
+	 * Online product lookup: single admin opt-in gate for all outbound
+	 * barcode lookups (web dialog + companion). App-admin only; audited
+	 * like every other policy change.
+	 */
+	#[NoAdminRequired]
+	public function saveProductLookup(): JSONResponse
+	{
+		$uid = $this->access->currentUserId();
+		$this->access->requireAppAdmin($uid);
+		$p = $this->request->getParams();
+
+		$enabled = array_key_exists('enabled', $p)
+			? $this->parseBool($p['enabled'], 'enabled')
+			: null;
+		$autofire = array_key_exists('autofire', $p)
+			? $this->parseBool($p['autofire'], 'autofire')
+			: null;
+		$providers = array_key_exists('providers', $p)
+			? $this->validatedProviderIds($p['providers'])
+			: null;
+		if ($enabled !== null) {
+			$this->productLookup->setEnabled($enabled);
+		}
+		if ($autofire !== null) {
+			$this->productLookup->setAutofire($autofire);
+		}
+		if ($providers !== null) {
+			$this->productLookup->setEnabledProviders($providers);
+		}
+		if ($enabled !== null || $autofire !== null || $providers !== null) {
+			$this->auditPolicyChange($uid, 'product_lookup_saved', [
+				'enabled' => $enabled,
+				'autofire' => $autofire,
+				'providers' => $providers !== null ? count($providers) : null,
+			]);
+		}
+		return $this->index();
+	}
+
+	/**
 	 * Accept JSON booleans and the appconfig-style 0/1 wire forms.
 	 * Never use bare `(bool)$value` — in PHP `(bool)'false'` is true.
 	 */
@@ -414,5 +462,25 @@ class ConfigController extends Controller
 			}
 		}
 		return array_values(array_unique($out));
+	}
+
+	/**
+	 * Provider ids are a closed set — anything else is rejected, not silently
+	 * dropped, so a typo can never narrow the cascade without the admin seeing it.
+	 *
+	 * @return list<string>
+	 */
+	private function validatedProviderIds(mixed $value): array
+	{
+		$ids = $this->stringList($value, 'providers');
+		$known = $this->productLookup->providerIds();
+		foreach ($ids as $id) {
+			if (!in_array($id, $known, true)) {
+				throw new ValidationException('validation_failed', 'Unknown product lookup source: ' . $id, [
+					['field' => 'providers', 'code' => 'unknown_provider'],
+				]);
+			}
+		}
+		return $ids;
 	}
 }

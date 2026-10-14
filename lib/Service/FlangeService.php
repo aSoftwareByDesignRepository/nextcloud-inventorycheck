@@ -179,7 +179,7 @@ class FlangeService
 
 	private function defaultLocationId(): ?int
 	{
-		$raw = $this->config->getAppValue(Application::APP_ID, self::KEY_DEFAULT_ISSUE_LOCATION, '');
+		$raw = (string)$this->config->getAppValue(Application::APP_ID, self::KEY_DEFAULT_ISSUE_LOCATION, '');
 		if ($raw === '' || !ctype_digit($raw)) {
 			return null;
 		}
