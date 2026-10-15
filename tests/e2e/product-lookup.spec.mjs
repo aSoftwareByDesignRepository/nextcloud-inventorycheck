@@ -292,7 +292,7 @@ test.describe('product-lookup item dialog UX', () => {
 
 	async function openItemsDialog(page) {
 		await openInventory(page, '/apps/inventorycheck/items')
-		const newItem = page.getByRole('button', { name: /^(New item|Neuer Artikel)$/ }).first()
+		const newItem = page.locator('[data-iv-action="item-new"]').first()
 		await expect(newItem).toBeVisible({ timeout: 20_000 })
 		await newItem.click()
 		const dialogEl = page.locator('.iv-dialog')
@@ -336,7 +336,7 @@ test.describe('product-lookup item dialog UX', () => {
 		await name.fill('My own name')
 
 		const status = panel.locator('.iv-lookup__status')
-		await panel.getByRole('button', { name: /look ?up|search/i }).click()
+		await panel.locator('[data-iv-action="product-lookup"]').click()
 		await expect(status).toContainText(/Open Food Facts/, { timeout: 10_000 })
 
 		await expect(name).toHaveValue('My own name')
@@ -375,7 +375,7 @@ test.describe('product-lookup item dialog UX', () => {
 		const panel = dialogEl.locator('.iv-lookup')
 		const scan = dialogEl.locator('[data-iv-field="scanCode"] input').first()
 		await scan.fill(GTIN)
-		await panel.getByRole('button', { name: /look ?up|search/i }).click()
+		await panel.locator('[data-iv-action="product-lookup"]').click()
 		const status = panel.locator('.iv-lookup__status')
 		await expect(status).toContainText(/Open Food Facts/, { timeout: 10_000 })
 
@@ -405,7 +405,7 @@ test.describe('product-lookup item dialog UX', () => {
 		const panel = dialogEl.locator('.iv-lookup')
 		const scan = dialogEl.locator('[data-iv-field="scanCode"] input').first()
 		const status = panel.locator('.iv-lookup__status')
-		const lookupBtn = panel.getByRole('button', { name: /look ?up|search/i })
+		const lookupBtn = panel.locator('[data-iv-action="product-lookup"]')
 
 		await scan.fill(GTIN)
 		await lookupBtn.click()
@@ -431,7 +431,7 @@ test.describe('product-lookup item dialog UX', () => {
 		await scan.fill('12345') // bad length AND bad check digit
 		// The lookup button stays disabled for invalid input — the strongest
 		// possible "no request" is that there is nothing to click.
-		const lookupBtn = panel.getByRole('button', { name: /look ?up|search/i })
+		const lookupBtn = panel.locator('[data-iv-action="product-lookup"]')
 		await expect(lookupBtn).toBeDisabled()
 		await page.waitForTimeout(300)
 		expect(calls).toBe(0)
@@ -456,7 +456,7 @@ test.describe('product-lookup item dialog UX', () => {
 		const panel = dialogEl.locator('.iv-lookup')
 		const scan = dialogEl.locator('[data-iv-field="scanCode"] input').first()
 		await scan.fill(GTIN)
-		await panel.getByRole('button', { name: /look ?up|search/i }).click()
+		await panel.locator('[data-iv-action="product-lookup"]').click()
 		const name = dialogEl.locator('[data-iv-field="name"] input').first()
 		await expect(name).toHaveValue(`${tag} name`, { timeout: 10_000 })
 
@@ -467,7 +467,7 @@ test.describe('product-lookup item dialog UX', () => {
 		// Manual save still goes through the real item API.
 		const skuInput = dialogEl.locator('[data-iv-field="sku"] input').first()
 		await skuInput.fill(tag)
-		await dialogEl.getByRole('button', { name: /^(Save|Speichern)$/ }).click()
+		await dialogEl.locator('[data-iv-action="dialog-confirm"]').click()
 		await expect(dialogEl).toBeHidden({ timeout: 15_000 })
 		const postSave = await api(page, 'GET', `/index.php/apps/inventorycheck/api/items?q=${tag}`)
 		expect((postSave.data?.data || []).length).toBe(1)
@@ -495,7 +495,7 @@ test.describe('product-lookup item dialog UX', () => {
 
 		// Disable via the section's own save button — one request for all fields.
 		await toggle.click()
-		await page.getByRole('button', { name: /save lookup|einstellungen speichern/i }).click()
+		await page.locator('[data-iv-action="lookup-settings-save"]').click()
 		await expect(page.locator('.iv-toast').first()).toContainText(/saved|gespeichert/i, { timeout: 10_000 })
 
 		// Dialog on the same session must now hide the panel (ctx flags synced).

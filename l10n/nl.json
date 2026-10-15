@@ -1,5 +1,7 @@
 {
 	"translations": {
+		"Optional. Fill new items from free product databases when a barcode is unknown. Sends only the barcode.": "Optioneel. Vult nieuwe artikelen aan vanuit gratis productdatabases wanneer een barcode onbekend is. Alleen de barcode wordt verstuurd.",
+		"Product lookup": "Productopzoeking",
 		"\"From\" must be on or before \"To\".": "\"Van\" moet op of voor \"Aan\" zijn.",
 		"%1$s (%2$s) is below reorder level: %3$s on hand, reorder at %4$s.": "%1$s (%2$s) is onder het reorderniveau: %3$s on hand, reorder op %4$s.",
 		"%n label": [

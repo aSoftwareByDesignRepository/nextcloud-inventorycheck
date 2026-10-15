@@ -192,9 +192,9 @@ function main() {
 			return this[k] || null;
 		},
 		querySelector(sel) {
-			// A toast that already carries a feedback link is skipped by
-			// attachReportLink — this stubbed toast has none.
-			if (sel.indexOf('toast__feedback') !== -1) {
+			// No pre-existing report link inside the toast — the
+			// attachReportLink guard must not early-return here.
+			if (String(sel).indexOf('toast__feedback') !== -1) {
 				return null;
 			}
 			return { appendChild() {} };

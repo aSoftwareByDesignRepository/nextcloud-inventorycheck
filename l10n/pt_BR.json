@@ -1,5 +1,7 @@
 {
 	"translations": {
+		"Optional. Fill new items from free product databases when a barcode is unknown. Sends only the barcode.": "Opcional. Preenche novos itens a partir de bancos de dados de produtos gratuitos quando o código de barras é desconhecido. Apenas o código de barras é enviado.",
+		"Product lookup": "Pesquisa de produto",
 		"\"From\" must be on or before \"To\".": "\"De\" deve estar ligado ou antes de \"Para\".",
 		"%1$s (%2$s) is below reorder level: %3$s on hand, reorder at %4$s.": "%1$s (%2$s) está abaixo do nível de novo pedido: %3$s disponível, reordene em %4$s.",
 		"%n label": [

@@ -339,14 +339,9 @@ Vi forbedrer denne appen med bruk i praksis. Feilrapporter, friksjon og idéer h
 			<database>pgsql</database>
 		</databases>
 	</release>
-	<navigations>
-		<navigation>
-			<name>InventoryCheck</name>
-			<route>inventorycheck.page.dashboard</route>
-			<icon>app.svg</icon>
-			<order>20</order>
-		</navigation>
-	</navigations>
+	<!-- No <navigation> here: the menu entry is registered conditionally via
+	     NavGate — a static entry would advertise the app to users the
+	     access gate denies. -->
 	<commands>
 		<command>OCA\InventoryCheck\Command\RebuildBalancesCommand</command>
 		<command>OCA\InventoryCheck\Command\UpgradeBackupCommand</command>

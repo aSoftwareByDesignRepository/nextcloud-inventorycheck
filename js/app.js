@@ -747,6 +747,7 @@
 						body: tr('SKU and name are enough. Reorder level and more options sit under More when you need them.'),
 						cta: canOffice
 							? btn(tr('New item'), {
+								'data-iv-action': 'item-new',
 								primary: true,
 								onclick: function () { openItemDialog(ctx, null); },
 							})
@@ -1166,7 +1167,7 @@
 		var card = el('aside', {
 			className: 'iv-tip iv-empty--quickstart iv-callout iv-callout--warning',
 			id: 'iv-settings-quickstart',
-			role: 'note',
+			role: 'status',
 			'aria-labelledby': 'iv-settings-quickstart-title',
 			hidden: '',
 		}, [
@@ -1467,6 +1468,7 @@
 		var bodyEl = dialogEl.querySelector('.iv-dialog__body');
 		if (!hideConfirm) {
 			var confirmBtn = btn(confirmLabel || tr('Save'), {
+				'data-iv-action': 'dialog-confirm',
 				primary: true,
 				onclick: function () {
 					if (confirmBtn.disabled) {
@@ -2825,6 +2827,7 @@
 		if (ctx.isOffice) {
 			clear(ctx.actions);
 			ctx.actions.appendChild(btn(tr('New item'), {
+				'data-iv-action': 'item-new',
 				primary: true,
 				onclick: function () { openItemDialog(ctx, null); },
 			}));
@@ -2953,7 +2956,7 @@
 								},
 							})
 							: ((ctx.isOffice || ctx.isAppAdmin)
-								? btn(tr('New item'), { primary: true, onclick: function () { openItemDialog(ctx, null); } })
+								? btn(tr('New item'), { 'data-iv-action': 'item-new', primary: true, onclick: function () { openItemDialog(ctx, null); } })
 								: null)
 					));
 					return;
@@ -4864,7 +4867,7 @@
 				settingsSrTitle('iv-access-title', tr('Access control')),
 				el('div', {
 					className: 'iv-callout iv-callout--info',
-					role: 'note',
+					role: 'status',
 					'aria-labelledby': 'iv-access-gate-title',
 				}, [
 					el('p', { id: 'iv-access-gate-title' }, [
@@ -5029,24 +5032,23 @@
 				fracKids.push(settingsFormActions(btn(tr('Enable fractional quantities (up to 3 decimals)'), {
 					primary: true,
 					className: 'iv-btn--touch',
-					onclick: function () {
+					onclick: function (ev) {
 						if (!ctx.urls.api.configFractional) return;
-						if (!window.confirm(tr('This permanently switches every quantity to milli-units (×1000). You cannot turn it off later. Continue?'))) {
-							return;
-						}
-						clearFieldErrors(mount);
-						api('POST', ctx.urls.api.configFractional, {}).then(function (res) {
-							toast(tr('Fractional quantities enabled. Reloading…'));
-							if (res && res.qtyScale != null) {
-								ctx.qtyScale = Number(res.qtyScale) || 3;
-							}
-							window.setTimeout(function () {
-								window.location.reload();
-							}, 400);
-						}).catch(function (err) {
-							applyFieldErrors(mount, err && err.details, err && err.message);
-							toast(err.message, true);
-						});
+						var trigger = ev && ev.currentTarget ? ev.currentTarget : null;
+						dialog(tr('Enable fractional quantities (up to 3 decimals)'), [
+							el('p', { className: 'iv-muted', text: tr('This permanently switches every quantity to milli-units (×1000). You cannot turn it off later. Continue?') }),
+						], function () {
+							clearFieldErrors(mount);
+							return api('POST', ctx.urls.api.configFractional, {}).then(function (res) {
+								toast(tr('Fractional quantities enabled. Reloading…'));
+								if (res && res.qtyScale != null) {
+									ctx.qtyScale = Number(res.qtyScale) || 3;
+								}
+								window.setTimeout(function () {
+									window.location.reload();
+								}, 400);
+							});
+						}, tr('Apply'), { restoreFocusTo: trigger });
 					},
 				})));
 			}
@@ -5383,7 +5385,7 @@
 					settingsSrTitle('iv-product-lookup-title', tr('Online product lookup')),
 					el('div', {
 						className: 'iv-callout iv-callout--info',
-						role: 'note',
+						role: 'status',
 					}, [
 						el('p', {
 							className: 'iv-callout__text',
@@ -5410,6 +5412,7 @@
 						].concat(providerKids))
 						: null,
 					settingsFormActions(btn(tr('Save lookup settings'), {
+						'data-iv-action': 'lookup-settings-save',
 						primary: true,
 						className: 'iv-btn--touch',
 						onclick: function () {

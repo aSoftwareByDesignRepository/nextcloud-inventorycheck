@@ -1,5 +1,7 @@
 {
   "translations": {
+    "Optional. Fill new items from free product databases when a barcode is unknown. Sends only the barcode.": "Valgfrit. Udfylder nye varer ud fra gratis produktdatabaser, når en stregkode er ukendt. Kun stregkoden sendes.",
+    "Product lookup": "Produktsøgning",
     "\"From\" must be on or before \"To\".": "\"Fra\" må være på eller før \"Til\".",
     "%1$s (%2$s) is below reorder level: %3$s on hand, reorder at %4$s.": "%1$s (%2$s) er under omsorteringsniveau: %3$s ved hånden, omsord ved %4$s.",
     "%n label": [

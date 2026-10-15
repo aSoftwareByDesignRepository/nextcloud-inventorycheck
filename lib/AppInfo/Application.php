@@ -52,6 +52,7 @@ use OCA\InventoryCheck\Service\MovementService;
 use OCA\InventoryCheck\Service\ScanIdempotencyService;
 use OCA\InventoryCheck\Service\QtyScaleService;
 use OCA\InventoryCheck\Service\UpgradeBackupService;
+use OCA\InventoryCheck\Support\NavGate;
 use OCP\Activity\IManager as IActivityManager;
 use OCP\App\IAppManager;
 use OCP\AppFramework\App;
@@ -440,5 +441,16 @@ class Application extends App implements IBootstrap
 
 	public function boot(IBootContext $context): void
 	{
+		$app = $context->getAppContainer();
+		// Menu entry only for users with app access — a static <navigation>
+		// entry would advertise the app to users the door denies.
+		NavGate::register(
+			$app,
+			'inventorycheck.page.dashboard',
+			'app.svg',
+			'InventoryCheck',
+			20,
+			static fn(string $uid): bool => $app->get(AccessControlService::class)->canUseApp($uid),
+		);
 	}
 }

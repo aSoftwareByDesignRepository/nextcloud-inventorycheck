@@ -2910,7 +2910,7 @@ body > .iv-dialog-overlay > .iv-dialog {
 
 	#content.app-inventorycheck #app-content.iv-app .iv-page-header__actions,
 	#content.app-inventorycheck #app-content.iv-app .iv-toolbar,
-	#content.app-inventorycheck #app-content.iv-app .iv-dialog__actions {
+	.iv-dialog__actions {
 		width: 100%;
 	}
 
@@ -2937,8 +2937,8 @@ body > .iv-dialog-overlay > .iv-dialog {
 #content.app-inventorycheck #app-content.iv-app .iv-toolbar .button,
 #content.app-inventorycheck #app-content.iv-app .iv-toolbar .iv-btn,
 #content.app-inventorycheck #app-content.iv-app .iv-toolbar a.button,
-#content.app-inventorycheck #app-content.iv-app .iv-dialog__actions .button,
-#content.app-inventorycheck #app-content.iv-app .iv-dialog__actions .iv-btn,
+.iv-dialog__actions .button,
+.iv-dialog__actions .iv-btn,
 body > .iv-dialog-overlay .iv-dialog .button,
 body > .iv-dialog-overlay .iv-dialog .iv-btn,
 body > .modal-backdrop.iv-dialog-overlay .button,

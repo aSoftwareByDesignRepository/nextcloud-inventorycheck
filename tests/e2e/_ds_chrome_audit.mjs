@@ -46,13 +46,17 @@ const VIEWPORTS = [
 const APP_ROUTES = [
 	{ id: 'dashboard', path: '/apps/inventorycheck/' },
 	{ id: 'items', path: '/apps/inventorycheck/items' },
-	{ id: 'item-detail', path: '/apps/inventorycheck/items/1' },
 	{ id: 'locations', path: '/apps/inventorycheck/locations' },
-	{ id: 'location-detail', path: '/apps/inventorycheck/locations/1' },
 	{ id: 'movements', path: '/apps/inventorycheck/movements' },
 	{ id: 'stocktake', path: '/apps/inventorycheck/stocktake' },
 	{ id: 'stocktake-new', path: '/apps/inventorycheck/stocktake/create' },
-	{ id: 'stocktake-campaign', path: '/apps/inventorycheck/stocktake/1' },
+]
+// Detail routes are appended per-phase after resolveEntityIds() — fixture
+// ids are dynamic (hardcoded /1 rows may not exist on a fresh instance).
+const DETAIL_ROUTE_DEFS = [
+	{ id: 'item-detail', entity: 'item', path: (id) => `/apps/inventorycheck/items/${id}` },
+	{ id: 'location-detail', entity: 'location', path: (id) => `/apps/inventorycheck/locations/${id}` },
+	{ id: 'stocktake-campaign', entity: 'campaign', path: (id) => `/apps/inventorycheck/stocktake/${id}` },
 ]
 const SETTINGS_SECTIONS = [
 	'access', 'office', 'notifications', 'quantities', 'location-access',
@@ -213,6 +217,51 @@ const ALL_ROUTES = [
 	...SETTINGS_SECTIONS.map((s) => ({ id: `settings-${s}`, path: `/apps/inventorycheck/settings/${s}` })),
 ]
 
+// Fixture ids are dynamic (the canonical demo set is reseeded with fresh
+// ids — a hardcoded /1 may not exist). resolveEntityIds() must run on an
+// app page before detailRoutes is read; unresolved entities surface as
+// warn cells, never silently dropped coverage.
+let detailRoutes = []
+
+async function resolveEntityIds(page) {
+	const ids = await page.evaluate(async () => {
+		const out = { item: null, location: null, campaign: null, campaignActive: null }
+		try {
+			const urls = JSON.parse(document.getElementById('app-content')?.getAttribute('data-iv-urls') || '{}')
+			const token = (window.OC && window.OC.requestToken)
+				|| document.querySelector('head[data-requesttoken]')?.getAttribute('data-requesttoken') || ''
+			const headers = { requesttoken: token }
+			const list = async (u) => {
+				if (!u) return []
+				const res = await fetch(`${u}?limit=100`, { credentials: 'same-origin', headers })
+				if (!res.ok) return []
+				return (await res.json())?.data || []
+			}
+			const items = await list(urls?.api?.items)
+			const locs = await list(urls?.api?.locations)
+			const camps = await list(urls?.api?.cycleCounts)
+			// Prefer active rows — campaign create rejects inactive locations
+			// (inactive_location) and inactive items render a dimmed surface.
+			out.item = (items.find((r) => r.active !== false) || items[0])?.id ?? null
+			out.location = (locs.find((r) => r.active !== false) || locs[0])?.id ?? null
+			out.campaignActive = (camps.find((r) => r.status === 'counting')
+				|| camps.find((r) => r.status === 'open'))?.id ?? null
+			out.campaign = out.campaignActive ?? camps[0]?.id ?? null
+		} catch { /* ids stay null — caller records warn */ }
+		return out
+	})
+	detailRoutes = DETAIL_ROUTE_DEFS
+		.filter((d) => ids[d.entity] != null)
+		.map((d) => ({ id: d.id, path: d.path(ids[d.entity]) }))
+	return { ids, missing: DETAIL_ROUTE_DEFS.filter((d) => ids[d.entity] == null).map((d) => d.id) }
+}
+
+function recordMissingDetailRoutes(missing) {
+	for (const id of missing) {
+		record({ id: `detail-route__${id}`, status: 'warn', checks: { note: 'no fixture row resolved — detail route skipped this run' } })
+	}
+}
+
 /* ───────────────────────────── sweep ───────────────────────────── */
 async function phaseSweep(browser) {
 	const probeState = await loginState(browser, 'probe')
@@ -222,12 +271,19 @@ async function phaseSweep(browser) {
 	const page = await ctx.newPage()
 	page.on('pageerror', (e) => console.log('PAGEEXC:', String(e).slice(0, 200)))
 
+	// Resolve dynamic fixture ids before routing — detail routes append here.
+	await page.goto(`${BASE}/apps/inventorycheck/`, { waitUntil: 'domcontentloaded' })
+	await settle(page)
+	const { missing } = await resolveEntityIds(page)
+	recordMissingDetailRoutes(missing)
+	const sweepRoutes = [...ALL_ROUTES, ...detailRoutes]
+
 	// Theme matrix at 1440 — server-persisted themes; per-route the light vs
 	// dark capture must differ (pixel-identical themed renders hard-fail).
 	for (const theme of THEMES) {
 		await page.goto(`${BASE}/apps/inventorycheck/`, { waitUntil: 'domcontentloaded' })
 		await setUserTheme(page, theme)
-		for (const route of ALL_ROUTES) {
+		for (const route of sweepRoutes) {
 			const cell = { id: `${route.id}@${theme}@1440`, role: 'probe', theme, viewport: 1440, checks: {} }
 			const resp = await page.goto(`${BASE}${route.path}`, { waitUntil: 'domcontentloaded' }).catch(() => null)
 			await settle(page)
@@ -261,7 +317,7 @@ async function phaseSweep(browser) {
 
 	// Per-route themed distinctness: light vs dark MUST differ pixel-wise;
 	// fewer than 4 distinct shas across the theme set is a warn.
-	for (const route of ALL_ROUTES) {
+	for (const route of sweepRoutes) {
 		const proof = results.themeProof[route.id] || {}
 		const shas = Object.values(proof)
 		const distinct = new Set(shas)
@@ -279,6 +335,7 @@ async function phaseSweep(browser) {
 	// Viewport matrix on light for key routes (overflow + touch + capture).
 	const KEY_ROUTES = [
 		...APP_ROUTES,
+		...detailRoutes,
 		{ id: 'settings-access', path: '/apps/inventorycheck/settings/access' },
 		{ id: 'settings-license', path: '/apps/inventorycheck/settings/license' },
 	]
@@ -565,37 +622,55 @@ async function phaseDialogs(browser) {
 		return true
 	})
 
-	// 4) item detail → Edit
-	await page.goto(`${BASE}/apps/inventorycheck/items/1`, { waitUntil: 'domcontentloaded' })
-	await settle(page)
-	await page.waitForSelector('#iv-page-actions button', { timeout: 30000 }).catch(() => {})
-	await probeDialogLifecycle(page, 'item-edit-dialog', async () => {
-		const btnEl = page.locator('#iv-page-actions button').first()
-		if (!(await btnEl.count()) || !(await btnEl.isVisible().catch(() => false))) return null
-		await btnEl.click()
-		return true
-	})
+	// 4) item detail → Edit — resolve a real fixture id (dynamic ids; a
+	// hardcoded /1 may not exist on a reseeded instance).
+	const { ids: dlgIds } = await resolveEntityIds(page)
+	if (dlgIds.item != null) {
+		await page.goto(`${BASE}/apps/inventorycheck/items/${dlgIds.item}`, { waitUntil: 'domcontentloaded' })
+		await settle(page)
+		await page.waitForSelector('#iv-page-actions button', { timeout: 30000 }).catch(() => {})
+		await probeDialogLifecycle(page, 'item-edit-dialog', async () => {
+			const btnEl = page.locator('#iv-page-actions button').first()
+			if (!(await btnEl.count()) || !(await btnEl.isVisible().catch(() => false))) return null
+			await btnEl.click()
+			return true
+		})
+	} else {
+		record({ id: 'item-edit-dialog', status: 'warn', checks: { note: 'no item fixture resolved — could not probe' } })
+	}
 
-	// 5) stocktake campaign → Close stocktake confirm dialog. Resolve a
-	// 'counting'/'open' campaign via the in-page API (dialog only opens when
-	// the campaign has uncounted or conflict lines — 'counting' seed rows do).
-	await page.goto(`${BASE}/apps/inventorycheck/stocktake`, { waitUntil: 'domcontentloaded' })
-	await settle(page)
-	const campaignId = await page.evaluate(async () => {
-		try {
-			const urls = JSON.parse(document.getElementById('app-content')?.getAttribute('data-iv-urls') || '{}')
-			const base = urls?.api?.cycleCounts
-			if (!base) return null
-			const token = (window.OC && window.OC.requestToken)
-				|| document.querySelector('head[data-requesttoken]')?.getAttribute('data-requesttoken') || ''
-			const res = await fetch(`${base}?limit=100`, { credentials: 'same-origin', headers: { requesttoken: token } })
-			const data = await res.json()
-			const rows = data?.data || []
-			const counting = rows.find((r) => r.status === 'counting') || rows.find((r) => r.status === 'open')
-			return counting ? counting.id : null
-		} catch { return null }
-	})
+	// 5) stocktake campaign → Close stocktake confirm dialog. The dialog only
+	// opens on 'counting'/'open' campaigns — closed rows render no Close
+	// action. When none exists we self-seed via the real API (create → start),
+	// then close it after probing — a closed campaign row is normal data, not
+	// fixture residue.
+	let campaignId = dlgIds.campaignActive
+	let selfSeededId = null
+	if (campaignId == null && dlgIds.location != null) {
+		selfSeededId = await page.evaluate(async (locId) => {
+			try {
+				const urls = JSON.parse(document.getElementById('app-content')?.getAttribute('data-iv-urls') || '{}')
+				const token = (window.OC && window.OC.requestToken)
+					|| document.querySelector('head[data-requesttoken]')?.getAttribute('data-requesttoken') || ''
+				const headers = { requesttoken: token, 'Content-Type': 'application/json' }
+				const mk = await fetch(urls?.api?.cycleCounts, {
+					method: 'POST', credentials: 'same-origin', headers,
+					body: JSON.stringify({ locationId: locId, name: 'DS probe close-dialog seed' }),
+				})
+				const created = await mk.json().catch(() => null)
+				const cid = created?.id ?? created?.data?.id ?? null
+				if (cid == null) return null
+				const st = await fetch(`${urls.api.cycleCounts}/${cid}/start`, {
+					method: 'POST', credentials: 'same-origin', headers, body: '{}',
+				})
+				return st.ok ? cid : null
+			} catch { return null }
+		}, dlgIds.location)
+		campaignId = selfSeededId
+	}
 	if (campaignId) {
+		await page.goto(`${BASE}/apps/inventorycheck/stocktake`, { waitUntil: 'domcontentloaded' })
+		await settle(page)
 		await page.goto(`${BASE}/apps/inventorycheck/stocktake/${campaignId}`, { waitUntil: 'domcontentloaded' })
 		await settle(page)
 		// 'open' auto-starts counting — allow re-render to land the Close action.
@@ -607,33 +682,66 @@ async function phaseDialogs(browser) {
 			return true
 		})
 	} else {
-		record({ id: 'stocktake-close-dialog', status: 'warn', checks: { note: 'no counting/open campaign found — could not probe' } })
+		record({ id: 'stocktake-close-dialog', status: 'warn', checks: { note: dlgIds.location == null ? 'no counting/open campaign and no location to self-seed on — could not probe' : 'no counting/open campaign and self-seed failed — could not probe' } })
+	}
+	if (selfSeededId != null) {
+		// Probe only opens/Escapes/Cancels — the seeded campaign is still
+		// 'counting'; close it through the real API so no open fixture lingers.
+		const closed = await page.evaluate(async (cid) => {
+			try {
+				const urls = JSON.parse(document.getElementById('app-content')?.getAttribute('data-iv-urls') || '{}')
+				const token = (window.OC && window.OC.requestToken)
+					|| document.querySelector('head[data-requesttoken]')?.getAttribute('data-requesttoken') || ''
+				const res = await fetch(`${urls?.api?.cycleCounts}/${cid}/close`, {
+					method: 'POST', credentials: 'same-origin',
+					headers: { requesttoken: token, 'Content-Type': 'application/json' },
+					body: JSON.stringify({ abandonUncounted: true, acknowledgeConflicts: true }),
+				})
+				return res.status
+			} catch { return 'err' }
+		}, selfSeededId)
+		record({ id: 'stocktake-close-dialog__seed-cleanup', status: closed === 200 ? 'ok' : 'warn', checks: { campaignId: selfSeededId, closeStatus: closed } })
 	}
 
-	// 6) settings → quantities fractional enable → window.confirm native dialog.
-	// The irreversible switch is a primary button (not a checkbox); cancel must
-	// leave qtyScale unchanged (no POST).
+	// 6) settings → quantities fractional enable → app confirm dialog (the
+	// window.confirm was replaced by the shared dialog() helper —
+	// native_browser_dialog class). The irreversible switch is a primary
+	// button; cancel must leave qtyScale unchanged (no POST).
 	{
-		const r = { id: 'quantities-window-confirm', checks: {}, status: 'ok', fails: [] }
+		const r = { id: 'quantities-enable-dialog', checks: {}, status: 'ok', fails: [] }
 		await page.goto(`${BASE}/apps/inventorycheck/settings/quantities`, { waitUntil: 'domcontentloaded' })
 		await settle(page)
 		const alreadyOn = await page.evaluate(() => document.getElementById('app-content')?.getAttribute('data-iv-qty-scale') === '3')
 		const enableBtn = page.locator('.iv-settings-page button.primary, #iv-main-content button.primary').first()
-		let dialogSeen = null
+		let nativeSeen = null
 		let posted = 0
 		const respListener = (res) => { if (res.request().method() === 'POST' && /config|fractional/i.test(res.request().url())) posted++ }
 		page.on('response', respListener)
-		page.once('dialog', async (d) => { dialogSeen = d.type(); await d.dismiss() })
+		page.once('dialog', async (d) => { nativeSeen = d.type(); await d.dismiss() })
 		if (alreadyOn) {
 			r.status = 'warn'
 			r.checks.note = 'qtyScale already 3 — irreversible toggle not reachable'
 		} else if (await enableBtn.count()) {
 			await enableBtn.click()
-			await page.waitForTimeout(600)
-			r.checks.nativeConfirmFired = dialogSeen === 'confirm'
-			r.checks.noPostOnDismiss = posted === 0
-			if (!r.checks.nativeConfirmFired) { r.status = 'fail'; r.fails.push('irreversible toggle did not raise window.confirm') }
-			if (!r.checks.noPostOnDismiss) { r.status = 'fail'; r.fails.push('POST fired despite confirm dismissed') }
+			await page.waitForSelector(
+				'.iv-dialog-overlay [role="dialog"], .iv-dialog-overlay .iv-dialog',
+				{ timeout: 10000 },
+			).catch(() => {})
+			await settle(page)
+			r.checks.appDialogOpened = await page.locator('.iv-dialog-overlay [role="dialog"], .iv-dialog-overlay .iv-dialog').first().isVisible().catch(() => false)
+			r.checks.nativeDialogFired = nativeSeen !== null
+			await snap(page, 'dialog__quantities-enable__open')
+			const cancelBtn = page.locator('.iv-dialog-overlay .iv-dialog__actions button').first()
+			if (r.checks.appDialogOpened && await cancelBtn.count()) {
+				await cancelBtn.click()
+				await page.waitForTimeout(500)
+			}
+			r.checks.cancelClosed = !(await page.locator('.iv-dialog-overlay').first().isVisible().catch(() => false))
+			r.checks.noPostOnCancel = posted === 0
+			if (!r.checks.appDialogOpened) { r.status = 'fail'; r.fails.push('irreversible toggle did not raise app confirm dialog') }
+			if (r.checks.nativeDialogFired) { r.status = 'fail'; r.fails.push('native browser dialog still in use') }
+			if (r.checks.appDialogOpened && !r.checks.cancelClosed) { r.status = 'fail'; r.fails.push('Cancel did not close dialog') }
+			if (!r.checks.noPostOnCancel) { r.status = 'fail'; r.fails.push('POST fired despite cancel') }
 		} else {
 			r.status = 'warn'; r.checks.note = 'no enable button found'
 		}
@@ -756,9 +864,13 @@ async function phaseTheatre(browser) {
 	const ctx = await browser.newContext({ baseURL: BASE, storageState: probeState, viewport: { width: 1440, height: 900 } })
 	const page = await ctx.newPage()
 	await page.goto(`${BASE}/apps/inventorycheck/`, { waitUntil: 'domcontentloaded' })
+	await settle(page)
+	const { missing } = await resolveEntityIds(page)
+	recordMissingDetailRoutes(missing)
 	await setUserTheme(page, 'dark')
 	const theatreRoutes = [
-		'/apps/inventorycheck/', '/apps/inventorycheck/items', '/apps/inventorycheck/items/1',
+		'/apps/inventorycheck/', '/apps/inventorycheck/items',
+		...detailRoutes.map((r) => r.path),
 		'/apps/inventorycheck/locations', '/apps/inventorycheck/movements',
 		'/apps/inventorycheck/stocktake', '/apps/inventorycheck/settings/license',
 	]
