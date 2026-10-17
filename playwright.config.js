@@ -30,6 +30,8 @@ const authFile = process.env.E2E_STORAGE_STATE
 
 module.exports = defineConfig({
 	testDir: 'tests/e2e',
+	globalTeardown: './tests/e2e/global-teardown.mjs',
+
 	timeout: 90_000,
 	expect: { timeout: 20_000 },
 	fullyParallel: false,

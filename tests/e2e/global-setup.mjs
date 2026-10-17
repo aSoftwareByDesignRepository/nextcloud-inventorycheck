@@ -1,3 +1,4 @@
+import { acquireSharedInstanceLock } from './shared-instance-lock.mjs'
 import { chromium, expect } from '@playwright/test'
 import { mkdirSync } from 'fs'
 import { dirname, resolve } from 'path'
@@ -9,6 +10,7 @@ import { login, credsFromEnv } from './helpers/auth.mjs'
  * /login (bruteforce) when sibling apps also run Playwright against the same NC.
  */
 export default async function globalSetup() {
+	await acquireSharedInstanceLock('inventorycheck')
 	// E2E_STORAGE_STATE lets concurrent farm lanes isolate the auth cache —
 	// a shared default path gets unlink()ed mid-run by a parallel suite's
 	// global setup (e2e_state_isolation rule, POLICY ready-gate).
