@@ -6044,7 +6044,8 @@
 		var campaignReady = loadMasters(ctx).then(function (masters) {
 			var locs = (masters.locations || []).filter(function (r) { return r.active !== false; });
 			var today = new Date();
-			var defaultName = tr('Stocktake {date}', { date: today.toISOString().slice(0, 10) });
+			// Local calendar day — toISOString() is UTC (off-by-one in negative offsets).
+			var defaultName = tr('Stocktake {date}', { date: today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0') });
 			// Bachus: one location → skip the chooser entirely (1-click inventur).
 			if (locs.length === 1) {
 				stocktakeOpenBusy = false;
@@ -6081,7 +6082,7 @@
 		var mount = ctx.mount;
 		var name = el('input', { type: 'text', className: 'iv-input', maxlength: '255' });
 		var today = new Date();
-		var defaultName = defaultNameOpt || tr('Stocktake {date}', { date: today.toISOString().slice(0, 10) });
+		var defaultName = defaultNameOpt || tr('Stocktake {date}', { date: today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0') });
 		name.value = defaultName;
 
 		function denyNonOffice() {
