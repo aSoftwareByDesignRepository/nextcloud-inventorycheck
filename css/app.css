@@ -92,7 +92,7 @@ a.button {
 	height: 44px;
 	border-radius: 12px;
 	background: var(--color-primary-element-light);
-	color: var(--color-primary-element);
+	color: var(--iv-accent-ink, var(--color-primary-element));
 	flex-shrink: 0;
 }
 
@@ -157,7 +157,7 @@ a.button {
 }
 
 .iv-nav__item.is-active .iv-nav__icon {
-	color: var(--color-primary-element);
+	color: var(--iv-accent-ink, var(--color-primary-element));
 }
 
 .iv-nav__label {
@@ -1385,7 +1385,7 @@ button.iv-hint-dismiss:focus-visible {
 	display: inline-flex;
 	align-items: center;
 	min-height: var(--iv-touch, 44px);
-	color: var(--color-primary-element);
+	color: var(--iv-accent-ink, var(--color-primary-element));
 	text-decoration: none;
 }
 
@@ -1498,7 +1498,7 @@ button.iv-hint-dismiss:focus-visible {
 	place-items: center;
 	border-radius: var(--iv-radius-md, 12px);
 	background: var(--iv-tint-info, var(--color-primary-element-light, var(--color-background-hover)));
-	color: var(--color-primary-element);
+	color: var(--iv-accent-ink, var(--color-primary-element));
 	margin: 0;
 }
 
@@ -1836,7 +1836,7 @@ button.iv-hint-dismiss:focus-visible {
 	flex: 0 0 auto;
 	font-size: 1.125rem;
 	line-height: 1;
-	color: var(--color-primary-element);
+	color: var(--iv-accent-ink, var(--color-primary-element));
 }
 
 .iv-loc-chooser__text {

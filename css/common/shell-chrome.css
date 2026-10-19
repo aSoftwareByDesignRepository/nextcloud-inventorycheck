@@ -398,7 +398,7 @@
 	user-select: none;
 }
 #app-content.iv-app .iv-breadcrumb__link {
-	color: var(--color-primary-element, #0082c9);
+	color: var(--iv-accent-ink, var(--color-primary-element, #0082c9));
 	font-weight: 600;
 	text-decoration: none;
 	border-radius: var(--iv-radius-sm);
@@ -451,7 +451,7 @@
 	height: 56px;
 	border-radius: var(--iv-radius-md);
 	background: var(--iv-tint-info);
-	color: var(--color-primary-element, #0082c9);
+	color: var(--iv-accent-ink, var(--color-primary-element, #0082c9));
 }
 .iv-page-header__icon-svg {
 	width: 28px;

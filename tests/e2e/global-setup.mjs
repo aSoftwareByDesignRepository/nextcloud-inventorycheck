@@ -1,4 +1,5 @@
 import { acquireSharedInstanceLock } from './shared-instance-lock.mjs'
+import { resetE2eUserState } from '../../../_shared/e2e/reset-e2e-user-state.mjs'
 import { chromium, expect } from '@playwright/test'
 import { mkdirSync } from 'fs'
 import { dirname, resolve } from 'path'
@@ -11,6 +12,7 @@ import { login, credsFromEnv } from './helpers/auth.mjs'
  */
 export default async function globalSetup() {
 	await acquireSharedInstanceLock('inventorycheck')
+	resetE2eUserState()
 	// E2E_STORAGE_STATE lets concurrent farm lanes isolate the auth cache —
 	// a shared default path gets unlink()ed mid-run by a parallel suite's
 	// global setup (e2e_state_isolation rule, POLICY ready-gate).
