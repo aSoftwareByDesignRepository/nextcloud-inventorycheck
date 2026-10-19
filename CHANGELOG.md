@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.5.0 - 2026-10-19
+
+### Added
+
+- **Product lookup (GTIN/barcode):** look up product names and details by barcode while creating or booking items — a provider cascade (OpenFacts, UpcItemDb) resolves codes server-side, configurable under Settings → Product lookup, exposed on both the web API and the mobile endpoint.
+- **Invoice push to InvoiceCheck (suite F8):** stock movements can be pushed to the InvoiceCheck companion app via a durable `InvoicePush` queue (entity + mapper + service + migration) with a retry background job and a manual retry endpoint.
+
+### Fixed
+
+- **Uninstall no longer wipes user photos:** removing the app previously purged the entire appdata directory; item photos (user content) are now preserved and only pre-upgrade backup snapshots are removed.
+- **Stocktake names use the local day:** new stocktakes were named after the UTC date — yesterday in the evening for UTC-negative timezones; the name now follows the local calendar day.
+- Correction-path truthfulness on mutating journeys and security pin-list consistency (contract hardening).
+
+### Changed
+
+- App-feedback parity across surfaces, NavGate extraction, upgrade-backup hardening, l10n catalog resync.
+
 ## 1.4.2 - 2026-10-10
 
 ### Changed
