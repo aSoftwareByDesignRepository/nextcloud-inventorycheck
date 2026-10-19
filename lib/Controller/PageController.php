@@ -265,6 +265,7 @@ class PageController extends Controller
 				'favouriteLocationRemove' => $this->urlGenerator->linkToRoute('inventorycheck.favourite.destroy', ['locationId' => 0]),
 				'flangeStatus' => $this->urlGenerator->linkToRoute('inventorycheck.flange.status'),
 				'flangeSettings' => $this->urlGenerator->linkToRoute('inventorycheck.flange.saveSettings'),
+				'flangeInvoicePushRetry' => $this->urlGenerator->linkToRoute('inventorycheck.flange.retryInvoicePush'),
 				'config' => $this->urlGenerator->linkToRoute('inventorycheck.config.index'),
 				'configAccess' => $this->urlGenerator->linkToRoute('inventorycheck.config.saveAccess'),
 				'configOffice' => $this->urlGenerator->linkToRoute('inventorycheck.config.saveOffice'),

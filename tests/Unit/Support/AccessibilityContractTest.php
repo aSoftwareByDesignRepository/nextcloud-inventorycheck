@@ -102,7 +102,7 @@ final class AccessibilityContractTest extends TestCase
 		self::assertDoesNotMatchRegularExpression('/^\s*\*:focus-visible/m', $css);
 		self::assertGreaterThanOrEqual(4, preg_match_all('/min-height:\s*(?:var\(--iv-touch,\s*)?44px/', $bundle));
 		self::assertMatchesRegularExpression('/@media\s*\(\s*max-width:\s*720px\s*\)/', $css);
-		self::assertMatchesRegularExpression('/@media\s*\(\s*max-width:\s*768px\s*\)/', $css);
+		self::assertMatchesRegularExpression('/@media\s*\(\s*max-width:\s*768\.98px\s*\)/', $css);
 		self::assertStringContainsString('iv-skip-link', $css);
 		self::assertStringContainsString('prefers-reduced-motion', $bundle);
 		self::assertStringContainsString('--iv-scrim', $tokens);

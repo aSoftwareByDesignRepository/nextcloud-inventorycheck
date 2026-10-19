@@ -861,6 +861,12 @@ OC.L10N.register(
 	"{count} line(s) changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities." : "{count} rad(er) ändrades efter start av denna inventering. Aktuell kvantitet skiljer sig från ögonblicksbilden — lös före avslut, eller bekräfta att de räknade mängderna accepteras.",
 	"{ok} row(s) look fine." : "{ok} rad(er) ser bra ut.",
 	"★ Remove from favourites" : "★ Ta bort från favoriter",
-	"☆ Add to favourites" : "☆ Lägg till i favoriter"
+	"☆ Add to favourites" : "☆ Lägg till i favoriter",
+	"Send issued materials to the customer's draft invoice" : "Skicka utlämnade material till kundens utkastfaktura",
+	"Send issued materials to the customer's draft invoice (InvoiceCheck is not installed yet)" : "Skicka utlämnade material till kundens utkastfaktura (InvoiceCheck är inte installerat ännu)",
+	"Pending invoice pushes" : "Väntande faktura-överföringar",
+	"Retry now" : "Försök igen nu",
+	"Invoice push retried — some still pending." : "Faktura-överföring gjord om — vissa väntar fortfarande.",
+	"Invoice pushes delivered." : "Faktura-överföringar levererade."
 	}
 );

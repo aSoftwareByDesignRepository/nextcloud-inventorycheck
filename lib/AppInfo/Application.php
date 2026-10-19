@@ -371,6 +371,17 @@ class Application extends App implements IBootstrap
 				$c->get(IConfig::class),
 			);
 		});
+		$context->registerService(\OCA\InventoryCheck\Db\InvoicePushMapper::class, static fn ($c) => new \OCA\InventoryCheck\Db\InvoicePushMapper($c->get(IDBConnection::class)));
+
+		$context->registerService(\OCA\InventoryCheck\Service\InvoicePushService::class, static function ($c): \OCA\InventoryCheck\Service\InvoicePushService {
+			return new \OCA\InventoryCheck\Service\InvoicePushService(
+				$c->get(IAppManager::class),
+				$c->get(\OCA\InventoryCheck\Db\InvoicePushMapper::class),
+				$c->get(Clock::class),
+				$c->get(\Psr\Log\LoggerInterface::class),
+			);
+		});
+
 		$context->registerService(FlangeService::class, static function ($c): FlangeService {
 			return new FlangeService(
 				$c->get(IConfig::class),
@@ -378,6 +389,8 @@ class Application extends App implements IBootstrap
 				$c->get(LocationMapper::class),
 				$c->get(AccessControlService::class),
 				$c->get(StockIssueFacade::class),
+				$c->get(\OCA\InventoryCheck\Service\InvoicePushService::class),
+				$c->get(ItemMapper::class),
 			);
 		});
 

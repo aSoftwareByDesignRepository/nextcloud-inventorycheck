@@ -310,7 +310,7 @@ final class BachusSimplicityUxContractTest extends TestCase
 		self::assertStringContainsString('container-type: inline-size', $this->css);
 		self::assertStringContainsString('container-name: iv-howto', $this->css);
 		self::assertMatchesRegularExpression(
-			'/@container iv-howto \(max-width: 519px\)[\s\S]*?grid-template-columns:\s*1fr/s',
+			'/@container iv-howto \(max-width: 519.98px\)[\s\S]*?grid-template-columns:\s*1fr/s',
 			$this->css,
 		);
 		self::assertMatchesRegularExpression(

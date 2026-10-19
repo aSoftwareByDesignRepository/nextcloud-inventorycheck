@@ -861,6 +861,12 @@ OC.L10N.register(
 	"{count} line(s) changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities." : "{count} riga\/he modificata\/e dopo l'avvio di questo inventario. La quantità attuale differisce dall'istantanea — risolvere prima della chiusura, oppure confermare di accettare le quantità contate.",
 	"{ok} row(s) look fine." : "{ok} riga\/he sembrano corrette.",
 	"★ Remove from favourites" : "★ Rimuovere dai preferiti",
-	"☆ Add to favourites" : "☆ Aggiungere ai preferiti"
+	"☆ Add to favourites" : "☆ Aggiungere ai preferiti",
+	"Send issued materials to the customer's draft invoice" : "Invia i materiali prelevati alla bozza di fattura del cliente",
+	"Send issued materials to the customer's draft invoice (InvoiceCheck is not installed yet)" : "Invia i materiali prelevati alla bozza di fattura del cliente (InvoiceCheck non è ancora installato)",
+	"Pending invoice pushes" : "Invii di fattura in sospeso",
+	"Retry now" : "Riprova ora",
+	"Invoice push retried — some still pending." : "Invio di fattura ritentato — alcuni sono ancora in sospeso.",
+	"Invoice pushes delivered." : "Invii di fattura consegnati."
 	}
 );

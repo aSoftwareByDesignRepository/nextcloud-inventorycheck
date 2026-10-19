@@ -301,7 +301,7 @@
 	align-items: flex-start;
 	gap: var(--iv-space-3, 0.75rem) var(--iv-space-4, 1rem);
 	padding: var(--iv-space-4, 1rem) var(--iv-space-5, 1.25rem);
-	border: 2px solid var(--color-border, var(--iv-border));
+	border: 2px solid var(--iv-border-strong, var(--color-border));
 	border-radius: var(--iv-radius-md, 8px);
 	background: var(--color-main-background, var(--iv-bg));
 	box-shadow: var(--iv-shadow-sm);

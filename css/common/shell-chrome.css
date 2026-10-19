@@ -678,7 +678,7 @@
  * Responsive page header — icon shrinks on phones; actions already full-width
  * (DutyCheck parity). Keep lead readable; do not crush with overflow-wrap:anywhere.
  */
-@media (max-width: 1023px) {
+@media (max-width: 1023.98px) {
 	#app-content.iv-app .iv-page-header__icon,
 	.iv-page-header__icon {
 		width: 48px;

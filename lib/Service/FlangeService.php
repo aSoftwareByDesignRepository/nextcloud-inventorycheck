@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\InventoryCheck\Service;
 
 use OCA\InventoryCheck\AppInfo\Application;
+use OCA\InventoryCheck\Db\ItemMapper;
 use OCA\InventoryCheck\Db\LocationMapper;
 use OCA\InventoryCheck\Exception\ValidationException;
 use OCA\InventoryCheck\Public\StockIssueFacade;
@@ -22,6 +23,7 @@ class FlangeService
 {
 	public const KEY_MAINT_ENABLED = 'maint_flange_enabled';
 	public const KEY_PROJECT_ENABLED = 'project_flange_enabled';
+	public const KEY_INVOICE_ENABLED = 'invoice_flange_enabled';
 	public const KEY_DEFAULT_ISSUE_LOCATION = 'flange_default_location_id';
 	public const REF_MAINT_WO = 'maint_wo';
 	public const REF_PROJECT = 'project';
@@ -32,6 +34,8 @@ class FlangeService
 		private readonly LocationMapper $locations,
 		private readonly AccessControlService $access,
 		private readonly StockIssueFacade $stockIssue,
+		private readonly InvoicePushService $invoicePush,
+		private readonly ItemMapper $items,
 	) {
 	}
 
@@ -43,6 +47,9 @@ class FlangeService
 			'maintFlangeEnabled' => $this->isMaintEnabled(),
 			'projectCheckEnabled' => $this->appManager->isEnabledForUser('projectcheck'),
 			'projectFlangeEnabled' => $this->isProjectEnabled(),
+			'invoiceCheckEnabled' => $this->appManager->isEnabledForUser('invoicecheck'),
+			'invoiceFlangeEnabled' => $this->isInvoiceEnabled(),
+			'invoicePushPending' => $this->invoicePush->pendingCount(),
 			'defaultIssueLocationId' => $this->defaultLocationId(),
 		];
 	}
@@ -55,6 +62,11 @@ class FlangeService
 	public function setProjectEnabled(bool $enabled): void
 	{
 		$this->config->setAppValue(Application::APP_ID, self::KEY_PROJECT_ENABLED, $enabled ? '1' : '0');
+	}
+
+	public function setInvoiceEnabled(bool $enabled): void
+	{
+		$this->config->setAppValue(Application::APP_ID, self::KEY_INVOICE_ENABLED, $enabled ? '1' : '0');
 	}
 
 	public function setDefaultLocationId(?int $locationId): void
@@ -113,7 +125,49 @@ class FlangeService
 		if ($projectId <= 0) {
 			throw new ValidationException('validation_failed', '', [['field' => 'projectId', 'code' => 'validation_failed']]);
 		}
-		return $this->runIssue($actorUid, $lines, StockIssueRequest::REF_PROJECT, $projectId, $locationId, self::REF_PROJECT);
+		$result = $this->runIssue($actorUid, $lines, StockIssueRequest::REF_PROJECT, $projectId, $locationId, self::REF_PROJECT);
+		// F8: mirror issued materials onto the customer's InvoiceCheck
+		// draft. Fail-soft — the committed issue is the business fact;
+		// the push rides the outbox flag+retry path.
+		if ($result['ok']) {
+			$result['invoice_sync'] = $this->pushToInvoice($actorUid, $projectId, $result['movements']);
+		}
+		return $result;
+	}
+
+	/**
+	 * F8 push after a committed project issue. Returns the
+	 * `invoice_sync` verdict: ok | skipped | failed.
+	 *
+	 * @param list<array<string, mixed>> $movements
+	 */
+	private function pushToInvoice(string $actorUid, int $projectId, array $movements): string
+	{
+		if (!$this->isInvoiceEnabled() || $movements === []) {
+			return 'skipped';
+		}
+		if (!$this->appManager->isEnabledForUser('invoicecheck')) {
+			return 'skipped';
+		}
+		$lines = [];
+		foreach ($movements as $m) {
+			$sku = (string) ($m['sku'] ?? '');
+			$qty = $m['qty'] ?? 0;
+			if ($sku === '' || !is_numeric($qty) || (float) $qty <= 0) {
+				continue;
+			}
+			$item = $this->items->findBySku($sku);
+			$lines[] = [
+				'sku' => $sku,
+				'text' => $item !== null ? (string) $item->getName() : $sku,
+				'qty' => (float) $qty,
+				'unit' => 'items',
+			];
+		}
+		if ($lines === []) {
+			return 'skipped';
+		}
+		return $this->invoicePush->stageAndPush($actorUid, $projectId, $movements, $lines);
 	}
 
 	/**
@@ -175,6 +229,27 @@ class FlangeService
 	private function isProjectEnabled(): bool
 	{
 		return $this->config->getAppValue(Application::APP_ID, self::KEY_PROJECT_ENABLED, '0') === '1';
+	}
+
+	private function isInvoiceEnabled(): bool
+	{
+		return $this->config->getAppValue(Application::APP_ID, self::KEY_INVOICE_ENABLED, '0') === '1';
+	}
+
+	/**
+	 * F8 flag+retry: drain the outbox with the retrying actor's uid —
+	 * InvoiceCheck authorizes it against the project. Attempt budget
+	 * (bounded, see InvoicePush::findRetryable) is shared across this
+	 * manual drain and the cron InvoicePushRetryJob — an office user
+	 * under-authorized on a project burns attempts either way; the row
+	 * keeps last_error for the settings surface.
+	 */
+	public function retryInvoicePushes(string $actorUid): int
+	{
+		if (!$this->isInvoiceEnabled()) {
+			return 0;
+		}
+		return $this->invoicePush->drain($actorUid);
 	}
 
 	private function defaultLocationId(): ?int

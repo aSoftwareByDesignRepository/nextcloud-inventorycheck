@@ -48,6 +48,7 @@ final class UninstallDropTables implements IRepairStep
 		'iv_balances',
 		'iv_cc_camp',
 		'iv_cc_line',
+		'iv_inv_push',
 		'iv_items',
 		'iv_license_state',
 		'iv_loc_acl',

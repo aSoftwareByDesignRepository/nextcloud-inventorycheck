@@ -131,6 +131,9 @@
     "/api/flange/settings": {
       "post": { "responses": { "200": { "description": "OK" } } }
     },
+    "/api/flange/invoice-push/retry": {
+      "post": { "responses": { "200": { "description": "OK" } } }
+    },
 
     "/api/config": {
       "get": { "responses": { "200": { "description": "OK" } } }

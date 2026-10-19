@@ -20,6 +20,7 @@ use OCA\InventoryCheck\Controller\LowStockController;
 use OCA\InventoryCheck\Controller\MobileController;
 use OCA\InventoryCheck\Controller\MovementController;
 use OCA\InventoryCheck\Controller\PageController;
+use OCA\InventoryCheck\Controller\ProductLookupController;
 use OCA\InventoryCheck\Exception\AppAccessDeniedException;
 use OCA\InventoryCheck\Exception\MobileGateException;
 use OCA\InventoryCheck\Exception\PermissionDeniedException;
@@ -75,6 +76,7 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 		PageController::class,
 		LocationController::class,
 		ItemController::class,
+		ProductLookupController::class,
 		ItemPhotoController::class,
 		BalanceController::class,
 		MovementController::class,
@@ -96,7 +98,10 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 	 * @var array<string, list<string>>
 	 */
 	private const AUTHZ_ACTIONS = [
-		PageController::class => ['item', 'location', 'stocktakeCampaign', 'settingsSection'],
+		PageController::class => [
+			'dashboard', 'items', 'item', 'locations', 'location', 'movements',
+			'stocktake', 'stocktakeNew', 'stocktakeCampaign', 'settings', 'settingsSection',
+		],
 		LocationController::class => [
 			'index', 'byCode', 'show', 'create', 'update', 'destroy',
 			'label', 'labelAlias', 'labelPrint', 'bulkLabels',
@@ -105,6 +110,7 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 			'index', 'byCode', 'show', 'create', 'update', 'destroy',
 			'label', 'labelAlias', 'labelPrint', 'bulkLabels',
 		],
+		ProductLookupController::class => ['lookup'],
 		ItemPhotoController::class => ['show', 'upload', 'destroy'],
 		BalanceController::class => ['index'],
 		MovementController::class => ['index', 'receive', 'issue', 'transfer', 'adjust', 'scan'],
@@ -113,10 +119,10 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 		ImportController::class => ['dryRun', 'commit'],
 		CycleCountController::class => ['index', 'show', 'create', 'start', 'setCount', 'close'],
 		FavouriteController::class => ['index', 'create', 'destroy'],
-		FlangeController::class => ['status', 'issueMaintWo', 'issueProject', 'saveSettings'],
+		FlangeController::class => ['status', 'issueMaintWo', 'issueProject', 'saveSettings', 'retryInvoicePush'],
 		ConfigController::class => [
 			'index', 'saveAccess', 'saveOffice', 'saveNotify', 'saveFractional',
-			'saveWaveD', 'reasonCodes', 'locationAcl', 'saveLocationAcl',
+			'saveWaveD', 'reasonCodes', 'locationAcl', 'saveLocationAcl', 'saveProductLookup',
 		],
 		DirectoryController::class => ['searchUsers', 'searchGroups'],
 		LicenseController::class => [
@@ -127,7 +133,7 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 			'bootstrap', 'byCode', 'itemPhoto', 'locationByCode', 'locations',
 			'balances', 'movements', 'scan', 'pairDevice', 'favourites',
 			'addFavourite', 'removeFavourite', 'cycleCounts', 'cycleCountShow',
-			'cycleCountSetCount',
+			'cycleCountSetCount', 'productLookup',
 		],
 	];
 
@@ -137,7 +143,10 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 	 * @var array<string, list<string>>
 	 */
 	private const MIDDLEWARE_AUTHZ = [
-		PageController::class => ['item', 'location', 'stocktakeCampaign'],
+		PageController::class => [
+			'dashboard', 'items', 'item', 'locations', 'location', 'movements',
+			'stocktake', 'stocktakeNew', 'stocktakeCampaign', 'settings',
+		],
 		ItemPhotoController::class => ['show'],
 		ConfigController::class => ['reasonCodes'],
 	];
@@ -258,6 +267,41 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 		self::assertContains('LocationController::create', $proved);
 		self::assertContains('ItemController::update', $proved);
 		self::assertContains('ItemPhotoController::show@middleware', $proved);
+	}
+
+	/**
+	 * Completeness tripwire (security_contract_list_drift): every action
+	 * declared in appinfo/routes.php must appear in AUTHZ_ACTIONS, so a new
+	 * route cannot silently escape the per-endpoint deny proof. A route whose
+	 * controller is missing from CONTROLLERS fails here as well.
+	 */
+	public function testEveryRoutesPhpActionIsAuthzPinned(): void
+	{
+		$byName = [];
+		foreach (self::CONTROLLERS as $class) {
+			$short = (new ReflectionClass($class))->getShortName();
+			$byName[lcfirst(str_replace('Controller', '', $short))] = $class;
+		}
+		$routes = (string)file_get_contents(dirname(__DIR__, 3) . '/appinfo/routes.php');
+		$missing = [];
+		foreach (explode("\n", $routes) as $line) {
+			if (!preg_match("/'name'\s*=>\s*'([a-zA-Z]+)#([a-zA-Z]+)'/", $line, $nm)) {
+				continue;
+			}
+			$class = $byName[$nm[1]] ?? null;
+			if ($class === null) {
+				$missing[] = $nm[1] . '#' . $nm[2] . ' (controller not in CONTROLLERS)';
+				continue;
+			}
+			if (!in_array($nm[2], self::AUTHZ_ACTIONS[$class] ?? [], true)) {
+				$missing[] = $nm[1] . '#' . $nm[2];
+			}
+		}
+		self::assertSame(
+			[],
+			$missing,
+			'routes.php actions missing from AUTHZ_ACTIONS: ' . implode(', ', $missing),
+		);
 	}
 
 	/**
@@ -614,6 +658,7 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 			$mock->method('setMaintEnabled')->willReturnCallback(static function (): void {});
 			$mock->method('setProjectEnabled')->willReturnCallback(static function (): void {});
 			$mock->method('setDefaultLocationId')->willReturnCallback(static function (): void {});
+			$mock->method('retryInvoicePushes')->willReturn(0);
 			$this->byType[$key] = $mock;
 			return $mock;
 		}

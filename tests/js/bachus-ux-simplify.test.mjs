@@ -210,7 +210,7 @@ test('Bachus: DutyCheck-style stocktake how-to cards', () => {
 	assert.match(appCss, /\.iv-howto[\s\S]{0,200}?flex-direction:\s*column/);
 	assert.match(appCss, /\.iv-stocktake-howto \.iv-quickstart|\.iv-howto \.iv-quickstart/);
 	assert.match(appCss, /container-type:\s*inline-size/);
-	assert.match(appCss, /@container iv-howto \(max-width: 519px\)/);
+	assert.match(appCss, /@container iv-howto \(max-width: 519\.98px\)/);
 	assert.doesNotMatch(appJs, /iv-card iv-empty iv-empty--quickstart iv-howto/);
 	assert.match(appJs, /Never use \.iv-empty here/);
 	assert.match(appCss, /\.iv-quickstart__cta/);

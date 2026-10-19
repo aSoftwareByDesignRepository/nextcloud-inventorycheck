@@ -343,6 +343,8 @@ OC.L10N.register(
 	"Inactive" : "Inaktiv",
 	"InventoryCheck" : "InventoryCheck",
 	"InventoryCheck navigation" : "InventoryCheck-Navigation",
+	"Invoice push retried — some still pending." : "Rechnungs-Übertragung wiederholt — einige sind noch offen.",
+	"Invoice pushes delivered." : "Rechnungs-Übertragungen zugestellt.",
 	"Issue" : "Abgang",
 	"Issue stock" : "Abgang buchen",
 	"Item" : "Artikel",
@@ -553,6 +555,7 @@ OC.L10N.register(
 	"Paste CSV here, or choose a file above." : "CSV hier einfügen oder oben eine Datei wählen.",
 	"Paste IV2 key" : "IV2-Schlüssel einfügen",
 	"Paste SKU or scan code" : "SKU oder Scan-Code einfügen",
+	"Pending invoice pushes" : "Ausstehende Rechnungs-Übertragungen",
 	"Pending pair code" : "Pairing-Code ausstehend",
 	"People who may change settings (in addition to system admins)." : "Personen, die Einstellungen ändern dürfen (zusätzlich zu Systemadministratoren).",
 	"Photo removed." : "Foto entfernt.",
@@ -618,6 +621,7 @@ OC.L10N.register(
 	"Required when the item tracks lots or serial numbers. Serial items always use quantity 1." : "Erforderlich, wenn der Artikel Lose oder Seriennummern verfolgt. Serienartikel immer mit Menge 1.",
 	"Restrict access to allow-listed users and groups" : "Zugriff auf freigegebene Benutzer und Gruppen beschränken",
 	"Results update as you type." : "Ergebnisse aktualisieren sich beim Tippen.",
+	"Retry now" : "Jetzt erneut versuchen",
 	"Reverse" : "Stornieren",
 	"Reverse posts a compensating booking. History stays complete — nothing is deleted." : "Stornieren bucht eine Gegenbuchung. Die Historie bleibt vollständig — nichts wird gelöscht.",
 	"Review conflict lines, then confirm you accept the counted quantities." : "Konfliktzeilen prüfen und dann bestätigen, dass Sie die gezählten Mengen akzeptieren.",
@@ -671,6 +675,8 @@ OC.L10N.register(
 	"Select" : "Auswählen",
 	"Select the code manually to copy." : "Markieren Sie den Code manuell zum Kopieren.",
 	"Select {name} for bulk labels" : "{name} für Etiketten auswählen",
+	"Send issued materials to the customer's draft invoice" : "Abgebuchte Materialien auf die Kunden-Entwurfsrechnung übertragen",
+	"Send issued materials to the customer's draft invoice (InvoiceCheck is not installed yet)" : "Abgebuchte Materialien auf die Kunden-Entwurfsrechnung übertragen (InvoiceCheck ist noch nicht installiert)",
 	"Serial number tracking" : "Seriennummernverfolgung",
 	"Set to zero" : "Auf null setzen",
 	"Settings" : "Einstellungen",
@@ -862,6 +868,5 @@ OC.L10N.register(
 	"{ok} row(s) look fine." : "{ok} Zeile(n) sehen in Ordnung aus.",
 	"★ Remove from favourites" : "★ Aus Favoriten entfernen",
 	"☆ Add to favourites" : "☆ Zu Favoriten hinzufügen"
-	},
-	"nplurals=2; plural=(n != 1);"
+	}
 );

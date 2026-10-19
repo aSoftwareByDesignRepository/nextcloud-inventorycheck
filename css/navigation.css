@@ -643,7 +643,7 @@
 }
 
 /* Responsive: compact nav items on small screens — keep hierarchy tokens in sync */
-@media (max-width: 768px) {
+@media (max-width: 768.98px) {
     #app-navigation {
         --iv-nav-padding-inline: 1rem;
         --iv-nav-icon-size: 1rem;

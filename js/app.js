@@ -5265,6 +5265,28 @@
 				id: 'iv-flange-project',
 				checked: flange.projectFlangeEnabled ? '' : null,
 			});
+			var invoiceToggle = el('input', {
+				type: 'checkbox',
+				className: 'iv-switch__input',
+				id: 'iv-flange-invoice',
+				checked: flange.invoiceFlangeEnabled ? '' : null,
+			});
+			var invoicePending = (flange.invoicePushPending || 0);
+			var invoiceRetryBtn = invoicePending > 0 ? btn(tr('Retry now'), {
+				className: 'iv-btn--touch',
+				onclick: function () {
+					invoiceRetryBtn.disabled = true;
+					return api('POST', ctx.urls.api.flangeInvoicePushRetry, {}).then(function (res) {
+						toast(res && res.pending > 0
+							? tr('Invoice push retried — some still pending.')
+							: tr('Invoice pushes delivered.'));
+						renderSettings(ctx);
+					}).catch(function (err) {
+						invoiceRetryBtn.disabled = false;
+						toast(err.message, true);
+					});
+				},
+			}) : null;
 			var defaultLocSelect = el('select', { className: 'iv-input', id: 'iv-flange-default-loc' });
 			fillSelect(defaultLocSelect, flangeLocations, 'id', function (r) {
 				return r.name + ' — ' + r.code;
@@ -5285,6 +5307,13 @@
 							? tr('Let ProjectCheck issue stock for projects')
 							: tr('Let ProjectCheck issue stock for projects (ProjectCheck is not installed yet)')
 					),
+					settingsSwitchField(
+						invoiceToggle,
+						flange.invoiceCheckEnabled
+							? tr('Send issued materials to the customer\'s draft invoice')
+							: tr('Send issued materials to the customer\'s draft invoice (InvoiceCheck is not installed yet)')
+					),
+					invoicePending > 0 ? field(tr('Pending invoice pushes') + ' (' + invoicePending + ')', invoiceRetryBtn, { name: 'invoicePushRetry' }) : null,
 					field(tr('Default issue location'), defaultLocSelect, { name: 'defaultIssueLocationId' }),
 					settingsFormActions(btn(tr('Save connection settings'), {
 						primary: true,
@@ -5294,6 +5323,7 @@
 							return api('POST', ctx.urls.api.flangeSettings, {
 								maintFlangeEnabled: maintToggle.checked,
 								projectFlangeEnabled: projectToggle.checked,
+								invoiceFlangeEnabled: invoiceToggle.checked,
 								defaultIssueLocationId: defaultLocSelect.value || null,
 							}).then(function () {
 								toast(tr('Connection settings saved.'));

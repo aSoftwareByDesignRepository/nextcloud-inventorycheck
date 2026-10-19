@@ -378,7 +378,7 @@
 
 /* ===== RESPONSIVE ===== */
 
-@media (max-width: 768px) {
+@media (max-width: 768.98px) {
   #app-content-wrapper {
     padding:
       calc(var(--space-4) + env(safe-area-inset-top, 0px))

@@ -44,7 +44,7 @@
 	min-width: 0;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 768.98px) {
 	#app-content.iv-app .iv-page-grid {
 		grid-template-columns: 1fr;
 	}
@@ -326,14 +326,14 @@
 	}
 }
 
-@media (max-width: 900px) {
+@media (max-width: 899.98px) {
 	#app-content.iv-app .iv-date-range {
 		flex-wrap: wrap;
 		max-width: none;
 	}
 }
 
-@media (max-width: 768px) {
+@media (max-width: 768.98px) {
 	#app-content.iv-app .iv-filter-grid,
 	#app-content.iv-app .iv-filter-grid--extended,
 	#app-content.iv-app .iv-filter-grid--record {
@@ -646,7 +646,7 @@
 	box-shadow: none;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 768.98px) {
 	/* Dense list tables without card reflow: horizontal scroll */
 	#app-content.iv-app .table-container .table:not(.iv-table--matrix):not(.iv-table--responsive),
 	#app-content.iv-app .table-container .grid-table:not(.iv-table--matrix):not(.iv-table--responsive) {

@@ -80,18 +80,35 @@ class FlangeController extends Controller
 		if (array_key_exists('projectFlangeEnabled', $p)) {
 			$this->flange->setProjectEnabled(BoolParam::parse($p['projectFlangeEnabled'], 'projectFlangeEnabled'));
 		}
+		if (array_key_exists('invoiceFlangeEnabled', $p)) {
+			$this->flange->setInvoiceEnabled(BoolParam::parse($p['invoiceFlangeEnabled'], 'invoiceFlangeEnabled'));
+		}
 		if (array_key_exists('defaultIssueLocationId', $p)) {
 			$raw = $p['defaultIssueLocationId'];
 			$this->flange->setDefaultLocationId($raw === null || $raw === '' ? null : (int)$raw);
 		}
 		$changed = array_values(array_intersect(
-			['maintFlangeEnabled', 'projectFlangeEnabled', 'defaultIssueLocationId'],
+			['maintFlangeEnabled', 'projectFlangeEnabled', 'invoiceFlangeEnabled', 'defaultIssueLocationId'],
 			array_keys($p),
 		));
 		if ($changed !== []) {
 			$this->auditPolicyChange($uid, 'flange_settings_saved', ['keys' => $changed]);
 		}
 		return new JSONResponse($this->flange->status());
+	}
+
+	/**
+	 * F8: retry queued invoice pushes. The retrying actor's uid drives the
+	 * push — InvoiceCheck authorizes it against the project, so a manager
+	 * can push what the issuing warehouse user could not.
+	 */
+	#[NoAdminRequired]
+	public function retryInvoicePush(): JSONResponse
+	{
+		$uid = $this->access->currentUserId();
+		$this->access->requireOffice($uid);
+		$done = $this->flange->retryInvoicePushes($uid);
+		return new JSONResponse(['ok' => true, 'pushed' => $done, 'pending' => (int) ($this->flange->status()['invoicePushPending'] ?? 0)]);
 	}
 
 	/**

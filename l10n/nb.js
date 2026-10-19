@@ -861,6 +861,12 @@ OC.L10N.register(
 	"{count} line(s) changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities." : "{count} linje(r) endret etter at denne tellingen startet. Sanntidsantallet skiller seg fra øyeblikksbildet — løs det før lukking, eller bekreft at du godtar de talte antallene.",
 	"{ok} row(s) look fine." : "{ok} rad(er) ser bra ut.",
 	"★ Remove from favourites" : "★ Fjern fra favoritter",
-	"☆ Add to favourites" : "☆ Legg til i favoritter"
+	"☆ Add to favourites" : "☆ Legg til i favoritter",
+	"Send issued materials to the customer's draft invoice" : "Send utleverte materialer til kundens utkastfaktura",
+	"Send issued materials to the customer's draft invoice (InvoiceCheck is not installed yet)" : "Send utleverte materialer til kundens utkastfaktura (InvoiceCheck er ikke installert ennå)",
+	"Pending invoice pushes" : "Ventende faktura-overføringer",
+	"Retry now" : "Prøv igjen nå",
+	"Invoice push retried — some still pending." : "Faktura-overføring prøvd på nytt — noen er fortsatt ventende.",
+	"Invoice pushes delivered." : "Faktura-overføringer levert."
 	}
 );

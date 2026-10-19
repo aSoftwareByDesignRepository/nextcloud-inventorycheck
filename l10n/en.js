@@ -343,6 +343,8 @@ OC.L10N.register(
 	"Inactive" : "Inactive",
 	"InventoryCheck" : "InventoryCheck",
 	"InventoryCheck navigation" : "InventoryCheck navigation",
+	"Invoice push retried — some still pending." : "Invoice push retried — some still pending.",
+	"Invoice pushes delivered." : "Invoice pushes delivered.",
 	"Issue" : "Issue",
 	"Issue stock" : "Issue stock",
 	"Item" : "Item",
@@ -553,6 +555,7 @@ OC.L10N.register(
 	"Paste CSV here, or choose a file above." : "Paste CSV here, or choose a file above.",
 	"Paste IV2 key" : "Paste IV2 key",
 	"Paste SKU or scan code" : "Paste SKU or scan code",
+	"Pending invoice pushes" : "Pending invoice pushes",
 	"Pending pair code" : "Pending pair code",
 	"People who may change settings (in addition to system admins)." : "People who may change settings (in addition to system admins).",
 	"Photo removed." : "Photo removed.",
@@ -618,6 +621,7 @@ OC.L10N.register(
 	"Required when the item tracks lots or serial numbers. Serial items always use quantity 1." : "Required when the item tracks lots or serial numbers. Serial items always use quantity 1.",
 	"Restrict access to allow-listed users and groups" : "Restrict access to allow-listed users and groups",
 	"Results update as you type." : "Results update as you type.",
+	"Retry now" : "Retry now",
 	"Reverse" : "Reverse",
 	"Reverse posts a compensating booking. History stays complete — nothing is deleted." : "Reverse posts a compensating booking. History stays complete — nothing is deleted.",
 	"Review conflict lines, then confirm you accept the counted quantities." : "Review conflict lines, then confirm you accept the counted quantities.",
@@ -671,6 +675,8 @@ OC.L10N.register(
 	"Select" : "Select",
 	"Select the code manually to copy." : "Select the code manually to copy.",
 	"Select {name} for bulk labels" : "Select {name} for bulk labels",
+	"Send issued materials to the customer's draft invoice" : "Send issued materials to the customer's draft invoice",
+	"Send issued materials to the customer's draft invoice (InvoiceCheck is not installed yet)" : "Send issued materials to the customer's draft invoice (InvoiceCheck is not installed yet)",
 	"Serial number tracking" : "Serial number tracking",
 	"Set to zero" : "Set to zero",
 	"Settings" : "Settings",
@@ -862,6 +868,5 @@ OC.L10N.register(
 	"{ok} row(s) look fine." : "{ok} row(s) look fine.",
 	"★ Remove from favourites" : "★ Remove from favourites",
 	"☆ Add to favourites" : "☆ Add to favourites"
-	},
-	"nplurals=2; plural=(n != 1);"
+	}
 );

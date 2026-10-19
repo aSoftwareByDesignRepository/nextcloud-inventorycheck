@@ -861,6 +861,12 @@ OC.L10N.register(
 	"{count} line(s) changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities." : "{count}-regel(s) is veranderd nadat deze voorraad is gestart. De levende hoeveelheid verschilt van de snapshot",
 	"{ok} row(s) look fine." : "{ok} rij(s) ziet er prima uit.",
 	"★ Remove from favourites" : "★ Uit favorieten verwijderen",
-	"☆ Add to favourites" : "Aan favorieten toevoegen"
+	"☆ Add to favourites" : "Aan favorieten toevoegen",
+	"Send issued materials to the customer's draft invoice" : "Verstuur uitgegeven materialen naar de conceptfactuur van de klant",
+	"Send issued materials to the customer's draft invoice (InvoiceCheck is not installed yet)" : "Verstuur uitgegeven materialen naar de conceptfactuur van de klant (InvoiceCheck is nog niet geïnstalleerd)",
+	"Pending invoice pushes" : "Openstaande factuur-verzendingen",
+	"Retry now" : "Nu opnieuw proberen",
+	"Invoice push retried — some still pending." : "Factuur-verzending opnieuw geprobeerd — sommige staan nog open.",
+	"Invoice pushes delivered." : "Factuur-verzendingen afgeleverd."
 	}
 );

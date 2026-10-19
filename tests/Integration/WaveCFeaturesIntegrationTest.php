@@ -567,6 +567,13 @@ final class WaveCFeaturesIntegrationTest extends TestCase
 		$mapper = (new Application())->getContainer()->get(\OCA\InventoryCheck\Db\ItemMapper::class);
 		self::assertSame([], $mapper->searchActiveAfterId(0, 0), 'limit < 1 must yield empty');
 
+		// Self-contained fixture: never rely on ambient dev-DB catalog state.
+		$this->items->create($this->uid, [
+			'sku' => 'KS-' . bin2hex(random_bytes(3)),
+			'name' => 'Keyset fixture',
+			'uom' => 'pcs',
+		]);
+
 		$seen = [];
 		$afterId = 0;
 		$pages = 0;

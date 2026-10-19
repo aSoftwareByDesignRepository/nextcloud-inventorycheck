@@ -374,6 +374,13 @@ textarea.iv-input {
 	display: none;
 }
 
+.iv-import-errors {
+	color: var(--iv-danger-ink, var(--color-error-text, var(--color-element-error, #8a0000)));
+	font-weight: 600;
+	margin: 4px 0 0;
+	padding-inline-start: 20px;
+}
+
 .iv-section__subtitle {
 	margin: 20px 0 8px;
 	font-size: 15px;
@@ -548,7 +555,7 @@ label.iv-switch-field {
 	color: var(--color-main-text);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 768.98px) {
 	.iv-form-actions {
 		flex-direction: column;
 		align-items: stretch;
@@ -686,7 +693,7 @@ label.iv-switch-field {
 	flex: 0 0 auto;
 	white-space: nowrap;
 }
-@media (max-width: 768px) {
+@media (max-width: 768.98px) {
 	#app-content.iv-app .iv-filter-grid--simple .iv-filter-field__control--actions .iv-btn,
 	#app-content.iv-app .iv-filter-grid--simple .iv-filter-field__control--actions .btn,
 	#app-content.iv-app .iv-filter-grid--simple .iv-filter-field__control--actions .button {
@@ -773,13 +780,13 @@ label.iv-switch-field {
 			'dates dates';
 	}
 }
-@media (max-width: 900px) {
+@media (max-width: 899.98px) {
 	#app-content.iv-app .iv-filter-grid--movements .iv-date-range {
 		flex-wrap: wrap;
 		max-width: none;
 	}
 }
-@media (max-width: 768px) {
+@media (max-width: 768.98px) {
 	#app-content.iv-app .iv-filter-grid.iv-filter-grid--movements {
 		grid-template-columns: minmax(0, 1fr) max-content;
 		grid-template-areas:
@@ -1277,13 +1284,13 @@ button.iv-hint-dismiss:focus-visible {
 }
 
 /* Prefer content width over viewport when the card is squeezed */
-@container iv-howto (max-width: 519px) {
+@container iv-howto (max-width: 519.98px) {
 	.iv-quickstart {
 		grid-template-columns: 1fr;
 	}
 }
 
-@container iv-howto (min-width: 520px) and (max-width: 899px) {
+@container iv-howto (min-width: 520px) and (max-width: 899.98px) {
 	.iv-quickstart {
 		grid-template-columns: repeat(2, 1fr);
 	}
@@ -1540,7 +1547,7 @@ button.iv-hint-dismiss:focus-visible {
 	gap: var(--iv-space-2, 8px);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 768.98px) {
 	.iv-empty,
 	.iv-empty-state {
 		grid-template-columns: 1fr;
@@ -1882,6 +1889,7 @@ button.iv-hint-dismiss:focus-visible {
 
 .iv-toast {
 	display: flex;
+	flex-wrap: wrap;
 	gap: var(--iv-space-3);
 	align-items: flex-start;
 	padding: var(--iv-space-3) var(--iv-space-4);
@@ -1906,7 +1914,10 @@ button.iv-hint-dismiss:focus-visible {
 }
 
 .iv-toast__message {
-	flex: 1;
+	/* basis:auto so an over-wide message wraps onto its own line at narrow
+	   viewports instead of crushing beside the 44px close button. */
+	flex: 1 1 auto;
+	min-width: 0;
 	margin: 0;
 	overflow-wrap: anywhere;
 }
@@ -2064,7 +2075,7 @@ button.iv-hint-dismiss:focus-visible {
 	color: var(--iv-text, var(--color-main-text));
 }
 
-@media (max-width: 768px) {
+@media (max-width: 768.98px) {
 	.iv-settings-nav {
 		flex-direction: column;
 		align-items: stretch;
@@ -2703,7 +2714,7 @@ button.iv-hint-dismiss:focus-visible {
 	text-underline-offset: 0.15em;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 768.98px) {
 	.iv-support-us__secondary {
 		grid-template-columns: 1fr;
 	}
@@ -2898,7 +2909,7 @@ body > .iv-dialog-overlay > .iv-dialog {
 }
 
 /* Mobile: prevent page-level horizontal scroll; tables scroll inside wrappers */
-@media (max-width: 768px) {
+@media (max-width: 768.98px) {
 	#content.app-inventorycheck,
 	#content.app-inventorycheck #app-content.iv-app,
 	#content.app-inventorycheck #app-content-wrapper.iv-shell {

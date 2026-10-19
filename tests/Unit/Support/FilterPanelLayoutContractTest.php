@@ -111,7 +111,7 @@ final class FilterPanelLayoutContractTest extends TestCase
 		$this->assertStringContainsString('iv-date-range', $patterns);
 		$this->assertStringContainsString('min-height: 44px', $patterns);
 		$this->assertStringContainsString('align-items: stretch', $patterns);
-		$this->assertStringContainsString('@media (max-width: 768px)', $patterns);
+		$this->assertStringContainsString('@media (max-width: 768.98px)', $patterns);
 		$this->assertStringContainsString('@media (max-width: 1200px)', $patterns);
 		$this->assertStringContainsString('.iv-filter-grid.iv-filter-grid--movements', $patterns);
 		$this->assertStringContainsString('grid-template-areas', $patterns);

@@ -26,9 +26,10 @@ final class UninstallDropTablesTest extends TestCase
 		self::assertSame($uninstall, $backup);
 	}
 
-	public function testUninstallListsAllThirteenTables(): void
+	public function testUninstallListsAllTables(): void
 	{
-		self::assertCount(13, UninstallDropTables::TABLES);
+		self::assertCount(14, UninstallDropTables::TABLES);
+		self::assertContains('iv_inv_push', UninstallDropTables::TABLES);
 		self::assertContains('iv_movements', UninstallDropTables::TABLES);
 		self::assertContains('iv_scan_devices', UninstallDropTables::TABLES);
 		self::assertContains('iv_notif_log', UninstallDropTables::TABLES);

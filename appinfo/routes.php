@@ -78,6 +78,7 @@ return [
 		['name' => 'flange#issueMaintWo', 'url' => '/api/flange/maint/issue', 'verb' => 'POST'],
 		['name' => 'flange#issueProject', 'url' => '/api/flange/project-issue', 'verb' => 'POST'],
 		['name' => 'flange#saveSettings', 'url' => '/api/flange/settings', 'verb' => 'POST'],
+		['name' => 'flange#retryInvoicePush', 'url' => '/api/flange/invoice-push/retry', 'verb' => 'POST'],
 
 		['name' => 'config#index', 'url' => '/api/config', 'verb' => 'GET'],
 		['name' => 'config#saveAccess', 'url' => '/api/config/access', 'verb' => 'POST'],
