@@ -226,3 +226,14 @@ body {
 	--iv-bg: var(--iv-bg-card);
 	--iv-fs-base: var(--iv-fs-md);
 }
+
+/* Accent ink for text-on-surface: --color-primary-element as text drops below
+   WCAG AA (~4.3:1) on dark themes — blend toward main-text there. */
+body {
+	--iv-accent-ink: var(--color-primary-element);
+}
+
+body[data-theme-dark],
+body[data-theme-dark-highcontrast] {
+	--iv-accent-ink: color-mix(in srgb, var(--color-primary-element) 70%, var(--color-main-text));
+}
