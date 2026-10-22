@@ -560,6 +560,19 @@
 	justify-content: flex-end;
 }
 
+/* Data cells wrap — core table nowrap would keep long content on one
+   unbreakable line and push the actions column behind the overflow-x wrap
+   (clipped_control_text_at_screen_edge; WCAG 1.4.10 reflow; the farm's
+   table_actions_fit gate). Action cells keep their own nowrap rule below
+   so button labels never split mid-word. */
+#app-content.iv-app .iv-table td,
+#app-content.iv-app .grid-table td,
+#app-content.iv-app .inventorycheck-table td,
+#app-content.iv-app .report-table td,
+.iv-pub .iv-table td {
+	white-space: normal;
+}
+
 /* Actions column: never shrink below button labels (avoid width:1% clipping) */
 #app-content.iv-app .table th.iv-table-actions-col,
 #app-content.iv-app .table th.actions-col,
