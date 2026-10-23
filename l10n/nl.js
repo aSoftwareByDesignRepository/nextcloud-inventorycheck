@@ -792,7 +792,7 @@ OC.L10N.register(
 	"This pairing code is invalid or expired." : "Deze koppelingscode is ongeldig of verlopen.",
 	"This permanently switches every quantity to milli-units (×1000). You cannot turn it off later. Continue?" : "Dit schakelt elke hoeveelheid permanent over op milli-eenheden (×1000). Later uitschakelen is niet mogelijk. Doorgaan?",
 	"This reverses the earlier adjustment by {qty}. The quantity field is fixed for safety." : "Dit storneert de eerdere aanpassing met {qty}. Het aantalveld is om veiligheidsredenen vergrendeld.",
-	"This scanner device slot does not exist." : "Deze scannerapparaat-sleuf bestaat niet.",
+	"This scanner device slot does not exist." : "Dit scannerapparaatslot bestaat niet.",
 	"This takes a snapshot of the current system quantity for every active item at this location." : "Dit vereist een momentopname van de huidige systeemhoeveelheid voor elk actief item op deze locatie.",
 	"Three short steps when you take stock from a van or shelf." : "Drie korte stappen bij het tellen van voorraad uit een bestelwagen of plank.",
 	"Three short steps — tap a location below when you are ready." : "Drie korte stappen",

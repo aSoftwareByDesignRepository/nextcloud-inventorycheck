@@ -68,13 +68,26 @@ final class L10nWrongSenseContractTest extends TestCase
 			'nb' => ['/\binnlegg/iu', '/\butgitt\b/iu'],
 		],
 		'/\bseats?\b/iu' => [
-			'nl' => ['/\bstoel/iu', '/\bzitplaats/iu', '/\bzitting\b/iu'],
+			// nl/nb/da compound head-final nouns (Licentiestoelen, Mobilsetet)
+			// slip past left-anchored \b — those legs run unanchored on purpose.
+			'nl' => ['/stoel/iu', '/zitplaats/iu', '/\bzitting/iu'],
 			'pl' => ['/\bfotel/iu', '/\bsiedzeni/iu', '/\bsiedzisk/iu'],
-			'da' => ['/\bsæde/iu'],
-			'nb' => ['/\bseter?\b/iu'],
-			'it' => ['/\bpostazion/iu'],
-			'es' => ['/\bpuestos?\b/iu'],
-			'pt_BR' => ['/licença móvel/iu'],
+			'da' => ['/sæde[rtn]?\b/iu', '/\bstol(?:e|en|ene|er|erne)?\b/iu'],
+			'nb' => ['/sete[rtn]?\b/iu', '/\bstol(?:e|en|ene|er|erne)?\b/iu'],
+			'it' => ['/\bpostazion/iu', '/\bsedia|\bsedile/iu'],
+			'es' => ['/\bpuestos?\b/iu', '/\basientos?\b/iu', '/\bsilla/iu'],
+			'fr' => ['/\bsièg/iu', '/\bchaise/iu'],
+			'pt' => ['/\bcadeira/iu'],
+			'pt_BR' => ['/licença móvel/iu', '/\bcadeira/iu'],
+		],
+		// device slots: allocation slots — never slit/track/gambling senses
+		// (fr "machines à sous", nb "enhetsspor", pl "szczelina" all shipped).
+		'/\bslots?\b/iu' => [
+			'fr' => ['/machine.? à sous/iu', '/fente/iu'],
+			'es' => ['/\brango\b/iu'],
+			'nb' => ['/spor(?:s|et|ene)?\b/iu'],
+			'pl' => ['/szczelin/iu'],
+			'nl' => ['/sleuf/iu'],
 		],
 		'/\bkinds?\b/iu' => [
 			'nb' => ['/\bsnill\b/iu', '/\bvennlig/iu'],
@@ -129,6 +142,19 @@ final class L10nWrongSenseContractTest extends TestCase
 	 * da lager, es acción/carga, fr bilan/stock for the stocktake entity).
 	 */
 	private const REQUIRED = [
+		'/\bseats?\b/iu' => [
+			'de' => 'sitz|pl[äa]tz|lizenz',
+			'da' => 'plads|licens',
+			'es' => 'plaza|licencia',
+			'fr' => 'poste|place|licence',
+			'it' => 'posto|posti|posizion|postazion|licenza',
+			'nb' => 'plass|lisens',
+			'nl' => 'seat|plek|plaats|licentie',
+			'pl' => 'miejsce|miejsc|stanowisk|licencj',
+			'sv' => 'plats|licens',
+			'pt' => 'lugar|licença|vaga',
+			'pt_BR' => 'assento|licença|lugar',
+		],
 		'/\bstocktake/iu' => [
 			'de' => 'inventur|zählung',
 			'da' => 'lagertælling|cykeltælling',
@@ -196,6 +222,16 @@ final class L10nWrongSenseContractTest extends TestCase
 			'de' => 'gezähl', 'da' => 'talt|talte', 'es' => 'contad', 'fr' => 'compt',
 			'it' => 'contat', 'nb' => 'talt|telte', 'nl' => 'geteld', 'pl' => 'policz',
 			'sv' => 'räknad', 'pt' => 'contad', 'pt_BR' => 'contad',
+		],
+		'Mobile seats' => [
+			'de' => 'sitz', 'da' => 'plads', 'es' => 'plaza', 'fr' => 'poste',
+			'it' => 'post', 'nb' => 'plass', 'nl' => 'seat', 'pl' => 'stanowisk|miejsc',
+			'sv' => 'plats', 'pt' => 'lugar', 'pt_BR' => 'assento',
+		],
+		'Seat assigned.' => [
+			'de' => 'sitz', 'da' => 'plads', 'es' => 'plaza', 'fr' => 'poste',
+			'it' => 'posto', 'nb' => 'plass', 'nl' => 'seat', 'pl' => 'miejsce|stanowisk',
+			'sv' => 'plats', 'pt' => 'lugar', 'pt_BR' => 'assento',
 		],
 	];
 
