@@ -360,7 +360,7 @@
 		"Items need a SKU. Locations are warehouses, vans, or site boxes. Favourites speed later booking.": "Varer trenger et SKU. Plasseringer er varehus, varebiler eller byggeplasskasser. Favoritter fremskynder senere bokføringer.",
 		"Items: SKU and scan codes": "Elementer: SKU og skannekoder",
 		"Kind": "Type",
-		"Kind applies immediately. Use Apply for item, location, or date filters.": "Type gjelder umiddelbart. Bruk Bruk for element-, plasserings- eller datofiltre.",
+		"Kind applies immediately. Use Apply for item, location, or date filters.": "Type gjelder umiddelbart. Trykk Bruk for element-, plasserings- eller datofiltre.",
 		"Label": "Etikett",
 		"Label actions": "Etiketthandlinger",
 		"Label preview": "Forhåndsvisning av etikett",
