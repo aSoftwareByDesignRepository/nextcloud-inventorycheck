@@ -397,7 +397,7 @@ OC.L10N.register(
 	"Locations: Warehouse, van, site" : "Emplacements : entrepôt, camionnette, chantier",
 	"Look up product" : "Rechercher le produit",
 	"Look up unknown barcodes online" : "Rechercher les codes-barres inconnus en ligne",
-	"Looking good — confirm this booking." : "Bon look — confirmez cette écriture.",
+	"Looking good — confirm this booking." : "Tout est en ordre — confirmez cette écriture.",
 	"Lookup settings are unavailable on this server." : "Les paramètres de recherche ne sont pas disponibles sur ce serveur.",
 	"Lookup settings saved." : "Paramètres de recherche enregistrés.",
 	"Lookup unavailable — fill in the details yourself." : "Recherche indisponible — remplissez les détails vous-même.",
