@@ -133,6 +133,63 @@ final class L10nWrongSenseContractTest extends TestCase
 			'es' => ['/\breserv/iu', '/\bcuestiones\b/iu'],
 			'nl' => ['/\bkwesties\b/iu'],
 		],
+		// clipboard paste: substance senses (es pasta, fr pâte, da pastafeltet,
+		// pl pola pasty), try-senses (es Pruebe), and untranslated EN Paste
+		// leads all shipped pre-fix (iv-crit9).
+		'/\bpaste\b/iu' => [
+			'de' => ['/\bpaste\b/iu', '/\bKleister/iu', '/\bTeig\b/iu', '/\bprobier/iu', '/\bteste[rn]?\b/iu'],
+			'es' => ['/\bpaste\b/iu', '/\bpasta\b/iu', '/prueb/iu', '/\bprobar\b/iu', '/\bprueba\b/iu'],
+			'fr' => ['/\bpaste\b/iu', '/\bpâte\b/iu', '/\bessai/iu', '/\btester\b/iu'],
+			'it' => ['/\bpaste\b/iu', '/\bpasta\b/iu', '/\bprova\b/iu', '/di incolla\b/iu'],
+			'da' => ['/\bpaste\b/iu', '/\bpasta/iu', '/\bprøv/iu'],
+			'nb' => ['/\bpaste\b/iu', '/\bpasta/iu', '/\bprøv/iu'],
+			'nl' => ['/\bpaste\b/iu', '/\bpasta\b/iu', '/\bproef/iu'],
+			'pl' => ['/\bpaste\b/iu', '/\bpast[ayąeę]/iu', '/\bprób/iu'],
+			'pt' => ['/\bpaste\b/iu', '/\bmassa\b/iu', '/\bcola\b/iu', '/\bteste\b/iu'],
+			'pt_BR' => ['/\bpaste\b/iu', '/\bmassa\b/iu', '/\bcola\b/iu', '/\bteste\b/iu'],
+			'sv' => ['/\bpaste\b/iu', '/\bpasta/iu', '/\bprova\b/iu', '/\btesta\b/iu'],
+		],
+		// credential/licence key: keyboard-key senses (es tecla, fr touche,
+		// pl klawisz, it tasto, nl toets, de Taste, da/nb tast, sv tangent,
+		// pt tecla) and door-key (es llave) shipped pre-fix.
+		'/\bkeys?\b/iu' => [
+			'de' => ['/\bTaste[rn]?\b/iu'],
+			'es' => ['/\btecla/iu', '/\bllave/iu'],
+			'fr' => ['/\btouche/iu'],
+			'it' => ['/\btasto/iu'],
+			'da' => ['/\btast(?:e|en|er|erne)?\b/iu'],
+			'nb' => ['/\btast(?:e|en|er|ene|erne)?\b/iu'],
+			'nl' => ['/\btoets(?:e|en)?\b/iu'],
+			'pl' => ['/\bklawisz/iu'],
+			'pt' => ['/\btecla/iu'],
+			'pt_BR' => ['/\btecla/iu'],
+			'sv' => ['/\btangent/iu'],
+		],
+		// device pairing: couple/mating senses shipped (es pareja/pares,
+		// es Pared=wall, fr paire, nl paar-code/paren=mate, pl Para noun /
+		// kod pary / wspólnych prób / połączone, pt_BR Código de par).
+		'/\bpair/iu' => [
+			'es' => ['/\bpareja/iu', '/\bpares\b/iu', '/\bpared\b/iu', '/\bde par\b/iu', '/\bunión\b/iu'],
+			'fr' => ['/\bpaire\b/iu', '/\bpairez\b/iu', '/\bpairer\b/iu'],
+			'it' => ['/\bcoppia/iu'],
+			'da' => ['/\buafslutt/iu'],
+			'nb' => ['/\bpar kod/iu', '/\bkobl/iu'],
+			'nl' => ['/\bpaar/iu', '/pareerd/iu', '/\bparen\b/iu'],
+			'pl' => ['/\bpar[ayęe]\b/iu', '/\błączen/iu', '/wspólnych prób/iu', '/połączon/iu'],
+			'pt' => ['/\bpar\b/iu'],
+			'pt_BR' => ['/\bpar\b/iu'],
+			'sv' => ['/\bpar\b/iu'],
+			'de' => ['/\bpaar\b/iu', '/\bpaaren\b/iu'],
+		],
+		// scan code: es exploración (=exploration), nb Søkekode (=search
+		// code), fr Code d'analyse / de balayage, pt_BR verb-form label.
+		'/\bscan[_ ]?codes?\b/iu' => [
+			'es' => ['/\bexploraci/iu', '/\bescaneado\b/iu'],
+			'nb' => ['/\bsøke/iu'],
+			'da' => ['/\bsøge/iu'],
+			'fr' => ["/d'analyse\b/iu", '/\bbalayage/iu', '/et scan\b/iu'],
+			'pt_BR' => ['/^Digitalizar/iu', '/\bescaneie\b/iu'],
+		],
 	];
 
 	/**
@@ -142,6 +199,62 @@ final class L10nWrongSenseContractTest extends TestCase
 	 * da lager, es acción/carga, fr bilan/stock for the stocktake entity).
 	 */
 	private const REQUIRED = [
+		// clipboard-paste canon per locale (iv-crit9 family)
+		'/\bpaste\b/iu' => [
+			'de' => 'einfüg|einsetz|tipp|füg\w*\b[^.]{0,60}\bein\b',
+			'es' => 'peg',
+			'fr' => 'coll',
+			'it' => 'incoll',
+			'da' => 'indsæt',
+			'nb' => 'lim|innlim',
+			'nl' => 'plak',
+			'pl' => 'wklej',
+			'pt' => 'col',
+			'pt_BR' => 'col',
+			'sv' => 'klistr|inklistr',
+		],
+		// credential-key canon per locale (iv-crit9 family)
+		'/\bkeys?\b/iu' => [
+			'de' => 'schlüssel',
+			'es' => 'clave',
+			'fr' => 'clé|clef',
+			'it' => 'chiav',
+			'da' => 'nøgle',
+			'nb' => 'nøkkel',
+			'nl' => 'sleutel',
+			'pl' => 'klucz',
+			'pt' => 'chav',
+			'pt_BR' => 'chav',
+			'sv' => 'nyckel',
+		],
+		// device-pairing canon — also catches dropped pairing terms
+		'/\bpair/iu' => [
+			'de' => 'kopp|pair',
+			'es' => 'emparej|empár',
+			'fr' => 'appari|appair|jumel|coupl|assoc',
+			'it' => 'associ|abbin|accoppi',
+			'da' => 'par',
+			'nb' => 'par',
+			'nl' => 'koppel',
+			'pl' => 'paro|spar',
+			'pt' => 'emparelh|parea|parei',
+			'pt_BR' => 'emparelh|parea|parei',
+			'sv' => 'parkoppl',
+		],
+		// scan-code canon per locale
+		'/\bscan[_ ]?codes?\b/iu' => [
+			'de' => 'scan',
+			'es' => 'escaneo|escan',
+			'fr' => 'numéris',
+			'it' => 'scansion',
+			'da' => 'scan|skann',
+			'nb' => 'skann',
+			'nl' => 'scan',
+			'pl' => 'skanowan|skanując',
+			'pt' => 'leitura|escan|digitaliz',
+			'pt_BR' => 'digitaliz|escane|leitura',
+			'sv' => 'skann',
+		],
 		'/\bseats?\b/iu' => [
 			'de' => 'sitz|pl[äa]tz|lizenz',
 			'da' => 'plads|licens',
@@ -233,6 +346,46 @@ final class L10nWrongSenseContractTest extends TestCase
 			'it' => 'posto', 'nb' => 'plass', 'nl' => 'seat', 'pl' => 'miejsce|stanowisk',
 			'sv' => 'plats', 'pt' => 'lugar', 'pt_BR' => 'assento',
 		],
+		// iv-crit9 sentinel cells — the exact cells the critic flagged
+		'Paste IV2 key' => [
+			'de' => 'schlüssel', 'da' => 'nøgle', 'es' => 'clave', 'fr' => 'clé',
+			'it' => 'chiave', 'nb' => 'nøkkel', 'nl' => 'sleutel', 'pl' => 'klucz',
+			'sv' => 'nyckel', 'pt' => 'chave', 'pt_BR' => 'chave',
+		],
+		'Paste CSV here, or choose a file above.' => [
+			'de' => 'einfüg', 'da' => 'indsæt', 'es' => 'pegue', 'fr' => 'collez',
+			'it' => 'incoll', 'nb' => 'lim inn', 'nl' => 'plak', 'pl' => 'wklej',
+			'sv' => 'klistr', 'pt' => 'cole', 'pt_BR' => 'cole',
+		],
+		'Tip: wedge scanners type into the paste field — we resolve the item automatically.' => [
+			'de' => 'einfügefeld', 'da' => 'indsætningsfelt', 'es' => 'campo de pegado',
+			'fr' => 'champ de collage', 'it' => 'campo di incollaggio', 'nb' => 'innlimingsfelt',
+			'nl' => 'plakveld', 'pl' => 'pola wklejania', 'sv' => 'inklistringsfält',
+			'pt' => 'campo de colar', 'pt_BR' => 'campo de colar',
+		],
+		'Paired' => [
+			'de' => 'gekoppelt', 'da' => 'parret', 'es' => 'emparejado',
+			'fr' => 'couplé|jumelé|appairé', 'it' => 'associato', 'nb' => 'parret',
+			'nl' => 'gekoppeld', 'pl' => 'sparowane', 'sv' => 'parkopplad',
+			'pt' => 'emparelhado', 'pt_BR' => 'emparelhado',
+		],
+		'Expired pair code' => [
+			'de' => 'pairing', 'da' => 'parkode', 'es' => 'emparejamiento',
+			'fr' => 'appariement', 'it' => 'associazione', 'nb' => 'parkode',
+			'nl' => 'koppelingscode', 'pl' => 'parowania', 'sv' => 'parkopplingskod',
+			'pt' => 'emparelhamento', 'pt_BR' => 'pareamento|emparelhamento',
+		],
+		'Pending pair code' => [
+			'de' => 'pairing', 'da' => 'parkode', 'es' => 'emparejamiento',
+			'fr' => 'appariement', 'it' => 'associazione', 'nb' => 'parkode',
+			'nl' => 'koppelingscode', 'pl' => 'parowania', 'sv' => 'parkopplingskod',
+			'pt' => 'emparelhamento', 'pt_BR' => 'pareamento|emparelhamento',
+		],
+		'Scan code' => [
+			'de' => 'scan-code', 'da' => 'scan', 'es' => 'escaneo', 'fr' => 'numérisation',
+			'it' => 'scansione', 'nb' => 'skannekode', 'nl' => 'scancode', 'pl' => 'skanowania',
+			'sv' => 'skanningskod', 'pt' => 'leitura', 'pt_BR' => 'digitalização',
+		],
 	];
 
 	private static function loadTranslations(string $locale): array
@@ -287,6 +440,11 @@ final class L10nWrongSenseContractTest extends TestCase
 		$en = self::loadTranslations('en');
 		$violations = [];
 		foreach ($en as $key => $enVal) {
+			// CSV header lines stay literal English in every locale — the
+			// glossary exempts them via unless_key, the contract skips here.
+			if (str_starts_with((string)$key, 'Columns: ')) {
+				continue;
+			}
 			foreach (self::REQUIRED as $keyPat => $perLoc) {
 				if (!preg_match($keyPat, (string)$key)) {
 					continue;

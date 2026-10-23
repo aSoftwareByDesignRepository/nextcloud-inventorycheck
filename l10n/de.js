@@ -694,7 +694,7 @@ OC.L10N.register(
 	"Skip to main content" : "Zum Hauptinhalt springen",
 	"SKU" : "SKU",
 	"SKU and name are enough. Reorder level and more options sit under More when you need them." : "SKU und Name reichen. Mindestbestand und weitere Optionen stehen unter Mehr, wenn Sie sie brauchen.",
-	"SKU and scan codes" : "SKU und Scancodes",
+	"SKU and scan codes" : "SKU und Scan-Codes",
 	"SKU or name" : "SKU oder Name",
 	"Something went wrong." : "Etwas ist schiefgelaufen.",
 	"Something went wrong. Try again." : "Etwas ist schiefgelaufen. Bitte erneut versuchen.",
