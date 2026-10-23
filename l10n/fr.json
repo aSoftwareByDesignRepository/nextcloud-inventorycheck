@@ -854,7 +854,7 @@
 		"Where are you counting?": "Où comptez-vous ?",
 		"Who gets a notice the first time an item drops below its reorder level.": "Qui reçoit une alerte la première fois qu'un article passe sous son seuil de réapprovisionnement.",
 		"Who may receive, adjust, and run stocktakes — and whether negative stock is allowed.": "Qui peut recevoir, ajuster et faire des inventaires — et si le stock négatif est autorisé.",
-		"Without restriction, any logged-in Nextcloud user can open InventoryCheck. Field users still need location access (and seats for mobile) to book stock.": "Sans restriction, tout utilisateur Nextcloud connecté peut ouvrir InventoryCheck. Les utilisateurs terrain ont quand même besoin d’un accès à l’emplacement (et de postes pour le mobile) pour saisir du stock.",
+		"Without restriction, any logged-in Nextcloud user can open InventoryCheck. Field users still need location access (and seats for mobile) to book stock.": "Sans restriction, tout utilisateur Nextcloud connecté peut ouvrir InventoryCheck. Les utilisateurs terrain ont quand même besoin d’un accès à l’emplacement (et de postes pour le mobile) pour enregistrer du stock.",
 		"Yes": "Oui",
 		"You already have the maximum number of favourite locations.": "Vous avez déjà le nombre maximum de lieux favoris.",
 		"You are not allowed to use InventoryCheck right now.": "Vous n'êtes pas autorisé à utiliser InventoryCheck dès maintenant.",
