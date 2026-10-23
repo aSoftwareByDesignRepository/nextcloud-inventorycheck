@@ -1,0 +1,9 @@
+# nb target-lexicon allowlist — inventorycheck, reviewed 2026-10-23
+# Legit Norwegian Bokmål vocabulary the flat nb_NO wordlist misses or
+# that shares an identical spelling with a donor language (da/sv).
+# Markers certify reviewed exceptions, not donor-laundering.
+deaktiver # shared — nb imperative of "deaktivere"; da infinitive/imperative has the same spelling
+deaktivering # shared — nb noun "deaktivering"; same spelling in da/sv
+deaktivert # shared — nb past participle of "deaktivere"; flat nb wordlist misses it
+autentisering # shared — nb noun "autentisering"; same spelling in sv
+dashboardet # loanword — nb definite singular of the accepted loanword "dashboard"

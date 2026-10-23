@@ -1,0 +1,9 @@
+# sv target-lexicon allowlist — inventorycheck, reviewed 2026-10-23
+# Legit Swedish vocabulary the flat sv_SE wordlist misses or that
+# shares an identical spelling with a donor language (da/nb).
+# Markers certify reviewed exceptions, not donor-laundering.
+batch # loanword — accepted loanword in sv inventory/ERP usage ("batchspårning", SAOL: batch)
+batchspårning # loanword — sv compound of the loanword batch + spårning
+sku # abbrev — SKU (stock-keeping unit), standard retail abbreviation used verbatim in sv
+inventorychecks # proper — sv genitive compound of the app name InventoryCheck
+fjärronboarding # loanword — sv compound fjärr + onboarding (accepted loanword)

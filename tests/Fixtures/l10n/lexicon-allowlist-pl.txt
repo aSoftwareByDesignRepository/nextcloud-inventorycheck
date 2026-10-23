@@ -1,0 +1,5 @@
+# pl target-lexicon allowlist — inventorycheck, reviewed 2026-10-23
+# Legit Polish vocabulary the flat pl_PL wordlist misses or that
+# shares an identical spelling with a donor language (de/nl).
+# Markers certify reviewed exceptions, not donor-laundering.
+sku # abbrev — SKU (jednostka magazynowa), standard retail abbreviation used verbatim in pl

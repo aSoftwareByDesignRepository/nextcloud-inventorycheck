@@ -103,7 +103,7 @@ runMutations($root, 'StocktakeCreatePageContractTest|BachusSimplicityUxContractT
 	[
 		'name' => 'drop-howto-container-narrow',
 		'file' => 'css/app.css',
-		'search' => '@container iv-howto (max-width: 519px) {',
+		'search' => '@container iv-howto (max-width: 519.98px) {',
 		'replace' => '@container iv-howto (max-width: 1px) {',
 	],
 	[
