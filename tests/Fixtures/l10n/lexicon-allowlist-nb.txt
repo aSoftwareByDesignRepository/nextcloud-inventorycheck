@@ -7,3 +7,4 @@ deaktivering # shared — nb noun "deaktivering"; same spelling in da/sv
 deaktivert # shared — nb past participle of "deaktivere"; flat nb wordlist misses it
 autentisering # shared — nb noun "autentisering"; same spelling in sv
 dashboardet # loanword — nb definite singular of the accepted loanword "dashboard"
+utelte # nb past participle of "telle" (uncounted); flat wordlist misses it — da "utalte" is the distinct donor spelling
