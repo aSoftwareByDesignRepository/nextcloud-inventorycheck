@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.5.1 - 2026-10-25
+
+### Fixed
+
+- intake nb 'Bruk Bruk' doubled token — 'Trykk Bruk'
+- iv-crit13 fr 'Bon look' franglais — 'Tout est en ordre'
+- iv-crit12 wrong-sense — pl book-verb to księguj canon, fr/nl book cells
+- iv-crit11 wrong-sense sweep — star/subject/field + autosave/adjust canon
+- iv-crit10 wrong-sense sweep — reorder/issue/balance + same-class corpus
+- iv-crit9 wrong-sense sweep — paste/key/pair/scan-code canon across 9 catalogs + contract legs
+- license-seat wrong-sense sweep — fr siege->poste, es asiento->plaza, compounds
+- nb utalte -> utelte (da bleed spelling), allowlist utelte
+- wrong-sense polyseme sweep — ledger/close/item/stocktake families + contract test
+- donor-language bleed cleanup + verbatim CSV headers; media-boundary test literal
+- data-cell wrap path for legacy alias tables (table_actions_fit)
+- add --iv-accent-ink token (dark-theme AA) — shared-pack resync leftover
+- dark-theme accent-ink token + e2e user-state reset
+
+### Changed
+
+- normalize tarball modes + host-side signature audit (GH #47)
+
 ## 1.5.0 - 2026-10-19
 
 ### Added
