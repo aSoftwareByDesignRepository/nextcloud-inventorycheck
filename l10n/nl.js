@@ -671,7 +671,7 @@ OC.L10N.register(
 	"Searching…" : "Zoeken...",
 	"Seat assigned." : "Seat toegewezen.",
 	"Seat removed." : "Seat verwijderd.",
-	"Seats" : "Plaatsen",
+	"Seats" : "Seats",
 	"Select" : "Selecteren",
 	"Select the code manually to copy." : "Selecteer de code handmatig om te kopiëren.",
 	"Select {name} for bulk labels" : "{name} selecteren voor bulklabels",
