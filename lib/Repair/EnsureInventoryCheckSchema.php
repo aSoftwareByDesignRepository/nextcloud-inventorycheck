@@ -73,7 +73,7 @@ final class EnsureInventoryCheckSchema implements IRepairStep
 		$this->seedWaveDDefaults();
 		$output->info(sprintf(
 			'InventoryCheck: all %d tables are present; seeded %d demo row(s).',
-			count(UninstallDropTables::TABLES),
+			count(SchemaTableCatalog::EXPECTED_TABLES),
 			$seeded,
 		));
 	}
@@ -151,7 +151,7 @@ final class EnsureInventoryCheckSchema implements IRepairStep
 	private function missingTables(): array
 	{
 		$missing = [];
-		foreach (UninstallDropTables::TABLES as $table) {
+		foreach (SchemaTableCatalog::EXPECTED_TABLES as $table) {
 			if (!$this->connection->tableExists($table)) {
 				$missing[] = $table;
 			}
