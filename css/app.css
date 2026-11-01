@@ -910,13 +910,15 @@ label.iv-switch-field {
 	background: var(--color-primary-element-light);
 }
 
-.iv-badge--overdue {
+.iv-badge--overdue,
+.iv-badge--critical {
 	background: var(--iv-tint-danger);
 	color: var(--color-error-text, var(--color-error));
 	border: 1px solid color-mix(in srgb, var(--color-error-text, var(--color-error)) 40%, transparent);
 }
 
-.iv-badge--today {
+.iv-badge--today,
+.iv-badge--warn {
 	background: var(--iv-tint-warning);
 	color: var(--color-warning-text, var(--color-warning));
 	border: 1px solid color-mix(in srgb, var(--color-warning-text, var(--color-warning)) 40%, transparent);

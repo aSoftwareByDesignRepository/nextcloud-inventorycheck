@@ -918,6 +918,7 @@ OC.L10N.register(
 	"stale" : "stale",
 	"to" : "to",
 	"unpriced" : "unpriced",
+	"usage spike" : "usage spike",
 	"{count} item(s) were never counted." : "{count} item(s) were never counted.",
 	"{count} item(s) were never counted. Confirming leaves those items unchanged." : "{count} item(s) were never counted. Confirming leaves those items unchanged.",
 	"{count} line(s) changed after this stocktake started. Closing with the counted quantities will overwrite those later movements." : "{count} line(s) changed after this stocktake started. Closing with the counted quantities will overwrite those later movements.",

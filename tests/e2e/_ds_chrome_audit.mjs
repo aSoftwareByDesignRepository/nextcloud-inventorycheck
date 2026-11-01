@@ -21,6 +21,7 @@ import AxeBuilder from '@axe-core/playwright'
 import { createHash } from 'node:crypto'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { execSync } from 'node:child_process'
 import { login } from './helpers/auth.mjs'
 
 const BASE = process.env.NC_BASE_URL || 'http://localhost:8081'
@@ -33,6 +34,10 @@ mkdirSync(OUT, { recursive: true })
 const USERS = {
 	probe: { username: 'iv_ds_probe', password: PASS },
 	denied: { username: 'iv_ds_denied', password: PASS },
+	// office-but-not-app-admin — the approval-threshold leg needs a writer
+	// the F-16 gate actually fires for. Allow-list is granted for the leg
+	// only and restored in finally (see phaseRestock).
+	office: { username: 'iv_doc_office', password: process.env.IV_OFFICE_PASS || 'DocOffice1!' },
 }
 
 const THEMES = ['light', 'dark', 'light-highcontrast', 'dark-highcontrast']
@@ -60,12 +65,13 @@ const DETAIL_ROUTE_DEFS = [
 ]
 const SETTINGS_SECTIONS = [
 	'access', 'office', 'notifications', 'quantities', 'location-access',
-	'connections', 'policies', 'license', 'support',
+	'connections', 'policies', 'restock', 'license', 'support',
 ]
 const DENIED_ROUTES = [
 	{ id: 'denied-dashboard', path: '/apps/inventorycheck/' },
 	{ id: 'denied-items', path: '/apps/inventorycheck/items' },
 	{ id: 'denied-settings', path: '/apps/inventorycheck/settings/access' },
+	{ id: 'denied-settings-restock', path: '/apps/inventorycheck/settings/restock' },
 ]
 
 const results = { phase: PHASE, startedAt: new Date().toISOString(), cells: [], defects: [], captures: {}, themeProof: {} }
@@ -337,6 +343,7 @@ async function phaseSweep(browser) {
 		...APP_ROUTES,
 		...detailRoutes,
 		{ id: 'settings-access', path: '/apps/inventorycheck/settings/access' },
+		{ id: 'settings-restock', path: '/apps/inventorycheck/settings/restock' },
 		{ id: 'settings-license', path: '/apps/inventorycheck/settings/license' },
 	]
 	await page.goto(`${BASE}/apps/inventorycheck/`, { waitUntil: 'domcontentloaded' })
@@ -873,6 +880,7 @@ async function phaseTheatre(browser) {
 		...detailRoutes.map((r) => r.path),
 		'/apps/inventorycheck/locations', '/apps/inventorycheck/movements',
 		'/apps/inventorycheck/stocktake', '/apps/inventorycheck/settings/license',
+		'/apps/inventorycheck/settings/restock',
 	]
 	for (const path of theatreRoutes) {
 		const cell = { id: `theatre__${path.split('/').pop() || 'index'}`, checks: { path }, status: 'ok' }
@@ -918,6 +926,422 @@ async function phaseTheatre(browser) {
 	await ctx.close()
 }
 
+/* ───────────────────────────── restock (F-08..F-28 wave) ─────────────────────
+ * Covers the restock wave's web surface end-to-end:
+ *   - /settings/restock form (W1 budgets/thresholds) + its 422 field-error path
+ *   - low-stock dashboard block incl. badge paint for the JS-emitted
+ *     iv-badge--critical / --warn variants (error_state_unstyled class sweep)
+ *   - order-sheet block: create draft → send → cancel with durable API re-reads
+ *   - F-16 approval 403 surface as an office-non-admin user (iv_doc_office),
+ *     with the allow-list grant + threshold restored in finally
+ *   - F-24 CSV column-mapping preview dialog (dry-run → headers + errors,
+ *     cancelled before commit — no row persists)
+ *   - W2 receive dialog spend/expiry fields, F-14 supplier fields in dlg-item
+ *   - F-21 NC dashboard widget (enabled via occ, layout restored in finally)
+ */
+const NC_DIR = '/home/alex/Development/nextcloud-dev/nextcloud'
+function occ(args) {
+	return execSync(`docker compose exec -T -u www-data nextcloud php occ ${args}`, {
+		cwd: NC_DIR, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'],
+	}).trim()
+}
+
+function apiEval(pg, method, path, body) {
+	return pg.evaluate(async ({ method, path, body }) => {
+		const token = (window.OC && window.OC.requestToken)
+			|| document.querySelector('head[data-requesttoken]')?.getAttribute('data-requesttoken') || ''
+		const res = await fetch(path, {
+			method, credentials: 'same-origin',
+			headers: { requesttoken: token, 'Content-Type': 'application/json' },
+			body: body === undefined ? undefined : JSON.stringify(body),
+		})
+		let json = null
+		try { json = await res.json() } catch { /* non-json or empty */ }
+		return { status: res.status, json }
+	}, { method, path, body })
+}
+
+function ivUrls(pg) {
+	return pg.evaluate(() => JSON.parse(
+		document.getElementById('app-content')?.getAttribute('data-iv-urls') || '{}',
+	))
+}
+
+const VISIBLE_DIALOG_RE = '.iv-dialog-overlay:not([hidden]) [role="dialog"], .iv-dialog-overlay:not([hidden]) .iv-dialog, dialog[open]'
+async function waitDialog(pg) {
+	await pg.waitForFunction(
+		(sel) => [...document.querySelectorAll(sel)]
+			.some((d) => d.offsetParent !== null || (d.tagName === 'DIALOG' && d.open)),
+		VISIBLE_DIALOG_RE, { timeout: 12000 },
+	).catch(() => {})
+	await settle(pg)
+}
+
+async function phaseRestock(browser) {
+	const probeState = await loginState(browser, 'probe')
+	const ctx = await browser.newContext({ baseURL: BASE, storageState: probeState, viewport: { width: 1440, height: 900 } })
+	const page = await ctx.newPage()
+	page.on('pageerror', (e) => console.log('PAGEEXC:', String(e).slice(0, 200)))
+
+	/* R1 — /settings/restock form + validation-error surface. */
+	{
+		const r = { id: 'restock-settings-form', checks: {}, status: 'ok', fails: [] }
+		const resp = await page.goto(`${BASE}/apps/inventorycheck/settings/restock`, { waitUntil: 'domcontentloaded' })
+		await settle(page)
+		r.checks.http = resp ? resp.status() : 'nav-fail'
+		r.checks.catList = await page.locator('ul.iv-category-list').count()
+		r.checks.dayInputs = await page.locator('#iv-main-content input[type="number"]').count()
+		r.checks.saveBtn = await page.locator('[data-iv-settings-section="restock"] .iv-form-actions button.primary').first().isVisible().catch(() => false)
+		r.checks.axe = await runAxe(page)
+		if (typeof r.checks.http !== 'number' || r.checks.http >= 400) r.fails.push(`http ${r.checks.http}`)
+		if (r.checks.dayInputs < 3) r.fails.push(`expected >=3 persisted day/threshold inputs, got ${r.checks.dayInputs}`)
+		if (!r.checks.saveBtn) r.fails.push('no Save action for app-admin')
+		if (r.checks.axe.length) r.fails.push(`axe ${r.checks.axe.length}`)
+		await snap(page, 'restock__settings-form__light__1440')
+
+		// Validation negative: a below-min threshold must 422 into
+		// aria-invalid + inline .iv-field__error + error toast (never persist).
+		const threshold = page.locator('[data-iv-field="approvalThresholdMinor"] input').first()
+		if (await threshold.count()) {
+			await threshold.fill('-5')
+			let postStatus = null
+			const l = (res) => { if (res.request().method() === 'POST' && /config\/restock/.test(res.request().url())) postStatus = res.status() }
+			page.on('response', l)
+			await page.locator('[data-iv-settings-section="restock"] .iv-form-actions button.primary').click().catch(() => {})
+			await page.waitForTimeout(1600)
+			page.off('response', l)
+			r.checks.invalidPost = postStatus
+			r.checks.fieldInvalid = await page.locator('[data-iv-field="approvalThresholdMinor"] input[aria-invalid="true"]').count()
+			r.checks.inlineError = await page.locator('[data-iv-field="approvalThresholdMinor"] .iv-field__error:not([hidden])').count()
+			r.checks.errorToast = await page.locator('.iv-toast--error, .toast--error').first().isVisible().catch(() => false)
+			await snap(page, 'restock__settings-form__422')
+			if (postStatus !== null && postStatus < 400) r.fails.push(`invalid threshold accepted (POST ${postStatus})`)
+			if (!r.checks.fieldInvalid) r.fails.push('no aria-invalid on rejected threshold')
+			if (!r.checks.inlineError) r.fails.push('no inline .iv-field__error on rejected threshold')
+			if (!r.checks.errorToast) r.fails.push('no error toast on rejected save')
+		} else {
+			r.fails.push('approvalThresholdMinor input not found')
+		}
+		if (r.fails.length) r.status = 'fail'
+		record(r)
+	}
+
+	/* R2 — low-stock block: badge paint for JS-emitted variants (the classes
+	 * must have painted rules AND render on a live critical row). */
+	{
+		const r = { id: 'restock-lowstock-badges', checks: {}, status: 'ok', fails: [] }
+		await page.goto(`${BASE}/apps/inventorycheck/`, { waitUntil: 'domcontentloaded' })
+		await settle(page)
+		const urls = await ivUrls(page)
+		const low = await apiEval(page, 'GET', `${urls.api.lowStock}?limit=20&offset=0`)
+		const rows = (low.json && low.json.data) || []
+		r.checks.lowRows = rows.length
+		// CSSOM: the painted rules must exist regardless of fixture state.
+		r.checks.badgeRules = await page.evaluate(() => {
+			const found = { critical: false, warn: false }
+			for (const sheet of document.styleSheets) {
+				let rules = []
+				try { rules = [...sheet.cssRules] } catch { continue }
+				for (const rule of rules) {
+					const t = rule.selectorText || ''
+					if (t.includes('.iv-badge--critical')) found.critical = true
+					if (t.includes('.iv-badge--warn')) found.warn = true
+				}
+			}
+			return found
+		})
+		if (!r.checks.badgeRules.critical) r.fails.push('no CSS rule paints .iv-badge--critical')
+		if (!r.checks.badgeRules.warn) r.fails.push('no CSS rule paints .iv-badge--warn')
+		// Live paint proof: mark one low-stock item critical → the badge must
+		// render with a non-transparent fill (restored in finally).
+		const target = rows[0]?.item?.id
+		if (target != null) {
+			const put = await apiEval(page, 'PUT', `${urls.api.items}/${target}`, { criticality: 'critical' })
+			r.checks.criticalityPut = put.status
+			try {
+				await page.goto(`${BASE}/apps/inventorycheck/`, { waitUntil: 'domcontentloaded' })
+				await settle(page)
+				const badge = page.locator('[data-iv-low-stock-actions]') // actions host proves the section rendered
+				r.checks.lowStockSection = await badge.count()
+				const critBadge = page.locator('.iv-badge--critical').first()
+				r.checks.criticalBadgeVisible = await critBadge.isVisible().catch(() => false)
+				if (r.checks.criticalBadgeVisible) {
+					r.checks.criticalPaint = await critBadge.evaluate((el) => {
+						const cs = getComputedStyle(el)
+						return { bg: cs.backgroundColor, border: cs.borderTopWidth + '/' + cs.borderTopStyle, color: cs.color }
+					})
+					const transparent = /rgba?\(0,\s*0,\s*0,\s*0\)/.test(r.checks.criticalPaint.bg)
+					if (transparent) r.fails.push(`--critical badge unpainted: ${JSON.stringify(r.checks.criticalPaint)}`)
+				} else {
+					r.fails.push('critical badge not rendered on a critical low-stock row')
+				}
+				await snap(page, 'restock__lowstock-badges', { fullPage: true })
+			} finally {
+				await apiEval(page, 'PUT', `${urls.api.items}/${target}`, { criticality: 'none' })
+			}
+		} else {
+			r.fails.push('no low-stock rows — order-sheet block and badge legs cannot run')
+		}
+		if (r.fails.length) r.status = 'fail'
+		record(r)
+	}
+
+	/* R3 — order-sheet lifecycle through the real UI with durable re-reads. */
+	{
+		const r = { id: 'restock-order-sheet-lifecycle', checks: {}, status: 'ok', fails: [] }
+		await page.goto(`${BASE}/apps/inventorycheck/`, { waitUntil: 'domcontentloaded' })
+		await settle(page)
+		const urls = await ivUrls(page)
+		const sheetsSection = page.locator('section[aria-labelledby="iv-sheets-title"]')
+		r.checks.sheetsSection = await sheetsSection.count()
+		if (!r.checks.sheetsSection) {
+			r.fails.push('order-sheet section not rendered (office surface + low rows expected)')
+			r.status = 'fail'; record(r)
+		} else {
+			let sheetId = null
+			try {
+				const before = new Set(((await apiEval(page, 'GET', `${urls.api.orderSheets}?status=draft,sent`)).json?.data || []).map((s) => s.id))
+				await sheetsSection.locator('button').first().click() // Create draft order sheet
+				// Resolve the NEW sheet id by diffing the draft,sent list — the
+				// first '#N' in DOM order may be an older fixture sheet.
+				for (let i = 0; i < 20 && sheetId == null; i++) {
+					await page.waitForTimeout(500)
+					const after = ((await apiEval(page, 'GET', `${urls.api.orderSheets}?status=draft,sent`)).json?.data || [])
+					const fresh = after.filter((s) => !before.has(s.id))
+					if (fresh.length) sheetId = Math.max(...fresh.map((s) => s.id))
+				}
+				await settle(page)
+				r.checks.createdId = sheetId
+				await snap(page, 'restock__order-sheet__draft')
+				const row = () => page.locator('section[aria-labelledby="iv-sheets-title"] .iv-row__actions', {
+					has: page.locator('strong', { hasText: new RegExp(`^#${sheetId}\\b`) }),
+				}).first()
+				// Send → sent badge + toast; status re-read through the API.
+				await row().locator('button.primary').first().click()
+				await page.waitForTimeout(1200)
+				await settle(page)
+				const sent = await apiEval(page, 'GET', `${urls.api.orderSheets}/${sheetId}`)
+				r.checks.sentStatus = sent.json?.sheet?.status ?? sent.json?.data?.status ?? sent.json?.status ?? sent.status
+				r.checks.sendToast = await page.locator('.iv-toast--ok, .toast--success').first().isVisible().catch(() => false)
+				await snap(page, 'restock__order-sheet__sent')
+				// Cancel → cancelled on re-read, row leaves the draft,sent list.
+				await row().locator('button:not(.primary)').first().click()
+				await page.waitForTimeout(1200)
+				await settle(page)
+				const after = await apiEval(page, 'GET', `${urls.api.orderSheets}/${sheetId}`)
+				r.checks.finalStatus = after.json?.sheet?.status ?? after.json?.data?.status ?? after.json?.status ?? after.status
+				r.checks.rowGone = (await row().count()) === 0
+				if (!sheetId) r.fails.push('no draft sheet id after create')
+				if (r.checks.sentStatus !== 'sent') r.fails.push(`expected sent, re-read ${JSON.stringify(r.checks.sentStatus)}`)
+				if (r.checks.finalStatus !== 'cancelled') r.fails.push(`expected cancelled, re-read ${JSON.stringify(r.checks.finalStatus)}`)
+				if (!r.checks.rowGone) r.fails.push('cancelled sheet still listed under draft,sent')
+			} catch (err) {
+				r.fails.push(`lifecycle error: ${String(err).slice(0, 200)}`)
+				// Leave no open draft behind on failure — cancel is terminal and safe.
+				if (sheetId != null) await apiEval(page, 'POST', `${urls.api.orderSheets}/${sheetId}/cancel`, {}).catch(() => {})
+			}
+			if (r.fails.length) r.status = 'fail'
+			record(r)
+		}
+	}
+
+	/* R4 — F-16 approval 403 surface as office-non-admin. Threshold is set to
+	 * 1 cent and the sheet priced so total > threshold; both restored in
+	 * finally. iv_doc_office is allow-listed for the leg only. */
+	{
+		const r = { id: 'restock-order-sheet-approval-403', checks: {}, status: 'ok', fails: [] }
+		let octx2 = null
+		let officePage = null
+		let allowedBackup = null
+		let urls = null
+		let sid = null
+		let sheetCancelled = false
+		let target = null
+		let prevPrice = null
+		try {
+			await page.goto(`${BASE}/apps/inventorycheck/`, { waitUntil: 'domcontentloaded' })
+			await settle(page)
+			urls = await ivUrls(page)
+			allowedBackup = occ(`config:app:get inventorycheck access_allowed_user_ids`) || '[]'
+			occ(`config:app:set inventorycheck access_allowed_user_ids --value='["admin","iv_doc_office"]'`)
+			// Price one low-stock item so the sheet total clears the 1c threshold.
+			const low = await apiEval(page, 'GET', `${urls.api.lowStock}?limit=20&offset=0`)
+			target = (low.json?.data || [])[0]?.item?.id ?? null
+			prevPrice = (low.json?.data || [])[0]?.item?.lastPriceMinor ?? null
+			if (target == null) throw new Error('no low-stock row to price')
+			await apiEval(page, 'PUT', `${urls.api.items}/${target}`, { lastPriceMinor: 500 })
+			const setCfg = await apiEval(page, 'POST', urls.api.configRestock, { approvalThresholdMinor: 1 })
+			r.checks.thresholdSet = setCfg.status
+			try {
+				const officeState = await loginState(browser, 'office')
+				octx2 = await browser.newContext({ baseURL: BASE, storageState: officeState, viewport: { width: 1440, height: 900 } })
+				officePage = await octx2.newPage()
+				await officePage.goto(`${BASE}/apps/inventorycheck/`, { waitUntil: 'domcontentloaded' })
+				await settle(officePage)
+				const sheetsSection = officePage.locator('section[aria-labelledby="iv-sheets-title"]')
+				const before = new Set(((await apiEval(page, 'GET', `${urls.api.orderSheets}?status=draft,sent`)).json?.data || []).map((s) => s.id))
+				await sheetsSection.locator('button').first().click()
+				for (let i = 0; i < 20 && sid == null; i++) {
+					await officePage.waitForTimeout(500)
+					const after = ((await apiEval(page, 'GET', `${urls.api.orderSheets}?status=draft,sent`)).json?.data || [])
+					const fresh = after.filter((s) => !before.has(s.id))
+					if (fresh.length) sid = Math.max(...fresh.map((s) => s.id))
+				}
+				await settle(officePage)
+				r.checks.sheetId = sid
+				const row = officePage.locator('section[aria-labelledby="iv-sheets-title"] .iv-row__actions', {
+					has: officePage.locator('strong', { hasText: new RegExp(`^#${sid}\\b`) }),
+				}).first()
+				await row.locator('button.primary').first().click()
+				await officePage.waitForTimeout(1500)
+				r.checks.errorToast = await officePage.locator('.iv-toast--error, .toast--error').first().isVisible().catch(() => false)
+				r.checks.toastText = (await officePage.locator('.iv-toast--error, .toast--error').first().textContent().catch(() => '') || '').trim().slice(0, 160)
+				r.checks.toastRole = await officePage.locator('.iv-toast--error[role="alert"], .toast--error[role="alert"]').count()
+				const stillDraft = await apiEval(page, 'GET', `${urls.api.orderSheets}/${sid}`)
+				r.checks.statusAfter403 = stillDraft.json?.sheet?.status ?? stillDraft.json?.data?.status ?? stillDraft.json?.status ?? stillDraft.status
+				await snap(officePage, 'restock__order-sheet__approval-403')
+				// Durable negative: the 403 must leave the sheet a draft; cancel it.
+				await apiEval(page, 'POST', `${urls.api.orderSheets}/${sid}/cancel`, {})
+				sheetCancelled = true
+				if (!r.checks.errorToast) r.fails.push('no error toast on approval-blocked send')
+				if (!/approval/i.test(r.checks.toastText || '')) r.fails.push(`toast does not name the approval path: '${r.checks.toastText}'`)
+				if (!r.checks.toastRole) r.fails.push('error toast missing role=alert')
+				if (r.checks.statusAfter403 !== 'draft') r.fails.push(`sheet mutated despite 403: ${JSON.stringify(r.checks.statusAfter403)}`)
+			} finally {
+				if (urls && sid != null && !sheetCancelled) {
+					await apiEval(page, 'POST', `${urls.api.orderSheets}/${sid}/cancel`, {}).catch(() => {})
+				}
+				if (urls) await apiEval(page, 'POST', urls.api.configRestock, { approvalThresholdMinor: '' }).catch(() => {})
+				if (urls && target != null) await apiEval(page, 'PUT', `${urls.api.items}/${target}`, { lastPriceMinor: prevPrice }).catch(() => {})
+				if (allowedBackup != null) occ(`config:app:set inventorycheck access_allowed_user_ids --value='${allowedBackup.replace(/'/g, `'\\''`)}'`)
+			}
+		} catch (err) {
+			r.fails.push(`approval leg error: ${String(err).slice(0, 220)}`)
+		} finally {
+			if (officePage) await officePage.close().catch(() => {})
+			if (octx2) await octx2.close().catch(() => {})
+		}
+		if (r.fails.length) r.status = 'fail'
+		record(r)
+	}
+
+	/* R5 — F-24 CSV column-mapping preview (dry-run → headers + row errors,
+	 * then cancel — the durable postcondition is nothing persisted). */
+	{
+		const r = { id: 'restock-import-preview', checks: {}, status: 'ok', fails: [] }
+		await page.goto(`${BASE}/apps/inventorycheck/items`, { waitUntil: 'domcontentloaded' })
+		await settle(page)
+		const urls = await ivUrls(page)
+		const marker = 'IVDSW2-IMPORT-01'
+		const pre = await apiEval(page, 'GET', `${urls.api.items}/by-code/${marker}`)
+		r.checks.preStatus = pre.status
+		try {
+			await page.locator('.iv-actions-more__summary').first().click()
+			await page.locator('.iv-actions-more__body button').first().click()
+			await waitDialog(page)
+			const csv = `sku,name,reorder_level\n${marker},DS wave probe widget,5\n,missing-sku row,3`
+			const insideDlg = (sel) => VISIBLE_DIALOG_RE.split(',').map((p) => `${p.trim()} ${sel}`).join(',')
+			await page.locator(insideDlg('textarea')).first().fill(csv)
+			await page.waitForSelector('[data-iv-import-headers]', { timeout: 15000 }).catch(() => {})
+			await page.waitForTimeout(800)
+			r.checks.headerMap = await page.locator('[data-iv-import-headers] .iv-badge').allTextContents()
+			r.checks.rowErrors = await page.locator('.iv-import-errors li').count()
+			r.checks.okCounter = await page.evaluate(() => {
+				const box = document.querySelector('[data-iv-import-result]')
+				return box ? (box.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 200) : null
+			})
+			await snap(page, 'dialog__restock-import-preview__open')
+			await page.keyboard.press('Escape')
+			await page.waitForTimeout(400)
+			const post = await apiEval(page, 'GET', `${urls.api.items}/by-code/${marker}`)
+			r.checks.postStatus = post.status
+			if (!r.checks.headerMap.length) r.fails.push('no column-mapping badges after dry-run')
+			if (!r.checks.rowErrors) r.fails.push('bad row produced no error entry')
+			if (r.checks.postStatus === 200) r.fails.push('import preview committed without confirm')
+		} catch (err) {
+			r.fails.push(`import preview error: ${String(err).slice(0, 200)}`)
+		}
+		if (r.fails.length) r.status = 'fail'
+		record(r)
+	}
+
+	/* R6 — W2 receive dialog: spend + lot-expiry fields on the office surface. */
+	{
+		const r = { id: 'restock-receive-fields', checks: {}, status: 'ok', fails: [] }
+		await page.goto(`${BASE}/apps/inventorycheck/`, { waitUntil: 'domcontentloaded' })
+		await settle(page)
+		await page.locator('#iv-page-actions button.primary').first().click().catch(() => {})
+		await waitDialog(page)
+		r.checks.restockBlock = await page.locator('[data-iv-receive-restock]').count()
+		r.checks.spendField = await page.locator('[data-iv-field="spendMinor"]').count()
+		r.checks.expiryField = await page.locator('[data-iv-field="expiresAt"]').count()
+		await snap(page, 'dialog__restock-receive-fields__open')
+		if (!r.checks.restockBlock) r.fails.push('no data-iv-receive-restock block (office ctx expected)')
+		if (!r.checks.spendField) r.fails.push('no spendMinor field')
+		if (!r.checks.expiryField) r.fails.push('no expiresAt field')
+		await page.keyboard.press('Escape')
+		if (r.fails.length) r.status = 'fail'
+		record(r)
+	}
+
+	/* R7 — F-14 supplier fields in the item dialog. */
+	{
+		const r = { id: 'restock-item-supplier-fields', checks: {}, status: 'ok', fails: [] }
+		await page.goto(`${BASE}/apps/inventorycheck/items`, { waitUntil: 'domcontentloaded' })
+		await settle(page)
+		await page.locator('#iv-page-actions button.primary').first().click().catch(() => {})
+		await waitDialog(page)
+		for (const name of ['supplierName', 'supplierSku', 'supplierLeadDays', 'orderPackQty', 'supplierNote']) {
+			r.checks[name] = await page.locator(`[data-iv-field="${name}"]`).count()
+			if (!r.checks[name]) r.fails.push(`missing field ${name}`)
+		}
+		await snap(page, 'dialog__restock-item-supplier-fields__open')
+		await page.keyboard.press('Escape')
+		if (r.fails.length) r.status = 'fail'
+		record(r)
+	}
+
+	/* R8 — F-21 NC dashboard widget, enabled for the probe user for the leg
+	 * and restored in finally (the user had no layout key — delete resets). */
+	{
+		const r = { id: 'restock-nc-dashboard-widget', checks: {}, status: 'ok', fails: [] }
+		let hadLayout = null
+		try {
+			try { hadLayout = occ(`user:setting iv_ds_probe dashboard layout`) } catch { hadLayout = null }
+			occ(`user:setting iv_ds_probe dashboard layout inventorycheck-low-stock`)
+			for (const theme of ['light', 'dark']) {
+				await page.goto(`${BASE}/apps/inventorycheck/`, { waitUntil: 'domcontentloaded' })
+				await setUserTheme(page, theme)
+				const resp = await page.goto(`${BASE}/apps/dashboard/`, { waitUntil: 'domcontentloaded' })
+				// Widget items arrive via OCS — wait for a rendered item link.
+				await page.waitForSelector('a[href*="/apps/inventorycheck/items/"]', { timeout: 15000 }).catch(() => {})
+				await settle(page)
+				r.checks[`http_${theme}`] = resp ? resp.status() : 'nav-fail'
+				r.checks[`widget_${theme}`] = {
+					appLinks: await page.locator('a[href*="/apps/inventorycheck"]').count(),
+					itemLinks: await page.locator('a[href*="/apps/inventorycheck/items/"]').count(),
+					emptyText: await page.locator('.empty-content, [class*="empty"]').first().isVisible().catch(() => false),
+				}
+				if (!r.checks[`widget_${theme}`].itemLinks) r.fails.push(`no widget item links on ${theme} dashboard`)
+				await snap(page, `restock__nc-dashboard-widget__${theme}__1440`)
+			}
+			await page.goto(`${BASE}/apps/inventorycheck/`, { waitUntil: 'domcontentloaded' })
+			await setUserTheme(page, 'light')
+		} catch (err) {
+			r.fails.push(`widget leg error: ${String(err).slice(0, 200)}`)
+		} finally {
+			try {
+				if (hadLayout) occ(`user:setting iv_ds_probe dashboard layout '${hadLayout.replace(/'/g, `'\\''`)}'`)
+				else occ(`user:setting iv_ds_probe dashboard layout --delete`)
+			} catch (e2) { r.fails.push(`layout restore failed: ${String(e2).slice(0, 120)}`) }
+		}
+		if (r.fails.length) r.status = 'fail'
+		record(r)
+	}
+
+	await ctx.close()
+}
+
 /* ───────────────────────────── main ───────────────────────────── */
 const browser = await chromium.launch({ headless: true })
 try {
@@ -925,7 +1349,8 @@ try {
 	else if (PHASE === 'dialogs') await phaseDialogs(browser)
 	else if (PHASE === 'states') await phaseStates(browser)
 	else if (PHASE === 'theatre') await phaseTheatre(browser)
-	else if (PHASE === 'all') { await phaseSweep(browser); await phaseDialogs(browser); await phaseStates(browser); await phaseTheatre(browser) }
+	else if (PHASE === 'restock') await phaseRestock(browser)
+	else if (PHASE === 'all') { await phaseSweep(browser); await phaseDialogs(browser); await phaseStates(browser); await phaseTheatre(browser); await phaseRestock(browser) }
 } finally {
 	results.finishedAt = new Date().toISOString()
 	writeFileSync(join(OUT, `results-${PHASE}.json`), JSON.stringify(results, null, 1))

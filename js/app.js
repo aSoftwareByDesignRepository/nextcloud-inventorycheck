@@ -221,10 +221,15 @@
 				}
 			});
 		}
-		(children || []).forEach(function (c) {
+		var addChild = function (c) {
 			if (c == null) return;
+			if (Array.isArray(c)) {
+				c.forEach(addChild);
+				return;
+			}
 			node.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
-		});
+		};
+		(children || []).forEach(addChild);
 		return node;
 	}
 
@@ -1800,6 +1805,9 @@
 						if (r.criticality === 'critical') {
 							kids.push(el('span', { className: 'iv-badge iv-badge--critical', text: tr('critical') }));
 						}
+						if (r.usageSpike) {
+							kids.push(el('span', { className: 'iv-badge iv-badge--warn', text: tr('usage spike') }));
+						}
 						return kids;
 					} },
 					{ label: tr('SKU'), render: function (r) { return r.item.sku; } },
@@ -3270,6 +3278,7 @@
 		var orderPackQty = el('input', qtyInputAttrs(ctx, {
 			adjust: true,
 			value: existing && existing.orderPackQty != null ? existing.orderPackQty : '',
+			required: false,
 		}));
 		orderPackQty.placeholder = tr('e.g. 100');
 		var orderPackPrice = el('input', {

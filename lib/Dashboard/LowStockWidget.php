@@ -58,12 +58,12 @@ class LowStockWidget implements IAPIWidget, IButtonWidget
 	public function getItems(string $userId, ?string $since = null, int $limit = 7): array
 	{
 		try {
-			$rows = $this->lowStock->list($userId, min(20, $limit), 0)['rows'] ?? [];
+			$rows = $this->lowStock->list($userId, min(20, $limit), 0)['data'] ?? [];
 		} catch (\Throwable) {
 			return [];
 		}
 		$icon = $this->urlGenerator->getAbsoluteURL(
-			$this->urlGenerator->imagePath(Application::APP_ID, 'app-dark.svg'),
+			$this->urlGenerator->imagePath(Application::APP_ID, 'app.svg'),
 		);
 		$items = [];
 		foreach ($rows as $r) {
