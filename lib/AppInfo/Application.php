@@ -287,6 +287,7 @@ class Application extends App implements IBootstrap
 		$context->registerService(\OCA\InventoryCheck\Service\KitService::class, static function ($c): \OCA\InventoryCheck\Service\KitService {
 			return new \OCA\InventoryCheck\Service\KitService($c->get(IDBConnection::class), $c->get(ItemMapper::class), $c->get(MovementService::class), $c->get(AccessControlService::class), $c->get(IConfig::class));
 		});
+		$context->registerDashboardWidget(\OCA\InventoryCheck\Dashboard\LowStockWidget::class);
 		$context->registerService(LowStockService::class, static function ($c): LowStockService {
 			return new LowStockService(
 				$c->get(ItemMapper::class),
