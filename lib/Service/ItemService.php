@@ -10,6 +10,7 @@ use OCA\InventoryCheck\Db\Item;
 use OCA\InventoryCheck\Db\ItemMapper;
 use OCA\InventoryCheck\Db\LocationMapper;
 use OCA\InventoryCheck\Db\LotMapper;
+use OCA\InventoryCheck\Db\SupplierMapper;
 use OCA\InventoryCheck\Db\UniqueViolation;
 use OCA\InventoryCheck\Exception\ConflictException;
 use OCA\InventoryCheck\Exception\NotFoundException;
@@ -35,6 +36,7 @@ class ItemService
 		private readonly ?ItemPhotoService $photos = null,
 		private readonly ?RestockConfig $restock = null,
 		private readonly ?LotMapper $lots = null,
+		private readonly ?SupplierMapper $suppliers = null,
 	) {
 	}
 
@@ -884,39 +886,67 @@ class ItemService
 	{
 		$this->access->requireOffice($actorUid);
 		$this->items->findById($itemId);
-		$qb = $this->db->getQueryBuilder();
-		$qb->select("id")->from("iv_item_suppliers")
-			->where($qb->expr()->eq("item_id", $qb->createNamedParameter($itemId, \PDO::PARAM_INT)))
-			->andWhere($qb->expr()->eq("supplier_id", $qb->createNamedParameter($supplierId, \PDO::PARAM_INT)))
-			->setMaxResults(1);
-		$res = $qb->executeQuery();
-		$row = $res->fetch();
-		$res->closeCursor();
-		$dem = $this->db->getQueryBuilder();
-		$dem->update("iv_item_suppliers")->set("preferred", $dem->createNamedParameter(false, \PDO::PARAM_BOOL))
-			->where($dem->expr()->eq("item_id", $dem->createNamedParameter($itemId, \PDO::PARAM_INT)));
-		$dem->executeStatement();
-		if ($row !== false) {
-			$u = $this->db->getQueryBuilder();
-			$u->update("iv_item_suppliers")
-				->set("preferred", $u->createNamedParameter(true, \PDO::PARAM_BOOL))
-				->set("supplier_sku", $u->createNamedParameter($sku))
-				->set("price_minor", $u->createNamedParameter($priceMinor, \PDO::PARAM_INT))
-				->set("pack_qty", $u->createNamedParameter($packQty, \PDO::PARAM_INT))
-				->set("lead_days", $u->createNamedParameter($leadDays, \PDO::PARAM_INT))
-				->where($u->expr()->eq("id", $u->createNamedParameter((int)$row["id"], \PDO::PARAM_INT)));
-			$u->executeStatement();
-		} else {
-			$i = $this->db->getQueryBuilder();
-			$i->insert("iv_item_suppliers")
-				->setValue("item_id", $i->createNamedParameter($itemId, \PDO::PARAM_INT))
-				->setValue("supplier_id", $i->createNamedParameter($supplierId, \PDO::PARAM_INT))
-				->setValue("supplier_sku", $i->createNamedParameter($sku))
-				->setValue("price_minor", $i->createNamedParameter($priceMinor, \PDO::PARAM_INT))
-				->setValue("pack_qty", $i->createNamedParameter($packQty, \PDO::PARAM_INT))
-				->setValue("lead_days", $i->createNamedParameter($leadDays, \PDO::PARAM_INT))
-				->setValue("preferred", $i->createNamedParameter(true, \PDO::PARAM_BOOL));
-			$i->executeStatement();
+		if ($supplierId <= 0) {
+			throw new ValidationException('validation_failed', '', [['field' => 'supplierId', 'code' => 'validation_failed']]);
 		}
+		// iv_item_suppliers has no FK — validate the reference before upsert.
+		$this->suppliers()->findById($supplierId);
+		if ($priceMinor !== null && ($priceMinor < 0 || $priceMinor > RestockConfig::MAX_MONEY_MINOR)) {
+			throw new ValidationException('validation_failed', '', [['field' => 'priceMinor', 'code' => 'validation_failed']]);
+		}
+		if ($packQty !== null && ($packQty < 1 || $packQty > QtyScale::maxStorage($this->config))) {
+			throw new ValidationException('validation_failed', '', [['field' => 'packQty', 'code' => 'validation_failed']]);
+		}
+		if ($leadDays !== null && ($leadDays < 0 || $leadDays > 365)) {
+			throw new ValidationException('validation_failed', '', [['field' => 'leadDays', 'code' => 'validation_failed']]);
+		}
+		$sku = $sku !== null ? mb_substr($sku, 0, 200) : null;
+		$this->db->beginTransaction();
+		try {
+			$qb = $this->db->getQueryBuilder();
+			$qb->select("id")->from("iv_item_suppliers")
+				->where($qb->expr()->eq("item_id", $qb->createNamedParameter($itemId, \PDO::PARAM_INT)))
+				->andWhere($qb->expr()->eq("supplier_id", $qb->createNamedParameter($supplierId, \PDO::PARAM_INT)))
+				->setMaxResults(1);
+			$res = $qb->executeQuery();
+			$row = $res->fetch();
+			$res->closeCursor();
+			$dem = $this->db->getQueryBuilder();
+			$dem->update("iv_item_suppliers")->set("preferred", $dem->createNamedParameter(false, \PDO::PARAM_BOOL))
+				->where($dem->expr()->eq("item_id", $dem->createNamedParameter($itemId, \PDO::PARAM_INT)));
+			$dem->executeStatement();
+			if ($row !== false) {
+				$u = $this->db->getQueryBuilder();
+				$u->update("iv_item_suppliers")
+					->set("preferred", $u->createNamedParameter(true, \PDO::PARAM_BOOL))
+					->set("supplier_sku", $u->createNamedParameter($sku))
+					->set("price_minor", $u->createNamedParameter($priceMinor, \PDO::PARAM_INT))
+					->set("pack_qty", $u->createNamedParameter($packQty, \PDO::PARAM_INT))
+					->set("lead_days", $u->createNamedParameter($leadDays, \PDO::PARAM_INT))
+					->where($u->expr()->eq("id", $u->createNamedParameter((int)$row["id"], \PDO::PARAM_INT)));
+				$u->executeStatement();
+			} else {
+				$i = $this->db->getQueryBuilder();
+				$i->insert("iv_item_suppliers")
+					->setValue("item_id", $i->createNamedParameter($itemId, \PDO::PARAM_INT))
+					->setValue("supplier_id", $i->createNamedParameter($supplierId, \PDO::PARAM_INT))
+					->setValue("supplier_sku", $i->createNamedParameter($sku))
+					->setValue("price_minor", $i->createNamedParameter($priceMinor, \PDO::PARAM_INT))
+					->setValue("pack_qty", $i->createNamedParameter($packQty, \PDO::PARAM_INT))
+					->setValue("lead_days", $i->createNamedParameter($leadDays, \PDO::PARAM_INT))
+					->setValue("preferred", $i->createNamedParameter(true, \PDO::PARAM_BOOL));
+				$i->executeStatement();
+			}
+			$this->db->commit();
+		} catch (\Throwable $e) {
+			$this->db->rollBack();
+			throw $e;
+		}
+	}
+
+	/** SupplierMapper is optional in unit-test constructions — resolve lazily. */
+	private function suppliers(): SupplierMapper
+	{
+		return $this->suppliers ?? \OCP\Server::get(SupplierMapper::class);
 	}
 }

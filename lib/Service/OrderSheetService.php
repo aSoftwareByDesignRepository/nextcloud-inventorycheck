@@ -10,7 +10,7 @@ use OCA\InventoryCheck\Db\OrderSheetLine;
 use OCA\InventoryCheck\Db\OrderSheetLineMapper;
 use OCA\InventoryCheck\Db\OrderSheetMapper;
 use OCA\InventoryCheck\Db\SupplierMapper;
-use OCA\InventoryCheck\Exception\PermissionDeniedException;
+use OCA\InventoryCheck\Exception\ApprovalRequiredException;
 use OCA\InventoryCheck\Exception\ValidationException;
 use OCP\IConfig;
 use OCP\IDBConnection;
@@ -153,7 +153,7 @@ class OrderSheetService
 			$threshold = $this->restock->approvalThresholdMinor();
 			if ($threshold !== null && ($sheet->getTotalMinor() ?? 0) > $threshold
 				&& !$this->access->isAppAdmin($actorUid)) {
-				throw new PermissionDeniedException('approval_required');
+				throw new ApprovalRequiredException();
 			}
 			$this->sheets->setStatus($id, OrderSheet::STATUS_SENT, $this->clock->now());
 			$this->db->commit();

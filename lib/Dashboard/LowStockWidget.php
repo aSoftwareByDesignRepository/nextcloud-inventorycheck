@@ -47,7 +47,7 @@ class LowStockWidget implements IAPIWidget, IButtonWidget
 
 	public function getUrl(): ?string
 	{
-		return $this->urlGenerator->linkToRoute('inventorycheck.page.reorder');
+		return $this->urlGenerator->linkToRoute('inventorycheck.page.dashboard');
 	}
 
 	public function load(): void

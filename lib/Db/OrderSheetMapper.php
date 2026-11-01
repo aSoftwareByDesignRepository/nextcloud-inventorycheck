@@ -7,6 +7,7 @@ namespace OCA\InventoryCheck\Db;
 use OCA\InventoryCheck\Exception\NotFoundException;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
@@ -42,7 +43,18 @@ class OrderSheetMapper extends QBMapper
 			->setMaxResults($limit)
 			->setFirstResult($offset);
 		if ($status !== null && $status !== '') {
-			$qb->where($qb->expr()->eq('status', $qb->createNamedParameter($status)));
+			// Comma-separated allowlist ('draft,sent') — unknown tokens match nothing.
+			$states = array_values(array_filter(array_map(
+				static fn (string $s): string => trim($s),
+				explode(',', $status),
+			), static fn (string $s): bool => in_array($s, [
+				OrderSheet::STATUS_DRAFT, OrderSheet::STATUS_SENT,
+				OrderSheet::STATUS_RECEIVED, OrderSheet::STATUS_CANCELLED,
+			], true)));
+			if ($states === []) {
+				return [];
+			}
+			$qb->where($qb->expr()->in('status', $qb->createNamedParameter($states, IQueryBuilder::PARAM_STR_ARRAY)));
 		}
 		return $this->findEntities($qb);
 	}

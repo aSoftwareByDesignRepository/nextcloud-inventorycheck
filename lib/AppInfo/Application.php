@@ -191,6 +191,7 @@ class Application extends App implements IBootstrap
 				$c->get(ItemPhotoService::class),
 				$c->get(\OCA\InventoryCheck\Service\RestockConfig::class),
 				$c->get(\OCA\InventoryCheck\Db\LotMapper::class),
+				$c->get(\OCA\InventoryCheck\Db\SupplierMapper::class),
 			);
 		});
 		$context->registerService(BalanceService::class, static function ($c): BalanceService {

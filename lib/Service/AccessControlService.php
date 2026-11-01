@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\InventoryCheck\Service;
 
 use OCA\InventoryCheck\AppInfo\Application;
+use OCA\InventoryCheck\Exception\AppAccessDeniedException;
 use OCA\InventoryCheck\Exception\PermissionDeniedException;
 use OCP\IConfig;
 use OCP\IGroupManager;
@@ -122,6 +123,21 @@ class AccessControlService
 	{
 		if (!$this->isAppAdmin($userId)) {
 			throw new PermissionDeniedException();
+		}
+	}
+
+	/**
+	 * L2: actor may use the app at all (field, office, or admin).
+	 * Scan-device actors ('device:N') skip canUseApp — MobileGateService
+	 * already enforced license + device rank upstream.
+	 */
+	public function requireAppUser(string $userId): void
+	{
+		if (str_starts_with($userId, 'device:')) {
+			return;
+		}
+		if (!$this->canUseApp($userId)) {
+			throw new AppAccessDeniedException($this->denialReasonWhenCannotUseApp($userId));
 		}
 	}
 

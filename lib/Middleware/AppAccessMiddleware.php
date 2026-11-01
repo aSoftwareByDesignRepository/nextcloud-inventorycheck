@@ -6,6 +6,7 @@ namespace OCA\InventoryCheck\Middleware;
 
 use OCA\InventoryCheck\AppInfo\Application;
 use OCA\InventoryCheck\Exception\AppAccessDeniedException;
+use OCA\InventoryCheck\Exception\ApprovalRequiredException;
 use OCA\InventoryCheck\Exception\ConflictException;
 use OCA\InventoryCheck\Exception\InsufficientStockException;
 use OCA\InventoryCheck\Exception\MobileGateException;
@@ -83,6 +84,9 @@ class AppAccessMiddleware extends Middleware
 
 		if ($exception instanceof AppAccessDeniedException) {
 			return $this->accessDeniedResponse($exception, $l);
+		}
+		if ($exception instanceof ApprovalRequiredException) {
+			return $this->envelope('approval_required', $l->t('This order needs app-admin approval before sending.'), Http::STATUS_FORBIDDEN);
 		}
 		if ($exception instanceof PermissionDeniedException) {
 			return $this->envelope('permission_denied', $l->t('You do not have permission for this action.'), Http::STATUS_FORBIDDEN);

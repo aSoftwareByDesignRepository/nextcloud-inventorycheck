@@ -77,14 +77,10 @@ class KitService
 		if ($name === '' || count($linesIn) === 0 || count($linesIn) > 100) {
 			throw new ValidationException('validation_failed', '', [['field' => 'lines', 'code' => 'validation_failed']]);
 		}
-		$qb = $this->db->getQueryBuilder();
-		$qb->insert('iv_kits')
-			->setValue('name', $qb->createNamedParameter($name))
-			->setValue('note', $qb->createNamedParameter($note !== null ? mb_substr($note, 0, 512) : null))
-			->setValue('active', $qb->createNamedParameter(true, \PDO::PARAM_BOOL));
-		$qb->executeStatement();
-		$kitId = (int)$this->db->lastInsertId('iv_kits');
+		// Validate + dedupe every line before the first write — a mid-loop
+		// failure must not leave a persisted kit head with partial lines.
 		$seen = [];
+		$lines = [];
 		foreach ($linesIn as $l) {
 			$itemId = (int)($l['itemId'] ?? 0);
 			$qty = (int)($l['qty'] ?? 0);
@@ -95,13 +91,33 @@ class KitService
 			if ($qty < 1 || $qty > QtyScale::maxStorage($this->config)) {
 				throw new ValidationException('validation_failed', '', [['field' => 'qty', 'code' => 'validation_failed']]);
 			}
-			$qb = $this->db->getQueryBuilder();
-			$qb->insert('iv_kit_lines')
-				->setValue('kit_id', $qb->createNamedParameter($kitId, \PDO::PARAM_INT))
-				->setValue('item_id', $qb->createNamedParameter($itemId, \PDO::PARAM_INT))
-				->setValue('qty', $qb->createNamedParameter($qty, \PDO::PARAM_INT));
-			$qb->executeStatement();
+			$lines[] = ['itemId' => $itemId, 'qty' => $qty];
 			$seen[$itemId] = true;
+		}
+		if ($lines === []) {
+			throw new ValidationException('validation_failed', '', [['field' => 'lines', 'code' => 'validation_failed']]);
+		}
+		$this->db->beginTransaction();
+		try {
+			$qb = $this->db->getQueryBuilder();
+			$qb->insert('iv_kits')
+				->setValue('name', $qb->createNamedParameter($name))
+				->setValue('note', $qb->createNamedParameter($note !== null ? mb_substr($note, 0, 512) : null))
+				->setValue('active', $qb->createNamedParameter(true, \PDO::PARAM_BOOL));
+			$qb->executeStatement();
+			$kitId = (int)$this->db->lastInsertId('iv_kits');
+			foreach ($lines as $l) {
+				$qb = $this->db->getQueryBuilder();
+				$qb->insert('iv_kit_lines')
+					->setValue('kit_id', $qb->createNamedParameter($kitId, \PDO::PARAM_INT))
+					->setValue('item_id', $qb->createNamedParameter($l['itemId'], \PDO::PARAM_INT))
+					->setValue('qty', $qb->createNamedParameter($l['qty'], \PDO::PARAM_INT));
+				$qb->executeStatement();
+			}
+			$this->db->commit();
+		} catch (\Throwable $e) {
+			$this->db->rollBack();
+			throw $e;
 		}
 		return $kitId;
 	}

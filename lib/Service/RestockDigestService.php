@@ -82,7 +82,7 @@ class RestockDigestService
 					->setDateTime(new \DateTime('@' . $now))
 					->setObject('restock_digest', (string)$now)
 					->setSubject(self::SUBJECT, $params)
-					->setLink($this->urlGenerator->linkToRouteAbsolute('inventorycheck.page.reorder'));
+					->setLink($this->urlGenerator->linkToRouteAbsolute('inventorycheck.page.dashboard'));
 				$this->notificationManager->notify($n);
 			} catch (\Throwable $e) {
 				$this->logger->warning('InventoryCheck restock digest failed', [

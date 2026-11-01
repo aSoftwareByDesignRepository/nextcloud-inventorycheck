@@ -40,8 +40,15 @@ class ReportController extends Controller
 	{
 		$uid = $this->access->currentUserId();
 		$this->access->requireOffice($uid);
-		$from = (int)$this->request->getParam('from', time() - 30 * 86400);
-		$to = (int)$this->request->getParam('to', time());
+		$rawFrom = $this->request->getParam('from');
+		$rawTo = $this->request->getParam('to');
+		foreach (['from' => $rawFrom, 'to' => $rawTo] as $field => $raw) {
+			if ($raw !== null && !(is_int($raw) || (is_string($raw) && preg_match('/^-?\d+$/', $raw) === 1))) {
+				throw new \OCA\InventoryCheck\Exception\ValidationException('validation_failed', '', [['field' => $field, 'code' => 'validation_failed']]);
+			}
+		}
+		$from = (int)($rawFrom ?? time() - 30 * 86400);
+		$to = (int)($rawTo ?? time());
 		if ($from < 0 || $to < $from) {
 			throw new \OCA\InventoryCheck\Exception\ValidationException('validation_failed', '', [['field' => 'to', 'code' => 'validation_failed']]);
 		}
