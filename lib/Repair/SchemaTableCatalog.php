@@ -26,6 +26,8 @@ final class SchemaTableCatalog
 		'iv_cc_line',
 		'iv_inv_push',
 		'iv_item_suppliers',
+		'iv_kit_lines',
+		'iv_kits',
 		'iv_items',
 		'iv_license_state',
 		'iv_loc_acl',

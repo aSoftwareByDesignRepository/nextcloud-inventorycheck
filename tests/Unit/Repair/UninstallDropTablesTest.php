@@ -28,7 +28,7 @@ final class UninstallDropTablesTest extends TestCase
 
 	public function testUninstallListsAllTables(): void
 	{
-		self::assertCount(19, UninstallDropTables::TABLES);
+		self::assertCount(21, UninstallDropTables::TABLES);
 		self::assertContains('iv_inv_push', UninstallDropTables::TABLES);
 		self::assertContains('iv_movements', UninstallDropTables::TABLES);
 		self::assertContains('iv_scan_devices', UninstallDropTables::TABLES);

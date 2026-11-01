@@ -56,6 +56,9 @@ return [
 		['name' => 'orderSheet#send', 'url' => '/api/order-sheets/{id}/send', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
 		['name' => 'orderSheet#cancel', 'url' => '/api/order-sheets/{id}/cancel', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
 		['name' => 'orderSheet#print', 'url' => '/api/order-sheets/{id}/print', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+		['name' => 'kit#index', 'url' => '/api/kits', 'verb' => 'GET'],
+		['name' => 'kit#create', 'url' => '/api/kits', 'verb' => 'POST'],
+		['name' => 'kit#issue', 'url' => '/api/kits/{id}/issue', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
 		['name' => 'supplier#index', 'url' => '/api/suppliers', 'verb' => 'GET'],
 		['name' => 'supplier#create', 'url' => '/api/suppliers', 'verb' => 'POST'],
 

@@ -18,6 +18,7 @@ use OCA\InventoryCheck\Controller\LicenseController;
 use OCA\InventoryCheck\Controller\LocationController;
 use OCA\InventoryCheck\Controller\LotController;
 use OCA\InventoryCheck\Controller\OrderSheetController;
+use OCA\InventoryCheck\Controller\KitController;
 use OCA\InventoryCheck\Controller\SupplierController;
 use OCA\InventoryCheck\Controller\ReportController;
 use OCA\InventoryCheck\Controller\LowStockController;
@@ -93,6 +94,7 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 		ConfigController::class,
 		DirectoryController::class,
 		LicenseController::class,
+		KitController::class,
 		LotController::class,
 		OrderSheetController::class,
 		ReportController::class,
@@ -123,6 +125,7 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 		ReportController::class => ['valuation', 'movementValue'],
 		OrderSheetController::class => ['index', 'show', 'create', 'send', 'cancel', 'print'],
 		SupplierController::class => ['index', 'create'],
+		KitController::class => ['index', 'create', 'issue'],
 		ProductLookupController::class => ['lookup'],
 		ItemPhotoController::class => ['show', 'upload', 'destroy'],
 		BalanceController::class => ['index'],
