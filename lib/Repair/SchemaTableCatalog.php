@@ -30,6 +30,7 @@ final class SchemaTableCatalog
 		'iv_loc_acl',
 		'iv_loc_fav',
 		'iv_locations',
+		'iv_lots',
 		'iv_mobile_seats',
 		'iv_movements',
 		'iv_notif_log',

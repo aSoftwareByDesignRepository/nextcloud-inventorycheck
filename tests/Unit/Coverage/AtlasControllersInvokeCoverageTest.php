@@ -297,7 +297,12 @@ final class AtlasControllersInvokeCoverageTest extends TestCase
 
 		if ($typeName === IURLGenerator::class) {
 			$url = $this->createMock(IURLGenerator::class);
-			$url->method('linkToRoute')->willReturn('/apps/inventorycheck/');
+			// RouteUrlTemplate::for() must find the placeholder in the URL —
+			// echo the params back so '/0' segments actually exist.
+			$url->method('linkToRoute')->willReturnCallback(
+				static fn (string $route, array $params = []): string =>
+					'/apps/inventorycheck/' . implode('/', array_map('strval', array_values($params))),
+			);
 			$url->method('linkToRouteAbsolute')->willReturn('http://localhost/apps/inventorycheck/');
 			$this->byType[$key] = $url;
 			return $url;

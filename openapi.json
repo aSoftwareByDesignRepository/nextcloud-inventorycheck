@@ -84,6 +84,34 @@
       "get": { "responses": { "200": { "description": "OK" } } }
     },
 
+    "/api/items/{id}/on-order": {
+      "put": { "responses": { "200": { "description": "OK" } } },
+      "delete": { "responses": { "200": { "description": "OK" } } }
+    },
+    "/api/items/on-order-bulk": {
+      "post": { "responses": { "200": { "description": "OK" } } }
+    },
+    "/api/lots": {
+      "get": { "responses": { "200": { "description": "OK" } } }
+    },
+    "/api/lots/by-code/{code}": {
+      "get": { "responses": { "200": { "description": "OK" } } }
+    },
+    "/api/lots/{id}": {
+      "put": { "responses": { "200": { "description": "OK" } } }
+    },
+    "/api/reports/valuation": {
+      "get": { "responses": { "200": { "description": "OK" } } }
+    },
+    "/api/config/restock": {
+      "post": { "responses": { "200": { "description": "OK" } } }
+    },
+    "/mobile/v1/items": {
+      "post": { "responses": { "200": { "description": "OK" } } }
+    },
+    "/mobile/v1/lots/by-code/{code}": {
+      "get": { "responses": { "200": { "description": "OK" } } }
+    },
     "/api/export": {
       "get": { "responses": { "200": { "description": "OK" } } }
     },

@@ -36,6 +36,54 @@ class ItemMapper extends QBMapper
 		return $this->mapRowToEntity($row);
 	}
 
+	/**
+	 * Restock F-04 / MF-02: on-order marker writes are targeted column UPDATEs —
+	 * never Entity::save (a full-row write would lose-update against concurrent
+	 * item edits). Must run inside a transaction holding the item row lock.
+	 */
+	public function markOnOrder(int $id, int $qty, int $at, string $by): void
+	{
+		$qb = $this->db->getQueryBuilder();
+		$qb->update($this->getTableName())
+			->set('on_order_qty', $qb->createNamedParameter($qty, \PDO::PARAM_INT))
+			->set('on_order_at', $qb->createNamedParameter($at, \PDO::PARAM_INT))
+			->set('on_order_by', $qb->createNamedParameter($by))
+			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, \PDO::PARAM_INT)));
+		$qb->executeStatement();
+	}
+
+	public function clearOnOrder(int $id): void
+	{
+		$qb = $this->db->getQueryBuilder();
+		$qb->update($this->getTableName())
+			->set('on_order_qty', $qb->createNamedParameter(null, \PDO::PARAM_NULL))
+			->set('on_order_at', $qb->createNamedParameter(null, \PDO::PARAM_NULL))
+			->set('on_order_by', $qb->createNamedParameter(null, \PDO::PARAM_NULL))
+			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, \PDO::PARAM_INT)));
+		$qb->executeStatement();
+	}
+
+	/**
+	 * Decrement on_order_qty by a received quantity (F-04 auto-clear).
+	 * Fully covered markers are cleared (qty/at/by → NULL); partial receives
+	 * leave the remainder. CASE WHEN keeps this portable across MySQL/PG/SQLite.
+	 */
+	public function decrementOnOrder(int $id, int $qty): void
+	{
+		$qb = $this->db->getQueryBuilder();
+		$expr = $qb->expr();
+		$p = $qb->createNamedParameter($qty, \PDO::PARAM_INT);
+		// on_order_qty <= qty → marker fully covered → all three columns NULL;
+		// otherwise qty decrements and at/by survive.
+		$qb->update($this->getTableName())
+			->set('on_order_qty', 'CASE WHEN on_order_qty <= ' . $p . ' THEN NULL ELSE on_order_qty - ' . $p . ' END')
+			->set('on_order_at', 'CASE WHEN on_order_qty <= ' . $p . ' THEN NULL ELSE on_order_at END')
+			->set('on_order_by', 'CASE WHEN on_order_qty <= ' . $p . ' THEN NULL ELSE on_order_by END')
+			->where($expr->eq('id', $qb->createNamedParameter($id, \PDO::PARAM_INT)))
+			->andWhere($expr->isNotNull('on_order_qty'));
+		$qb->executeStatement();
+	}
+
 	public function findById(int $id): Item
 	{
 		$qb = $this->db->getQueryBuilder();

@@ -189,6 +189,8 @@ class Application extends App implements IBootstrap
 				$c->get(CycleLineMapper::class),
 				$c->get(LocationMapper::class),
 				$c->get(ItemPhotoService::class),
+				$c->get(\OCA\InventoryCheck\Service\RestockConfig::class),
+				$c->get(\OCA\InventoryCheck\Db\LotMapper::class),
 			);
 		});
 		$context->registerService(BalanceService::class, static function ($c): BalanceService {
@@ -228,6 +230,7 @@ class Application extends App implements IBootstrap
 				$c->get(LocationAclService::class),
 				$c->get(IConfig::class),
 				$c->get(LowStockNotifyService::class),
+				$c->get(\OCA\InventoryCheck\Db\LotMapper::class),
 			);
 		});
 		$context->registerService(ScanIdempotencyService::class, static function ($c): ScanIdempotencyService {
@@ -236,12 +239,25 @@ class Application extends App implements IBootstrap
 				$c->get(Clock::class),
 			);
 		});
+		$context->registerService(\OCA\InventoryCheck\Db\LotMapper::class, static fn ($c) => new \OCA\InventoryCheck\Db\LotMapper($c->get(IDBConnection::class)));
+		$context->registerService(\OCA\InventoryCheck\Service\RestockConfig::class, static fn ($c) => new \OCA\InventoryCheck\Service\RestockConfig($c->get(IConfig::class)));
+		$context->registerService(\OCA\InventoryCheck\Service\LotRecallService::class, static function ($c): \OCA\InventoryCheck\Service\LotRecallService {
+			return new \OCA\InventoryCheck\Service\LotRecallService(
+				$c->get(\OCA\InventoryCheck\Db\LotMapper::class),
+				$c->get(MovementMapper::class),
+				$c->get(ItemMapper::class),
+				$c->get(LocationMapper::class),
+				$c->get(BalanceMapper::class),
+			);
+		});
 		$context->registerService(LowStockService::class, static function ($c): LowStockService {
 			return new LowStockService(
 				$c->get(ItemMapper::class),
 				$c->get(BalanceMapper::class),
 				$c->get(IConfig::class),
 				$c->get(LocationAclService::class),
+				$c->get(AccessControlService::class),
+				$c->get(\OCA\InventoryCheck\Service\RestockConfig::class),
 			);
 		});
 		$context->registerService(LicenseService::class, static function ($c): LicenseService {
@@ -307,6 +323,12 @@ class Application extends App implements IBootstrap
 			);
 		});
 
+		$context->registerService(\OCA\InventoryCheck\Service\ReportService::class, static function ($c): \OCA\InventoryCheck\Service\ReportService {
+			return new \OCA\InventoryCheck\Service\ReportService(
+				$c->get(ItemMapper::class),
+				$c->get(BalanceMapper::class),
+			);
+		});
 		$context->registerService(CsvExportService::class, static function ($c): CsvExportService {
 			return new CsvExportService(
 				$c->get(ItemMapper::class),

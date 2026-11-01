@@ -19,6 +19,7 @@ use OCA\InventoryCheck\Service\LocationFavouriteService;
 use OCA\InventoryCheck\Service\LocationService;
 use OCA\InventoryCheck\Service\Lookup\LookupException;
 use OCA\InventoryCheck\Service\MobileGateService;
+use OCA\InventoryCheck\Service\MoneyVisibility;
 use OCA\InventoryCheck\Service\MovementService;
 use OCA\InventoryCheck\Service\ProductLookupService;
 use OCA\InventoryCheck\Service\ScanIdempotencyService;
@@ -69,6 +70,7 @@ class MobileController extends Controller
 		private readonly ISession $session,
 		private readonly IConfig $config,
 		private readonly IL10N $l10n,
+		private readonly ?\OCA\InventoryCheck\Service\LotRecallService $lotRecall = null,
 	) {
 		parent::__construct(Application::APP_ID, $request);
 	}
@@ -110,8 +112,14 @@ class MobileController extends Controller
 	{
 		[$uid, $device] = $this->resolveCaller(true);
 		$this->gate->assertGate($uid, $device);
+		// Q8/TH-08: zero money fields for every mobile caller; devices
+		// additionally lose supplier fields — enforced server-side.
 		$item = QtyScale::formatItem(
-			$this->items->byCode($this->actorUid($uid, $device), rawurldecode($code)),
+			MoneyVisibility::itemForMobile(
+				$this->items->byCodeRaw($this->actorUid($uid, $device), rawurldecode($code)),
+				$device !== null,
+				$uid !== null && $this->access->isOffice($uid),
+			),
 			$this->config,
 		);
 		if (isset($item['balances']) && is_array($item['balances'])) {
@@ -203,7 +211,7 @@ class MobileController extends Controller
 			null, null, null, null, null, null, $page['limit'], $page['offset'],
 		);
 		$result['data'] = array_map(
-			fn (array $m) => QtyScale::formatMovement($m, $this->config),
+			fn (array $m) => QtyScale::formatMovement(MoneyVisibility::movementForMobile($m), $this->config),
 			$result['data'],
 		);
 		return new JSONResponse($result);
@@ -304,6 +312,120 @@ class MobileController extends Controller
 			$this->scanIdempotency->complete($actor, $clientRequestId, $formatted);
 		}
 		return new JSONResponse($formatted);
+	}
+
+	/**
+	 * F-18 shelf-scan onboarding: seat-only item create + optional opening
+	 * balance, transactionally, riding the scan-idempotency mechanism (NN-11).
+	 * Device tokens are rejected by caller type (NN-16). Duplicate scan_code
+	 * → 409 + the resolved item so the app can offer "receive more".
+	 */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[NoAdminRequired]
+	public function createItem(): JSONResponse
+	{
+		$this->assertSafeMutationChannel();
+		[$uid] = $this->requireSessionUser();
+		$this->gate->assertGate($uid, null);
+		$p = $this->request->getParams();
+		$isOffice = $this->access->isOffice($uid);
+		$clientRequestId = $this->scanIdempotency->normalizeClientRequestId(
+			$p['clientRequestId'] ?? ($p['client_request_id'] ?? null),
+		);
+		$payloadHash = hash('sha256', json_encode([
+			'scanCode' => (string)($p['scanCode'] ?? $p['scan_code'] ?? ''),
+			'sku' => (string)($p['sku'] ?? ''),
+			'name' => (string)($p['name'] ?? ''),
+			'openingQty' => $p['openingQty'] ?? ($p['opening_qty'] ?? null),
+			'locationId' => $p['locationId'] ?? ($p['location_id'] ?? null),
+		]));
+		if ($clientRequestId !== null) {
+			$prior = $this->scanIdempotency->lookup($uid, 'item:' . $clientRequestId);
+			if ($prior['status'] === ScanIdempotencyService::STATUS_DONE && is_array($prior['response'])) {
+				if (!$this->scanIdempotency->payloadMatches($prior['payloadHash'], $payloadHash)) {
+					throw new MobileGateException('idempotency_payload_mismatch');
+				}
+				return new JSONResponse($prior['response']);
+			}
+			if ($prior['status'] === ScanIdempotencyService::STATUS_PENDING) {
+				if (!$this->scanIdempotency->releaseStalePending($uid, 'item:' . $clientRequestId)
+					|| !$this->scanIdempotency->tryClaim($uid, 'item:' . $clientRequestId, $payloadHash)) {
+					throw new MobileGateException('idempotency_in_flight');
+				}
+			} elseif (!$this->scanIdempotency->tryClaim($uid, 'item:' . $clientRequestId, $payloadHash)) {
+				throw new MobileGateException('idempotency_in_flight');
+			}
+		}
+		try {
+			$created = $this->items->createForSeat($uid, $p, $isOffice);
+		} catch (\OCA\InventoryCheck\Exception\ConflictException $e) {
+			// Duplicate scan code: resolve and hand back the existing item (A19).
+			$existing = null;
+			$scan = trim((string)($p['scanCode'] ?? $p['scan_code'] ?? $p['sku'] ?? ''));
+			if ($scan !== '') {
+				try {
+					$existing = MoneyVisibility::itemForMobile(
+						$this->items->byCodeRaw($uid, $scan),
+						false,
+						$isOffice,
+					);
+				} catch (\Throwable) {
+				}
+			}
+			if ($clientRequestId !== null) {
+				$this->scanIdempotency->release($uid, 'item:' . $clientRequestId);
+			}
+			return new JSONResponse([
+				'error' => ['code' => 'code_exists', 'message' => 'Item already exists.', 'details' => []],
+				'item' => $existing,
+			], 409);
+		} catch (\Throwable $e) {
+			if ($clientRequestId !== null) {
+				$this->scanIdempotency->release($uid, 'item:' . $clientRequestId);
+			}
+			throw $e;
+		}
+		$opening = null;
+		$openingQty = $p['openingQty'] ?? ($p['opening_qty'] ?? null);
+		$openingLocId = (int)($p['locationId'] ?? ($p['location_id'] ?? 0));
+		if ($openingQty !== null && $openingQty !== '' && $openingLocId > 0) {
+			try {
+				$opening = $this->movements->receiveForSeat(
+					$uid,
+					(int)$created['id'],
+					$openingLocId,
+					QtyScale::toStorage($this->config, $openingQty),
+					'Opening balance',
+					null,
+					false,
+				);
+			} catch (\Throwable $e) {
+				if ($clientRequestId !== null) {
+					$this->scanIdempotency->release($uid, 'item:' . $clientRequestId);
+				}
+				throw $e;
+			}
+		}
+		$response = [
+			'item' => MoneyVisibility::itemForMobile(QtyScale::formatItem($created, $this->config), false, $isOffice),
+			'opening' => $opening,
+		];
+		if ($clientRequestId !== null) {
+			$this->scanIdempotency->complete($uid, 'item:' . $clientRequestId, $response);
+		}
+		return new JSONResponse($response, 201);
+	}
+
+	/** F-23 lot recall — seats only (NN-16), money-free payload. */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[NoAdminRequired]
+	public function lotByCode(string $code): JSONResponse
+	{
+		[$uid] = $this->requireSessionUser();
+		$this->gate->assertGate($uid, null);
+		return new JSONResponse($this->lotRecall->lookup($uid, rawurldecode($code)));
 	}
 
 	#[PublicPage]

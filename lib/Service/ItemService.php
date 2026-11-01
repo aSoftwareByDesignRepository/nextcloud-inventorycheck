@@ -9,6 +9,7 @@ use OCA\InventoryCheck\Db\CycleLineMapper;
 use OCA\InventoryCheck\Db\Item;
 use OCA\InventoryCheck\Db\ItemMapper;
 use OCA\InventoryCheck\Db\LocationMapper;
+use OCA\InventoryCheck\Db\LotMapper;
 use OCA\InventoryCheck\Db\UniqueViolation;
 use OCA\InventoryCheck\Exception\ConflictException;
 use OCA\InventoryCheck\Exception\NotFoundException;
@@ -32,6 +33,8 @@ class ItemService
 		private readonly CycleLineMapper $cycleLines,
 		private readonly LocationMapper $locations,
 		private readonly ?ItemPhotoService $photos = null,
+		private readonly ?RestockConfig $restock = null,
+		private readonly ?LotMapper $lots = null,
 	) {
 	}
 
@@ -86,11 +89,8 @@ class ItemService
 	 */
 	private function stripConfidentialItemFields(array $item, string $actorUid): array
 	{
-		if ($this->access->isOffice($actorUid)) {
-			return $item;
-		}
-		unset($item['supplierNote'], $item['lastPriceMinor']);
-		return $item;
+		// Centralized money/supplier gate (SPEC §15 — C-1/Q8 contract).
+		return MoneyVisibility::itemForWeb($item, $this->access->isOffice($actorUid));
 	}
 
 	/** @return array<string, mixed> */
@@ -108,12 +108,24 @@ class ItemService
 	 */
 	public function byCode(string $actorUid, string $code): array
 	{
+		$api = $this->byCodeRaw($actorUid, $code);
+		return $this->stripConfidentialItemFields($api, $actorUid);
+	}
+
+	/**
+	 * Unstripped by-code for callers that apply their own caller-class gate
+	 * (mobile boundary — MoneyVisibility::itemForMobile).
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function byCodeRaw(string $actorUid, string $code): array
+	{
 		$code = CodeRules::trim($code);
 		$item = $this->items->resolveByCode($code);
 		if ($item === null) {
 			throw new NotFoundException('code_not_found');
 		}
-		$api = $this->stripConfidentialItemFields($item->toApi(), $actorUid);
+		$api = $item->toApi();
 		$visible = $this->locationAcl->visibleLocationIds($actorUid);
 		$bal = $this->balances->search((int)$item->getId(), null, false, 200, 0, false, $visible);
 		$api['balances'] = array_map(static fn ($b) => $b->toApi(), $bal['data']);
@@ -148,8 +160,9 @@ class ItemService
 		$lastPriceMinor = $this->parseLastPriceMinor($input);
 		$targetStock = $this->parseTargetStock($input, $reorder);
 		$defaultLocationId = $this->parseDefaultLocationId($input);
+		$restock = $this->parseRestockFields($input, null);
 
-		return $this->withCodesLock(function () use ($actorUid, $sku, $scan, $name, $uom, $desc, $reorder, $trackMode, $supplierNote, $lastPriceMinor, $targetStock, $defaultLocationId): array {
+		return $this->withCodesLock(function () use ($actorUid, $sku, $scan, $name, $uom, $desc, $reorder, $trackMode, $supplierNote, $lastPriceMinor, $targetStock, $defaultLocationId, $restock): array {
 			if (CodeRules::conflictsWithOthers(null, $sku, $scan, $this->items->allCodePairs())) {
 				throw new ConflictException('code_exists');
 			}
@@ -173,6 +186,7 @@ class ItemService
 			$item->setTrackMode($trackMode);
 			$item->setSupplierNote($supplierNote);
 			$item->setLastPriceMinor($lastPriceMinor);
+			$this->applyRestockFields($item, $restock);
 			try {
 				return $this->items->insert($item)->toApi();
 			} catch (\Throwable $e) {
@@ -318,6 +332,7 @@ class ItemService
 			if (array_key_exists('lastPriceMinor', $input) || array_key_exists('last_price_minor', $input)) {
 				$item->setLastPriceMinor($this->parseLastPriceMinor($input));
 			}
+			$this->applyRestockUpdate($item, $input);
 			$item->setUpdatedAt($this->clock->now());
 			$api = $this->items->update($item)->toApi();
 			$this->db->commit();
@@ -370,6 +385,347 @@ class ItemService
 			throw new ValidationException('validation_failed', '', [['field' => 'lastPriceMinor', 'code' => 'validation_failed']]);
 		}
 		return $value;
+	}
+
+	// ── Restock suite (F-01/F-03/F-09/F-11/F-19/F-27) ─────────────────────
+
+	/**
+	 * @param array<string, mixed> $input
+	 * @return array{orderPackQty: ?int, orderPackPriceMinor: ?int, supplierName: ?string, supplierSku: ?string, supplierLeadDays: ?int, category: ?string, criticality: string, deliveryNotePath: ?string}
+	 */
+	private function parseRestockFields(array $input, ?Item $current): array
+	{
+		return [
+			'orderPackQty' => $this->parseNullableInt($input, 'orderPackQty', 'order_pack_qty', 1, QtyScale::maxStorage($this->config)),
+			'orderPackPriceMinor' => $this->parseNullableInt($input, 'orderPackPriceMinor', 'order_pack_price_minor', 0, RestockConfig::MAX_MONEY_MINOR),
+			'supplierName' => $this->parseNullableString($input, 'supplierName', 'supplier_name', 200),
+			'supplierSku' => $this->parseNullableString($input, 'supplierSku', 'supplier_sku', 200),
+			'supplierLeadDays' => $this->parseNullableInt($input, 'supplierLeadDays', 'supplier_lead_days', 0, 365),
+			'category' => $this->parseCategory($input, $current),
+			'criticality' => $this->parseCriticality($input, $current?->getCriticality() ?? 'none'),
+			'deliveryNotePath' => $this->parseNullableString($input, 'deliveryNotePath', 'delivery_note_path', 512),
+		];
+	}
+
+	/**
+	 * @param array<string, mixed> $input
+	 */
+	private function parseNullableInt(array $input, string $camel, string $snake, int $min, int $max): ?int
+	{
+		if (!array_key_exists($camel, $input) && !array_key_exists($snake, $input)) {
+			return null;
+		}
+		$raw = $input[$camel] ?? $input[$snake];
+		if ($raw === null || $raw === '') {
+			return null;
+		}
+		if (!is_int($raw) && !(is_string($raw) && preg_match('/^-?\d+$/', $raw) === 1) && !is_numeric($raw)) {
+			throw new ValidationException('validation_failed', '', [['field' => $camel, 'code' => 'validation_failed']]);
+		}
+		$v = (int)$raw;
+		if ($v < $min || $v > $max) {
+			throw new ValidationException('validation_failed', '', [['field' => $camel, 'code' => 'validation_failed']]);
+		}
+		return $v;
+	}
+
+	/**
+	 * @param array<string, mixed> $input
+	 */
+	private function parseNullableString(array $input, string $camel, string $snake, int $max): ?string
+	{
+		if (!array_key_exists($camel, $input) && !array_key_exists($snake, $input)) {
+			return null;
+		}
+		$raw = $input[$camel] ?? $input[$snake];
+		if ($raw === null) {
+			return null;
+		}
+		$v = CodeRules::trim((string)$raw);
+		if ($v === '') {
+			return null;
+		}
+		if (mb_strlen($v) > $max) {
+			throw new ValidationException('validation_failed', '', [['field' => $camel, 'code' => 'validation_failed']]);
+		}
+		return $v;
+	}
+
+	/**
+	 * F-09: constrained to category_list — but an unchanged unlisted value
+	 * stays (admin removed it from the list after tagging).
+	 *
+	 * @param array<string, mixed> $input
+	 */
+	private function parseCategory(array $input, ?Item $current): ?string
+	{
+		$category = $this->parseNullableString($input, 'category', 'category', 100);
+		if ($category === null) {
+			return null;
+		}
+		if ($current !== null && $category === $current->getCategory()) {
+			return $category;
+		}
+		if ($this->restock !== null && !$this->restock->categoryKnown($category)) {
+			throw new ValidationException('validation_failed', '', [['field' => 'category', 'code' => 'unknown_category']]);
+		}
+		return $category;
+	}
+
+	/** @param array<string, mixed> $input */
+	private function parseCriticality(array $input, string $default): string
+	{
+		if (!array_key_exists('criticality', $input)) {
+			return $default;
+		}
+		$raw = CodeRules::trim((string)$input['criticality']);
+		if ($raw === '') {
+			$raw = 'none';
+		}
+		if (!in_array($raw, ['none', 'critical'], true)) {
+			throw new ValidationException('validation_failed', '', [['field' => 'criticality', 'code' => 'validation_failed']]);
+		}
+		return $raw;
+	}
+
+	/**
+	 * @param array{orderPackQty: ?int, orderPackPriceMinor: ?int, supplierName: ?string, supplierSku: ?string, supplierLeadDays: ?int, category: ?string, criticality: string, deliveryNotePath: ?string} $r
+	 */
+	private function applyRestockFields(Item $item, array $r): void
+	{
+		$item->setOrderPackQty($r['orderPackQty']);
+		$item->setOrderPackPriceMinor($r['orderPackPriceMinor']);
+		$item->setSupplierName($r['supplierName']);
+		$item->setSupplierSku($r['supplierSku']);
+		$item->setSupplierLeadDays($r['supplierLeadDays']);
+		$item->setCategory($r['category']);
+		$item->setCriticality($r['criticality']);
+		$item->setDeliveryNotePath($r['deliveryNotePath']);
+	}
+
+	/**
+	 * Partial-update semantics: keys absent → unchanged; present null → cleared.
+	 *
+	 * @param array<string, mixed> $input
+	 */
+	private function applyRestockUpdate(Item $item, array $input): void
+	{
+		$present = static fn (string $camel, string $snake): bool =>
+			array_key_exists($camel, $input) || array_key_exists($snake, $input);
+		if ($present('orderPackQty', 'order_pack_qty')) {
+			$item->setOrderPackQty($this->parseNullableInt($input, 'orderPackQty', 'order_pack_qty', 1, QtyScale::maxStorage($this->config)));
+		}
+		if ($present('orderPackPriceMinor', 'order_pack_price_minor')) {
+			$item->setOrderPackPriceMinor($this->parseNullableInt($input, 'orderPackPriceMinor', 'order_pack_price_minor', 0, RestockConfig::MAX_MONEY_MINOR));
+		}
+		if ($present('supplierName', 'supplier_name')) {
+			$item->setSupplierName($this->parseNullableString($input, 'supplierName', 'supplier_name', 200));
+		}
+		if ($present('supplierSku', 'supplier_sku')) {
+			$item->setSupplierSku($this->parseNullableString($input, 'supplierSku', 'supplier_sku', 200));
+		}
+		if ($present('supplierLeadDays', 'supplier_lead_days')) {
+			$item->setSupplierLeadDays($this->parseNullableInt($input, 'supplierLeadDays', 'supplier_lead_days', 0, 365));
+		}
+		if ($present('category', 'category')) {
+			$item->setCategory($this->parseCategory($input, $item));
+		}
+		if ($present('criticality', 'criticality')) {
+			$item->setCriticality($this->parseCriticality($input, $item->getCriticality()));
+		}
+		if ($present('deliveryNotePath', 'delivery_note_path')) {
+			$item->setDeliveryNotePath($this->parseNullableString($input, 'deliveryNotePath', 'delivery_note_path', 512));
+		}
+	}
+
+	// ── On-order marker (F-04 / MF-02 / NN-09) ────────────────────────────
+
+	/**
+	 * Office+ "mark as ordered". Targeted column UPDATE under the exclusive
+	 * item lock — serializes against entity updates and receive auto-clear.
+	 */
+	public function markOnOrder(string $actorUid, int $id, ?int $qty): void
+	{
+		$this->access->requireOffice($actorUid);
+		$this->db->beginTransaction();
+		try {
+			$item = $this->items->lockById($id, true);
+			if (!$item->getActive()) {
+				throw new ValidationException('inactive_item');
+			}
+			$max = QtyScale::maxStorage($this->config);
+			if ($qty === null) {
+				$qty = $item->getOrderPackQty() !== null && $item->getOrderPackQty() > 0
+					? (RestockEstimate::packs(max(1, $item->getReorderLevel()), $item->getOrderPackQty()) ?? 1) * $item->getOrderPackQty()
+					: $item->getReorderLevel();
+			}
+			if ($qty < 1 || $qty > $max) {
+				throw new ValidationException('validation_failed', '', [['field' => 'onOrderQty', 'code' => 'validation_failed']]);
+			}
+			$this->items->markOnOrder($id, $qty, $this->clock->now(), $actorUid);
+			$this->db->commit();
+		} catch (\Throwable $e) {
+			$this->db->rollBack();
+			throw $e;
+		}
+	}
+
+	/** Office+ manual clear — audit-logged by the controller. */
+	public function clearOnOrder(string $actorUid, int $id): void
+	{
+		$this->access->requireOffice($actorUid);
+		$this->db->beginTransaction();
+		try {
+			$this->items->lockById($id, true);
+			$this->items->clearOnOrder($id);
+			$this->db->commit();
+		} catch (\Throwable $e) {
+			$this->db->rollBack();
+			throw $e;
+		}
+	}
+
+	/**
+	 * Post-export bulk mark (§7.4) — one tx per item batch, exclusive lock
+	 * each so a concurrent receive still serializes on the item row.
+	 *
+	 * @param list<array{id: int, qty: ?int}> $lines
+	 */
+	public function markOnOrderBulk(string $actorUid, array $lines): void
+	{
+		$this->access->requireOffice($actorUid);
+		$max = QtyScale::maxStorage($this->config);
+		$this->db->beginTransaction();
+		try {
+			foreach ($lines as $line) {
+				$id = (int)($line['id'] ?? 0);
+				$qty = isset($line['qty']) ? (int)$line['qty'] : null;
+				$item = $this->items->lockById($id, true);
+				if (!$item->getActive()) {
+					throw new ValidationException('inactive_item');
+				}
+				if ($qty === null) {
+					$qty = max(1, $item->getReorderLevel());
+				}
+				if ($qty < 1 || $qty > $max) {
+					throw new ValidationException('validation_failed', '', [['field' => 'onOrderQty', 'code' => 'validation_failed']]);
+				}
+				$this->items->markOnOrder($id, $qty, $this->clock->now(), $actorUid);
+			}
+			$this->db->commit();
+		} catch (\Throwable $e) {
+			$this->db->rollBack();
+			throw $e;
+		}
+	}
+
+	// ── Mobile seat create (F-18 / MF-03) ─────────────────────────────────
+
+	/**
+	 * Shelf-scan onboarding create. Any seat may call (gate lives in
+	 * MobileController); field seats silently drop money/supplier inputs.
+	 * Empty name allowed — item lands as an offline draft (AUTO-<code>)
+	 * surfacing an "incomplete" badge on web until edited.
+	 *
+	 * @param array<string, mixed> $input
+	 * @return array<string, mixed>
+	 */
+	public function createForSeat(string $actorUid, array $input, bool $isOffice): array
+	{
+		$scan = CodeRules::trim((string)($input['scanCode'] ?? $input['scan_code'] ?? ''));
+		$sku = CodeRules::trim((string)($input['sku'] ?? ''));
+		if ($scan === '' && $sku === '') {
+			throw new ValidationException('invalid_code_format', '', [['field' => 'scanCode', 'code' => 'invalid_code_format']]);
+		}
+		if ($scan === '') {
+			$scan = $sku;
+		}
+		if ($sku === '') {
+			$sku = 'AUTO-' . strtoupper($scan);
+		}
+		$name = CodeRules::trim((string)($input['name'] ?? ''));
+		if (mb_strlen($name) > 255) {
+			throw new ValidationException('validation_failed', '', [['field' => 'name', 'code' => 'name_required']]);
+		}
+		$uom = CodeRules::trim((string)($input['uom'] ?? 'pcs'));
+		if ($uom === '') {
+			$uom = 'pcs';
+		}
+		$desc = isset($input['description']) ? CodeRules::trim((string)$input['description']) : null;
+		if ($desc === '') {
+			$desc = null;
+		}
+		$reorder = isset($input['reorderLevel']) ? (int)$input['reorderLevel'] : 0;
+		if (!CodeRules::isValidSku($sku) || !CodeRules::isValidScanCode($scan)) {
+			$bad = [];
+			if (!CodeRules::isValidSku($sku)) {
+				$bad[] = ['field' => 'sku', 'code' => 'invalid_code_format'];
+			}
+			if (!CodeRules::isValidScanCode($scan)) {
+				$bad[] = ['field' => 'scanCode', 'code' => 'invalid_code_format'];
+			}
+			throw new ValidationException('invalid_code_format', '', $bad);
+		}
+		if ($reorder < 0 || $reorder > QtyScale::maxStorage($this->config)) {
+			throw new ValidationException('validation_failed', '', [['field' => 'reorderLevel', 'code' => 'validation_failed']]);
+		}
+		if (mb_strlen($uom) < 1 || mb_strlen($uom) > 32) {
+			throw new ValidationException('validation_failed', '', [['field' => 'uom', 'code' => 'validation_failed']]);
+		}
+		// Field seats cannot smuggle procurement fields through the seat path.
+		if (!$isOffice) {
+			$input['orderPackPriceMinor'] = $input['order_pack_price_minor'] = null;
+			$input['lastPriceMinor'] = $input['last_price_minor'] = null;
+			$input['supplierName'] = $input['supplier_name'] = null;
+			$input['supplierSku'] = $input['supplier_sku'] = null;
+			$input['supplierNote'] = $input['supplier_note'] = null;
+			$input['supplierLeadDays'] = $input['supplier_lead_days'] = null;
+		}
+		$trackMode = $this->parseTrackMode($input, 'none');
+		$restock = $isOffice ? $this->parseRestockFields($input, null) : [
+			'orderPackQty' => $this->parseNullableInt($input, 'orderPackQty', 'order_pack_qty', 1, QtyScale::maxStorage($this->config)),
+			'orderPackPriceMinor' => null,
+			'supplierName' => null,
+			'supplierSku' => null,
+			'supplierLeadDays' => null,
+			'category' => null,
+			'criticality' => 'none',
+			'deliveryNotePath' => null,
+		];
+		$supplierNote = $isOffice ? $this->parseSupplierNote($input) : null;
+		$lastPriceMinor = $isOffice ? $this->parseLastPriceMinor($input) : null;
+
+		return $this->withCodesLock(function () use (
+			$actorUid, $sku, $scan, $name, $uom, $desc, $reorder, $trackMode, $supplierNote, $lastPriceMinor, $restock,
+		): array {
+			if (CodeRules::conflictsWithOthers(null, $sku, $scan, $this->items->allCodePairs())) {
+				throw new ConflictException('code_exists');
+			}
+			if (CodeRules::conflictsWithLocationCodes($sku, $scan, $this->locations->allCodes())) {
+				throw new ConflictException('code_exists');
+			}
+			$now = $this->clock->now();
+			$item = new Item();
+			$item->setSku($sku);
+			$item->setScanCode($scan);
+			$item->setName($name);
+			$item->setDescription($desc);
+			$item->setUom($uom);
+			$item->setReorderLevel($reorder);
+			$item->setActive(true);
+			$item->setCreatedAt($now);
+			$item->setUpdatedAt($now);
+			$item->setCreatedBy($actorUid);
+			$item->setTrackMode($trackMode);
+			$item->setSupplierNote($supplierNote);
+			$item->setLastPriceMinor($lastPriceMinor);
+			$this->applyRestockFields($item, $restock);
+			try {
+				return $this->items->insert($item)->toApi();
+			} catch (\Throwable $e) {
+				throw UniqueViolation::is($e) ? new ConflictException('code_exists') : $e;
+			}
+		});
 	}
 
 	/**

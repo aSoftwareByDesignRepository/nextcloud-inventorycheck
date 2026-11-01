@@ -1983,12 +1983,16 @@
 	}
 
 	/**
-	 * Substitute the `0` placeholder id baked into route templates generated
-	 * with `['id' => 0]` (or `lineId`/`locationId` => 0) — same trick as
-	 * {@see labelPrintUrl}, generalised for the Wave A–B endpoints.
+	 * Substitute the `__ID__` sentinel baked into route templates generated
+	 * via RouteUrlTemplate::for() — fail closed when the sentinel is absent
+	 * (never guess positions with a magic-number regex).
 	 */
 	function urlWithId(tmpl, id) {
-		return String(tmpl || '').replace(/\/0(\/|$)/, '/' + id + '$1');
+		var t = String(tmpl || '');
+		if (t.indexOf('__ID__') === -1) {
+			return '';
+		}
+		return t.replace('__ID__', encodeURIComponent(String(id)));
 	}
 
 	function fillSelect(selectEl, rows, valueKey, labelFn, placeholder) {

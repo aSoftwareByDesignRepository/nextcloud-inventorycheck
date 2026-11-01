@@ -132,6 +132,12 @@ final class QtyScale
 		if (array_key_exists('targetStock', $item) && is_int($item['targetStock'])) {
 			$item['targetStock'] = self::toDisplay($config, $item['targetStock']);
 		}
+		if (array_key_exists('orderPackQty', $item) && is_int($item['orderPackQty'])) {
+			$item['orderPackQty'] = self::toDisplay($config, $item['orderPackQty']);
+		}
+		if (array_key_exists('onOrderQty', $item) && is_int($item['onOrderQty'])) {
+			$item['onOrderQty'] = self::toDisplay($config, $item['onOrderQty']);
+		}
 		return $item;
 	}
 

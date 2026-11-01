@@ -90,6 +90,13 @@ class CsvImportService
 					$item->setCreatedBy($actorUid);
 					$item->setSupplierNote($row['supplier_note']);
 					$item->setLastPriceMinor($row['last_price_minor']);
+					$item->setOrderPackQty($row['order_pack_qty'] ?? null);
+					$item->setOrderPackPriceMinor($row['order_pack_price_minor'] ?? null);
+					$item->setSupplierName($row['supplier_name'] ?? null);
+					$item->setSupplierSku($row['supplier_sku'] ?? null);
+					$item->setSupplierLeadDays($row['supplier_lead_days'] ?? null);
+					$item->setCategory($row['category'] ?? null);
+					$item->setCriticality($row['criticality'] ?? 'none');
 					try {
 						$item = $this->items->insert($item);
 					} catch (\Throwable $e) {
@@ -261,6 +268,40 @@ class CsvImportService
 				$openingLocId = (int)$loc->getId();
 			}
 
+			// F-01/F-03/F-09/F-19 appended restock columns (all optional).
+			$orderPackQty = $this->parseImportInt($raw, 'order_pack_qty', 1, QtyScale::maxStorage($this->config), 'invalid_pack', $errors, $line);
+			if ($orderPackQty === false) {
+				continue;
+			}
+			$orderPackPrice = $this->parseImportInt($raw, 'order_pack_price_minor', 0, RestockConfig::MAX_MONEY_MINOR, 'invalid_pack_price', $errors, $line);
+			if ($orderPackPrice === false) {
+				continue;
+			}
+			$leadDays = $this->parseImportInt($raw, 'supplier_lead_days', 0, 365, 'invalid_lead_days', $errors, $line);
+			if ($leadDays === false) {
+				continue;
+			}
+			$supplierName = CodeRules::trim((string)($raw['supplier_name'] ?? ''));
+			if (mb_strlen($supplierName) > 200) {
+				$errors[] = ['line' => $line, 'code' => 'invalid_supplier_name', 'message' => 'supplier_name too long'];
+				continue;
+			}
+			$supplierSku = CodeRules::trim((string)($raw['supplier_sku'] ?? ''));
+			if (mb_strlen($supplierSku) > 200) {
+				$errors[] = ['line' => $line, 'code' => 'invalid_supplier_sku', 'message' => 'supplier_sku too long'];
+				continue;
+			}
+			$category = CodeRules::trim((string)($raw['category'] ?? ''));
+			if (mb_strlen($category) > 100) {
+				$errors[] = ['line' => $line, 'code' => 'invalid_category', 'message' => 'category too long'];
+				continue;
+			}
+			$criticality = strtolower(CodeRules::trim((string)($raw['criticality'] ?? 'none')));
+			if (!in_array($criticality, ['none', 'critical'], true)) {
+				$errors[] = ['line' => $line, 'code' => 'invalid_criticality', 'message' => 'criticality must be none|critical'];
+				continue;
+			}
+
 			$seenSku[$sku] = true;
 			$seenScan[$scan] = true;
 			$existing[] = ['id' => 0, 'sku' => $sku, 'scanCode' => $scan];
@@ -276,6 +317,13 @@ class CsvImportService
 				'last_price_minor' => $lastPriceMinor,
 				'opening_qty' => $openingQty,
 				'opening_location_id' => $openingLocId,
+				'order_pack_qty' => $orderPackQty ?: null,
+				'order_pack_price_minor' => $orderPackPrice ?: null,
+				'supplier_name' => $supplierName !== '' ? $supplierName : null,
+				'supplier_sku' => $supplierSku !== '' ? $supplierSku : null,
+				'supplier_lead_days' => $leadDays ?: null,
+				'category' => $category !== '' ? $category : null,
+				'criticality' => $criticality,
 			];
 		}
 
@@ -287,6 +335,27 @@ class CsvImportService
 			$out['rows'] = $rows;
 		}
 		return $out;
+	}
+
+	/**
+	 * Optional bounded integer column — returns int|null, or false after
+	 * recording a per-row error.
+	 *
+	 * @param array<string, string> $raw
+	 * @param list<array{line: int, code: string, message: string}> $errors
+	 * @return int|false|null
+	 */
+	private function parseImportInt(array $raw, string $key, int $min, int $max, string $code, array &$errors, int $line): int|false|null
+	{
+		$v = trim((string)($raw[$key] ?? ''));
+		if ($v === '') {
+			return null;
+		}
+		if (preg_match('/^-?\d+$/', $v) !== 1 || (int)$v < $min || (int)$v > $max) {
+			$errors[] = ['line' => $line, 'code' => $code, 'message' => $key . ' out of range'];
+			return false;
+		}
+		return (int)$v;
 	}
 
 	/**

@@ -192,6 +192,54 @@ class ItemController extends Controller
 		return new JSONResponse(['ok' => true]);
 	}
 
+	/** F-04: office+ mark-as-ordered (targeted column write, never entity save). */
+	#[NoAdminRequired]
+	public function markOnOrder(int $id): JSONResponse
+	{
+		$qty = $this->request->getParam('qty');
+		$this->items->markOnOrder(
+			$this->access->currentUserId(),
+			$id,
+			$qty !== null && $qty !== '' ? QtyScale::toStorage($this->config, $qty) : null,
+		);
+		return $this->show($id);
+	}
+
+	/** F-04: office+ manual marker clear (audited via service lock path). */
+	#[NoAdminRequired]
+	public function clearOnOrder(int $id): JSONResponse
+	{
+		$this->items->clearOnOrder($this->access->currentUserId(), $id);
+		return $this->show($id);
+	}
+
+	/** §7.4: post-export "mark all listed items as ordered" bulk path. */
+	#[NoAdminRequired]
+	public function markOnOrderBulk(): JSONResponse
+	{
+		$lines = $this->request->getParam('items', []);
+		if (!is_array($lines)) {
+			throw new ValidationException('validation_failed', '', [['field' => 'items', 'code' => 'invalid_type']]);
+		}
+		if (count($lines) > 500) {
+			throw new ValidationException('validation_failed', '', [['field' => 'items', 'code' => 'too_many']]);
+		}
+		$normalized = [];
+		foreach ($lines as $line) {
+			if (!is_array($line)) {
+				throw new ValidationException('validation_failed', '', [['field' => 'items', 'code' => 'invalid_type']]);
+			}
+			$normalized[] = [
+				'id' => (int)($line['id'] ?? 0),
+				'qty' => isset($line['qty']) && $line['qty'] !== null && $line['qty'] !== ''
+					? QtyScale::toStorage($this->config, $line['qty'])
+					: null,
+			];
+		}
+		$this->items->markOnOrderBulk($this->access->currentUserId(), $normalized);
+		return new JSONResponse(['ok' => true, 'marked' => count($normalized)]);
+	}
+
 	/**
 	 * @param array<string, mixed> $input
 	 * @return array<string, mixed>

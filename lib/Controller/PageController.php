@@ -14,6 +14,7 @@ use OCA\InventoryCheck\Service\ProductLookupService;
 use OCA\InventoryCheck\Service\QtyScale;
 use OCA\InventoryCheck\Service\ReasonCodes;
 use OCA\InventoryCheck\Service\SettingsSectionCatalog;
+use OCA\InventoryCheck\Support\RouteUrlTemplate;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -232,19 +233,19 @@ class PageController extends Controller
 				'movements' => $this->urlGenerator->linkToRoute('inventorycheck.page.movements'),
 				'stocktake' => $this->urlGenerator->linkToRoute('inventorycheck.page.stocktake'),
 				'stocktakeNew' => $this->urlGenerator->linkToRoute('inventorycheck.page.stocktakeNew'),
-				'stocktakeCampaign' => $this->urlGenerator->linkToRoute('inventorycheck.page.stocktakeCampaign', ['id' => 0]),
+				'stocktakeCampaign' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.page.stocktakeCampaign'),
 				'settings' => $defaultSettingsUrl,
 			],
 			'settingsSections' => $settingsSectionUrls,
 			'api' => [
 				'items' => $this->urlGenerator->linkToRoute('inventorycheck.item.index'),
 				'itemByCode' => $this->urlGenerator->linkToRoute('inventorycheck.item.byCode', ['code' => '__CODE__']),
-				'itemLabel' => $this->urlGenerator->linkToRoute('inventorycheck.item.label', ['id' => 0]),
-				'itemLabelPrint' => $this->urlGenerator->linkToRoute('inventorycheck.item.labelPrint', ['id' => 0]),
+				'itemLabel' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.item.label'),
+				'itemLabelPrint' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.item.labelPrint'),
 				'itemBulkLabels' => $this->urlGenerator->linkToRoute('inventorycheck.item.bulkLabels'),
-				'itemPhoto' => $this->urlGenerator->linkToRoute('inventorycheck.itemPhoto.show', ['id' => 0]),
-				'itemPhotoUpload' => $this->urlGenerator->linkToRoute('inventorycheck.itemPhoto.upload', ['id' => 0]),
-				'itemPhotoDelete' => $this->urlGenerator->linkToRoute('inventorycheck.itemPhoto.destroy', ['id' => 0]),
+				'itemPhoto' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.itemPhoto.show'),
+				'itemPhotoUpload' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.itemPhoto.upload'),
+				'itemPhotoDelete' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.itemPhoto.destroy'),
 				'locations' => $this->urlGenerator->linkToRoute('inventorycheck.location.index'),
 				'balances' => $this->urlGenerator->linkToRoute('inventorycheck.balance.index'),
 				'movements' => $this->urlGenerator->linkToRoute('inventorycheck.movement.index'),
@@ -258,11 +259,11 @@ class PageController extends Controller
 				'importDryRun' => $this->urlGenerator->linkToRoute('inventorycheck.import.dryRun'),
 				'importCommit' => $this->urlGenerator->linkToRoute('inventorycheck.import.commit'),
 				'cycleCounts' => $this->urlGenerator->linkToRoute('inventorycheck.cycleCount.index'),
-				'cycleCountStart' => $this->urlGenerator->linkToRoute('inventorycheck.cycleCount.start', ['id' => 0]),
-				'cycleCountSetCount' => $this->urlGenerator->linkToRoute('inventorycheck.cycleCount.setCount', ['lineId' => 0]),
-				'cycleCountClose' => $this->urlGenerator->linkToRoute('inventorycheck.cycleCount.close', ['id' => 0]),
+				'cycleCountStart' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.cycleCount.start'),
+				'cycleCountSetCount' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.cycleCount.setCount', 'lineId'),
+				'cycleCountClose' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.cycleCount.close'),
 				'favouriteLocations' => $this->urlGenerator->linkToRoute('inventorycheck.favourite.index'),
-				'favouriteLocationRemove' => $this->urlGenerator->linkToRoute('inventorycheck.favourite.destroy', ['locationId' => 0]),
+				'favouriteLocationRemove' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.favourite.destroy', 'locationId'),
 				'flangeStatus' => $this->urlGenerator->linkToRoute('inventorycheck.flange.status'),
 				'flangeSettings' => $this->urlGenerator->linkToRoute('inventorycheck.flange.saveSettings'),
 				'flangeInvoicePushRetry' => $this->urlGenerator->linkToRoute('inventorycheck.flange.retryInvoicePush'),
@@ -276,8 +277,8 @@ class PageController extends Controller
 				'configLocationAcl' => $this->urlGenerator->linkToRoute('inventorycheck.config.locationAcl'),
 				'configProductLookup' => $this->urlGenerator->linkToRoute('inventorycheck.config.saveProductLookup'),
 				'productLookup' => $this->urlGenerator->linkToRoute('inventorycheck.productLookup.lookup'),
-				'locationLabel' => $this->urlGenerator->linkToRoute('inventorycheck.location.label', ['id' => 0]),
-				'locationLabelPrint' => $this->urlGenerator->linkToRoute('inventorycheck.location.labelPrint', ['id' => 0]),
+				'locationLabel' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.location.label'),
+				'locationLabelPrint' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.location.labelPrint'),
 				'locationBulkLabels' => $this->urlGenerator->linkToRoute('inventorycheck.location.bulkLabels'),
 				'directorySearchUsers' => $this->urlGenerator->linkToRoute('inventorycheck.directory.searchUsers'),
 				'directorySearchGroups' => $this->urlGenerator->linkToRoute('inventorycheck.directory.searchGroups'),

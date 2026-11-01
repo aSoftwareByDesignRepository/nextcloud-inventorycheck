@@ -147,6 +147,81 @@ class MovementMapper extends QBMapper
 	}
 
 	/**
+	 * F-23: net qty per location for one (item, lot) pair.
+	 *
+	 * @return array<int, int> locationId → qty
+	 */
+	public function sumQtyDeltaByItemLotPerLocation(int $itemId, string $lotCode): array
+	{
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('location_id')
+			->selectAlias($qb->func()->sum('qty_delta'), 'total')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('item_id', $qb->createNamedParameter($itemId, \PDO::PARAM_INT)))
+			->andWhere($qb->expr()->eq('lot_code', $qb->createNamedParameter($lotCode)))
+			->groupBy('location_id');
+		$result = $qb->executeQuery();
+		$out = [];
+		while ($row = $result->fetch()) {
+			$out[(int)$row['location_id']] = (int)$row['total'];
+		}
+		$result->closeCursor();
+		return $out;
+	}
+
+	/**
+	 * F-06: spend and unpriced-receive count for a period — plain SUM, no
+	 * qty factor anywhere in the path (NN-12).
+	 *
+	 * @return array{spendMinor: int, unpricedCount: int}
+	 */
+	public function spendInPeriod(int $from, int $to): array
+	{
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('spend_minor')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('kind', $qb->createNamedParameter('receive')))
+			->andWhere($qb->expr()->gte('created_at', $qb->createNamedParameter($from, \PDO::PARAM_INT)))
+			->andWhere($qb->expr()->lte('created_at', $qb->createNamedParameter($to, \PDO::PARAM_INT)));
+		$result = $qb->executeQuery();
+		$sum = 0;
+		$unpriced = 0;
+		while ($row = $result->fetch()) {
+			if ($row['spend_minor'] === null) {
+				$unpriced++;
+			} else {
+				$sum += (int)$row['spend_minor'];
+			}
+		}
+		$result->closeCursor();
+		return ['spendMinor' => $sum, 'unpricedCount' => $unpriced];
+	}
+
+	/**
+	 * F-10: issue qty per item within a rolling window (storage units).
+	 *
+	 * @return array<int, int> itemId → issued qty
+	 */
+	public function sumIssueQtyByItemSince(int $sinceTs): array
+	{
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('item_id')
+			->selectAlias($qb->func()->sum('qty_delta'), 'total')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('kind', $qb->createNamedParameter('issue')))
+			->andWhere($qb->expr()->gte('created_at', $qb->createNamedParameter($sinceTs, \PDO::PARAM_INT)))
+			->groupBy('item_id');
+		$result = $qb->executeQuery();
+		$out = [];
+		while ($row = $result->fetch()) {
+			// issue deltas are negative — expose a positive consumption.
+			$out[(int)$row['item_id']] = -(int)$row['total'];
+		}
+		$result->closeCursor();
+		return $out;
+	}
+
+	/**
 	 * @return array<string, int> "itemId:locationId" → SUM(qty_delta)
 	 */
 	public function sumDeltasByPair(): array

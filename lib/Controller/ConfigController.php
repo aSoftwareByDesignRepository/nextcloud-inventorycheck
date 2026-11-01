@@ -16,6 +16,7 @@ use OCA\InventoryCheck\Service\ProductLookupService;
 use OCA\InventoryCheck\Service\QtyScale;
 use OCA\InventoryCheck\Service\QtyScaleService;
 use OCA\InventoryCheck\Service\ReasonCodes;
+use OCA\InventoryCheck\Service\RestockConfig;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
@@ -47,6 +48,7 @@ class ConfigController extends Controller
 		private readonly ProductLookupService $productLookup,
 		private readonly IConfig $config,
 		private readonly LoggerInterface $logger,
+		private readonly ?RestockConfig $restock = null,
 	) {
 		parent::__construct(Application::APP_ID, $request);
 	}
@@ -96,7 +98,100 @@ class ConfigController extends Controller
 			'productLookupEnabledProviders' => $this->productLookup->enabledProviderIds(),
 			'productLookupAvailable' => $isAppAdmin ? $this->productLookup->availableProviders() : [],
 			'productLookupStats' => $isAppAdmin ? $this->productLookup->stats() : null,
+			// Restock: category list is item-form data (all app users); budgets
+			// and thresholds are money policy → office+ only (SPEC §15).
+			'categoryList' => $this->restockCfg()->categoryList(),
+			'restockBudgets' => ($isAppAdmin || $this->access->isOffice($uid)) ? $this->restockCfg()->budgets() : null,
+			'onOrderStaleDays' => $isAppAdmin ? $this->restockCfg()->onOrderStaleDays() : null,
+			'expiryWarnDays' => $isAppAdmin ? $this->restockCfg()->expiryWarnDays() : null,
+			'velocityWindowDays' => $isAppAdmin ? $this->restockCfg()->velocityWindowDays() : null,
+			'approvalThresholdMinor' => $isAppAdmin ? $this->restockCfg()->approvalThresholdMinor() : null,
+			'restockDigestEnabled' => $isAppAdmin ? $this->restockCfg()->digestEnabled() : null,
 		]);
+	}
+
+	/**
+	 * Restock suite config (F-02/F-09/F-16 + thresholds): app-admin writes
+	 * only, validate-then-commit, every mutation audited (family rule).
+	 */
+	#[NoAdminRequired]
+	public function saveRestock(): JSONResponse
+	{
+		$uid = $this->access->currentUserId();
+		$this->access->requireAppAdmin($uid);
+		$p = $this->request->getParams();
+
+		// Phase 1 — validate everything before writing anything.
+		$categoryList = array_key_exists('categoryList', $p)
+			? $this->restockCfg()->parseCategoryList($p['categoryList'])
+			: null;
+		$effectiveCategories = $categoryList ?? $this->restockCfg()->categoryList();
+		$budgets = array_key_exists('restockBudgets', $p)
+			? $this->restockCfg()->parseBudgets($p['restockBudgets'], $effectiveCategories)
+			: null;
+		$staleDays = array_key_exists('onOrderStaleDays', $p)
+			? $this->restockCfg()->parseDays($p['onOrderStaleDays'], 'onOrderStaleDays')
+			: null;
+		$expiryDays = array_key_exists('expiryWarnDays', $p)
+			? $this->restockCfg()->parseDays($p['expiryWarnDays'], 'expiryWarnDays')
+			: null;
+		$velocityDays = array_key_exists('velocityWindowDays', $p)
+			? $this->restockCfg()->parseDays($p['velocityWindowDays'], 'velocityWindowDays')
+			: null;
+		$threshold = null;
+		$thresholdSet = false;
+		if (array_key_exists('approvalThresholdMinor', $p)) {
+			$thresholdSet = true;
+			$raw = $p['approvalThresholdMinor'];
+			if ($raw === null || $raw === '') {
+				$threshold = null;
+			} elseif ((is_int($raw) || (is_string($raw) && preg_match('/^\d+$/', $raw) === 1)) && (int)$raw <= RestockConfig::MAX_SPEND_MINOR) {
+				$threshold = (int)$raw;
+			} else {
+				throw new ValidationException('validation_failed', '', [
+					['field' => 'approvalThresholdMinor', 'code' => 'validation_failed'],
+				]);
+			}
+		}
+		$digest = array_key_exists('restockDigestEnabled', $p)
+			? $this->parseBool($p['restockDigestEnabled'], 'restockDigestEnabled')
+			: null;
+
+		// Phase 2 — commit only after all validations succeeded.
+		if ($categoryList !== null) {
+			$this->restockCfg()->setCategoryList($categoryList);
+		}
+		if ($budgets !== null) {
+			$this->restockCfg()->setBudgets($budgets);
+		}
+		if ($staleDays !== null) {
+			$this->restockCfg()->setDays(RestockConfig::KEY_ON_ORDER_STALE_DAYS, $staleDays);
+		}
+		if ($expiryDays !== null) {
+			$this->restockCfg()->setDays(RestockConfig::KEY_EXPIRY_WARN_DAYS, $expiryDays);
+		}
+		if ($velocityDays !== null) {
+			$this->restockCfg()->setDays(RestockConfig::KEY_VELOCITY_WINDOW_DAYS, $velocityDays);
+		}
+		if ($thresholdSet) {
+			$this->restockCfg()->setApprovalThresholdMinor($threshold);
+		}
+		if ($digest !== null) {
+			$this->restockCfg()->setDigestEnabled($digest);
+		}
+		if ($categoryList !== null || $budgets !== null || $staleDays !== null || $expiryDays !== null
+			|| $velocityDays !== null || $thresholdSet || $digest !== null) {
+			$this->auditPolicyChange($uid, 'restock_policy_saved', [
+				'categoryList' => $categoryList !== null ? count($categoryList) : null,
+				'restockBudgets' => $budgets !== null ? count($budgets) : null,
+				'onOrderStaleDays' => $staleDays,
+				'expiryWarnDays' => $expiryDays,
+				'velocityWindowDays' => $velocityDays,
+				'approvalThresholdSet' => $thresholdSet ? $threshold !== null : null,
+				'restockDigestEnabled' => $digest,
+			]);
+		}
+		return $this->index();
 	}
 
 	/**
@@ -396,6 +491,12 @@ class ConfigController extends Controller
 			]);
 		}
 		return $this->index();
+	}
+
+	/** RestockConfig is optional in unit-test constructions — resolve lazily. */
+	private function restockCfg(): RestockConfig
+	{
+		return $this->restock ?? new RestockConfig($this->config);
 	}
 
 	/**

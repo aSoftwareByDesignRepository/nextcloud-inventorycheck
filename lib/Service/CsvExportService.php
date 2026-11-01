@@ -68,6 +68,8 @@ class CsvExportService
 		$sums = $this->balances->sumQtyByItem(null);
 		$all = $this->items->search('', true, Csv::MAX_EXPORT_ROWS, 0);
 		$rows = [];
+		$estTotal = 0;
+		$unpriced = 0;
 		foreach ($all['data'] as $item) {
 			$total = $sums[(int)$item->getId()] ?? 0;
 			if (!LowStockQuery::isLowStock(true, $item->getReorderLevel(), $total)) {
@@ -75,6 +77,20 @@ class CsvExportService
 			}
 			$suggested = SuggestedOrder::qty($total, $item->getReorderLevel(), $item->getTargetStock());
 			$api = QtyScale::formatItem($item->toApi(), $this->config);
+			// F-01: pack-aware est. line; appended columns only (positional
+			// parsers must not break — family anti-pattern table).
+			$packs = RestockEstimate::packs($suggested, $item->getOrderPackQty());
+			$est = RestockEstimate::lineMinor(
+				$suggested,
+				$item->getOrderPackQty(),
+				$item->getOrderPackPriceMinor(),
+				$item->getLastPriceMinor(),
+				QtyScale::factor($this->config),
+			);
+			$estTotal += $est ?? 0;
+			if ($est === null) {
+				$unpriced++;
+			}
 			$rows[] = [
 				$api['sku'],
 				$api['name'],
@@ -84,17 +100,29 @@ class CsvExportService
 				QtyScale::toDisplay($this->config, $suggested),
 				$api['supplierNote'] ?? '',
 				$api['uom'],
+				$api['supplierName'] ?? '',
+				$api['supplierSku'] ?? '',
+				$api['lastPriceMinor'] ?? '',
+				$api['orderPackQty'] ?? '',
+				$packs ?? '',
+				$est ?? '',
+				$api['category'] ?? '',
 			];
 		}
 		$this->assertExportFits(count($rows));
 		$headers = Csv::localizeHeaders(
-			['sku', 'name', 'on_hand', 'reorder_level', 'target_stock', 'suggested_qty', 'supplier_note', 'uom'],
+			['sku', 'name', 'on_hand', 'reorder_level', 'target_stock', 'suggested_qty', 'supplier_note', 'uom', 'supplier_name', 'supplier_sku', 'unit_price_minor', 'order_pack_qty', 'packs', 'est_line_minor', 'category'],
 			$lang,
 		);
 		$body = Csv::line($headers);
 		foreach ($rows as $row) {
 			$body .= Csv::line($row);
 		}
+		// MH-06: totals row is the LAST row — never mid-file.
+		$body .= Csv::line([
+			'total', '', '', '', '', '', '', '', '', '', '', '', '', $estTotal,
+			$unpriced > 0 ? 'unpriced:' . $unpriced : '',
+		]);
 		return $this->pack('inventorycheck-reorder.csv', $body);
 	}
 
@@ -152,7 +180,7 @@ class CsvExportService
 		$result = $this->items->search('', null, Csv::MAX_EXPORT_ROWS, 0);
 		$this->assertExportFits($result['total']);
 		$headers = Csv::localizeHeaders(
-			['sku', 'scan_code', 'name', 'description', 'uom', 'reorder_level', 'active', 'supplier_note', 'last_price_minor'],
+			['sku', 'scan_code', 'name', 'description', 'uom', 'reorder_level', 'active', 'supplier_note', 'last_price_minor', 'supplier_name', 'supplier_sku', 'order_pack_qty', 'order_pack_price_minor', 'supplier_lead_days', 'category', 'criticality'],
 			$lang,
 		);
 		$body = Csv::line($headers);
@@ -168,6 +196,13 @@ class CsvExportService
 				$api['active'] ? '1' : '0',
 				$api['supplierNote'] ?? '',
 				$api['lastPriceMinor'] ?? '',
+				$api['supplierName'] ?? '',
+				$api['supplierSku'] ?? '',
+				$api['orderPackQty'] ?? '',
+				$api['orderPackPriceMinor'] ?? '',
+				$api['supplierLeadDays'] ?? '',
+				$api['category'] ?? '',
+				$api['criticality'] ?? 'none',
 			]);
 		}
 		return $this->pack('inventorycheck-items.csv', $body);

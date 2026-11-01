@@ -16,6 +16,8 @@ use OCA\InventoryCheck\Controller\ItemController;
 use OCA\InventoryCheck\Controller\ItemPhotoController;
 use OCA\InventoryCheck\Controller\LicenseController;
 use OCA\InventoryCheck\Controller\LocationController;
+use OCA\InventoryCheck\Controller\LotController;
+use OCA\InventoryCheck\Controller\ReportController;
 use OCA\InventoryCheck\Controller\LowStockController;
 use OCA\InventoryCheck\Controller\MobileController;
 use OCA\InventoryCheck\Controller\MovementController;
@@ -89,6 +91,8 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 		ConfigController::class,
 		DirectoryController::class,
 		LicenseController::class,
+		LotController::class,
+		ReportController::class,
 		MobileController::class,
 	];
 
@@ -109,7 +113,10 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 		ItemController::class => [
 			'index', 'byCode', 'show', 'create', 'update', 'destroy',
 			'label', 'labelAlias', 'labelPrint', 'bulkLabels',
+			'markOnOrder', 'clearOnOrder', 'markOnOrderBulk',
 		],
+		LotController::class => ['index', 'byCode', 'setExpiry'],
+		ReportController::class => ['valuation'],
 		ProductLookupController::class => ['lookup'],
 		ItemPhotoController::class => ['show', 'upload', 'destroy'],
 		BalanceController::class => ['index'],
@@ -123,6 +130,7 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 		ConfigController::class => [
 			'index', 'saveAccess', 'saveOffice', 'saveNotify', 'saveFractional',
 			'saveWaveD', 'reasonCodes', 'locationAcl', 'saveLocationAcl', 'saveProductLookup',
+			'saveRestock',
 		],
 		DirectoryController::class => ['searchUsers', 'searchGroups'],
 		LicenseController::class => [
@@ -133,7 +141,7 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 			'bootstrap', 'byCode', 'itemPhoto', 'locationByCode', 'locations',
 			'balances', 'movements', 'scan', 'pairDevice', 'favourites',
 			'addFavourite', 'removeFavourite', 'cycleCounts', 'cycleCountShow',
-			'cycleCountSetCount', 'productLookup',
+			'cycleCountSetCount', 'productLookup', 'createItem', 'lotByCode',
 		],
 	];
 
@@ -477,7 +485,12 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 
 		if ($typeName === IURLGenerator::class) {
 			$url = $this->createMock(IURLGenerator::class);
-			$url->method('linkToRoute')->willReturn('/apps/inventorycheck/');
+			// RouteUrlTemplate::for() must find the placeholder in the URL —
+			// echo the params back so '/0' segments actually exist.
+			$url->method('linkToRoute')->willReturnCallback(
+				static fn (string $route, array $params = []): string =>
+					'/apps/inventorycheck/' . implode('/', array_map('strval', array_values($params))),
+			);
 			$url->method('linkToRouteAbsolute')->willReturn('http://localhost/apps/inventorycheck/');
 			$this->byType[$key] = $url;
 			return $url;

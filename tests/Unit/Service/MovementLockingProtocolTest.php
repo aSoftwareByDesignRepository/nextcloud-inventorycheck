@@ -167,7 +167,7 @@ final class MovementLockingProtocolTest extends TestCase
 		$locations = file_get_contents(dirname(__DIR__, 3) . '/lib/Service/LocationService.php');
 		self::assertNotFalse($items);
 		self::assertNotFalse($locations);
-		self::assertSame(2, substr_count($items, 'lockById($id, true)'), 'item update + delete');
+		self::assertSame(5, substr_count($items, 'lockById($id, true)'), 'item update + delete + on-order paths');
 		self::assertSame(2, substr_count($locations, 'lockById($id, true)'), 'location update + delete');
 		self::assertStringContainsString('withCodesLock', $items);
 		self::assertStringContainsString('UniqueViolation::is', $items);

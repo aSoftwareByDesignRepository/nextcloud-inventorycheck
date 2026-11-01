@@ -9,6 +9,7 @@ use OCA\InventoryCheck\Db\BalanceMapper;
 use OCA\InventoryCheck\Db\Item;
 use OCA\InventoryCheck\Db\ItemMapper;
 use OCA\InventoryCheck\Db\LocationMapper;
+use OCA\InventoryCheck\Db\LotMapper;
 use OCA\InventoryCheck\Db\Movement;
 use OCA\InventoryCheck\Db\MovementMapper;
 use OCA\InventoryCheck\Exception\ConflictException;
@@ -57,6 +58,7 @@ class MovementService
 		private readonly LocationAclService $locationAcl,
 		private readonly IConfig $config,
 		private readonly ?LowStockNotifyService $lowStockNotify = null,
+		private readonly ?LotMapper $lots = null,
 	) {
 	}
 
@@ -71,8 +73,30 @@ class MovementService
 		?string $reason,
 		?string $lotCode = null,
 		bool $notifyLowStock = true,
+		?int $spendMinor = null,
+		?int $expiresAt = null,
 	): array {
 		$this->access->requireOffice($actorUid);
+		$this->assertLocationAccess($actorUid, $locationId);
+		return $this->postSingle($actorUid, 'receive', $itemId, $locationId, $qty, $reason, $lotCode, $notifyLowStock, $spendMinor, $expiresAt);
+	}
+
+	/**
+	 * Seat-scoped receive for flows where the gate lives in the caller
+	 * (F-18 mobile onboarding opening balance — any seat may create+receive).
+	 * Identical ledger path; only the office check differs.
+	 *
+	 * @return array{movements: list<array<string, mixed>>, balances: list<array<string, mixed>>}
+	 */
+	public function receiveForSeat(
+		string $actorUid,
+		int $itemId,
+		int $locationId,
+		int $qty,
+		?string $reason,
+		?string $lotCode = null,
+		bool $notifyLowStock = true,
+	): array {
 		$this->assertLocationAccess($actorUid, $locationId);
 		return $this->postSingle($actorUid, 'receive', $itemId, $locationId, $qty, $reason, $lotCode, $notifyLowStock);
 	}
@@ -452,8 +476,12 @@ class MovementService
 			$visible,
 			$reasonCode,
 		);
+		$isOffice = $this->access->isOffice($actorUid);
 		return [
-			'data' => array_map(fn (Movement $m) => $this->movementToListApi($m), $result['data']),
+			'data' => array_map(
+				fn (Movement $m) => MoneyVisibility::movementForWeb($this->movementToListApi($m), $isOffice),
+				$result['data'],
+			),
 			'total' => $result['total'],
 			'limit' => $limit,
 			'offset' => $offset,
@@ -522,9 +550,28 @@ class MovementService
 		?string $reason,
 		?string $lotCode = null,
 		bool $notifyLowStock = true,
+		?int $spendMinor = null,
+		?int $expiresAt = null,
 	): array {
 		if (!MovementMath::isValidMovementQty($qty, QtyScale::maxStorage($this->config))) {
 			throw new ValidationException('invalid_qty');
+		}
+		// F-06: spend_minor is a receive-only invoice-line total (NN-12 —
+		// stored total, never qty×price division).
+		if ($kind !== 'receive' && $spendMinor !== null) {
+			throw new ValidationException('validation_failed', '', [
+				['field' => 'spendMinor', 'code' => 'validation_failed'],
+			]);
+		}
+		if ($spendMinor !== null && ($spendMinor < 0 || $spendMinor > RestockConfig::MAX_SPEND_MINOR)) {
+			throw new ValidationException('validation_failed', '', [
+				['field' => 'spendMinor', 'code' => 'validation_failed'],
+			]);
+		}
+		if ($expiresAt !== null && ($expiresAt <= 0 || $expiresAt > 4_102_444_800)) {
+			throw new ValidationException('validation_failed', '', [
+				['field' => 'expiresAt', 'code' => 'validation_failed'],
+			]);
 		}
 		$reason = $this->normalizeReason($reason);
 		$allowNeg = $this->access->allowNegativeStock();
@@ -532,10 +579,15 @@ class MovementService
 		$now = $this->clock->now();
 
 		$result = $this->runInTransaction(function () use (
-			$actorUid, $kind, $itemId, $locationId, $qty, $reason, $allowNeg, $delta, $now, $lotCode,
+			$actorUid, $kind, $itemId, $locationId, $qty, $reason, $allowNeg, $delta, $now, $lotCode, $spendMinor, $expiresAt,
 		): array {
-			$item = $this->lockActiveItemForMovement($itemId);
+			$item = $this->lockActiveItemForMovement($itemId, $kind === 'receive');
 			$lockedLot = $this->enforceTrackMode($item, $lotCode, $kind, $qty);
+			if ($expiresAt !== null && ($item->getTrackMode() !== 'lot' || $lockedLot === null)) {
+				throw new ValidationException('validation_failed', '', [
+					['field' => 'expiresAt', 'code' => 'lot_code_not_applicable'],
+				]);
+			}
 			$loc = $this->lockActiveLocations([$locationId])[$locationId];
 			$this->balances->ensureZeroRow($itemId, $locationId, $now);
 			$locked = $this->balances->lockPairs([
@@ -558,8 +610,21 @@ class MovementService
 			$this->updateBalance($bal, $qtyAfter, $now);
 			$mov = $this->insertMovement(
 				$itemId, $locationId, $kind, $delta, $qtyAfter,
-				null, null, $reason, $actorUid, $now, null, null, $lockedLot,
+				null, null, $reason, $actorUid, $now, null, null, $lockedLot, null, $spendMinor,
 			);
+
+			// F-07: lot expiry upsert inside the same TX — a differing expiry
+			// for an existing lot aborts the whole receive (NN-10).
+			if ($this->lots !== null && $kind === 'receive' && $item->getTrackMode() === 'lot' && $lockedLot !== null) {
+				$this->lots->upsertForReceive($itemId, $lockedLot, $expiresAt);
+			}
+
+			// F-04: a receive decrements/clears the on-order marker (targeted
+			// column UPDATE — never entity save; item row is exclusively
+			// locked whenever a marker is present — see lockActiveItemForMovement).
+			if ($kind === 'receive' && $item->getOnOrderQty() !== null) {
+				$this->items->decrementOnOrder($itemId, $delta);
+			}
 
 			return [
 				'movements' => [$mov->toApi()],
@@ -634,6 +699,7 @@ class MovementService
 		?int $refId = null,
 		?string $lotCode = null,
 		?string $reasonCode = null,
+		?int $spendMinor = null,
 	): Movement {
 		$m = new Movement();
 		$m->setItemId($itemId);
@@ -648,6 +714,7 @@ class MovementService
 		$m->setRefType($refType);
 		$m->setRefId($refId);
 		$m->setLotCode($lotCode);
+		$m->setSpendMinor($spendMinor);
 		$m->setCreatedAt($now);
 		$m->setCreatedBy($actorUid);
 		return $this->movements->insert($m);
@@ -671,16 +738,25 @@ class MovementService
 	 * {@see ConflictException} `item_lock_conflict` so the client retries and
 	 * the next attempt peeks serial and takes EXCLUSIVE from the start.
 	 */
-	private function lockActiveItemForMovement(int $itemId): Item
+	private function lockActiveItemForMovement(int $itemId, bool $willDecrementOnOrder = false): Item
 	{
 		// Peek unlocked only to choose shared vs exclusive strength; then lock.
+		// Restock F-04: a receive that will decrement on_order_qty must take
+		// the EXCLUSIVE item lock — writing under a shared lock is the
+		// SHARE→X upgrade deadlock two concurrent receives would hit.
 		$peek = $this->items->findById($itemId);
-		$exclusive = $peek->getTrackMode() === 'serial';
+		$exclusive = $peek->getTrackMode() === 'serial'
+			|| ($willDecrementOnOrder && $peek->getOnOrderQty() !== null);
 		$item = $this->items->lockById($itemId, $exclusive);
 		if (!$item->getActive()) {
 			throw new ValidationException('inactive_item');
 		}
 		if (!$exclusive && $item->getTrackMode() === 'serial') {
+			throw new ConflictException('item_lock_conflict');
+		}
+		// Same abort-and-retry for a raced on-order marker (F-04): decrementing
+		// under a shared lock is the SHARE→X upgrade deadlock.
+		if (!$exclusive && $willDecrementOnOrder && $item->getOnOrderQty() !== null) {
 			throw new ConflictException('item_lock_conflict');
 		}
 		return $item;

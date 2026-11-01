@@ -35,6 +35,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setLotCode(?string $v)
  * @method string|null getReasonCode()
  * @method void setReasonCode(?string $v)
+ * @method int|null getSpendMinor()
+ * @method void setSpendMinor(?int $v)
  */
 class Movement extends Entity
 {
@@ -55,6 +57,8 @@ class Movement extends Entity
 	protected ?string $lotCode = null;
 	/** Wave D3: adjust reason taxonomy code (nullable for non-adjust / legacy). */
 	protected ?string $reasonCode = null;
+	/** Restock F-06: total paid for the received qty (invoice line), receive only, immutable. */
+	protected ?int $spendMinor = null;
 
 	public function __construct()
 	{
@@ -72,6 +76,7 @@ class Movement extends Entity
 		$this->addType('createdBy', 'string');
 		$this->addType('lotCode', 'string');
 		$this->addType('reasonCode', 'string');
+		$this->addType('spendMinor', 'integer');
 	}
 
 	/** @return array<string, mixed> */
@@ -91,6 +96,7 @@ class Movement extends Entity
 			'refType' => $this->refType,
 			'refId' => $this->refId,
 			'lotCode' => $this->lotCode,
+			'spendMinor' => $this->spendMinor,
 			'createdAt' => $this->createdAt,
 			'createdBy' => $this->createdBy,
 		];

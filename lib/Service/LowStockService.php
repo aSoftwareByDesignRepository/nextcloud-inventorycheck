@@ -19,6 +19,8 @@ class LowStockService
 		private readonly BalanceMapper $balances,
 		private readonly IConfig $config,
 		private readonly LocationAclService $locationAcl,
+		private readonly ?AccessControlService $access = null,
+		private readonly ?RestockConfig $restock = null,
 	) {
 	}
 
@@ -26,28 +28,77 @@ class LowStockService
 	 * S10: active items with reorder_level > 0 and SUM(qty) < reorder_level.
 	 * Wave C3: SUM only over locations the actor may see.
 	 *
-	 * @return array{data: list<array<string, mixed>>, total: int, limit: int, offset: int}
+	 * Restock F-01/F-02: office callers additionally get est. cost per row
+	 * and a meta block (totals, per-category budget states, stale markers).
+	 * Field callers get *no* money keys at all (A7 / NN-03).
+	 *
+	 * @return array{data: list<array<string, mixed>>, total: int, limit: int, offset: int, meta?: array<string, mixed>}
 	 */
 	public function list(string $actorUid, int $limit, int $offset): array
 	{
 		$visible = $this->locationAcl->visibleLocationIds($actorUid);
 		$sums = $this->balances->sumQtyByItem($visible);
+		$isOffice = $this->access === null || $this->access->isOffice($actorUid);
+		$factor = QtyScale::factor($this->config);
+		$now = $this->restock !== null && $this->access !== null ? (new \DateTimeImmutable())->getTimestamp() : null;
+		$staleCutoff = $now !== null && $this->restock !== null
+			? $now - ($this->restock->onOrderStaleDays() * 86400)
+			: null;
+		$budgets = $isOffice && $this->restock !== null ? $this->restock->budgets() : [];
+		$byCategory = [];
+
 		$rows = [];
 		foreach ($this->items->iterateActive() as $item) {
 			$total = $sums[(int)$item->getId()] ?? 0;
 			if (!LowStockQuery::isLowStock(true, $item->getReorderLevel(), $total)) {
 				continue;
 			}
-			$rows[] = [
-				'item' => $item->toApi(),
+			$suggested = SuggestedOrder::qty($total, $item->getReorderLevel(), $item->getTargetStock());
+			$itemApi = MoneyVisibility::itemForWeb($item->toApi(), $isOffice);
+			$row = [
+				'item' => $itemApi,
 				'totalQty' => $total,
 				'reorderLevel' => $item->getReorderLevel(),
 				'targetStock' => $item->getTargetStock(),
-				'suggestedQty' => SuggestedOrder::qty($total, $item->getReorderLevel(), $item->getTargetStock()),
+				'suggestedQty' => $suggested,
 				'deficit' => LowStockQuery::deficit($total, $item->getReorderLevel()),
+				'criticality' => $item->getCriticality(),
 			];
+			if ($isOffice) {
+				$est = RestockEstimate::lineMinor(
+					$suggested,
+					$item->getOrderPackQty(),
+					$item->getOrderPackPriceMinor(),
+					$item->getLastPriceMinor(),
+					$factor,
+				);
+				$row['packs'] = RestockEstimate::packs($suggested, $item->getOrderPackQty());
+				$row['estLineCostMinor'] = $est;
+				if ($staleCutoff !== null && $item->getOnOrderAt() !== null && $item->getOnOrderAt() < $staleCutoff) {
+					$row['onOrderStale'] = true;
+				}
+				$cat = $item->getCategory() ?? RestockConfig::UNCATEGORIZED;
+				if (!isset($byCategory[$cat])) {
+					$byCategory[$cat] = ['est' => 0, 'unpriced' => 0, 'stale' => 0];
+				}
+				if ($est === null) {
+					$byCategory[$cat]['unpriced']++;
+				} else {
+					$byCategory[$cat]['est'] += $est;
+				}
+				if (($row['onOrderStale'] ?? false) === true) {
+					$byCategory[$cat]['stale']++;
+				}
+			}
+			$rows[] = $row;
 		}
+		// F-11: critical items sort first, then worst deficit.
 		usort($rows, static function (array $a, array $b): int {
+			$ca = ($a['criticality'] ?? 'none') === 'critical' ? 0 : 1;
+			$cb = ($b['criticality'] ?? 'none') === 'critical' ? 0 : 1;
+			if ($ca !== $cb) {
+				return $ca <=> $cb;
+			}
 			if ($a['deficit'] !== $b['deficit']) {
 				return $a['deficit'] <=> $b['deficit'];
 			}
@@ -55,7 +106,40 @@ class LowStockService
 		});
 		$total = count($rows);
 		$data = array_slice($rows, $offset, $limit);
-		return ['data' => $data, 'total' => $total, 'limit' => $limit, 'offset' => $offset];
+		$out = ['data' => $data, 'total' => $total, 'limit' => $limit, 'offset' => $offset];
+
+		if ($isOffice) {
+			$estTotal = 0;
+			$unpriced = 0;
+			$staleTotal = 0;
+			$states = [];
+			$catMeta = [];
+			foreach ($byCategory as $cat => $agg) {
+				$budget = $budgets[$cat] ?? null;
+				$state = BudgetClassifier::state($budget, $agg['est']);
+				$states[] = $state;
+				$estTotal += $agg['est'];
+				$unpriced += $agg['unpriced'];
+				$staleTotal += $agg['stale'];
+				$catMeta[] = [
+					'category' => $cat,
+					'estTotalMinor' => $agg['est'],
+					'unpricedCount' => $agg['unpriced'],
+					'budgetMinor' => ($budget !== null && $budget > 0) ? $budget : null,
+					'budgetState' => $state,
+					'budgetDeltaMinor' => BudgetClassifier::delta($budget, $agg['est']),
+				];
+			}
+			usort($catMeta, static fn (array $a, array $b): int => strnatcasecmp($a['category'], $b['category']));
+			$out['meta'] = [
+				'estTotalMinor' => $estTotal,
+				'unpricedCount' => $unpriced,
+				'staleOnOrderCount' => $staleTotal,
+				'byCategory' => $catMeta,
+				'budgetState' => BudgetClassifier::worst($states),
+			];
+		}
+		return $out;
 	}
 
 	public function isPerLocationHintEnabled(): bool

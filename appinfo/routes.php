@@ -39,6 +39,15 @@ return [
 		['name' => 'item#create', 'url' => '/api/items', 'verb' => 'POST'],
 		['name' => 'item#update', 'url' => '/api/items/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\\d+']],
 		['name' => 'item#destroy', 'url' => '/api/items/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\\d+']],
+		['name' => 'item#markOnOrder', 'url' => '/api/items/{id}/on-order', 'verb' => 'PUT', 'requirements' => ['id' => '\\d+']],
+		['name' => 'item#clearOnOrder', 'url' => '/api/items/{id}/on-order', 'verb' => 'DELETE', 'requirements' => ['id' => '\\d+']],
+		['name' => 'item#markOnOrderBulk', 'url' => '/api/items/on-order-bulk', 'verb' => 'POST'],
+
+		['name' => 'lot#index', 'url' => '/api/lots', 'verb' => 'GET'],
+		['name' => 'lot#byCode', 'url' => '/api/lots/by-code/{code}', 'verb' => 'GET', 'requirements' => ['code' => '[^/]+']],
+		['name' => 'lot#setExpiry', 'url' => '/api/lots/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\\d+']],
+
+		['name' => 'report#valuation', 'url' => '/api/reports/valuation', 'verb' => 'GET'],
 
 		['name' => 'productLookup#lookup', 'url' => '/api/product-lookup', 'verb' => 'POST'],
 
@@ -90,6 +99,7 @@ return [
 		['name' => 'config#locationAcl', 'url' => '/api/config/location-acl', 'verb' => 'GET'],
 		['name' => 'config#saveLocationAcl', 'url' => '/api/config/location-acl', 'verb' => 'PUT'],
 		['name' => 'config#saveProductLookup', 'url' => '/api/config/product-lookup', 'verb' => 'POST'],
+		['name' => 'config#saveRestock', 'url' => '/api/config/restock', 'verb' => 'POST'],
 
 		['name' => 'directory#searchUsers', 'url' => '/api/directory/users', 'verb' => 'GET'],
 		['name' => 'directory#searchGroups', 'url' => '/api/directory/groups', 'verb' => 'GET'],
@@ -121,5 +131,7 @@ return [
 		['name' => 'mobile#cycleCountShow', 'url' => '/mobile/v1/cycle-counts/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
 		['name' => 'mobile#cycleCountSetCount', 'url' => '/mobile/v1/cycle-counts/lines/{lineId}', 'verb' => 'PUT', 'requirements' => ['lineId' => '\\d+']],
 		['name' => 'mobile#productLookup', 'url' => '/mobile/v1/product-lookup', 'verb' => 'POST'],
+		['name' => 'mobile#createItem', 'url' => '/mobile/v1/items', 'verb' => 'POST'],
+		['name' => 'mobile#lotByCode', 'url' => '/mobile/v1/lots/by-code/{code}', 'verb' => 'GET', 'requirements' => ['code' => '[^/]+']],
 	],
 ];

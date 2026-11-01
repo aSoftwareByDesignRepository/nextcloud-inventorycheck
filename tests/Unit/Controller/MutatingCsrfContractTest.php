@@ -29,6 +29,7 @@ final class MutatingCsrfContractTest extends TestCase
 		'upload',
 		'lookup',
 		'issueMaintWo', 'issueProject', 'saveSettings', 'retryInvoicePush',
+		'markOnOrder', 'clearOnOrder', 'markOnOrderBulk', 'setExpiry', 'saveRestock',
 	];
 
 	/** @return list<string> */
