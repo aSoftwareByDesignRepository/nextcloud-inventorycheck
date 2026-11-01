@@ -232,6 +232,7 @@ class Application extends App implements IBootstrap
 				$c->get(LowStockNotifyService::class),
 				$c->get(\OCA\InventoryCheck\Db\LotMapper::class),
 				$c->get(\OCA\InventoryCheck\Service\OrderSheetService::class),
+				$c->get(\OCA\InventoryCheck\Service\WebhookService::class),
 			);
 		});
 		$context->registerService(ScanIdempotencyService::class, static function ($c): ScanIdempotencyService {
@@ -288,6 +289,13 @@ class Application extends App implements IBootstrap
 			return new \OCA\InventoryCheck\Service\KitService($c->get(IDBConnection::class), $c->get(ItemMapper::class), $c->get(MovementService::class), $c->get(AccessControlService::class), $c->get(IConfig::class));
 		});
 		$context->registerDashboardWidget(\OCA\InventoryCheck\Dashboard\LowStockWidget::class);
+		$context->registerService(\OCA\InventoryCheck\Service\WebhookService::class, static function ($c): \OCA\InventoryCheck\Service\WebhookService {
+			return new \OCA\InventoryCheck\Service\WebhookService(
+				$c->get(\OCP\Http\Client\IClientService::class),
+				$c->get(IConfig::class),
+				$c->get(\Psr\Log\LoggerInterface::class),
+			);
+		});
 		$context->registerService(LowStockService::class, static function ($c): LowStockService {
 			return new LowStockService(
 				$c->get(ItemMapper::class),

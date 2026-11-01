@@ -107,6 +107,7 @@ class ConfigController extends Controller
 			'velocityWindowDays' => $isAppAdmin ? $this->restockCfg()->velocityWindowDays() : null,
 			'approvalThresholdMinor' => $isAppAdmin ? $this->restockCfg()->approvalThresholdMinor() : null,
 			'restockDigestEnabled' => $isAppAdmin ? $this->restockCfg()->digestEnabled() : null,
+			'webhookUrl' => $isAppAdmin ? $this->webhookSvc()->url() : null,
 		]);
 	}
 
@@ -153,6 +154,13 @@ class ConfigController extends Controller
 				]);
 			}
 		}
+		$webhookUrl = null;
+		$webhookSet = false;
+		if (array_key_exists('webhookUrl', $p)) {
+			$webhookSet = true;
+			$raw = trim((string)$p['webhookUrl']);
+			$webhookUrl = $raw === '' ? null : $raw;
+		}
 		$digest = array_key_exists('restockDigestEnabled', $p)
 			? $this->parseBool($p['restockDigestEnabled'], 'restockDigestEnabled')
 			: null;
@@ -179,8 +187,11 @@ class ConfigController extends Controller
 		if ($digest !== null) {
 			$this->restockCfg()->setDigestEnabled($digest);
 		}
+		if ($webhookSet) {
+			$this->webhookSvc()->setUrl($webhookUrl);
+		}
 		if ($categoryList !== null || $budgets !== null || $staleDays !== null || $expiryDays !== null
-			|| $velocityDays !== null || $thresholdSet || $digest !== null) {
+			|| $velocityDays !== null || $thresholdSet || $digest !== null || $webhookSet) {
 			$this->auditPolicyChange($uid, 'restock_policy_saved', [
 				'categoryList' => $categoryList !== null ? count($categoryList) : null,
 				'restockBudgets' => $budgets !== null ? count($budgets) : null,
@@ -497,6 +508,11 @@ class ConfigController extends Controller
 	private function restockCfg(): RestockConfig
 	{
 		return $this->restock ?? new RestockConfig($this->config);
+	}
+
+	private function webhookSvc(): \OCA\InventoryCheck\Service\WebhookService
+	{
+		return \OCP\Server::get(\OCA\InventoryCheck\Service\WebhookService::class);
 	}
 
 	/**

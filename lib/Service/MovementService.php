@@ -60,6 +60,7 @@ class MovementService
 		private readonly ?LowStockNotifyService $lowStockNotify = null,
 		private readonly ?LotMapper $lots = null,
 		private readonly ?OrderSheetService $orderSheets = null,
+		private readonly ?WebhookService $webhook = null,
 	) {
 	}
 
@@ -662,6 +663,7 @@ class MovementService
 			$result = $fn();
 			if ($started) {
 				$this->db->commit();
+				$this->dispatchWebhook($result);
 			}
 			return $result;
 		} catch (\Throwable $e) {
@@ -669,6 +671,24 @@ class MovementService
 				$this->db->rollBack();
 			}
 			throw $e;
+		}
+	}
+
+	/** F-28: post-commit webhook — best-effort, never throws. */
+	private function dispatchWebhook(mixed $result): void
+	{
+		if ($this->webhook === null) {
+			return;
+		}
+		$rows = is_array($result) && isset($result['movement'])
+			? [$result['movement']]
+			: (is_array($result) ? $result : [$result]);
+		foreach ($rows as $r) {
+			if ($r instanceof \OCA\InventoryCheck\Db\Movement) {
+				$this->webhook->postStockChange($r->getKind(), $r->getItemId(), $r->getQtyDelta());
+			} elseif (is_array($r) && isset($r['kind'])) {
+				$this->webhook->postStockChange((string)$r['kind'], (int)($r['itemId'] ?? 0), (int)($r['qtyDelta'] ?? 0));
+			}
 		}
 	}
 
