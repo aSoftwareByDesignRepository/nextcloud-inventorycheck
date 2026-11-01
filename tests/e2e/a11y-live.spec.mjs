@@ -20,7 +20,9 @@ const routes = [
 	{ path: '/apps/inventorycheck/settings/quantities', ready: '#iv-page-title, .iv-howto, #iv-frac-title, .iv-settings-page', creds: 'ADMIN' },
 	{ path: '/apps/inventorycheck/settings/location-access', ready: '#iv-page-title, .iv-howto, #iv-loc-acl-title, .iv-settings-page', creds: 'ADMIN' },
 	{ path: '/apps/inventorycheck/settings/connections', ready: '#iv-page-title, .iv-howto, #iv-connections-title, .iv-settings-page', creds: 'ADMIN' },
+	{ path: '/apps/inventorycheck/settings/product-lookup', ready: '#iv-page-title, .iv-howto, #iv-product-lookup-title, .iv-settings-page', creds: 'ADMIN' },
 	{ path: '/apps/inventorycheck/settings/policies', ready: '#iv-page-title, .iv-howto, #iv-policies-title, .iv-settings-page', creds: 'ADMIN' },
+	{ path: '/apps/inventorycheck/settings/restock', ready: '#iv-page-title, .iv-howto, #iv-restock-title, .iv-settings-page', creds: 'ADMIN' },
 	{ path: '/apps/inventorycheck/settings/license', ready: '#iv-page-title, .iv-howto, #iv-license-title, .iv-settings-page', creds: 'ADMIN' },
 	{ path: '/apps/inventorycheck/settings/support', ready: '#iv-page-title, .iv-howto, #iv-support-us, [data-support-us="1"]', creds: 'ADMIN' },
 ]

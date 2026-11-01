@@ -41,7 +41,9 @@ const PAGES = [
 	{ name: 'settings-quantities', url: '/apps/inventorycheck/settings/quantities' },
 	{ name: 'settings-location-access', url: '/apps/inventorycheck/settings/location-access' },
 	{ name: 'settings-connections', url: '/apps/inventorycheck/settings/connections' },
+	{ name: 'settings-product-lookup', url: '/apps/inventorycheck/settings/product-lookup' },
 	{ name: 'settings-policies', url: '/apps/inventorycheck/settings/policies' },
+	{ name: 'settings-restock', url: '/apps/inventorycheck/settings/restock' },
 	{ name: 'settings-license', url: '/apps/inventorycheck/settings/license' },
 	{ name: 'settings-support', url: '/apps/inventorycheck/settings/support' },
 ]
