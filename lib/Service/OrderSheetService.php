@@ -14,6 +14,10 @@ use OCA\InventoryCheck\Exception\PermissionDeniedException;
 use OCA\InventoryCheck\Exception\ValidationException;
 use OCP\IConfig;
 use OCP\IDBConnection;
+use OCP\Mail\IEMailTemplate;
+use OCP\Mail\IMailer;
+use OCP\IUserManager;
+use Psr\Log\LoggerInterface;
 
 /**
  * F-13/F-15/F-16 order sheets: draft → sent → received|cancelled.
@@ -32,6 +36,9 @@ class OrderSheetService
 		private readonly RestockConfig $restock,
 		private readonly Clock $clock,
 		private readonly IConfig $config,
+		private readonly ?IMailer $mailer = null,
+		private readonly ?IUserManager $userManager = null,
+		private readonly ?LoggerInterface $logger = null,
 	) {
 	}
 
@@ -150,6 +157,7 @@ class OrderSheetService
 			}
 			$this->sheets->setStatus($id, OrderSheet::STATUS_SENT, $this->clock->now());
 			$this->db->commit();
+			$this->emailSupplier($sheet, $actorUid);
 		} catch (\Throwable $e) {
 			$this->db->rollBack();
 			throw $e;
@@ -187,6 +195,33 @@ class OrderSheetService
 			if ($this->lines->allLinesReceived($sheetId)) {
 				$this->sheets->setStatus($sheetId, OrderSheet::STATUS_RECEIVED, $now);
 			}
+		}
+	}
+
+	/** F-15: email the sheet to the supplier — best-effort, never fails send. */
+	private function emailSupplier(OrderSheet $sheet, string $actorUid): void
+	{
+		if ($this->mailer === null || $sheet->getSupplierId() === null || $this->logger === null) {
+			return;
+		}
+		try {
+			$supplier = $this->suppliers->findById($sheet->getSupplierId());
+			$email = $supplier->getEmail();
+			if ($email === null || $email === '') {
+				return;
+			}
+			$body = $this->renderText((int)$sheet->getId());
+			$msg = $this->mailer->createMessage();
+			$msg->setTo([$email => $supplier->getName()]);
+			$msg->setSubject('Order sheet #' . $sheet->getId());
+			$msg->setBodyPlain($body);
+			$this->mailer->send($msg);
+		} catch (\Throwable $e) {
+			$this->logger->warning('InventoryCheck order sheet email failed', [
+				'app' => \OCA\InventoryCheck\AppInfo\Application::APP_ID,
+				'sheetId' => $sheet->getId(),
+				'message' => $e->getMessage(),
+			]);
 		}
 	}
 
