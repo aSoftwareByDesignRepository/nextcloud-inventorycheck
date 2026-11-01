@@ -63,6 +63,20 @@ class LowStockService
 			}
 		}
 
+		// F-26: usage-spike anomaly — last-7d issues exceed 3× the baseline
+		// (avg per 7d over the prior 21 days). Informational flag only.
+		$spikes = [];
+		if ($isOffice && $this->movements !== null && $this->clock !== null) {
+			$recent = $this->movements->sumIssueQtyByItemSince($this->clock->now() - 7 * 86400);
+			$baseline = $this->movements->sumIssueQtyByItemSince($this->clock->now() - 28 * 86400);
+			foreach ($recent as $itemId => $qty) {
+				$base7d = (($baseline[$itemId] ?? 0) - $qty) / 3.0;
+				if ($qty >= 5 && $qty > $base7d * 3) {
+					$spikes[(int)$itemId] = true;
+				}
+			}
+		}
+
 		$rows = [];
 		foreach ($this->items->iterateActive() as $item) {
 			$total = $sums[(int)$item->getId()] ?? 0;
@@ -100,6 +114,9 @@ class LowStockService
 				$row['estLineCostMinor'] = $est;
 				if ($staleCutoff !== null && $item->getOnOrderAt() !== null && $item->getOnOrderAt() < $staleCutoff) {
 					$row['onOrderStale'] = true;
+				}
+				if (isset($spikes[(int)$item->getId()])) {
+					$row['usageSpike'] = true;
 				}
 				$cat = $item->getCategory() ?? RestockConfig::UNCATEGORIZED;
 				if (!isset($byCategory[$cat])) {
