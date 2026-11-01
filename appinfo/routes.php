@@ -147,6 +147,8 @@ return [
 		['name' => 'mobile#cycleCountSetCount', 'url' => '/mobile/v1/cycle-counts/lines/{lineId}', 'verb' => 'PUT', 'requirements' => ['lineId' => '\\d+']],
 		['name' => 'mobile#productLookup', 'url' => '/mobile/v1/product-lookup', 'verb' => 'POST'],
 		['name' => 'mobile#createItem', 'url' => '/mobile/v1/items', 'verb' => 'POST'],
+		['name' => 'mobile#kits', 'url' => '/mobile/v1/kits', 'verb' => 'GET'],
+		['name' => 'mobile#kitIssue', 'url' => '/mobile/v1/kits/{id}/issue', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
 		['name' => 'mobile#lotByCode', 'url' => '/mobile/v1/lots/by-code/{code}', 'verb' => 'GET', 'requirements' => ['code' => '[^/]+']],
 	],
 ];

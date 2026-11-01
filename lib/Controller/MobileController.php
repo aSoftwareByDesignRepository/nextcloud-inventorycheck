@@ -71,6 +71,7 @@ class MobileController extends Controller
 		private readonly IConfig $config,
 		private readonly IL10N $l10n,
 		private readonly ?\OCA\InventoryCheck\Service\LotRecallService $lotRecall = null,
+		private readonly ?\OCA\InventoryCheck\Service\KitService $kits = null,
 	) {
 		parent::__construct(Application::APP_ID, $request);
 	}
@@ -418,6 +419,38 @@ class MobileController extends Controller
 		return new JSONResponse($response, 201);
 	}
 
+	/**
+	 * F-17 kits — mobile list (money-free, any gated caller).
+	 */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[NoAdminRequired]
+	public function kits(): JSONResponse
+	{
+		[$uid, $device] = $this->resolveCaller(false);
+		$this->gate->assertGate($uid, $device);
+		return new JSONResponse($this->kitSvc()->list($this->actorUid($uid, $device)));
+	}
+
+	/** F-17 kit issue — seat issues all kit lines at a location, atomically. */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[NoAdminRequired]
+	public function kitIssue(int $id): JSONResponse
+	{
+		$this->assertSafeMutationChannel();
+		[$uid, $device] = $this->resolveCaller(true);
+		$this->gate->assertGate($uid, $device);
+		$p = $this->request->getParams();
+		$this->kitSvc()->issue(
+			$this->actorUid($uid, $device),
+			$id,
+			(int)($p['locationId'] ?? ($p['location_id'] ?? 0)),
+			isset($p['reason']) ? (string)$p['reason'] : null,
+		);
+		return new JSONResponse(['ok' => true]);
+	}
+
 	/** F-23 lot recall — seats only (NN-16), money-free payload. */
 	#[PublicPage]
 	#[NoCSRFRequired]
@@ -427,6 +460,12 @@ class MobileController extends Controller
 		[$uid] = $this->requireSessionUser();
 		$this->gate->assertGate($uid, null);
 		return new JSONResponse($this->lotRecall->lookup($uid, rawurldecode($code)));
+	}
+
+	/** KitService is optional in unit-test constructions — resolve lazily. */
+	private function kitSvc(): \OCA\InventoryCheck\Service\KitService
+	{
+		return $this->kits ?? \OCP\Server::get(\OCA\InventoryCheck\Service\KitService::class);
 	}
 
 	#[PublicPage]

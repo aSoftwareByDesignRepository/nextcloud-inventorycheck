@@ -109,6 +109,12 @@
     "/mobile/v1/items": {
       "post": { "responses": { "200": { "description": "OK" } } }
     },
+    "/mobile/v1/kits": {
+      "get": { "responses": { "200": { "description": "OK" } } }
+    },
+    "/mobile/v1/kits/{id}/issue": {
+      "post": { "responses": { "200": { "description": "OK" } } }
+    },
     "/mobile/v1/lots/by-code/{code}": {
       "get": { "responses": { "200": { "description": "OK" } } }
     },
