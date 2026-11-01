@@ -1889,6 +1889,52 @@
 				);
 				mount.appendChild(el('section', { className: 'iv-section', 'aria-labelledby': 'iv-low-title' }, lowKids));
 
+				// F-13 order sheets — office+: create a draft from the shown rows.
+				if ((ctx.isOffice || ctx.isAppAdmin) && ctx.urls.api.orderSheets && low.data.length > 0) {
+					var sheetKids = [el('h2', { id: 'iv-sheets-title', className: 'iv-section__title', text: tr('Order sheets') })];
+					sheetKids.push(btn(tr('Create draft order sheet'), {
+						className: 'iv-btn--touch',
+						onclick: function () {
+							var lines = low.data.map(function (r) {
+								return { itemId: r.item.id, qty: r.suggestedQty != null ? r.suggestedQty : 1 };
+							});
+							api('POST', ctx.urls.api.orderSheets, { lines: lines })
+								.then(function () { toast(tr('Order sheet created.')); renderOrderSheets(); })
+								.catch(function (err) { toast(err.message || tr('Something went wrong.'), true); });
+						},
+					}));
+					var sheetHost = el('div');
+					sheetKids.push(sheetHost);
+					function renderOrderSheets() {
+						sheetHost.textContent = '';
+						api('GET', ctx.urls.api.orderSheets + '?status=draft,sent').then(function (res) {
+							var sheets = res.data || [];
+							if (sheets.length === 0) { sheetHost.appendChild(el('p', { className: 'iv-muted', text: tr('No open order sheets.') })); return; }
+							sheets.forEach(function (s) {
+								var rowKids = [
+									el('strong', { text: '#' + s.id + ' ' + (s.supplierName || tr('(no supplier)')) }),
+									el('span', { className: 'iv-badge', text: s.status }),
+								];
+								if (s.status === 'draft') {
+									rowKids.push(btn(tr('Send'), { primary: true, onclick: function () {
+										api('POST', ctx.urls.api.orderSheets + '/' + s.id + '/send')
+											.then(function () { toast(tr('Order sheet sent.')); renderOrderSheets(); })
+											.catch(function (err) { toast(err.message || tr('Something went wrong.'), true); });
+									} }));
+								}
+								rowKids.push(btn(tr('Cancel'), { onclick: function () {
+									api('POST', ctx.urls.api.orderSheets + '/' + s.id + '/cancel')
+										.then(function () { toast(tr('Order sheet cancelled.')); renderOrderSheets(); })
+										.catch(function (err) { toast(err.message || tr('Something went wrong.'), true); });
+								} }));
+								sheetHost.appendChild(el('div', { className: 'iv-row__actions' }, rowKids));
+							});
+						}).catch(function () { /* list failure is non-fatal */ });
+					}
+					renderOrderSheets();
+					mount.appendChild(el('section', { className: 'iv-section', 'aria-labelledby': 'iv-sheets-title' }, sheetKids));
+				}
+
 				// Bachus: variance is expert chrome — load only when opened.
 				var varianceHost = el('div');
 				var varianceDisclosure = disclosureSection(tr('Variance adjustments (optional)'), [varianceHost], {
