@@ -2845,6 +2845,21 @@
 						csv: text,
 					};
 					clear(resultBox);
+					// F-24 wizard: show the detected column mapping before commit.
+					if (report.headers && report.headers.length) {
+						var mapBox = el('div', { className: 'iv-import-headers', 'data-iv-import-headers': '1' });
+						mapBox.appendChild(el('p', {
+							className: 'iv-field__hint',
+							text: tr('Detected columns'),
+						}));
+						report.headers.forEach(function (h) {
+							mapBox.appendChild(el('span', {
+								className: 'iv-badge',
+								text: h.raw !== h.field ? h.raw + ' → ' + h.field : h.field,
+							}));
+						});
+						resultBox.appendChild(mapBox);
+					}
 					resultBox.appendChild(el('p', {
 						text: tr('{ok} row(s) look fine.', { ok: String(report.ok) }),
 					}));

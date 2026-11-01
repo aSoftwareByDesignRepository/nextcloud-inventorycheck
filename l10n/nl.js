@@ -262,6 +262,7 @@ OC.L10N.register(
 	"Delegated app administrators" : "Gedelegeerde app-beheerders",
 	"Delta" : "Verschil",
 	"Description (optional)" : "Beschrijving (optioneel)",
+	"Detected columns" : "Gedetecteerde kolommen",
 	"Device deactivated." : "Apparaat uitgeschakeld.",
 	"Devices" : "Apparaten",
 	"Download SVG" : "SVG downloaden",

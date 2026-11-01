@@ -151,6 +151,25 @@ final class Csv
 	}
 
 	/**
+	 * F-24 wizard: return the first-line headers as raw→canonical pairs so the
+	 * import UI can show the detected column mapping before commit.
+	 *
+	 * @return list<array{raw: string, field: string}>
+	 */
+	public static function headerMap(string $raw): array
+	{
+		$lines = preg_split('/\r\n|\n|\r/', $raw);
+		if ($lines === false || $lines === [] || trim($lines[0]) === '') {
+			return [];
+		}
+		$delimiter = self::detectDelimiter($lines[0]);
+		return array_map(
+			static fn (string $h): array => ['raw' => $h, 'field' => self::canonicalizeHeader($h)],
+			self::parseLine($lines[0], $delimiter),
+		);
+	}
+
+	/**
 	 * Parse semicolon-or-comma CSV text into associative rows using first line headers.
 	 *
 	 * @return list<array<string, string>>

@@ -44,7 +44,7 @@ class CsvImportService
 	{
 		$this->access->requireOffice($actorUid);
 		$report = $this->validateAll($csvText, false);
-		return ['ok' => $report['ok'], 'errors' => $report['errors']];
+		return ['ok' => $report['ok'], 'errors' => $report['errors'], 'headers' => Csv::headerMap($csvText)];
 	}
 
 	/**

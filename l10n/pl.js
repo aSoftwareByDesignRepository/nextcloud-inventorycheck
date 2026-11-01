@@ -262,6 +262,7 @@ OC.L10N.register(
 	"Delegated app administrators" : "Delegowani administratorzy aplikacji",
 	"Delta" : "Różnica",
 	"Description (optional)" : "Opis (opcjonalny)",
+	"Detected columns" : "Wykryte kolumny",
 	"Device deactivated." : "Urządzenie wyłączone.",
 	"Devices" : "Urządzenia",
 	"Download SVG" : "Pobierz SVG",

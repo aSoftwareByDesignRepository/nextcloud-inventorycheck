@@ -262,6 +262,7 @@ OC.L10N.register(
 	"Delegated app administrators" : "Delegerade appadministratörer",
 	"Delta" : "Differens",
 	"Description (optional)" : "Beskrivning (valfri)",
+	"Detected columns" : "Identifierade kolumner",
 	"Device deactivated." : "Enhet inaktiverad.",
 	"Devices" : "Enheter",
 	"Download SVG" : "Ladda ner SVG",
