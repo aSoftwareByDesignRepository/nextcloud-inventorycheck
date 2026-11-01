@@ -294,6 +294,7 @@ class Application extends App implements IBootstrap
 				$c->get(\OCP\Http\Client\IClientService::class),
 				$c->get(IConfig::class),
 				$c->get(\Psr\Log\LoggerInterface::class),
+				$c->get(\OCA\InventoryCheck\Db\LotMapper::class),
 			);
 		});
 		$context->registerService(LowStockService::class, static function ($c): LowStockService {

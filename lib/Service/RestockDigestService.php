@@ -34,6 +34,7 @@ class RestockDigestService
 		private readonly RestockConfig $restock,
 		private readonly Clock $clock,
 		private readonly LoggerInterface $logger,
+		private readonly ?\OCA\InventoryCheck\Db\LotMapper $lots = null,
 	) {
 	}
 
@@ -59,8 +60,22 @@ class RestockDigestService
 				if (count($rows) === 0) {
 					continue;
 				}
+				// F-22: health view — on-order + expiring-soon lots alongside low count.
+				$onOrder = 0;
+				foreach ($rows as $r) {
+					if (($r['item']['onOrderQty'] ?? null) !== null) {
+						$onOrder++;
+					}
+				}
+				$expiring = $this->lots !== null && $this->restock !== null
+					? count($this->lots->expiringWithin($this->clock->now(), $this->restock->expiryWarnDays() * 86400))
+					: 0;
 				$now = $this->clock->now();
-				$params = ['count' => (string)count($rows)];
+				$params = [
+					'count' => (string)count($rows),
+					'onOrder' => (string)$onOrder,
+					'expiring' => (string)$expiring,
+				];
 				$n = $this->notificationManager->createNotification();
 				$n->setApp(Application::APP_ID)
 					->setUser($uid)
