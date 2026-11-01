@@ -263,4 +263,20 @@ class ItemController extends Controller
 		}
 		return $item;
 	}
+	/** F-14: set the item\u2019s preferred supplier — office+. */
+	#[NoAdminRequired]
+	public function setPreferredSupplier(int $id): JSONResponse
+	{
+		$p = $this->request->getParams();
+		$this->items->setPreferredSupplier(
+			$this->access->currentUserId(),
+			$id,
+			(int)($p["supplierId"] ?? 0),
+			isset($p["supplierSku"]) ? (string)$p["supplierSku"] : null,
+			isset($p["priceMinor"]) && $p["priceMinor"] !== "" ? (int)$p["priceMinor"] : null,
+			isset($p["packQty"]) && $p["packQty"] !== "" ? (int)$p["packQty"] : null,
+			isset($p["leadDays"]) && $p["leadDays"] !== "" ? (int)$p["leadDays"] : null,
+		);
+		return $this->show($id);
+	}
 }

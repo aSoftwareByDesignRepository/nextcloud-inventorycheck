@@ -59,6 +59,7 @@ return [
 		['name' => 'kit#index', 'url' => '/api/kits', 'verb' => 'GET'],
 		['name' => 'kit#create', 'url' => '/api/kits', 'verb' => 'POST'],
 		['name' => 'kit#issue', 'url' => '/api/kits/{id}/issue', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
+		['name' => 'item#setPreferredSupplier', 'url' => '/api/items/{id}/preferred-supplier', 'verb' => 'PUT', 'requirements' => ['id' => '\\d+']],
 		['name' => 'supplier#index', 'url' => '/api/suppliers', 'verb' => 'GET'],
 		['name' => 'supplier#create', 'url' => '/api/suppliers', 'verb' => 'POST'],
 
