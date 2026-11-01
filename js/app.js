@@ -1820,6 +1820,11 @@
 						}
 						return kids;
 					} });
+					// F-19: supplier lead time — order earlier for long-lead items.
+					lowCols.push({ label: tr('Lead time'), render: function (r) {
+						var d = r.item && r.item.supplierLeadDays;
+						return d != null ? tr('{n} d', { n: d }) : '—';
+					} });
 				}
 				lowCols.push({ label: tr('Actions'), render: function (r) {
 					var kids = [];
@@ -3434,6 +3439,25 @@
 			}
 			if (item.lastPriceMinor != null) {
 				infoKids.push(el('p', { className: 'iv-muted', text: tr('Last price') + ': ' + (Number(item.lastPriceMinor) / 100).toFixed(2) }));
+			}
+			if (item.category) {
+				infoKids.push(el('p', { className: 'iv-muted', text: tr('Category') + ': ' + item.category }));
+			}
+			if (item.criticality === 'critical') {
+				infoKids.push(el('p', { className: 'iv-badge iv-badge--critical', text: tr('critical') }));
+			}
+			if (item.deliveryNotePath) {
+				// F-27: Files-path reference only — link to Files, never proxy bytes.
+				infoKids.push(el('p', { className: 'iv-muted' }, [
+					el('a', {
+						href: (ctx.filesBaseUrl || '/index.php/apps/files') + '?dir=' + encodeURIComponent(String(item.deliveryNotePath).replace(/\/[^/]*$/, '') || '/'),
+						target: '_blank', rel: 'noopener noreferrer',
+						text: tr('Open delivery note in Files'),
+					}),
+				]));
+			}
+			if (item.onOrderQty != null) {
+				infoKids.push(el('p', { className: 'iv-muted', text: tr('On order') + ': ' + formatQty(item.onOrderQty) }));
 			}
 			var photoHost = el('div', { className: 'iv-item-photo' });
 			infoKids.push(photoHost);
