@@ -53,4 +53,27 @@ class ExportController extends Controller
 		);
 		return new DataDownloadResponse($result['body'], $result['filename'], $result['contentType']);
 	}
+
+	/**
+	 * F-25 starter template: an import-shaped CSV with the canonical
+	 * headers + a few generic rows for a first-run onboarding.
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function starter(): DataDownloadResponse
+	{
+		$this->access->requireOffice($this->access->currentUserId());
+		$rows = [
+			['sku', 'name', 'uom', 'reorder_level', 'target_stock', 'scan_code', 'description'],
+			['EXAMPLE-001', 'Example item A (replace me)', 'pcs', '10', '50', '', 'Starter template row'],
+			['EXAMPLE-002', 'Example item B (replace me)', 'pcs', '5', '20', '', 'Starter template row'],
+			['EXAMPLE-003', 'Example item C (replace me)', 'pcs', '2', '10', '', 'Starter template row'],
+		];
+		$out = fopen('php://temp', 'r+');
+		foreach ($rows as $r) {
+			fputcsv($out, $r, ';');
+		}
+		rewind($out);
+		return new DataDownloadResponse((string)stream_get_contents($out), 'inventorycheck-starter.csv', 'text/csv');
+	}
 }

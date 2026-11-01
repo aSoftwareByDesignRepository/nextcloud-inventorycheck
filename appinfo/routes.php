@@ -81,6 +81,7 @@ return [
 		['name' => 'lowStock#perLocation', 'url' => '/api/low-stock/per-location', 'verb' => 'GET'],
 
 		['name' => 'export#index', 'url' => '/api/export', 'verb' => 'GET'],
+		['name' => 'export#starter', 'url' => '/api/export/starter', 'verb' => 'GET'],
 
 		['name' => 'import#dryRun', 'url' => '/api/import/dry-run', 'verb' => 'POST'],
 		['name' => 'import#commit', 'url' => '/api/import/commit', 'verb' => 'POST'],

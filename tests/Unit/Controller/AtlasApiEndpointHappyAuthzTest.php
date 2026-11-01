@@ -131,7 +131,7 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 		BalanceController::class => ['index'],
 		MovementController::class => ['index', 'receive', 'issue', 'transfer', 'adjust', 'scan'],
 		LowStockController::class => ['index', 'perLocation'],
-		ExportController::class => ['index'],
+		ExportController::class => ['index', 'starter'],
 		ImportController::class => ['dryRun', 'commit'],
 		CycleCountController::class => ['index', 'show', 'create', 'start', 'setCount', 'close'],
 		FavouriteController::class => ['index', 'create', 'destroy'],
