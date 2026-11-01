@@ -267,6 +267,20 @@ class Application extends App implements IBootstrap
 				$c->get(IConfig::class),
 			);
 		});
+		$context->registerService(\OCA\InventoryCheck\Service\RestockDigestService::class, static function ($c): \OCA\InventoryCheck\Service\RestockDigestService {
+			return new \OCA\InventoryCheck\Service\RestockDigestService(
+				$c->get(\OCP\Notification\IManager::class),
+				$c->get(\OCP\Activity\IManager::class),
+				$c->get(LowStockService::class),
+				$c->get(AccessControlService::class),
+				$c->get(\OCP\IUserManager::class),
+				$c->get(\OCP\IURLGenerator::class),
+				$c->get(IConfig::class),
+				$c->get(\OCA\InventoryCheck\Service\RestockConfig::class),
+				$c->get(Clock::class),
+				$c->get(\Psr\Log\LoggerInterface::class),
+			);
+		});
 		$context->registerService(LowStockService::class, static function ($c): LowStockService {
 			return new LowStockService(
 				$c->get(ItemMapper::class),
