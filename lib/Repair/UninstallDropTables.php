@@ -49,6 +49,7 @@ final class UninstallDropTables implements IRepairStep
 		'iv_cc_camp',
 		'iv_cc_line',
 		'iv_inv_push',
+		'iv_item_suppliers',
 		'iv_items',
 		'iv_license_state',
 		'iv_loc_acl',
@@ -58,8 +59,11 @@ final class UninstallDropTables implements IRepairStep
 		'iv_mobile_seats',
 		'iv_movements',
 		'iv_notif_log',
+		'iv_order_sheet_lines',
+		'iv_order_sheets',
 		'iv_scan_devices',
 		'iv_scan_idem',
+		'iv_suppliers',
 	];
 
 	// The set of tables that must exist after current migrations —

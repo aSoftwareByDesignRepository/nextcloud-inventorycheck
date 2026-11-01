@@ -49,6 +49,15 @@ return [
 
 		['name' => 'report#valuation', 'url' => '/api/reports/valuation', 'verb' => 'GET'],
 
+		['name' => 'orderSheet#index', 'url' => '/api/order-sheets', 'verb' => 'GET'],
+		['name' => 'orderSheet#create', 'url' => '/api/order-sheets', 'verb' => 'POST'],
+		['name' => 'orderSheet#show', 'url' => '/api/order-sheets/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+		['name' => 'orderSheet#send', 'url' => '/api/order-sheets/{id}/send', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
+		['name' => 'orderSheet#cancel', 'url' => '/api/order-sheets/{id}/cancel', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
+		['name' => 'orderSheet#print', 'url' => '/api/order-sheets/{id}/print', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+		['name' => 'supplier#index', 'url' => '/api/suppliers', 'verb' => 'GET'],
+		['name' => 'supplier#create', 'url' => '/api/suppliers', 'verb' => 'POST'],
+
 		['name' => 'productLookup#lookup', 'url' => '/api/product-lookup', 'verb' => 'POST'],
 
 		['name' => 'itemPhoto#show', 'url' => '/api/items/{id}/photo', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],

@@ -36,10 +36,11 @@ final class UpgradeBackupCatalog
 
 	/** @var list<string> */
 	public const BACKUP_TABLES = [
-		'iv_balances',
+				'iv_balances',
 		'iv_cc_camp',
 		'iv_cc_line',
 		'iv_inv_push',
+		'iv_item_suppliers',
 		'iv_items',
 		'iv_license_state',
 		'iv_loc_acl',
@@ -49,27 +50,34 @@ final class UpgradeBackupCatalog
 		'iv_mobile_seats',
 		'iv_movements',
 		'iv_notif_log',
+		'iv_order_sheet_lines',
+		'iv_order_sheets',
 		'iv_scan_devices',
 		'iv_scan_idem',
+		'iv_suppliers',
 	];
 
 	/** @var list<string> */
 	public const RESTORE_TABLE_ORDER = [
-		'iv_balances',
+				'iv_balances',
 		'iv_cc_camp',
 		'iv_cc_line',
 		'iv_inv_push',
+		'iv_item_suppliers',
 		'iv_items',
 		'iv_license_state',
 		'iv_loc_acl',
 		'iv_loc_fav',
 		'iv_locations',
-				'iv_lots',
-'iv_mobile_seats',
+		'iv_lots',
+		'iv_mobile_seats',
 		'iv_movements',
 		'iv_notif_log',
+		'iv_order_sheet_lines',
+		'iv_order_sheets',
 		'iv_scan_devices',
 		'iv_scan_idem',
+		'iv_suppliers',
 	];
 
 	public static function isBackupTable(string $table): bool

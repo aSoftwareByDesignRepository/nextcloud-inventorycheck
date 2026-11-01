@@ -231,6 +231,7 @@ class Application extends App implements IBootstrap
 				$c->get(IConfig::class),
 				$c->get(LowStockNotifyService::class),
 				$c->get(\OCA\InventoryCheck\Db\LotMapper::class),
+				$c->get(\OCA\InventoryCheck\Service\OrderSheetService::class),
 			);
 		});
 		$context->registerService(ScanIdempotencyService::class, static function ($c): ScanIdempotencyService {
@@ -248,6 +249,22 @@ class Application extends App implements IBootstrap
 				$c->get(ItemMapper::class),
 				$c->get(LocationMapper::class),
 				$c->get(BalanceMapper::class),
+			);
+		});
+		$context->registerService(\OCA\InventoryCheck\Db\OrderSheetMapper::class, static fn ($c) => new \OCA\InventoryCheck\Db\OrderSheetMapper($c->get(IDBConnection::class)));
+		$context->registerService(\OCA\InventoryCheck\Db\OrderSheetLineMapper::class, static fn ($c) => new \OCA\InventoryCheck\Db\OrderSheetLineMapper($c->get(IDBConnection::class)));
+		$context->registerService(\OCA\InventoryCheck\Db\SupplierMapper::class, static fn ($c) => new \OCA\InventoryCheck\Db\SupplierMapper($c->get(IDBConnection::class)));
+		$context->registerService(\OCA\InventoryCheck\Service\OrderSheetService::class, static function ($c): \OCA\InventoryCheck\Service\OrderSheetService {
+			return new \OCA\InventoryCheck\Service\OrderSheetService(
+				$c->get(IDBConnection::class),
+				$c->get(\OCA\InventoryCheck\Db\OrderSheetMapper::class),
+				$c->get(\OCA\InventoryCheck\Db\OrderSheetLineMapper::class),
+				$c->get(ItemMapper::class),
+				$c->get(\OCA\InventoryCheck\Db\SupplierMapper::class),
+				$c->get(AccessControlService::class),
+				$c->get(\OCA\InventoryCheck\Service\RestockConfig::class),
+				$c->get(Clock::class),
+				$c->get(IConfig::class),
 			);
 		});
 		$context->registerService(LowStockService::class, static function ($c): LowStockService {

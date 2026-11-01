@@ -59,6 +59,7 @@ class MovementService
 		private readonly IConfig $config,
 		private readonly ?LowStockNotifyService $lowStockNotify = null,
 		private readonly ?LotMapper $lots = null,
+		private readonly ?OrderSheetService $orderSheets = null,
 	) {
 	}
 
@@ -625,6 +626,11 @@ class MovementService
 			// locked whenever a marker is present — see lockActiveItemForMovement).
 			if ($kind === 'receive' && $item->getOnOrderQty() !== null) {
 				$this->items->decrementOnOrder($itemId, $delta);
+			}
+
+			// F-13: a receive also covers open order-sheet lines (same TX).
+			if ($this->orderSheets !== null && $kind === 'receive') {
+				$this->orderSheets->applyReceive($itemId, $delta);
 			}
 
 			return [
