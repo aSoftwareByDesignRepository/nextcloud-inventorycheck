@@ -33,4 +33,18 @@ class ReportController extends Controller
 		$this->access->requireOffice($uid);
 		return new JSONResponse($this->reports->valuation(QtyScale::factor($this->config)));
 	}
+
+	/** F-12 movement-value report — office+; period via from/to epoch params. */
+	#[NoAdminRequired]
+	public function movementValue(): JSONResponse
+	{
+		$uid = $this->access->currentUserId();
+		$this->access->requireOffice($uid);
+		$from = (int)$this->request->getParam('from', time() - 30 * 86400);
+		$to = (int)$this->request->getParam('to', time());
+		if ($from < 0 || $to < $from) {
+			throw new \OCA\InventoryCheck\Exception\ValidationException('validation_failed', '', [['field' => 'to', 'code' => 'validation_failed']]);
+		}
+		return new JSONResponse($this->reports->movementValue($from, $to));
+	}
 }

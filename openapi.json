@@ -112,6 +112,9 @@
     "/mobile/v1/lots/by-code/{code}": {
       "get": { "responses": { "200": { "description": "OK" } } }
     },
+    "/api/reports/movement-value": {
+      "get": { "responses": { "200": { "description": "OK" } } }
+    },
     "/api/order-sheets": {
       "get": { "responses": { "200": { "description": "OK" } } },
       "post": { "responses": { "200": { "description": "OK" } } }

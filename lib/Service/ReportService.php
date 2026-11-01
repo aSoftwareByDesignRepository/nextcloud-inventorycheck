@@ -16,6 +16,7 @@ class ReportService
 	public function __construct(
 		private readonly ItemMapper $items,
 		private readonly BalanceMapper $balances,
+		private readonly ?\OCA\InventoryCheck\Db\MovementMapper $movements = null,
 	) {
 	}
 
@@ -57,6 +58,27 @@ class ReportService
 			'rows' => $rows,
 			'totalMinor' => $total,
 			'unpricedCount' => $unpriced,
+		];
+	}
+
+	/**
+	 * F-12 movement-value report: spend + receive volume for a period.
+	 * Plain SUM of spend_minor — no qty factor (NN-12).
+	 *
+	 * @return array{isEstimate: true, from: int, to: int, spendMinor: int, unpricedReceiveCount: int}
+	 */
+	public function movementValue(int $from, int $to): array
+	{
+		if ($this->movements === null) {
+			return ['isEstimate' => true, 'from' => $from, 'to' => $to, 'spendMinor' => 0, 'unpricedReceiveCount' => 0];
+		}
+		$agg = $this->movements->spendInPeriod($from, $to);
+		return [
+			'isEstimate' => true,
+			'from' => $from,
+			'to' => $to,
+			'spendMinor' => $agg['spendMinor'],
+			'unpricedReceiveCount' => $agg['unpricedCount'],
 		];
 	}
 }

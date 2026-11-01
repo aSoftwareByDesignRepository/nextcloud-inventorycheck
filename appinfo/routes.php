@@ -48,6 +48,7 @@ return [
 		['name' => 'lot#setExpiry', 'url' => '/api/lots/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\\d+']],
 
 		['name' => 'report#valuation', 'url' => '/api/reports/valuation', 'verb' => 'GET'],
+		['name' => 'report#movementValue', 'url' => '/api/reports/movement-value', 'verb' => 'GET'],
 
 		['name' => 'orderSheet#index', 'url' => '/api/order-sheets', 'verb' => 'GET'],
 		['name' => 'orderSheet#create', 'url' => '/api/order-sheets', 'verb' => 'POST'],

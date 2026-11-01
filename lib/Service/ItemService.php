@@ -644,7 +644,7 @@ class ItemService
 			$sku = 'AUTO-' . strtoupper($scan);
 		}
 		$name = CodeRules::trim((string)($input['name'] ?? ''));
-		if (mb_strlen($name) > 255) {
+		if ($name === '' || mb_strlen($name) > 255) {
 			throw new ValidationException('validation_failed', '', [['field' => 'name', 'code' => 'name_required']]);
 		}
 		$uom = CodeRules::trim((string)($input['uom'] ?? 'pcs'));

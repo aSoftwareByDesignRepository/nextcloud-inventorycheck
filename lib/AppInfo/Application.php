@@ -346,6 +346,7 @@ class Application extends App implements IBootstrap
 			return new \OCA\InventoryCheck\Service\ReportService(
 				$c->get(ItemMapper::class),
 				$c->get(BalanceMapper::class),
+				$c->get(MovementMapper::class),
 			);
 		});
 		$context->registerService(CsvExportService::class, static function ($c): CsvExportService {
