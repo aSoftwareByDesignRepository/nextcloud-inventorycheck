@@ -35,7 +35,7 @@ class OrderSheetLineMapper extends QBMapper
 		$qb = $this->db->getQueryBuilder();
 		$p = $qb->createNamedParameter($qty, \PDO::PARAM_INT);
 		$qb->update($this->getTableName())
-			->set('received_qty', 'CASE WHEN received_qty + ' . $p . ' > qty THEN qty ELSE received_qty + ' . $p . ' END')
+			->set('received_qty', $qb->createFunction('CASE WHEN received_qty + ' . $p . ' > qty THEN qty ELSE received_qty + ' . $p . ' END'))
 			->where($qb->expr()->eq('id', $qb->createNamedParameter($lineId, \PDO::PARAM_INT)))
 			->andWhere($qb->expr()->lt('received_qty', 'qty'));
 		$qb->executeStatement();

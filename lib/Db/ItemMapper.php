@@ -74,11 +74,13 @@ class ItemMapper extends QBMapper
 		$expr = $qb->expr();
 		$p = $qb->createNamedParameter($qty, \PDO::PARAM_INT);
 		// on_order_qty <= qty → marker fully covered → all three columns NULL;
-		// otherwise qty decrements and at/by survive.
+		// otherwise qty decrements and at/by survive. MySQL/MariaDB evaluate SET
+		// left-to-right against updated values, so the two WHEN legs reading
+		// on_order_qty must be assigned before the column itself is nulled.
 		$qb->update($this->getTableName())
-			->set('on_order_qty', 'CASE WHEN on_order_qty <= ' . $p . ' THEN NULL ELSE on_order_qty - ' . $p . ' END')
-			->set('on_order_at', 'CASE WHEN on_order_qty <= ' . $p . ' THEN NULL ELSE on_order_at END')
-			->set('on_order_by', 'CASE WHEN on_order_qty <= ' . $p . ' THEN NULL ELSE on_order_by END')
+			->set('on_order_at', $qb->createFunction('CASE WHEN on_order_qty <= ' . $p . ' THEN NULL ELSE on_order_at END'))
+			->set('on_order_by', $qb->createFunction('CASE WHEN on_order_qty <= ' . $p . ' THEN NULL ELSE on_order_by END'))
+			->set('on_order_qty', $qb->createFunction('CASE WHEN on_order_qty <= ' . $p . ' THEN NULL ELSE on_order_qty - ' . $p . ' END'))
 			->where($expr->eq('id', $qb->createNamedParameter($id, \PDO::PARAM_INT)))
 			->andWhere($expr->isNotNull('on_order_qty'));
 		$qb->executeStatement();
