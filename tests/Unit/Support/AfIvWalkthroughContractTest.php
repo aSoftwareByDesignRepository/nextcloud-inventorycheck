@@ -99,7 +99,7 @@ final class AfIvWalkthroughContractTest extends TestCase
 	{
 		$mov = $this->src('lib/Service/MovementService.php');
 		self::assertStringContainsString(
-			"? \$this->receive(\$actorUid, \$itemId, \$locationId, (int)\$qty, \$reason, \$lotCode)\n\t\t\t\t: throw new PermissionDeniedException()",
+			"? \$this->receive(\$actorUid, \$itemId, \$locationId, (int)\$qty, \$reason, \$lotCode, true, null, \$expiresAt)\n\t\t\t\t: throw new PermissionDeniedException()",
 			$mov,
 		);
 	}

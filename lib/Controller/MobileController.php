@@ -281,6 +281,7 @@ class MobileController extends Controller
 				isset($p['reasonCode']) ? (string)$p['reasonCode'] : (isset($p['reason_code']) ? (string)$p['reason_code'] : null),
 				isset($p['locationCode']) ? (string)$p['locationCode'] : (isset($p['location_code']) ? (string)$p['location_code'] : null),
 				isset($p['toLocationCode']) ? (string)$p['toLocationCode'] : (isset($p['to_location_code']) ? (string)$p['to_location_code'] : null),
+				isset($p['expiresAt']) && $p['expiresAt'] !== '' ? (int)$p['expiresAt'] : null,
 			);
 		} catch (\Throwable $e) {
 			if ($clientRequestId !== null) {

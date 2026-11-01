@@ -16,7 +16,7 @@ return [
 		['name' => 'page#settings', 'url' => '/settings', 'verb' => 'GET'],
 		// {section} allowlist pinned to SettingsSectionCatalog::routeRequirement() by SettingsPagesContractTest.
 		['name' => 'page#settingsSection', 'url' => '/settings/{section}', 'verb' => 'GET',
-			'requirements' => ['section' => 'access|office|notifications|quantities|location-access|connections|product-lookup|policies|license|support']],
+			'requirements' => ['section' => 'access|office|notifications|quantities|location-access|connections|product-lookup|policies|restock|license|support']],
 
 		['name' => 'location#index', 'url' => '/api/locations', 'verb' => 'GET'],
 		['name' => 'location#byCode', 'url' => '/api/locations/by-code/{code}', 'verb' => 'GET', 'requirements' => ['code' => '[^/]+']],

@@ -389,6 +389,7 @@ class MovementService
 		?string $reasonCode = null,
 		?string $locationCode = null,
 		?string $toLocationCode = null,
+		?int $expiresAt = null,
 	): array {
 		$item = $this->items->resolveByCode(CodeRules::trim($code));
 		if ($item === null) {
@@ -408,7 +409,7 @@ class MovementService
 
 		return match ($kind) {
 			'receive' => $asOffice
-				? $this->receive($actorUid, $itemId, $locationId, (int)$qty, $reason, $lotCode)
+				? $this->receive($actorUid, $itemId, $locationId, (int)$qty, $reason, $lotCode, true, null, $expiresAt)
 				: throw new PermissionDeniedException(),
 			// issue/transfer re-assert inside their methods (web API paths share the gate).
 			'issue' => $this->issue($actorUid, $itemId, $locationId, (int)$qty, $reason, $lotCode, $locationCode),

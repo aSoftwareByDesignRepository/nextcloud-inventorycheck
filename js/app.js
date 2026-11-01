@@ -44,6 +44,12 @@
 		}
 	}
 
+	/** Restock money display: minor units → 2-decimal major, locale-neutral. */
+	function formatMinor(n) {
+		if (n === null || n === undefined || n === '') return '—';
+		return (Number(n) / 100).toFixed(2);
+	}
+
 	function formatQty(n, scale) {
 		if (n === null || n === undefined || n === '') return '0';
 		if (typeof n === 'string') {
@@ -1788,40 +1794,95 @@
 					]));
 				}
 
-				mount.appendChild(el('section', { className: 'iv-section', 'aria-labelledby': 'iv-low-title' }, [
+				var lowCols = [
+					{ label: tr('Item'), render: function (r) {
+						var kids = [r.item.name];
+						if (r.criticality === 'critical') {
+							kids.push(el('span', { className: 'iv-badge iv-badge--critical', text: tr('critical') }));
+						}
+						return kids;
+					} },
+					{ label: tr('SKU'), render: function (r) { return r.item.sku; } },
+					{ label: tr('On hand'), render: function (r) { return formatQty(r.totalQty); } },
+					{ label: tr('Reorder at'), render: function (r) { return formatQty(r.reorderLevel); } },
+					{ label: tr('Suggested'), render: function (r) { return formatQty(r.suggestedQty); } },
+				];
+				if (ctx.isOffice || ctx.isAppAdmin) {
+					lowCols.push({ label: tr('Est. cost'), render: function (r) {
+						return r.estLineCostMinor != null ? formatMinor(r.estLineCostMinor) : tr('unpriced');
+					} });
+					lowCols.push({ label: tr('On order'), render: function (r) {
+						var q = r.item && r.item.onOrderQty;
+						if (q == null) return '—';
+						var kids = [formatQty(q)];
+						if (r.onOrderStale) {
+							kids.push(el('span', { className: 'iv-badge iv-badge--warn', text: tr('stale') }));
+						}
+						return kids;
+					} });
+				}
+				lowCols.push({ label: tr('Actions'), render: function (r) {
+					var kids = [];
+					if (ctx.isOffice || ctx.isAppAdmin) {
+						kids.push(btn(tr('Receive'), {
+							primary: true,
+							className: 'iv-btn--touch',
+							onclick: function () {
+								openReceiveDialog(ctx, {
+									itemId: r.item.id,
+									qty: r.suggestedQty != null ? r.suggestedQty : undefined,
+								});
+							},
+						}));
+						if (r.item && r.item.onOrderQty == null) {
+							kids.push(btn(tr('Mark ordered'), {
+								className: 'iv-btn--touch',
+								onclick: function () {
+									var qty = (r.packs != null && r.item.orderPackQty) ? r.packs * r.item.orderPackQty : r.suggestedQty;
+									api('PUT', entityUrl(ctx.urls.api.items, r.item.id) + '/on-order', { qty: qty })
+										.then(function () { toast(tr('Marked as ordered.')); renderDashboard(ctx); })
+										.catch(function (err) { toast(err.message || tr('Something went wrong.'), true); });
+								},
+							}));
+						} else {
+							kids.push(btn(tr('Clear ordered'), {
+								className: 'iv-btn--touch',
+								onclick: function () {
+									api('DELETE', entityUrl(ctx.urls.api.items, r.item.id) + '/on-order')
+										.then(function () { toast(tr('Order marker cleared.')); renderDashboard(ctx); })
+										.catch(function (err) { toast(err.message || tr('Something went wrong.'), true); });
+								},
+							}));
+						}
+					} else {
+						kids.push(el('span', { className: 'iv-muted', text: '—' }));
+					}
+					return el('div', { className: 'iv-row__actions', 'data-iv-low-stock-actions': '1' }, kids);
+				} });
+				var lowKids = [
 					el('h2', { id: 'iv-low-title', className: 'iv-section__title', text: tr('Low stock') }),
+				];
+				if ((ctx.isOffice || ctx.isAppAdmin) && low.meta) {
+					var metaKids = [
+						el('span', { text: tr('Estimated total') + ': ' + formatMinor(low.meta.estTotalMinor) }),
+					];
+					if (low.meta.unpricedCount > 0) {
+						metaKids.push(el('span', { className: 'iv-muted', text: tr('{n} unpriced', { n: low.meta.unpricedCount }) }));
+					}
+					if (low.meta.staleOnOrderCount > 0) {
+						metaKids.push(el('span', { className: 'iv-badge iv-badge--warn', text: tr('{n} stale order marker', { n: low.meta.staleOnOrderCount }) }));
+					}
+					if (low.meta.budgetState === 'over') {
+						metaKids.push(el('span', { className: 'iv-badge iv-badge--warn', text: tr('Over budget') }));
+					}
+					lowKids.push(el('p', { className: 'iv-meta', 'data-iv-low-stock-meta': '1' }, metaKids));
+				}
+				lowKids.push(
 					low.data.length === 0
 						? el('p', { className: 'iv-muted', text: tr('Nothing is below reorder level.') })
-						: tableOrCards(
-							[
-								{ label: tr('Item'), render: function (r) { return r.item.name; } },
-								{ label: tr('SKU'), render: function (r) { return r.item.sku; } },
-								{ label: tr('On hand'), render: function (r) { return formatQty(r.totalQty); } },
-								{ label: tr('Reorder at'), render: function (r) { return formatQty(r.reorderLevel); } },
-								{ label: tr('Suggested'), render: function (r) { return formatQty(r.suggestedQty); } },
-								{ label: tr('Actions'), render: function (r) {
-									var kids = [];
-									if (ctx.isOffice || ctx.isAppAdmin) {
-										kids.push(btn(tr('Receive'), {
-											primary: true,
-											className: 'iv-btn--touch',
-											onclick: function () {
-												openReceiveDialog(ctx, {
-													itemId: r.item.id,
-													qty: r.suggestedQty != null ? r.suggestedQty : undefined,
-												});
-											},
-										}));
-									} else {
-										kids.push(el('span', { className: 'iv-muted', text: '—' }));
-									}
-									return el('div', { className: 'iv-row__actions', 'data-iv-low-stock-actions': '1' }, kids);
-								} },
-							],
-							low.data,
-							{ caption: tr('Low stock') }
-						),
-				]));
+						: tableOrCards(lowCols, low.data, { caption: tr('Low stock') }),
+				);
+				mount.appendChild(el('section', { className: 'iv-section', 'aria-labelledby': 'iv-low-title' }, lowKids));
 
 				// Bachus: variance is expert chrome — load only when opened.
 				var varianceHost = el('div');
@@ -2046,6 +2107,7 @@
 			api('GET', ctx.urls.api.items + '?limit=200&offset=0&active=1'),
 			api('GET', ctx.urls.api.locations + '?limit=200&offset=0&active=1'),
 			api('GET', ctx.urls.api.favouriteLocations).catch(function () { return { data: [] }; }),
+			ctx.urls.api.config ? api('GET', ctx.urls.api.config).catch(function () { return {}; }) : Promise.resolve({}),
 		]).then(function (res) {
 			var favIds = (res[2].data || []).map(function (f) { return Number(f.id); });
 			var locations = (res[1].data || []).slice().sort(function (a, b) {
@@ -2058,6 +2120,7 @@
 				items: res[0].data || [],
 				locations: locations,
 				favouriteIds: favIds,
+				categoryList: (res[3] && res[3].categoryList) || [],
 			};
 		});
 	}
@@ -2248,6 +2311,22 @@
 					text: tr('Required for lot- or serial-tracked items. Serial items always use quantity 1.'),
 				}),
 			]);
+			// Restock F-06/F-07: receive-only spend + lot-expiry fields (office surface).
+			var spendInput = el('input', {
+				type: 'number', className: 'iv-input', min: '0', step: '1',
+				'aria-label': tr('Total paid in cents'),
+				placeholder: tr('e.g. 1299'),
+			});
+			var expiryInput = el('input', {
+				type: 'date', className: 'iv-input',
+				'aria-label': tr('Lot expiry date'),
+			});
+			var receiveRestockWrap = opts.path === 'receive' && (ctx.isOffice || ctx.isAppAdmin)
+				? el('div', { 'data-iv-receive-restock': '1' }, [
+					field(tr('Total paid in cents (optional)'), spendInput, { name: 'spendMinor' }),
+					field(tr('Lot expiry date (optional)'), expiryInput, { name: 'expiresAt' }),
+				])
+				: null;
 
 			var fields = [];
 			var changeBtn = null;
@@ -2340,6 +2419,9 @@
 					fields.push(field(opts.adjust ? tr('New quantity') : tr('Quantity'), qty, { name: opts.adjust ? 'qty' : 'qty' }));
 				}
 				fields.push(lotWrap);
+				if (receiveRestockWrap) {
+					fields.push(receiveRestockWrap);
+				}
 				if (opts.adjust && ctx.requireAdjustReason) {
 					fields.push(field(tr('Reason code'), reasonCode, { name: 'reasonCode' }));
 					fields.push(el('p', {
@@ -2501,6 +2583,15 @@
 					lotCode: lotPayload(),
 					reason: reason.value || null,
 				};
+				if (opts.path === 'receive') {
+					var spendVal = spendInput.value.trim();
+					body.spendMinor = spendVal === '' ? null : Number(spendVal);
+					var expVal = expiryInput.value;
+					if (expVal) {
+						// Send end-of-day UTC epoch seconds — lot expiry is a date.
+						body.expiresAt = Math.floor(new Date(expVal + 'T23:59:59Z').getTime() / 1000);
+					}
+				}
 				// AF-IV12: issue must send a typed/scanned locationCode (not picker auto-fill).
 				if (ctx.requireLocationScan && opts.path === 'issue') {
 					body.locationCode = (locCodeInput.value || '').trim();
@@ -3095,8 +3186,38 @@
 			type: 'number', className: 'iv-input', min: '0', step: '1',
 			value: existing && existing.lastPriceMinor != null ? String(existing.lastPriceMinor) : '',
 		});
+		// Restock suite fields (office+ surfaces only — field users never see them).
+		var categoryList = [];
+		var categorySel = el('select', { className: 'iv-input', 'aria-label': tr('Category') });
+		var supplierName = el('input', {
+			type: 'text', className: 'iv-input', maxlength: '200',
+			value: existing && existing.supplierName ? existing.supplierName : '',
+		});
+		var supplierSku = el('input', {
+			type: 'text', className: 'iv-input', maxlength: '200',
+			value: existing && existing.supplierSku ? existing.supplierSku : '',
+		});
+		var supplierLeadDays = el('input', {
+			type: 'number', className: 'iv-input', min: '0', max: '365', step: '1',
+			value: existing && existing.supplierLeadDays != null ? String(existing.supplierLeadDays) : '',
+		});
+		var orderPackQty = el('input', qtyInputAttrs(ctx, {
+			adjust: true,
+			value: existing && existing.orderPackQty != null ? existing.orderPackQty : '',
+		}));
+		orderPackQty.placeholder = tr('e.g. 100');
+		var orderPackPrice = el('input', {
+			type: 'number', className: 'iv-input', min: '0', step: '1',
+			value: existing && existing.orderPackPriceMinor != null ? String(existing.orderPackPriceMinor) : '',
+		});
+		var criticalitySel = el('select', { className: 'iv-input', 'aria-label': tr('Criticality') }, [
+			el('option', { value: 'none', text: tr('Normal') }),
+			el('option', { value: 'critical', text: tr('Critical — always show first') }),
+		]);
+		criticalitySel.value = existing && existing.criticality === 'critical' ? 'critical' : 'none';
 		var itemTrigger = document.activeElement;
 		var itemDialogReady = loadMasters(ctx).then(function (masters) {
+		categoryList = masters.categoryList || [];
 		clear(defaultLocation);
 		defaultLocation.appendChild(el('option', { value: '', text: tr('No default location') }));
 		(masters.locations || []).forEach(function (r) {
@@ -3126,7 +3247,25 @@
 			}),
 			field(tr('Supplier note (optional)'), supplierNote, { name: 'supplierNote' }),
 			field(tr('Last price in cents (optional)'), lastPrice, { name: 'lastPriceMinor' }),
-		];
+			(ctx.isOffice || ctx.isAppAdmin) ? field(tr('Category (optional)'), categorySel, { name: 'category' }) : null,
+			(ctx.isOffice || ctx.isAppAdmin) ? field(tr('Supplier name (optional)'), supplierName, { name: 'supplierName' }) : null,
+			(ctx.isOffice || ctx.isAppAdmin) ? field(tr('Supplier article no. (optional)'), supplierSku, { name: 'supplierSku' }) : null,
+			(ctx.isOffice || ctx.isAppAdmin) ? field(tr('Lead time in days (optional)'), supplierLeadDays, { name: 'supplierLeadDays' }) : null,
+			(ctx.isOffice || ctx.isAppAdmin) ? field(tr('Units per order pack (optional)'), orderPackQty, { name: 'orderPackQty' }) : null,
+			(ctx.isOffice || ctx.isAppAdmin) ? field(tr('Pack price in cents (optional)'), orderPackPrice, { name: 'orderPackPriceMinor' }) : null,
+			(ctx.isOffice || ctx.isAppAdmin) ? field(tr('Criticality'), criticalitySel, { name: 'criticality' }) : null,
+		].filter(Boolean);
+		clear(categorySel);
+		categorySel.appendChild(el('option', { value: '', text: tr('Uncategorized') }));
+		categoryList.forEach(function (c) {
+			categorySel.appendChild(el('option', { value: c, text: c }));
+		});
+		if (existing && existing.category) {
+			if (!categoryList.includes(existing.category)) {
+				categorySel.appendChild(el('option', { value: existing.category, text: existing.category + ' ' + tr('(not in list)') }));
+			}
+			categorySel.value = existing.category;
+		}
 		var fields = essentials.concat([
 			disclosureSection(tr('More item options'), moreKids, {
 				className: 'iv-item-more',
@@ -3149,6 +3288,13 @@
 				trackMode: trackMode.value,
 				supplierNote: supplierNote.value.trim() || null,
 				lastPriceMinor: lastPrice.value.trim() === '' ? null : Number(lastPrice.value),
+				supplierName: supplierName.value.trim() || null,
+				supplierSku: supplierSku.value.trim() || null,
+				supplierLeadDays: supplierLeadDays.value.trim() === '' ? null : Number(supplierLeadDays.value),
+				orderPackQty: orderPackQty.value.trim() === '' ? null : orderPackQty.value.trim(),
+				orderPackPriceMinor: orderPackPrice.value.trim() === '' ? null : Number(orderPackPrice.value),
+				category: categorySel.value === '' ? null : categorySel.value,
+				criticality: criticalitySel.value,
 				description: description.value.trim() || null,
 			};
 			if (existing) {
@@ -5690,6 +5836,115 @@
 						},
 					})),
 				])));
+			}
+
+			if (section === 'restock') {
+				var canEditRestock = !!ctx.isAppAdmin;
+				var restockCats = Array.isArray(cfg.categoryList) ? cfg.categoryList.slice() : [];
+				var restockBudgets = (cfg.restockBudgets && typeof cfg.restockBudgets === 'object') ? cfg.restockBudgets : {};
+				var catInputs = {};
+				var catRows = restockCats.map(function (cat) {
+					var budgetInput = el('input', {
+						type: 'number', className: 'iv-input', min: '0', step: '1',
+						value: restockBudgets[cat] != null ? String(restockBudgets[cat]) : '',
+						'aria-label': tr('Budget in cents for {cat}', { cat: cat }),
+						disabled: canEditRestock ? null : '',
+					});
+					catInputs[cat] = budgetInput;
+					var kids = [
+						el('span', { text: cat }),
+						el('span', { className: 'iv-inline-form__grow' }, [budgetInput]),
+					];
+					if (canEditRestock) {
+						kids.push(btn(tr('Remove'), {
+							onclick: function () {
+								restockCats = restockCats.filter(function (c) { return c !== cat; });
+								renderSettings(ctx);
+							},
+						}));
+					}
+					return el('li', { className: 'iv-inline-form' }, kids);
+				});
+				var newCatInput = el('input', {
+					type: 'text', className: 'iv-input', maxlength: '100',
+					'aria-label': tr('New category name'),
+				});
+				var staleDaysInput = el('input', {
+					type: 'number', className: 'iv-input', min: '1', max: '3650', step: '1',
+					value: cfg.onOrderStaleDays != null ? String(cfg.onOrderStaleDays) : '30',
+					disabled: canEditRestock ? null : '',
+				});
+				var expiryDaysInput = el('input', {
+					type: 'number', className: 'iv-input', min: '1', max: '3650', step: '1',
+					value: cfg.expiryWarnDays != null ? String(cfg.expiryWarnDays) : '30',
+					disabled: canEditRestock ? null : '',
+				});
+				var velocityDaysInput = el('input', {
+					type: 'number', className: 'iv-input', min: '1', max: '3650', step: '1',
+					value: cfg.velocityWindowDays != null ? String(cfg.velocityWindowDays) : '28',
+					disabled: canEditRestock ? null : '',
+				});
+				var thresholdInput = el('input', {
+					type: 'number', className: 'iv-input', min: '0', step: '1',
+					value: cfg.approvalThresholdMinor != null ? String(cfg.approvalThresholdMinor) : '',
+					'aria-label': tr('Approval threshold in cents'),
+					disabled: canEditRestock ? null : '',
+				});
+				var restockKids = [
+					settingsSrTitle('iv-restock-title', tr('Restock & procurement')),
+					canEditRestock ? null : el('p', {
+						className: 'iv-callout__text',
+						text: tr('Only app administrators can change restock settings.'),
+					}),
+					el('p', {
+						className: 'iv-field__hint',
+						text: tr('Budgets are per category, in cents. A reorder estimate above the budget shows a warning — it never blocks ordering.'),
+					}),
+					el('ul', { className: 'iv-category-list' }, catRows),
+					canEditRestock ? el('div', { className: 'iv-inline-form' }, [
+						newCatInput,
+						btn(tr('Add category'), {
+							onclick: function () {
+								var v = newCatInput.value.trim();
+								if (v === '' || restockCats.indexOf(v) !== -1) return;
+								restockCats.push(v);
+								renderSettings(ctx);
+							},
+						}),
+					]) : null,
+					field(tr('Warn when an order marker is older than (days)'), staleDaysInput, { name: 'onOrderStaleDays' }),
+					field(tr('Warn about expiring lots within (days)'), expiryDaysInput, { name: 'expiryWarnDays' }),
+					field(tr('Consumption window for reorder suggestions (days)'), velocityDaysInput, { name: 'velocityWindowDays' }),
+					field(tr('Order approval threshold in cents (empty = no approval)'), thresholdInput, { name: 'approvalThresholdMinor' }),
+				];
+				if (canEditRestock) {
+					restockKids.push(settingsFormActions(btn(tr('Save restock settings'), {
+						primary: true,
+						className: 'iv-btn--touch',
+						onclick: function () {
+							var budgets = {};
+							restockCats.forEach(function (cat) {
+								var v = catInputs[cat] ? catInputs[cat].value.trim() : '';
+								if (v !== '') budgets[cat] = Number(v);
+							});
+							clearFieldErrors(mount);
+							api('POST', ctx.urls.api.configRestock, {
+								categoryList: restockCats,
+								restockBudgets: budgets,
+								onOrderStaleDays: Number(staleDaysInput.value),
+								expiryWarnDays: Number(expiryDaysInput.value),
+								velocityWindowDays: Number(velocityDaysInput.value),
+								approvalThresholdMinor: thresholdInput.value.trim() === '' ? null : Number(thresholdInput.value),
+							}).then(function () {
+								toast(tr('Restock settings saved.'));
+							}).catch(function (err) {
+								applyFieldErrors(mount, err && err.details, err && err.message);
+								toast(err.message, true);
+							});
+						},
+					})));
+				}
+				mount.appendChild(settingsPageSection('restock', 'iv-restock-title', withSettingsHowTo(ctx, 'restock', restockKids.filter(Boolean))));
 			}
 
 			if (section === 'license') {

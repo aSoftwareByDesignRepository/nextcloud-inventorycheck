@@ -258,6 +258,8 @@ class Application extends App implements IBootstrap
 				$c->get(LocationAclService::class),
 				$c->get(AccessControlService::class),
 				$c->get(\OCA\InventoryCheck\Service\RestockConfig::class),
+				$c->get(MovementMapper::class),
+				$c->get(Clock::class),
 			);
 		});
 		$context->registerService(LicenseService::class, static function ($c): LicenseService {

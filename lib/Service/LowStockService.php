@@ -7,6 +7,7 @@ namespace OCA\InventoryCheck\Service;
 use OCA\InventoryCheck\AppInfo\Application;
 use OCA\InventoryCheck\Db\BalanceMapper;
 use OCA\InventoryCheck\Db\ItemMapper;
+use OCA\InventoryCheck\Db\MovementMapper;
 use OCP\IConfig;
 
 class LowStockService
@@ -21,6 +22,8 @@ class LowStockService
 		private readonly LocationAclService $locationAcl,
 		private readonly ?AccessControlService $access = null,
 		private readonly ?RestockConfig $restock = null,
+		private readonly ?MovementMapper $movements = null,
+		private readonly ?Clock $clock = null,
 	) {
 	}
 
@@ -47,6 +50,19 @@ class LowStockService
 		$budgets = $isOffice && $this->restock !== null ? $this->restock->budgets() : [];
 		$byCategory = [];
 
+		// F-10: coverage mode — suggested qty covers consumption over the
+		// velocity window (plus supplier lead time) instead of the static
+		// target/deficit basis. Never below the reorder deficit.
+		$coverageMode = $this->restock !== null && $this->restock->suggestionMode() === 'coverage';
+		$velocity = [];
+		if ($coverageMode && $this->movements !== null && $this->clock !== null) {
+			$window = $this->restock->velocityWindowDays();
+			$issued = $this->movements->sumIssueQtyByItemSince($this->clock->now() - ($window * 86400));
+			foreach ($issued as $itemId => $qty) {
+				$velocity[(int)$itemId] = $window > 0 ? $qty / $window : 0.0; // avg per day (storage units)
+			}
+		}
+
 		$rows = [];
 		foreach ($this->items->iterateActive() as $item) {
 			$total = $sums[(int)$item->getId()] ?? 0;
@@ -54,6 +70,14 @@ class LowStockService
 				continue;
 			}
 			$suggested = SuggestedOrder::qty($total, $item->getReorderLevel(), $item->getTargetStock());
+			if ($coverageMode) {
+				$lead = max(0, (int)($item->getSupplierLeadDays() ?? 0));
+				$window = $this->restock->velocityWindowDays();
+				$need = (int)ceil(($velocity[(int)$item->getId()] ?? 0.0) * ($window + $lead)) - $total;
+				if ($need > $suggested) {
+					$suggested = $need;
+				}
+			}
 			$itemApi = MoneyVisibility::itemForWeb($item->toApi(), $isOffice);
 			$row = [
 				'item' => $itemApi,

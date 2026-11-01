@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\InventoryCheck\Controller;
 
 use OCA\InventoryCheck\AppInfo\Application;
+use OCA\InventoryCheck\Exception\ValidationException;
 use OCA\InventoryCheck\Service\AccessControlService;
 use OCA\InventoryCheck\Service\MovementService;
 use OCA\InventoryCheck\Service\Pagination;
@@ -60,6 +61,21 @@ class MovementController extends Controller
 	public function receive(): JSONResponse
 	{
 		$p = $this->request->getParams();
+		// F-06/F-07: optional spend total + lot expiry on receives.
+		$spendMinor = null;
+		if (array_key_exists('spendMinor', $p) && $p['spendMinor'] !== null && $p['spendMinor'] !== '') {
+			if (!is_int($p['spendMinor']) && !(is_string($p['spendMinor']) && preg_match('/^\d+$/', $p['spendMinor']) === 1)) {
+				throw new ValidationException('validation_failed', '', [['field' => 'spendMinor', 'code' => 'validation_failed']]);
+			}
+			$spendMinor = (int)$p['spendMinor'];
+		}
+		$expiresAt = null;
+		if (array_key_exists('expiresAt', $p) && $p['expiresAt'] !== null && $p['expiresAt'] !== '') {
+			if (!is_int($p['expiresAt']) && !(is_string($p['expiresAt']) && preg_match('/^\d+$/', $p['expiresAt']) === 1)) {
+				throw new ValidationException('validation_failed', '', [['field' => 'expiresAt', 'code' => 'validation_failed']]);
+			}
+			$expiresAt = (int)$p['expiresAt'];
+		}
 		return new JSONResponse($this->toDisplay($this->movements->receive(
 			$this->access->currentUserId(),
 			(int)($p['itemId'] ?? 0),
@@ -67,6 +83,9 @@ class MovementController extends Controller
 			$this->toStorageQty($p['qty'] ?? 0),
 			isset($p['reason']) ? (string)$p['reason'] : null,
 			$this->lotCodeParam($p),
+			true,
+			$spendMinor,
+			$expiresAt,
 		)));
 	}
 
