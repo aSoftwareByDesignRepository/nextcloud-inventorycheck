@@ -382,7 +382,7 @@ OC.L10N.register(
 	"Kind" : "Rodzaj",
 	"Kind applies immediately. Use Apply for item, location, or date filters." : "Rodzaj ma zastosowanie natychmiast. Zastosuj filtry pozycji, lokalizacji lub daty.",
 	"Label" : "Etykieta",
-	"Label actions" : "Działania na etykietach",
+	"Label actions" : "Działania związane z etykietami",
 	"Label preview" : "Podgląd etykiety",
 	"Label sheet" : "Arkusz etykiety",
 	"Label sheet actions" : "Działania związane z arkuszem etykiety",
