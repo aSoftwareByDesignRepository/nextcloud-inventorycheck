@@ -23,7 +23,7 @@ class Version1013Date20261101120000 extends SimpleMigrationStep
 			$t->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true]);
 			$t->addColumn('name', Types::STRING, ['length' => 200, 'notnull' => true]);
 			$t->addColumn('note', Types::STRING, ['length' => 512, 'notnull' => false]);
-			$t->addColumn('active', Types::BOOLEAN, ['notnull' => true, 'default' => true]);
+			$t->addColumn('active', Types::BOOLEAN, ['notnull' => false, 'default' => true]);
 			$t->setPrimaryKey(['id'], 'iv_kit_pk');
 		}
 

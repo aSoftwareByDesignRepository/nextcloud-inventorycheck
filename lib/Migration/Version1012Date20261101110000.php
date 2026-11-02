@@ -28,7 +28,7 @@ class Version1012Date20261101110000 extends SimpleMigrationStep
 			$t->addColumn('name', Types::STRING, ['length' => 200, 'notnull' => true]);
 			$t->addColumn('email', Types::STRING, ['length' => 320, 'notnull' => false]);
 			$t->addColumn('note', Types::STRING, ['length' => 512, 'notnull' => false]);
-			$t->addColumn('active', Types::BOOLEAN, ['notnull' => true, 'default' => true]);
+			$t->addColumn('active', Types::BOOLEAN, ['notnull' => false, 'default' => true]);
 			$t->setPrimaryKey(['id'], 'iv_sup_pk');
 		}
 
@@ -41,7 +41,7 @@ class Version1012Date20261101110000 extends SimpleMigrationStep
 			$t->addColumn('price_minor', Types::BIGINT, ['notnull' => false]);
 			$t->addColumn('pack_qty', Types::INTEGER, ['notnull' => false]);
 			$t->addColumn('lead_days', Types::INTEGER, ['notnull' => false]);
-			$t->addColumn('preferred', Types::BOOLEAN, ['notnull' => true, 'default' => false]);
+			$t->addColumn('preferred', Types::BOOLEAN, ['notnull' => false, 'default' => false]);
 			$t->setPrimaryKey(['id'], 'iv_isup_pk');
 			$t->addUniqueIndex(['item_id', 'supplier_id'], 'iv_isup_uq');
 		}
