@@ -748,6 +748,7 @@ OC.L10N.register(
 	"Skip to app navigation" : "Ga naar app-navigatie",
 	"Skip to main content" : "Ga naar de hoofdinhoud",
 	"Something went wrong." : "Er is iets misgegaan.",
+	"Something went wrong. Please try again." : "Er ging iets mis. Probeer opnieuw.",
 	"Something went wrong. Try again." : "Er ging iets mis. Probeer het nog eens.",
 	"Sources are tried in order; the first match wins." : "Bronnen worden op volgorde geprobeerd; de eerste treffer wint.",
 	"Sponsors keep InventoryCheck moving. Links are on this page." : "Sponsors houden InventoryCheck in beweging. Links staan op deze pagina.",

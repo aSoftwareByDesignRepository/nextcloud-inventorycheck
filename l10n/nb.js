@@ -748,6 +748,7 @@ OC.L10N.register(
 	"Skip to app navigation" : "Hopp til appnavigasjon",
 	"Skip to main content" : "Hopp til hovedinnhold",
 	"Something went wrong." : "Noe gikk galt.",
+	"Something went wrong. Please try again." : "Noe gikk galt. Prøv igjen.",
 	"Something went wrong. Try again." : "Noe gikk galt. Prøv igjen.",
 	"Sources are tried in order; the first match wins." : "Kildene prøves i rekkefølge; det første treffet vinner.",
 	"Sponsors keep InventoryCheck moving. Links are on this page." : "Sponsorer holder InventoryCheck i bevegelse. Linkene er på denne siden.",

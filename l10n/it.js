@@ -748,6 +748,7 @@ OC.L10N.register(
 	"Skip to app navigation" : "Saltare alla navigazione dell'app",
 	"Skip to main content" : "Saltare al contenuto principale",
 	"Something went wrong." : "Qualcosa è andato storto.",
+	"Something went wrong. Please try again." : "Qualcosa è andato storto. Riprova.",
 	"Something went wrong. Try again." : "Qualcosa è andato storto. Riprovare.",
 	"Sources are tried in order; the first match wins." : "Le fonti vengono provate in ordine; vince la prima corrispondenza.",
 	"Sponsors keep InventoryCheck moving. Links are on this page." : "Gli sponsor mantengono InventoryCheck in movimento. I link sono in questa pagina.",

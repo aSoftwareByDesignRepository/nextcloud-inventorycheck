@@ -295,6 +295,15 @@
 	var TOAST_TTL_ERROR = 5000;
 	var TOAST_TTL_OK = 3000;
 
+	// Bachus safety net: any unhandled promise rejection becomes a
+	// plain-language toast instead of a silent dead end. Prevents stuck
+	// spinners / "nothing happened" on every API failure path.
+	window.addEventListener('unhandledrejection', function (e) {
+		var reason = e && e.reason;
+		var msg = reason && reason.message && reason.message !== '' ? reason.message : tr('Something went wrong. Please try again.');
+		toast(msg, true);
+	});
+
 	function toast(message, isError) {
 		var text = String(message || '');
 		var region = $('#iv-toast-region');
