@@ -100,6 +100,7 @@ OC.L10N.register(
 	"Adjust stock" : "Dostosuj stan zapasów",
 	"Administration" : "Administracja",
 	"Administrator" : "Administrator",
+	"Advanced restock settings" : "Zaawansowane ustawienia uzupełniania",
 	"After" : "Po",
 	"After reload, receive and issue accept fractional amounts." : "Po przeładowaniu przyjmowanie i wydawanie akceptują ilości ułamkowe.",
 	"All items" : "Wszystkie pozycje",

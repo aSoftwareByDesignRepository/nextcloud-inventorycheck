@@ -100,6 +100,7 @@ OC.L10N.register(
 	"Adjust stock" : "Justér lager",
 	"Administration" : "Administration og styring",
 	"Administrator" : "Administrator",
+	"Advanced restock settings" : "Avancerede genbestillingsindstillinger",
 	"After" : "Efter",
 	"After reload, receive and issue accept fractional amounts." : "Efter genindlæsning accepterer modtagelse og udtag decimalmængder.",
 	"All items" : "Alle varer",

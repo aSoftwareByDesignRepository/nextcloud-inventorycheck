@@ -6063,20 +6063,26 @@
 							},
 						}),
 					]) : null,
-					field(tr('Warn when an order marker is older than (days)'), staleDaysInput, { name: 'onOrderStaleDays' }),
-					field(tr('Warn about expiring lots within (days)'), expiryDaysInput, { name: 'expiryWarnDays' }),
-					field(tr('Suggestion mode for reorder quantities'), suggestionModeSel, { name: 'suggestionMode' }),
-					field(tr('Consumption window for reorder suggestions (days)'), velocityDaysInput, { name: 'velocityWindowDays' }),
-					el('p', {
-						className: 'iv-field__hint',
-						text: tr('Coverage mode suggests enough stock for expected consumption during the window plus supplier lead time.'),
-					}),
-					field(tr('Order approval threshold in cents (empty = no approval)'), thresholdInput, { name: 'approvalThresholdMinor' }),
-					field(tr('Emergency budget in cents (empty = none)'), emergencyInput, { name: 'emergencyBudgetMinor' }),
-					el('p', {
-						className: 'iv-field__hint',
-						text: tr('Received deliveries reduce the monthly budget. The emergency allowance is the extra amount only the owner may go over by.'),
-					}),
+					// Bachus: the common path is categories + budgets only;
+					// the tuning knobs sit behind a native <details> fold —
+					// keyboard-accessible for free, zero JS.
+					el('details', { className: 'iv-advanced' }, [
+						el('summary', { text: tr('Advanced restock settings') }),
+						field(tr('Warn when an order marker is older than (days)'), staleDaysInput, { name: 'onOrderStaleDays' }),
+						field(tr('Warn about expiring lots within (days)'), expiryDaysInput, { name: 'expiryWarnDays' }),
+						field(tr('Suggestion mode for reorder quantities'), suggestionModeSel, { name: 'suggestionMode' }),
+						field(tr('Consumption window for reorder suggestions (days)'), velocityDaysInput, { name: 'velocityWindowDays' }),
+						el('p', {
+							className: 'iv-field__hint',
+							text: tr('Coverage mode suggests enough stock for expected consumption during the window plus supplier lead time.'),
+						}),
+						field(tr('Order approval threshold in cents (empty = no approval)'), thresholdInput, { name: 'approvalThresholdMinor' }),
+						field(tr('Emergency budget in cents (empty = none)'), emergencyInput, { name: 'emergencyBudgetMinor' }),
+						el('p', {
+							className: 'iv-field__hint',
+							text: tr('Received deliveries reduce the monthly budget. The emergency allowance is the extra amount only the owner may go over by.'),
+						}),
+					]),
 				];
 				if (canEditRestock) {
 					restockKids.push(settingsFormActions(btn(tr('Save restock settings'), {

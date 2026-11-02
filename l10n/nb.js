@@ -100,6 +100,7 @@ OC.L10N.register(
 	"Adjust stock" : "Juster lager",
 	"Administration" : "Administrasjon",
 	"Administrator" : "Administrator",
+	"Advanced restock settings" : "Avanserte gjenbestillingsinnstillinger",
 	"After" : "Etter",
 	"After reload, receive and issue accept fractional amounts." : "Etter ny innlasting godtar mottak og uttak desimalmengder.",
 	"All items" : "Alle elementer",

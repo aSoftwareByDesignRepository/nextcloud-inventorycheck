@@ -100,6 +100,7 @@ OC.L10N.register(
 	"Adjust stock" : "Adjust stock",
 	"Administration" : "Administration",
 	"Administrator" : "Administrator",
+	"Advanced restock settings" : "Advanced restock settings",
 	"After" : "After",
 	"After reload, receive and issue accept fractional amounts." : "After reload, receive and issue accept fractional amounts.",
 	"All items" : "All items",

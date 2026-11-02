@@ -100,6 +100,7 @@ OC.L10N.register(
 	"Adjust stock" : "Bestand korrigieren",
 	"Administration" : "Verwaltung",
 	"Administrator" : "Administrator",
+	"Advanced restock settings" : "Erweiterte Nachbestell-Einstellungen",
 	"After" : "Danach",
 	"After reload, receive and issue accept fractional amounts." : "Nach dem Neuladen akzeptieren Annehmen und Ausgeben Bruchmengen.",
 	"All items" : "Alle Artikel",

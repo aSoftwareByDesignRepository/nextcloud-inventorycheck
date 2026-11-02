@@ -100,6 +100,7 @@ OC.L10N.register(
 	"Adjust stock" : "Voorraad aanpassen",
 	"Administration" : "Administratie",
 	"Administrator" : "Beheerder",
+	"Advanced restock settings" : "Geavanceerde nabestelinstellingen",
 	"After" : "Na",
 	"After reload, receive and issue accept fractional amounts." : "Na herladen accepteren ontvangst en uitgifte fractionele hoeveelheden.",
 	"All items" : "Alle items",
