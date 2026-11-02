@@ -185,11 +185,25 @@ body,
 	--radius-base: var(--iv-radius-sm);
 }
 
-/* Dark themes: NC --color-element-error is a bright accent — darken for on-fill AA. */
+/* Dark themes: NC --color-element-error is a bright accent — darken for on-fill AA.
+ * Same surface list as the base token block above: body-mounted overlays
+ * (.iv-dialog / .iv-dialog-overlay / .iv-toast-region) re-declare the light
+ * tokens on themselves — without their own dark legs they keep the light
+ * fill while body flips dark (learned: btn-variant-armor dark dialog probe). */
 body[data-theme-dark],
 body[data-theme-dark-highcontrast],
 [data-theme-dark] #app-content.iv-app,
-[data-theme-dark-highcontrast] #app-content.iv-app {
+[data-theme-dark-highcontrast] #app-content.iv-app,
+[data-theme-dark] .iv-app,
+[data-theme-dark-highcontrast] .iv-app,
+[data-theme-dark] .iv-dialog,
+[data-theme-dark-highcontrast] .iv-dialog,
+[data-theme-dark] .iv-dialog-overlay,
+[data-theme-dark-highcontrast] .iv-dialog-overlay,
+[data-theme-dark] .iv-toast-region,
+[data-theme-dark-highcontrast] .iv-toast-region,
+[data-theme-dark] .modal-backdrop.iv-dialog-overlay,
+[data-theme-dark-highcontrast] .modal-backdrop.iv-dialog-overlay {
 	--iv-danger-fill: color-mix(in srgb, var(--color-element-error, #ff5050) 52%, var(--color-main-background));
 	--iv-danger-fill-hover: color-mix(in srgb, var(--color-element-error, #ff5050) 64%, var(--color-main-background));
 	--iv-danger-border: var(--color-element-error, #ff5050);
