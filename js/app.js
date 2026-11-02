@@ -6049,7 +6049,7 @@
 					}),
 					el('p', {
 						className: 'iv-field__hint',
-						text: tr('Budgets are per category, in cents. A reorder estimate above the budget shows a warning — it never blocks ordering.'),
+						text: tr('Budgets are per category, in cents. Over-budget estimates get a warning; sending them needs an app administrator, and past the emergency allowance nobody can send.'),
 					}),
 					el('ul', { className: 'iv-category-list' }, catRows),
 					canEditRestock ? el('div', { className: 'iv-inline-form' }, [

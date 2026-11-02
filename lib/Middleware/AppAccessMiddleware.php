@@ -344,6 +344,7 @@ class AppAccessMiddleware extends Middleware
 			'stocktake_too_large' => $l->t('Too many active items to include in one stocktake. Deactivate unused items or split the count, then try again.'),
 			'favourite_limit' => $l->t('You already have the maximum number of favourite locations.'),
 			'location_code_mismatch' => $l->t('The scanned location code does not match the selected location.'),
+			'budget_exceeded' => $l->t('This order exceeds the remaining monthly budget plus the emergency allowance. Remove lines or wait for the next month.'),
 			default => $l->t('Please check the highlighted fields.'),
 		};
 	}

@@ -890,6 +890,14 @@ label.iv-switch-field {
 	margin-left: auto;
 }
 
+/* Reorder estimate summary line — separated chips, never merged runs. */
+.iv-meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--iv-space-2, 8px);
+	align-items: center;
+}
+
 /* ── Badges (A4: text + colour) ───────────────────────────────────── */
 
 .iv-badge {

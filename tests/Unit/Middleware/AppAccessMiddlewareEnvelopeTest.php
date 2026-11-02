@@ -317,6 +317,23 @@ final class AppAccessMiddlewareEnvelopeTest extends TestCase
 		$this->assertSame([['field' => 'qty', 'code' => 'invalid_qty']], $data['error']['details']);
 	}
 
+	public function testValidationBudgetExceededHasOwnMessage(): void
+	{
+		$this->apiPath();
+		$response = $this->middleware->afterException(
+			$this->itemController,
+			'send',
+			new ValidationException('budget_exceeded', '', [['field' => 'totalMinor', 'code' => 'budget_exceeded']]),
+		);
+		$this->assertSame(Http::STATUS_UNPROCESSABLE_ENTITY, $response->getStatus());
+		$data = $response->getData();
+		$this->assertSame('budget_exceeded', $data['error']['code']);
+		// Must name the budget cause + a next step — never the field-highlight
+		// default (the details' totalMinor is not an input on the sheet row).
+		$this->assertStringContainsString('emergency allowance', $data['error']['message']);
+		$this->assertStringNotContainsString('highlighted fields', $data['error']['message']);
+	}
+
 	public function testMobileGatePaymentRequired(): void
 	{
 		$this->request->method('getPathInfo')->willReturn('/apps/inventorycheck/mobile/bootstrap');
