@@ -583,7 +583,7 @@ OC.L10N.register(
 	"Other Check apps can issue stock for you when you allow it." : "Outros apps Check podem registrar saídas de estoque para você quando permitido.",
 	"Otherwise you can lock yourself out until a system admin re-opens the app." : "Caso contrário, o acesso pode ser bloqueado até que um administrador do sistema reabra o app.",
 	"Over budget" : "Acima do orçamento",
-	"Over budget — within emergency allowance" : "Acima do orçamento — dentro da reserva de emergência",
+	"Over budget — within emergency allowance" : "Acima do orçamento — dentro do orçamento de emergência",
 	"Over seat limit" : "Acima do limite de assentos",
 	"Pack price in cents (optional)" : "Preço da embalagem em cêntimos (opcional)",
 	"Packages and terms:" : "Pacotes e termos:",

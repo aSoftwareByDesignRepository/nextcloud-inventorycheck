@@ -583,7 +583,7 @@ OC.L10N.register(
 	"Other Check apps can issue stock for you when you allow it." : "Andra Check-appar kan bokföra uttag när det tillåts.",
 	"Otherwise you can lock yourself out until a system admin re-opens the app." : "Annars kan åtkomsten blockeras tills en systemadministratör öppnar appen igen.",
 	"Over budget" : "Över budget",
-	"Over budget — within emergency allowance" : "Över budget — inom nödreserven",
+	"Over budget — within emergency allowance" : "Över budget — inom nödbudgeten",
 	"Over seat limit" : "Över platsgränsen",
 	"Pack price in cents (optional)" : "Förpackningspris i öre (valfritt)",
 	"Packages and terms:" : "Paket och villkor:",

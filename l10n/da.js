@@ -583,7 +583,7 @@ OC.L10N.register(
 	"Other Check apps can issue stock for you when you allow it." : "Andre Check-apps kan registrere udtag af lager for dig, når du tillader det.",
 	"Otherwise you can lock yourself out until a system admin re-opens the app." : "Ellers kan adgangen blive blokeret, indtil en systemadministrator genåbner appen.",
 	"Over budget" : "Over budget",
-	"Over budget — within emergency allowance" : "Over budget — inden for nødreserven",
+	"Over budget — within emergency allowance" : "Over budget — inden for nødbudgettet",
 	"Over seat limit" : "Over pladsgrænsen",
 	"Pack price in cents (optional)" : "Pakkepris i cent (valgfrit)",
 	"Packages and terms:" : "Pakker og vilkår:",
