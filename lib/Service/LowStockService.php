@@ -150,6 +150,19 @@ class LowStockService
 		$out = ['data' => $data, 'total' => $total, 'limit' => $limit, 'offset' => $offset];
 
 		if ($isOffice) {
+			// Monthly cycle: received spend since the 1st consumes the budget —
+			// remaining = budget − MTD spend; the owner emergency ceiling sits
+			// on top and only produces the over_emergency state.
+			$emergency = $this->restock !== null ? ($this->restock->emergencyBudgetMinor() ?? 0) : 0;
+			$mtdByCat = [];
+			if ($this->movements !== null && $this->restock !== null) {
+				$cycleStart = (new \DateTimeImmutable('first day of this month'))->setTime(0, 0, 0)->getTimestamp();
+				$mtdByCat = $this->movements->receivedSpendByCategorySince($cycleStart);
+				if (isset($mtdByCat[''])) {
+					$mtdByCat[RestockConfig::UNCATEGORIZED] = ($mtdByCat[RestockConfig::UNCATEGORIZED] ?? 0) + $mtdByCat[''];
+					unset($mtdByCat['']);
+				}
+			}
 			$estTotal = 0;
 			$unpriced = 0;
 			$staleTotal = 0;
@@ -157,7 +170,8 @@ class LowStockService
 			$catMeta = [];
 			foreach ($byCategory as $cat => $agg) {
 				$budget = $budgets[$cat] ?? null;
-				$state = BudgetClassifier::state($budget, $agg['est']);
+				$mtd = $mtdByCat[$cat] ?? 0;
+				$state = BudgetClassifier::stateExtended($budget, $agg['est'], $mtd, $emergency);
 				$states[] = $state;
 				$estTotal += $agg['est'];
 				$unpriced += $agg['unpriced'];
@@ -167,8 +181,13 @@ class LowStockService
 					'estTotalMinor' => $agg['est'],
 					'unpricedCount' => $agg['unpriced'],
 					'budgetMinor' => ($budget !== null && $budget > 0) ? $budget : null,
+					'spentMtdMinor' => $mtd,
+					'remainingMinor' => BudgetClassifier::remaining($budget, $mtd),
+					'emergencyMinor' => $emergency > 0 ? $emergency : null,
 					'budgetState' => $state,
-					'budgetDeltaMinor' => BudgetClassifier::delta($budget, $agg['est']),
+					'budgetDeltaMinor' => BudgetClassifier::remaining($budget, $mtd) !== null
+						? BudgetClassifier::remaining($budget, $mtd) - $agg['est']
+						: null,
 				];
 			}
 			usort($catMeta, static fn (array $a, array $b): int => strnatcasecmp($a['category'], $b['category']));

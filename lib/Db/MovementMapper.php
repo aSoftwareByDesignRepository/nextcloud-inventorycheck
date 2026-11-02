@@ -198,6 +198,34 @@ class MovementMapper extends QBMapper
 	}
 
 	/**
+	 * Budget cycle: received spend per item category since $fromTs — the
+	 * "already spent this month" side of the monthly budget. Items with no
+	 * category collapse under the empty-string key; null spend rows are
+	 * skipped (they carry no money signal by design).
+	 *
+	 * @return array<string, int> category → spend_minor
+	 */
+	public function receivedSpendByCategorySince(int $fromTs): array
+	{
+		$qb = $this->db->getQueryBuilder();
+		$qb->selectAlias('i.category', 'cat')
+			->selectAlias($qb->func()->sum('m.spend_minor'), 'total')
+			->from($this->getTableName(), 'm')
+			->innerJoin('m', 'iv_items', 'i', 'm.item_id = i.id')
+			->where($qb->expr()->eq('m.kind', $qb->createNamedParameter('receive')))
+			->andWhere($qb->expr()->gte('m.created_at', $qb->createNamedParameter($fromTs, \PDO::PARAM_INT)))
+			->andWhere($qb->expr()->isNotNull('m.spend_minor'))
+			->groupBy('i.category');
+		$result = $qb->executeQuery();
+		$out = [];
+		while ($row = $result->fetch()) {
+			$out[(string)($row['cat'] ?? '')] = (int)$row['total'];
+		}
+		$result->closeCursor();
+		return $out;
+	}
+
+	/**
 	 * F-10: issue qty per item within a rolling window (storage units).
 	 *
 	 * @return array<int, int> itemId → issued qty

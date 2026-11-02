@@ -1887,6 +1887,21 @@
 					}
 					if (low.meta.budgetState === 'over') {
 						metaKids.push(el('span', { className: 'iv-badge iv-badge--warn', text: tr('Over budget') }));
+					} else if (low.meta.budgetState === 'over_emergency') {
+						metaKids.push(el('span', { className: 'iv-badge iv-badge--warn', text: tr('Over budget — within emergency allowance') }));
+					}
+					if (Array.isArray(low.meta.byCategory)) {
+						low.meta.byCategory.forEach(function (c) {
+							if (c.remainingMinor != null) {
+								metaKids.push(el('span', {
+									className: 'iv-muted',
+									text: c.category + ': ' + tr('{left} left of {total} this month', {
+										left: formatMinor(c.remainingMinor),
+										total: formatMinor(c.budgetMinor || 0),
+									}),
+								}));
+							}
+						});
 					}
 					lowKids.push(el('p', { className: 'iv-meta', 'data-iv-low-stock-meta': '1' }, metaKids));
 				}
@@ -6011,6 +6026,12 @@
 					'aria-label': tr('Approval threshold in cents'),
 					disabled: canEditRestock ? null : '',
 				});
+				var emergencyInput = el('input', {
+					type: 'number', className: 'iv-input', min: '0', step: '1',
+					value: cfg.emergencyBudgetMinor != null ? String(cfg.emergencyBudgetMinor) : '',
+					'aria-label': tr('Emergency budget in cents'),
+					disabled: canEditRestock ? null : '',
+				});
 				var restockKids = [
 					settingsSrTitle('iv-restock-title', tr('Restock & procurement')),
 					canEditRestock ? null : el('p', {
@@ -6042,6 +6063,11 @@
 						text: tr('Coverage mode suggests enough stock for expected consumption during the window plus supplier lead time.'),
 					}),
 					field(tr('Order approval threshold in cents (empty = no approval)'), thresholdInput, { name: 'approvalThresholdMinor' }),
+					field(tr('Emergency budget in cents (empty = none)'), emergencyInput, { name: 'emergencyBudgetMinor' }),
+					el('p', {
+						className: 'iv-field__hint',
+						text: tr('Received deliveries reduce the monthly budget. The emergency allowance is the extra amount only the owner may go over by.'),
+					}),
 				];
 				if (canEditRestock) {
 					restockKids.push(settingsFormActions(btn(tr('Save restock settings'), {
@@ -6062,6 +6088,7 @@
 								velocityWindowDays: Number(velocityDaysInput.value),
 								suggestionMode: suggestionModeSel.value,
 								approvalThresholdMinor: thresholdInput.value.trim() === '' ? null : Number(thresholdInput.value),
+								emergencyBudgetMinor: emergencyInput.value.trim() === '' ? null : Number(emergencyInput.value),
 							}).then(function () {
 								toast(tr('Restock settings saved.'));
 							}).catch(function (err) {

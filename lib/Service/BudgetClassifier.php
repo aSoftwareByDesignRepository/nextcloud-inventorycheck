@@ -13,6 +13,8 @@ final class BudgetClassifier
 	public const STATE_NO_BUDGET = 'no_budget';
 	public const STATE_WITHIN = 'within';
 	public const STATE_OVER = 'over';
+	/** Over the monthly budget but inside the owner emergency ceiling. */
+	public const STATE_OVER_EMERGENCY = 'over_emergency';
 
 	/**
 	 * A missing or non-positive budget entry means "uncapped" (A4: budget=0
@@ -20,10 +22,36 @@ final class BudgetClassifier
 	 */
 	public static function state(?int $budgetMinor, int $estMinor): string
 	{
+		return self::stateExtended($budgetMinor, $estMinor);
+	}
+
+	/**
+	 * Cycle-aware check: the month's received spend has already consumed part
+	 * of the budget, so the order is judged against what is left; an order
+	 * that only fits inside the owner emergency allowance lands in
+	 * over_emergency.
+	 */
+	public static function stateExtended(?int $budgetMinor, int $estMinor, int $spentMtdMinor = 0, int $emergencyMinor = 0): string
+	{
 		if ($budgetMinor === null || $budgetMinor <= 0) {
 			return self::STATE_NO_BUDGET;
 		}
-		return $estMinor <= $budgetMinor ? self::STATE_WITHIN : self::STATE_OVER;
+		$remaining = max(0, $budgetMinor - max(0, $spentMtdMinor));
+		if ($estMinor <= $remaining) {
+			return self::STATE_WITHIN;
+		}
+		return $estMinor <= $remaining + max(0, $emergencyMinor)
+			? self::STATE_OVER_EMERGENCY
+			: self::STATE_OVER;
+	}
+
+	/** Available this cycle: budget − already-received spend (floor 0). */
+	public static function remaining(?int $budgetMinor, int $spentMtdMinor): ?int
+	{
+		if ($budgetMinor === null || $budgetMinor <= 0) {
+			return null;
+		}
+		return max(0, $budgetMinor - max(0, $spentMtdMinor));
 	}
 
 	/**
@@ -38,7 +66,8 @@ final class BudgetClassifier
 	}
 
 	/**
-	 * Worst state across per-category states: over > within > no_budget.
+	 * Worst state across per-category states:
+	 * over > over_emergency > within > no_budget.
 	 * no_budget only when *every* bucket is uncapped.
 	 *
 	 * @param list<string> $states
@@ -46,6 +75,7 @@ final class BudgetClassifier
 	public static function worst(array $states): string
 	{
 		$hasBudget = false;
+		$worst = self::STATE_WITHIN;
 		foreach ($states as $s) {
 			if ($s !== self::STATE_NO_BUDGET) {
 				$hasBudget = true;
@@ -53,7 +83,13 @@ final class BudgetClassifier
 			if ($s === self::STATE_OVER) {
 				return self::STATE_OVER;
 			}
+			if ($s === self::STATE_OVER_EMERGENCY) {
+				$worst = self::STATE_OVER_EMERGENCY;
+			}
 		}
-		return $hasBudget ? self::STATE_WITHIN : self::STATE_NO_BUDGET;
+		if (!$hasBudget) {
+			return self::STATE_NO_BUDGET;
+		}
+		return $worst;
 	}
 }

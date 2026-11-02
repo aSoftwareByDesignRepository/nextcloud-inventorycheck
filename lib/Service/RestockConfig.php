@@ -22,6 +22,8 @@ final class RestockConfig
 	public const KEY_VELOCITY_WINDOW_DAYS = 'velocity_window_days';
 	public const KEY_SUGGESTION_MODE = 'restock_suggestion_mode';
 	public const KEY_APPROVAL_THRESHOLD = 'order_approval_threshold_minor';
+	/** Owner-managed emergency allowance above the monthly budget (minor units). */
+	public const KEY_EMERGENCY_BUDGET = 'restock_emergency_budget_minor';
 	public const KEY_DIGEST_ENABLED = 'restock_digest_enabled';
 	public const KEY_WEBHOOK_URL = 'restock_webhook_url';
 	public const KEY_WEBHOOK_SECRET = 'restock_webhook_secret';
@@ -247,6 +249,30 @@ final class RestockConfig
 	}
 
 	/** F-16: null = no approval threshold. */
+	/** Emergency allowance the owner may authorize beyond the monthly budget. */
+	public function emergencyBudgetMinor(): ?int
+	{
+		$raw = trim((string)$this->config->getAppValue(Application::APP_ID, self::KEY_EMERGENCY_BUDGET, ''));
+		if ($raw === '' || preg_match('/^\d+$/', $raw) !== 1) {
+			return null;
+		}
+		return (int)$raw;
+	}
+
+	public function setEmergencyBudgetMinor(?int $v): void
+	{
+		if ($v === null) {
+			$this->config->deleteAppValue(Application::APP_ID, self::KEY_EMERGENCY_BUDGET);
+			return;
+		}
+		if ($v < 0 || $v > self::MAX_SPEND_MINOR) {
+			throw new ValidationException('validation_failed', '', [
+				['field' => 'emergencyBudgetMinor', 'code' => 'validation_failed'],
+			]);
+		}
+		$this->config->setAppValue(Application::APP_ID, self::KEY_EMERGENCY_BUDGET, (string)$v);
+	}
+
 	public function approvalThresholdMinor(): ?int
 	{
 		$raw = trim((string)$this->config->getAppValue(Application::APP_ID, self::KEY_APPROVAL_THRESHOLD, ''));

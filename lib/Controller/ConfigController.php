@@ -102,6 +102,7 @@ class ConfigController extends Controller
 			// and thresholds are money policy → office+ only (SPEC §15).
 			'categoryList' => $this->restockCfg()->categoryList(),
 			'restockBudgets' => ($isAppAdmin || $this->access->isOffice($uid)) ? $this->restockCfg()->budgets() : null,
+			'emergencyBudgetMinor' => ($isAppAdmin || $this->access->isOffice($uid)) ? $this->restockCfg()->emergencyBudgetMinor() : null,
 			'onOrderStaleDays' => $isAppAdmin ? $this->restockCfg()->onOrderStaleDays() : null,
 			'expiryWarnDays' => $isAppAdmin ? $this->restockCfg()->expiryWarnDays() : null,
 			'velocityWindowDays' => $isAppAdmin ? $this->restockCfg()->velocityWindowDays() : null,
@@ -165,6 +166,21 @@ class ConfigController extends Controller
 				]);
 			}
 		}
+		$emergency = null;
+		$emergencySet = false;
+		if (array_key_exists('emergencyBudgetMinor', $p)) {
+			$emergencySet = true;
+			$raw = $p['emergencyBudgetMinor'];
+			if ($raw === null || $raw === '') {
+				$emergency = null;
+			} elseif ((is_int($raw) || (is_string($raw) && preg_match('/^\d+$/', $raw) === 1)) && (int)$raw <= RestockConfig::MAX_SPEND_MINOR) {
+				$emergency = (int)$raw;
+			} else {
+				throw new ValidationException('validation_failed', '', [
+					['field' => 'emergencyBudgetMinor', 'code' => 'validation_failed'],
+				]);
+			}
+		}
 		$webhookUrl = null;
 		$webhookSet = false;
 		if (array_key_exists('webhookUrl', $p)) {
@@ -198,6 +214,9 @@ class ConfigController extends Controller
 		if ($thresholdSet) {
 			$this->restockCfg()->setApprovalThresholdMinor($threshold);
 		}
+		if ($emergencySet) {
+			$this->restockCfg()->setEmergencyBudgetMinor($emergency);
+		}
 		if ($digest !== null) {
 			$this->restockCfg()->setDigestEnabled($digest);
 		}
@@ -205,7 +224,7 @@ class ConfigController extends Controller
 			$this->webhookSvc()->setUrl($webhookUrl);
 		}
 		if ($categoryList !== null || $budgets !== null || $staleDays !== null || $expiryDays !== null
-			|| $velocityDays !== null || $suggestionMode !== null || $thresholdSet || $digest !== null || $webhookSet) {
+			|| $velocityDays !== null || $suggestionMode !== null || $thresholdSet || $emergencySet || $digest !== null || $webhookSet) {
 			$this->auditPolicyChange($uid, 'restock_policy_saved', [
 				'categoryList' => $categoryList !== null ? count($categoryList) : null,
 				'restockBudgets' => $budgets !== null ? count($budgets) : null,
@@ -214,6 +233,7 @@ class ConfigController extends Controller
 				'velocityWindowDays' => $velocityDays,
 				'suggestionMode' => $suggestionMode,
 				'approvalThresholdSet' => $thresholdSet ? $threshold !== null : null,
+				'emergencyBudgetSet' => $emergencySet ? $emergency !== null : null,
 				'restockDigestEnabled' => $digest,
 			]);
 		}

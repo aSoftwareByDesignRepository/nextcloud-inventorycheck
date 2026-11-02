@@ -104,6 +104,55 @@ final class MovementEngineIntegrationTest extends TestCase
 		}
 	}
 
+	/**
+	 * Budget cycle: received spend aggregates per item category for the
+	 * monthly-budget remaining calculation. Random category names keep the
+	 * assertion isolated from other fixtures' movement rows.
+	 */
+	public function testReceivedSpendAggregatesPerCategory(): void
+	{
+		$suffix = bin2hex(random_bytes(4));
+		$catA = 'MTD-A-' . $suffix;
+		$catB = 'MTD-B-' . $suffix;
+		$cfg = \OCP\Server::get(\OCA\InventoryCheck\Service\RestockConfig::class);
+		$cfg->setCategoryList(array_merge($cfg->categoryList(), [$catA, $catB]));
+
+		$loc = $this->locations->create($this->uid, [
+			'code' => 'MTD-LOC-' . $suffix,
+			'name' => 'MTD loc',
+			'kind' => 'warehouse',
+		]);
+		$locId = (int)$loc['id'];
+		$itemA = $this->items->create($this->uid, [
+			'sku' => 'MTD-A-' . $suffix, 'name' => 'A', 'category' => $catA,
+		]);
+		$itemB = $this->items->create($this->uid, [
+			'sku' => 'MTD-B-' . $suffix, 'name' => 'B', 'category' => $catB,
+		]);
+		$itemUnc = $this->items->create($this->uid, [
+			'sku' => 'MTD-U-' . $suffix, 'name' => 'U',
+		]);
+
+		// Other fixtures may leave uncategorized receive-spend rows; assert
+		// the delta, not an absolute.
+		$uncBefore = $this->movementMapper->receivedSpendByCategorySince(0)[''] ?? 0;
+
+		$this->movements->receive($this->uid, (int)$itemA['id'], $locId, 1, 'a', null, true, 1000);
+		$this->movements->receive($this->uid, (int)$itemA['id'], $locId, 1, 'a2', null, true, 250);
+		$this->movements->receive($this->uid, (int)$itemB['id'], $locId, 1, 'b', null, true, 700);
+		$this->movements->receive($this->uid, (int)$itemUnc['id'], $locId, 1, 'u', null, true, 90);
+		// Unpriced receive contributes no money signal and must be skipped.
+		$this->movements->receive($this->uid, (int)$itemA['id'], $locId, 1, 'unpriced');
+
+		$sums = $this->movementMapper->receivedSpendByCategorySince(0);
+		$this->assertSame(1250, $sums[$catA] ?? null);
+		$this->assertSame(700, $sums[$catB] ?? null);
+		$this->assertSame($uncBefore + 90, $sums[''] ?? null);
+
+		// A window starting in the future excludes everything.
+		$this->assertSame([], $this->movementMapper->receivedSpendByCategorySince(time() + 3600));
+	}
+
 	public function testSameLocationTransferRejected(): void
 	{
 		$suffix = bin2hex(random_bytes(3));

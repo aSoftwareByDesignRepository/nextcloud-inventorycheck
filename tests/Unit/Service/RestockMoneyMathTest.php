@@ -65,6 +65,43 @@ final class RestockMoneyMathTest extends TestCase
 		self::assertNull(BudgetClassifier::delta(0, 5000));
 	}
 
+	public function testCycleAwareStates(): void
+	{
+		// MTD spend consumes the budget — remaining = 5000 − 2000 = 3000.
+		self::assertSame('within', BudgetClassifier::stateExtended(5000, 3000, 2000));
+		self::assertSame('within', BudgetClassifier::stateExtended(5000, 3000, 2000, 0));
+		// Over remaining but inside the owner emergency allowance.
+		self::assertSame('over_emergency', BudgetClassifier::stateExtended(5000, 3001, 2000, 100));
+		self::assertSame('over_emergency', BudgetClassifier::stateExtended(5000, 3100, 2000, 100));
+		// Over remaining + emergency is plain over; no emergency set → over.
+		self::assertSame('over', BudgetClassifier::stateExtended(5000, 3101, 2000, 100));
+		self::assertSame('over', BudgetClassifier::stateExtended(5000, 3001, 2000, 0));
+		// Spend past the budget itself → remaining floors at 0.
+		self::assertSame('over', BudgetClassifier::stateExtended(5000, 1, 9000, 0));
+		self::assertSame('over_emergency', BudgetClassifier::stateExtended(5000, 50, 9000, 50));
+		// no_budget ignores MTD/emergency entirely.
+		self::assertSame('no_budget', BudgetClassifier::stateExtended(0, 10, 999, 999));
+		self::assertSame('no_budget', BudgetClassifier::stateExtended(null, 10, 999, 999));
+	}
+
+	public function testRemainingFloorsAtZero(): void
+	{
+		self::assertSame(3000, BudgetClassifier::remaining(5000, 2000));
+		self::assertSame(0, BudgetClassifier::remaining(5000, 5000));
+		self::assertSame(0, BudgetClassifier::remaining(5000, 9000));
+		self::assertSame(5000, BudgetClassifier::remaining(5000, 0));
+		self::assertNull(BudgetClassifier::remaining(0, 0));
+		self::assertNull(BudgetClassifier::remaining(null, 100));
+	}
+
+	public function testWorstRanksOverEmergencyBetweenOverAndWithin(): void
+	{
+		self::assertSame('over_emergency', BudgetClassifier::worst(['within', 'over_emergency', 'no_budget']));
+		self::assertSame('over', BudgetClassifier::worst(['over_emergency', 'over']));
+		self::assertSame('within', BudgetClassifier::worst(['within', 'no_budget']));
+		self::assertSame('no_budget', BudgetClassifier::worst([]));
+	}
+
 	public function testWorstStateAggregation(): void
 	{
 		self::assertSame('no_budget', BudgetClassifier::worst(['no_budget', 'no_budget']));
