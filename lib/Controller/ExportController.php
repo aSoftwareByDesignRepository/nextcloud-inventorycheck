@@ -71,7 +71,7 @@ class ExportController extends Controller
 		];
 		$out = fopen('php://temp', 'r+');
 		foreach ($rows as $r) {
-			fputcsv($out, $r, ';');
+			fputcsv($out, $r, ';', '"', '');
 		}
 		rewind($out);
 		return new DataDownloadResponse((string)stream_get_contents($out), 'inventorycheck-starter.csv', 'text/csv');
