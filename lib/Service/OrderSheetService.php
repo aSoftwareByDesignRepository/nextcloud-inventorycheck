@@ -185,10 +185,18 @@ class OrderSheetService
 			return;
 		}
 		$factor = QtyScale::factor($this->config);
+		// Batch-dedupe item loads — one findById per unique item, not per line.
+		$itemById = [];
+		foreach ($lines as $line) {
+			$itemId = $line->getItemId();
+			if (!isset($itemById[$itemId])) {
+				$itemById[$itemId] = $this->items->findById($itemId);
+			}
+		}
 		$estByCat = [];
 		$unpricedCapped = false;
 		foreach ($lines as $line) {
-			$item = $this->items->findById($line->getItemId());
+			$item = $itemById[$line->getItemId()];
 			$cat = $item->getCategory() ?? RestockConfig::UNCATEGORIZED;
 			$est = RestockEstimate::lineMinor(
 				$line->getQty(),
@@ -207,6 +215,7 @@ class OrderSheetService
 		}
 		$mtdByCat = $this->movements->receivedSpendByCategorySince(
 			(new \DateTimeImmutable('first day of this month'))->setTime(0, 0, 0)->getTimestamp(),
+			$this->clock->now(),
 		);
 		if (isset($mtdByCat[''])) {
 			$mtdByCat[RestockConfig::UNCATEGORIZED] = ($mtdByCat[RestockConfig::UNCATEGORIZED] ?? 0) + $mtdByCat[''];

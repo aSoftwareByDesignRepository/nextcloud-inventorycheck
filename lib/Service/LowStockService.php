@@ -157,7 +157,7 @@ class LowStockService
 			$mtdByCat = [];
 			if ($this->movements !== null && $this->restock !== null) {
 				$cycleStart = (new \DateTimeImmutable('first day of this month'))->setTime(0, 0, 0)->getTimestamp();
-				$mtdByCat = $this->movements->receivedSpendByCategorySince($cycleStart);
+				$mtdByCat = $this->movements->receivedSpendByCategorySince($cycleStart, $now);
 				if (isset($mtdByCat[''])) {
 					$mtdByCat[RestockConfig::UNCATEGORIZED] = ($mtdByCat[RestockConfig::UNCATEGORIZED] ?? 0) + $mtdByCat[''];
 					unset($mtdByCat['']);

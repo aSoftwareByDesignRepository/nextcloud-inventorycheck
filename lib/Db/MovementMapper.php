@@ -205,7 +205,7 @@ class MovementMapper extends QBMapper
 	 *
 	 * @return array<string, int> category → spend_minor
 	 */
-	public function receivedSpendByCategorySince(int $fromTs): array
+	public function receivedSpendByCategorySince(int $fromTs, ?int $toTs = null): array
 	{
 		$qb = $this->db->getQueryBuilder();
 		$qb->selectAlias('i.category', 'cat')
@@ -216,6 +216,11 @@ class MovementMapper extends QBMapper
 			->andWhere($qb->expr()->gte('m.created_at', $qb->createNamedParameter($fromTs, \PDO::PARAM_INT)))
 			->andWhere($qb->expr()->isNotNull('m.spend_minor'))
 			->groupBy('i.category');
+		if ($toTs !== null) {
+			// Future-dated rows can't exist today; bound anyway — a bad row
+			// must not silently inflate the cycle spend.
+			$qb->andWhere($qb->expr()->lte('m.created_at', $qb->createNamedParameter($toTs, \PDO::PARAM_INT)));
+		}
 		$result = $qb->executeQuery();
 		$out = [];
 		while ($row = $result->fetch()) {
