@@ -193,4 +193,21 @@ final class RestockMoneyMathTest extends TestCase
 		self::assertArrayNotHasKey('spendMinor', MoneyVisibility::movementForWeb($m, false));
 		self::assertArrayNotHasKey('spendMinor', MoneyVisibility::movementForMobile($m));
 	}
+
+	public function testZeroQtyFactorFallsBackToOne(): void
+	{
+		// qtyFactor <= 0 is invalid input; the estimator must clamp to 1
+		// rather than divide by zero (mutation target: unguarded $factor).
+		self::assertSame(500, RestockEstimate::lineMinor(2, null, null, 250, 0));
+		self::assertSame(500, RestockEstimate::lineMinor(2, null, null, 250, -7));
+	}
+
+	public function testNegativeSpentClampsToZero(): void
+	{
+		// A negative MTD spend (corrupt/migrated row) must not inflate the
+		// remaining budget beyond the cap itself.
+		self::assertSame(5000, BudgetClassifier::remaining(5000, -100));
+		self::assertSame('within', BudgetClassifier::stateExtended(5000, 5000, -100));
+		self::assertSame('over', BudgetClassifier::stateExtended(5000, 5001, -100));
+	}
 }
