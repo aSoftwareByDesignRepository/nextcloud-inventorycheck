@@ -270,6 +270,7 @@ class Application extends App implements IBootstrap
 				$c->get(\OCP\Mail\IMailer::class),
 				$c->get(\OCP\IUserManager::class),
 				$c->get(\Psr\Log\LoggerInterface::class),
+				$c->get(MovementMapper::class),
 			);
 		});
 		$context->registerService(\OCA\InventoryCheck\Service\RestockDigestService::class, static function ($c): \OCA\InventoryCheck\Service\RestockDigestService {

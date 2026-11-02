@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\InventoryCheck\Service;
 
 use OCA\InventoryCheck\Db\ItemMapper;
+use OCA\InventoryCheck\Db\MovementMapper;
 use OCA\InventoryCheck\Db\OrderSheet;
 use OCA\InventoryCheck\Db\OrderSheetLine;
 use OCA\InventoryCheck\Db\OrderSheetLineMapper;
@@ -39,6 +40,7 @@ class OrderSheetService
 		private readonly ?IMailer $mailer = null,
 		private readonly ?IUserManager $userManager = null,
 		private readonly ?LoggerInterface $logger = null,
+		private readonly ?MovementMapper $movements = null,
 	) {
 	}
 
@@ -155,12 +157,78 @@ class OrderSheetService
 				&& !$this->access->isAppAdmin($actorUid)) {
 				throw new ApprovalRequiredException();
 			}
+			$this->enforceBudgetCycle($actorUid, $sheet);
 			$this->sheets->setStatus($id, OrderSheet::STATUS_SENT, $this->clock->now());
 			$this->db->commit();
 			$this->emailSupplier($sheet, $actorUid);
 		} catch (\Throwable $e) {
 			$this->db->rollBack();
 			throw $e;
+		}
+	}
+
+	/**
+	 * Budget-cycle enforcement (Reynolds ruling): a draft may only leave
+	 * when its per-category cost fits what the monthly budget has left.
+	 * Overage needs the owner (app-admin); beyond the configured emergency
+	 * ceiling nobody sends. Informational budget states elsewhere stay
+	 * untouched — this is the one place the ruling has teeth.
+	 */
+	private function enforceBudgetCycle(string $actorUid, OrderSheet $sheet): void
+	{
+		if ($this->movements === null) {
+			return;
+		}
+		$budgets = $this->restock->budgets();
+		$lines = $this->lines->findBySheet($sheet->getId());
+		if ($budgets === [] || $lines === []) {
+			return;
+		}
+		$factor = QtyScale::factor($this->config);
+		$estByCat = [];
+		$unpricedCapped = false;
+		foreach ($lines as $line) {
+			$item = $this->items->findById($line->getItemId());
+			$cat = $item->getCategory() ?? RestockConfig::UNCATEGORIZED;
+			$est = RestockEstimate::lineMinor(
+				$line->getQty(),
+				$item->getOrderPackQty(),
+				$item->getOrderPackPriceMinor(),
+				$item->getLastPriceMinor(),
+				$factor,
+			);
+			if ($est === null) {
+				if (($budgets[$cat] ?? 0) > 0) {
+					$unpricedCapped = true;
+				}
+				continue;
+			}
+			$estByCat[$cat] = ($estByCat[$cat] ?? 0) + $est;
+		}
+		$mtdByCat = $this->movements->receivedSpendByCategorySince(
+			(new \DateTimeImmutable('first day of this month'))->setTime(0, 0, 0)->getTimestamp(),
+		);
+		if (isset($mtdByCat[''])) {
+			$mtdByCat[RestockConfig::UNCATEGORIZED] = ($mtdByCat[RestockConfig::UNCATEGORIZED] ?? 0) + $mtdByCat[''];
+			unset($mtdByCat['']);
+		}
+		$emergency = $this->restock->emergencyBudgetMinor() ?? 0;
+		$totalOverage = 0;
+		foreach ($estByCat as $cat => $est) {
+			$budget = $budgets[$cat] ?? null;
+			if ($budget === null || $budget <= 0) {
+				continue;
+			}
+			$remaining = max(0, $budget - ($mtdByCat[$cat] ?? 0));
+			$totalOverage += max(0, $est - $remaining);
+		}
+		if ($emergency > 0 && $totalOverage > $emergency) {
+			throw new ValidationException('budget_exceeded', '', [
+				['field' => 'totalMinor', 'code' => 'budget_exceeded'],
+			]);
+		}
+		if (($totalOverage > 0 || $unpricedCapped) && !$this->access->isAppAdmin($actorUid)) {
+			throw new ApprovalRequiredException();
 		}
 	}
 
