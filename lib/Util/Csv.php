@@ -49,7 +49,39 @@ final class Csv
 	}
 
 	/**
+	 * Canonical keys emitted on this app's own exports that no importer
+	 * consumes — they exist so Detected-columns shows a stable machine name
+	 * for export columns instead of the raw localized label. The items
+	 * importer reports them as ignored-informational (never silently read).
+	 *
+	 * est_line_minor / suggested_qty / packs / on_hand are computed reorder-
+	 * export columns; code/kind/notes/qty/item_id/location_id/qty_delta/
+	 * qty_after/created_at/created_by belong to location/movement exports
+	 * which have no import surface.
+	 */
+	public const EXPORT_ONLY_KEYS = [
+		'est_line_minor',
+		'suggested_qty',
+		'packs',
+		'on_hand',
+		'code',
+		'kind',
+		'notes',
+		'qty',
+		'item_id',
+		'location_id',
+		'qty_delta',
+		'qty_after',
+		'created_at',
+		'created_by',
+	];
+
+	/**
 	 * Map DE/EN header aliases to the machine-stable English column keys (Wave A1).
+	 *
+	 * Every value-side key is either consumed by the items importer
+	 * (CsvImportService::CONSUMED_COLUMNS) or listed in EXPORT_ONLY_KEYS —
+	 * a canonical key nothing reads is a silently-dropped column.
 	 */
 	public static function canonicalizeHeader(string $header): string
 	{
@@ -62,20 +94,28 @@ final class Csv
 			'beschreibung' => 'description',
 			'einheit' => 'uom',
 			'mindestbestand', 'reorderlevel' => 'reorder_level',
+			'zielbestand' => 'target_stock',
 			'lagerort', 'opening_location', 'oeffnungs_lagerort' => 'opening_location_code',
 			'anfangsbestand', 'opening_quantity' => 'opening_qty',
 			'aktiv' => 'active',
 			'lieferant', 'lieferantennotiz' => 'supplier_note',
-			'letzter_preis_cent', 'last_price' => 'last_price_minor',
-			'lieferantenname' => 'supplier_name',
+			// The reorder export's own 'unit_price_minor' (and its DE twin
+			// 'einzelpreis_cent') carries the item's last price — it must
+			// canonicalize to the key the importer reads, never a dead end.
+			'letzter_preis_cent', 'last_price', 'einzelpreis_cent', 'unit_price_minor' => 'last_price_minor',
+			'lieferantenname', 'lieferant_name' => 'supplier_name',
 			'lieferanten_artikelnummer', 'lieferanten_sku' => 'supplier_sku',
-			'einzelpreis_cent' => 'unit_price_minor',
 			'packungsgroesse', 'packungsgroesse_einheiten', 'units_per_pack' => 'order_pack_qty',
 			'packungspreis_cent', 'preis_pro_packung_cent' => 'order_pack_price_minor',
 			'lieferzeit_tage', 'lieferzeit' => 'supplier_lead_days',
 			'kategorie' => 'category',
 			'kritikalitaet', 'kritisch' => 'criticality',
+			// Export-only informational columns (EXPORT_ONLY_KEYS): stable
+			// canonical names for Detected-columns, never consumed on import.
 			'geschaetzte_zeile_cent', 'geschaetzte_kosten_cent' => 'est_line_minor',
+			'vorschlagsmenge' => 'suggested_qty',
+			'packungen' => 'packs',
+			'bestand' => 'on_hand',
 			'ortscode', 'lagerort_code' => 'code',
 			'typ' => 'kind',
 			'notizen' => 'notes',

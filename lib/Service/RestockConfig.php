@@ -33,6 +33,9 @@ final class RestockConfig
 
 	public const UNCATEGORIZED = 'Uncategorized';
 
+	/** Stored suggestion-mode vocabulary (F-10): deficit-filling default or velocity-window coverage. */
+	public const SUGGESTION_MODES = ['static', 'coverage'];
+
 	public function __construct(
 		private readonly IConfig $config,
 	) {
@@ -239,7 +242,7 @@ final class RestockConfig
 		$this->config->setAppValue(
 			Application::APP_ID,
 			self::KEY_SUGGESTION_MODE,
-			$mode === 'coverage' ? 'coverage' : 'static',
+			in_array($mode, self::SUGGESTION_MODES, true) ? $mode : 'static',
 		);
 	}
 

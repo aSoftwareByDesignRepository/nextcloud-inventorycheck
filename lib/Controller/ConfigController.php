@@ -105,6 +105,7 @@ class ConfigController extends Controller
 			'onOrderStaleDays' => $isAppAdmin ? $this->restockCfg()->onOrderStaleDays() : null,
 			'expiryWarnDays' => $isAppAdmin ? $this->restockCfg()->expiryWarnDays() : null,
 			'velocityWindowDays' => $isAppAdmin ? $this->restockCfg()->velocityWindowDays() : null,
+			'suggestionMode' => $isAppAdmin ? $this->restockCfg()->suggestionMode() : null,
 			'approvalThresholdMinor' => $isAppAdmin ? $this->restockCfg()->approvalThresholdMinor() : null,
 			'restockDigestEnabled' => $isAppAdmin ? $this->restockCfg()->digestEnabled() : null,
 			'webhookUrl' => $isAppAdmin ? $this->webhookSvc()->url() : null,
@@ -139,6 +140,16 @@ class ConfigController extends Controller
 		$velocityDays = array_key_exists('velocityWindowDays', $p)
 			? $this->restockCfg()->parseDays($p['velocityWindowDays'], 'velocityWindowDays')
 			: null;
+		$suggestionMode = null;
+		if (array_key_exists('suggestionMode', $p)) {
+			$raw = strtolower(trim((string)$p['suggestionMode']));
+			if (!in_array($raw, RestockConfig::SUGGESTION_MODES, true)) {
+				throw new ValidationException('validation_failed', '', [
+					['field' => 'suggestionMode', 'code' => 'validation_failed'],
+				]);
+			}
+			$suggestionMode = $raw;
+		}
 		$threshold = null;
 		$thresholdSet = false;
 		if (array_key_exists('approvalThresholdMinor', $p)) {
@@ -181,6 +192,9 @@ class ConfigController extends Controller
 		if ($velocityDays !== null) {
 			$this->restockCfg()->setDays(RestockConfig::KEY_VELOCITY_WINDOW_DAYS, $velocityDays);
 		}
+		if ($suggestionMode !== null) {
+			$this->restockCfg()->setSuggestionMode($suggestionMode);
+		}
 		if ($thresholdSet) {
 			$this->restockCfg()->setApprovalThresholdMinor($threshold);
 		}
@@ -191,13 +205,14 @@ class ConfigController extends Controller
 			$this->webhookSvc()->setUrl($webhookUrl);
 		}
 		if ($categoryList !== null || $budgets !== null || $staleDays !== null || $expiryDays !== null
-			|| $velocityDays !== null || $thresholdSet || $digest !== null || $webhookSet) {
+			|| $velocityDays !== null || $suggestionMode !== null || $thresholdSet || $digest !== null || $webhookSet) {
 			$this->auditPolicyChange($uid, 'restock_policy_saved', [
 				'categoryList' => $categoryList !== null ? count($categoryList) : null,
 				'restockBudgets' => $budgets !== null ? count($budgets) : null,
 				'onOrderStaleDays' => $staleDays,
 				'expiryWarnDays' => $expiryDays,
 				'velocityWindowDays' => $velocityDays,
+				'suggestionMode' => $suggestionMode,
 				'approvalThresholdSet' => $thresholdSet ? $threshold !== null : null,
 				'restockDigestEnabled' => $digest,
 			]);

@@ -2860,12 +2860,24 @@
 							className: 'iv-field__hint',
 							text: tr('Detected columns'),
 						}));
+						var anyIgnored = false;
 						report.headers.forEach(function (h) {
+							var label = h.raw !== h.field ? h.raw + ' → ' + h.field : h.field;
+							if (h.ignored) {
+								anyIgnored = true;
+								label += ' · ' + tr('not imported');
+							}
 							mapBox.appendChild(el('span', {
-								className: 'iv-badge',
-								text: h.raw !== h.field ? h.raw + ' → ' + h.field : h.field,
+								className: h.ignored ? 'iv-badge iv-badge--paused' : 'iv-badge',
+								text: label,
 							}));
 						});
+						if (anyIgnored) {
+							mapBox.appendChild(el('p', {
+								className: 'iv-field__hint',
+								text: tr('Columns marked "not imported" are read as information only.'),
+							}));
+						}
 						resultBox.appendChild(mapBox);
 					}
 					resultBox.appendChild(el('p', {
@@ -2912,8 +2924,14 @@
 			disclosureSection(tr('CSV columns (optional help)'), [
 				el('p', {
 					className: 'iv-field__hint',
-					text: tr('Columns: sku, scan_code, name, description, uom, reorder_level, active, supplier_note, last_price_minor, opening_location_code, opening_qty. German headers also work.'),
+					text: tr('Pick a file or paste CSV text — the check lists every column it recognises and marks the ones it ignores. German headers also work.'),
 				}),
+				el('p', { className: 'iv-field__hint' }, [
+					el('a', {
+						href: ctx.urls.api.export + '/starter',
+						text: tr('Download the starter CSV with all import columns'),
+					}),
+				]),
 			], { className: 'iv-import-columns', open: false }),
 			field(tr('CSV file'), fileInput, { name: 'file' }),
 			field(tr('Or paste CSV text'), csvText, { name: 'csv' }),
@@ -5978,6 +5996,15 @@
 					value: cfg.velocityWindowDays != null ? String(cfg.velocityWindowDays) : '28',
 					disabled: canEditRestock ? null : '',
 				});
+				var suggestionModeSel = el('select', {
+					className: 'iv-input',
+					'aria-label': tr('Suggestion mode for reorder quantities'),
+					disabled: canEditRestock ? null : '',
+				}, [
+					el('option', { value: 'static', text: tr('Fill up to target stock or reorder level') }),
+					el('option', { value: 'coverage', text: tr('Cover expected consumption plus lead time') }),
+				]);
+				suggestionModeSel.value = cfg.suggestionMode === 'coverage' ? 'coverage' : 'static';
 				var thresholdInput = el('input', {
 					type: 'number', className: 'iv-input', min: '0', step: '1',
 					value: cfg.approvalThresholdMinor != null ? String(cfg.approvalThresholdMinor) : '',
@@ -6008,7 +6035,12 @@
 					]) : null,
 					field(tr('Warn when an order marker is older than (days)'), staleDaysInput, { name: 'onOrderStaleDays' }),
 					field(tr('Warn about expiring lots within (days)'), expiryDaysInput, { name: 'expiryWarnDays' }),
+					field(tr('Suggestion mode for reorder quantities'), suggestionModeSel, { name: 'suggestionMode' }),
 					field(tr('Consumption window for reorder suggestions (days)'), velocityDaysInput, { name: 'velocityWindowDays' }),
+					el('p', {
+						className: 'iv-field__hint',
+						text: tr('Coverage mode suggests enough stock for expected consumption during the window plus supplier lead time.'),
+					}),
 					field(tr('Order approval threshold in cents (empty = no approval)'), thresholdInput, { name: 'approvalThresholdMinor' }),
 				];
 				if (canEditRestock) {
@@ -6028,6 +6060,7 @@
 								onOrderStaleDays: Number(staleDaysInput.value),
 								expiryWarnDays: Number(expiryDaysInput.value),
 								velocityWindowDays: Number(velocityDaysInput.value),
+								suggestionMode: suggestionModeSel.value,
 								approvalThresholdMinor: thresholdInput.value.trim() === '' ? null : Number(thresholdInput.value),
 							}).then(function () {
 								toast(tr('Restock settings saved.'));

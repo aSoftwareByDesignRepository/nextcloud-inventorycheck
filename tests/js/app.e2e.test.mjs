@@ -332,7 +332,11 @@ test('Wave A–B UI surfaces are wired in app.js', () => {
 	assert.match(appJs, /movements_datev/);
 	assert.match(appJs, /Export DATEV-style CSV/);
 	assert.match(appJs, /syncBulkBtn/);
-	assert.match(appJs, /opening_location_code/);
+	// Import help must not re-enumerate a closed column list (intake
+	// 20261102T011532Z) — it points at the starter CSV + live header map,
+	// and ignored columns are marked "not imported".
+	assert.match(appJs, /api\.export \+ '\/starter'/);
+	assert.match(appJs, /not imported/);
 	assert.doesNotMatch(appJs, /bulkBtn\.disabled/);
 	assert.match(appJs, /Prefer omit over disable/);
 	assert.doesNotMatch(appJs, /disabled:\s*offset\s*<=\s*0/);

@@ -25,6 +25,36 @@ use OCP\Lock\LockedException;
  */
 class CsvImportService
 {
+	/**
+	 * Canonical column keys validateAll actually reads after
+	 * {@see Csv::canonicalizeHeader}. A detected header mapping to anything
+	 * outside this set is ignored-informational — surfaced in dryRun's
+	 * header annotations, never silently read.
+	 *
+	 * @var list<string>
+	 */
+	public const CONSUMED_COLUMNS = [
+		'sku',
+		'scan_code',
+		'name',
+		'description',
+		'uom',
+		'reorder_level',
+		'target_stock',
+		'active',
+		'supplier_note',
+		'last_price_minor',
+		'opening_location_code',
+		'opening_qty',
+		'order_pack_qty',
+		'order_pack_price_minor',
+		'supplier_lead_days',
+		'supplier_name',
+		'supplier_sku',
+		'category',
+		'criticality',
+	];
+
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly ItemMapper $items,
@@ -44,7 +74,11 @@ class CsvImportService
 	{
 		$this->access->requireOffice($actorUid);
 		$report = $this->validateAll($csvText, false);
-		return ['ok' => $report['ok'], 'errors' => $report['errors'], 'headers' => Csv::headerMap($csvText)];
+		$headers = array_map(
+			static fn (array $h): array => $h + ['ignored' => !in_array($h['field'], self::CONSUMED_COLUMNS, true)],
+			Csv::headerMap($csvText),
+		);
+		return ['ok' => $report['ok'], 'errors' => $report['errors'], 'headers' => $headers];
 	}
 
 	/**
@@ -84,6 +118,7 @@ class CsvImportService
 					$item->setDescription($row['description']);
 					$item->setUom($row['uom']);
 					$item->setReorderLevel($row['reorder_level']);
+					$item->setTargetStock($row['target_stock'] ?? null);
 					$item->setActive($row['active']);
 					$item->setCreatedAt($now);
 					$item->setUpdatedAt($now);
@@ -215,6 +250,20 @@ class CsvImportService
 				$errors[] = ['line' => $line, 'code' => 'invalid_reorder', 'message' => 'reorder_level out of range'];
 				continue;
 			}
+			$targetStock = null;
+			$targetRaw = $raw['target_stock'] ?? '';
+			if ($targetRaw !== '') {
+				try {
+					$targetStock = QtyScale::toStorage($this->config, $targetRaw);
+				} catch (ValidationException) {
+					$errors[] = ['line' => $line, 'code' => 'invalid_target', 'message' => 'target_stock out of range'];
+					continue;
+				}
+				if ($targetStock < 0 || $targetStock > QtyScale::maxStorage($this->config) || $targetStock < $reorder) {
+					$errors[] = ['line' => $line, 'code' => 'invalid_target', 'message' => 'target_stock out of range or below reorder_level'];
+					continue;
+				}
+			}
 
 			if (!CodeRules::isValidSku($sku) || !CodeRules::isValidScanCode($scan)) {
 				$errors[] = ['line' => $line, 'code' => 'invalid_code_format', 'message' => 'Invalid sku or scan_code'];
@@ -312,6 +361,7 @@ class CsvImportService
 				'description' => $desc,
 				'uom' => $uom,
 				'reorder_level' => $reorder,
+				'target_stock' => $targetStock,
 				'active' => $active,
 				'supplier_note' => $supplierNote,
 				'last_price_minor' => $lastPriceMinor,

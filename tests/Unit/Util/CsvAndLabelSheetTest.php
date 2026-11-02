@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OCA\InventoryCheck\Tests\Unit\Util;
 
+use OCA\InventoryCheck\Service\CsvImportService;
 use OCA\InventoryCheck\Util\Csv;
 use OCA\InventoryCheck\Util\LabelSheet;
 use OCA\InventoryCheck\Util\LabelSvg;
@@ -82,6 +83,95 @@ final class CsvAndLabelSheetTest extends TestCase
 	{
 		self::assertSame([], Csv::parse(""));
 		self::assertSame([], Csv::parse("\n\n"));
+	}
+
+	/**
+	 * Round-trip contract (intake 20261102T011538Z): every canonical key
+	 * canonicalizeHeader can emit is either read by the items importer or
+	 * documented export-only — a key nothing reads is a silently-dropped
+	 * column. Reorder-export price must reach last_price_minor, EN and DE.
+	 */
+	public function testCanonicalKeysAreConsumedOrDocumentedExportOnly(): void
+	{
+		$rawHeaders = [
+			'artikelnummer', 'artikel_nr', 'artikelnummer_sku', 'scancode', 'scan_code',
+			'barcode', 'bezeichnung', 'artikelname', 'beschreibung', 'einheit',
+			'mindestbestand', 'reorderlevel', 'zielbestand', 'lagerort',
+			'opening_location', 'oeffnungs_lagerort', 'anfangsbestand',
+			'opening_quantity', 'aktiv', 'lieferant', 'lieferantennotiz',
+			'letzter_preis_cent', 'last_price', 'einzelpreis_cent',
+			'unit_price_minor', 'lieferantenname', 'lieferant_name',
+			'lieferanten_artikelnummer', 'lieferanten_sku', 'packungsgroesse',
+			'packungsgroesse_einheiten', 'units_per_pack', 'packungspreis_cent',
+			'preis_pro_packung_cent', 'lieferzeit_tage', 'lieferzeit', 'kategorie',
+			'kritikalitaet', 'kritisch', 'geschaetzte_zeile_cent',
+			'geschaetzte_kosten_cent', 'vorschlagsmenge', 'packungen', 'bestand',
+			'ortscode', 'lagerort_code', 'typ', 'notizen', 'menge', 'artikel_id',
+			'lagerort_id', 'mengen_delta', 'menge_delta', 'menge_nachher',
+			'bestand_nachher', 'erstellt_am', 'erstellt_von', 'buchungsart',
+		];
+		$allowed = array_merge(CsvImportService::CONSUMED_COLUMNS, Csv::EXPORT_ONLY_KEYS);
+		foreach ($rawHeaders as $raw) {
+			$canonical = Csv::canonicalizeHeader($raw);
+			self::assertContains(
+				$canonical,
+				$allowed,
+				"canonical key '{$canonical}' (from '{$raw}') is neither imported nor documented export-only",
+			);
+		}
+		self::assertSame(
+			[],
+			array_intersect(CsvImportService::CONSUMED_COLUMNS, Csv::EXPORT_ONLY_KEYS),
+			'consumed and export-only sets must be disjoint',
+		);
+	}
+
+	public function testReorderExportPriceHeaderRoundTripsToLastPrice(): void
+	{
+		// EN reorder export emits unit_price_minor; DE emits Einzelpreis_Cent.
+		// Both carry the item's last price and must feed last_price_minor.
+		self::assertSame('last_price_minor', Csv::canonicalizeHeader('unit_price_minor'));
+		self::assertSame('last_price_minor', Csv::canonicalizeHeader('einzelpreis_cent'));
+		self::assertSame('last_price_minor', Csv::canonicalizeHeader('Einzelpreis_Cent'));
+		$rows = Csv::parse("unit_price_minor;sku;name\n12345;R-1;Roundtrip\n");
+		self::assertSame('12345', $rows[0]['last_price_minor']);
+	}
+
+	public function testOwnExportHeadersCanonicalizeToKnownKeys(): void
+	{
+		$exportSets = [
+			// starter template (ExportController::starter)
+			['sku', 'name', 'uom', 'reorder_level', 'target_stock', 'scan_code', 'description'],
+			// items export (CsvExportService::exportItems)
+			['sku', 'scan_code', 'name', 'description', 'uom', 'reorder_level', 'active',
+				'supplier_note', 'last_price_minor', 'supplier_name', 'supplier_sku',
+				'order_pack_qty', 'order_pack_price_minor', 'supplier_lead_days',
+				'category', 'criticality'],
+			// reorder export (CsvExportService::exportReorder)
+			['sku', 'name', 'on_hand', 'reorder_level', 'target_stock', 'suggested_qty',
+				'supplier_note', 'uom', 'supplier_name', 'supplier_sku',
+				'unit_price_minor', 'order_pack_qty', 'packs', 'est_line_minor', 'category'],
+		];
+		$allowed = array_merge(CsvImportService::CONSUMED_COLUMNS, Csv::EXPORT_ONLY_KEYS);
+		foreach ($exportSets as $headers) {
+			foreach (['en', 'de'] as $lang) {
+				foreach (Csv::localizeHeaders($headers, $lang) as $label) {
+					$canonical = Csv::canonicalizeHeader($label);
+					self::assertContains(
+						$canonical,
+						$allowed,
+						"export header '{$label}' ({$lang}) canonicalizes to unclassified '{$canonical}'",
+					);
+				}
+			}
+		}
+		// The whole DE reorder row must round-trip — not just the price column.
+		$deRow = 'Artikelnummer;Bezeichnung;Einzelpreis_Cent;Zielbestand;Lieferant_Name' . "\n"
+			. 'D-1;Dichtung;999;50;Lieferant GmbH' . "\n";
+		$parsed = Csv::parse($deRow)[0];
+		self::assertSame('999', $parsed['last_price_minor']);
+		self::assertSame('50', $parsed['target_stock']);
+		self::assertSame('Lieferant GmbH', $parsed['supplier_name']);
 	}
 
 	public function testLabelSheetCapacityAndHtml(): void
