@@ -1942,12 +1942,56 @@
 						api('GET', ctx.urls.api.orderSheets + '?status=draft,sent').then(function (res) {
 							var sheets = res.data || [];
 							if (sheets.length === 0) { sheetHost.appendChild(el('p', { className: 'iv-muted', text: tr('No open order sheets.') })); return; }
+							function openSheetEditor(sheetId, trigger) {
+								var ready = api('GET', ctx.urls.api.orderSheets + '/' + sheetId).then(function (res) {
+									var rowsHost = el('div', { className: 'iv-sheet-lines' });
+									(res.lines || []).forEach(function (l) {
+										var qtyInput = el('input', qtyInputAttrs(ctx, { value: formatQty(l.qty, ctx.qtyScale) }));
+										qtyInput.name = 'qty';
+										var row = el('div', { className: 'iv-sheet-lines__row', 'data-iv-line': String(l.itemId) }, [
+											field(l.sku + ' — ' + l.name, qtyInput),
+											btn(tr('Remove'), { onclick: function () { row.remove(); } }),
+										]);
+										rowsHost.appendChild(row);
+									});
+									dialog(tr('Edit order sheet'), [
+										el('p', { className: 'iv-muted', text: tr('Adjust quantities or remove lines so the order fits the budget.') }),
+										rowsHost,
+									], function () {
+										var lines = [];
+										var bad = false;
+										rowsHost.querySelectorAll('[data-iv-line]').forEach(function (row) {
+											var input = row.querySelector('input');
+											var qty = Number(input.value);
+											if (!isFinite(qty) || qty <= 0 || qty > 1000000) {
+												input.setAttribute('aria-invalid', 'true');
+												bad = true;
+												return;
+											}
+											lines.push({ itemId: Number(row.getAttribute('data-iv-line')), qty: qty });
+										});
+										if (bad) {
+											return false;
+										}
+										if (lines.length === 0) {
+											toast(tr('Removing every line leaves an empty sheet — cancel the sheet instead.'), true);
+											return false;
+										}
+										return api('PUT', ctx.urls.api.orderSheets + '/' + sheetId + '/lines', { lines: lines }).then(function () {
+											toast(tr('Order sheet updated.'));
+											renderOrderSheets();
+										});
+									}, tr('Save'), { restoreFocusTo: trigger });
+								}).catch(function (err) { toast(err.message || tr('Something went wrong.'), true); });
+								busyTriggerUntil(trigger, ready);
+							}
 							sheets.forEach(function (s) {
 								var rowKids = [
 									el('strong', { text: '#' + s.id + ' ' + (s.supplierName || tr('(no supplier)')) }),
 									el('span', { className: 'iv-badge', text: s.status }),
 								];
 								if (s.status === 'draft') {
+									rowKids.push(btn(tr('Edit'), { onclick: function (ev) { openSheetEditor(s.id, ev.currentTarget); } }));
 									rowKids.push(btn(tr('Send'), { primary: true, onclick: function () {
 										api('POST', ctx.urls.api.orderSheets + '/' + s.id + '/send')
 											.then(function () { toast(tr('Order sheet sent.')); renderOrderSheets(); })

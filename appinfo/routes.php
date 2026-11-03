@@ -53,6 +53,7 @@ return [
 		['name' => 'orderSheet#index', 'url' => '/api/order-sheets', 'verb' => 'GET'],
 		['name' => 'orderSheet#create', 'url' => '/api/order-sheets', 'verb' => 'POST'],
 		['name' => 'orderSheet#show', 'url' => '/api/order-sheets/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+		['name' => 'orderSheet#updateLines', 'url' => '/api/order-sheets/{id}/lines', 'verb' => 'PUT', 'requirements' => ['id' => '\\d+']],
 		['name' => 'orderSheet#send', 'url' => '/api/order-sheets/{id}/send', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
 		['name' => 'orderSheet#cancel', 'url' => '/api/order-sheets/{id}/cancel', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
 		['name' => 'orderSheet#print', 'url' => '/api/order-sheets/{id}/print', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],

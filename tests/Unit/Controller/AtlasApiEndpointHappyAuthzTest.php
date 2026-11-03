@@ -123,7 +123,7 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 		],
 		LotController::class => ['index', 'byCode', 'setExpiry'],
 		ReportController::class => ['valuation', 'movementValue'],
-		OrderSheetController::class => ['index', 'show', 'create', 'send', 'cancel', 'print'],
+		OrderSheetController::class => ['index', 'show', 'create', 'updateLines', 'send', 'cancel', 'print'],
 		SupplierController::class => ['index', 'create'],
 		KitController::class => ['index', 'create', 'issue'],
 		ProductLookupController::class => ['lookup'],

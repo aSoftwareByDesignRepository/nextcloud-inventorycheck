@@ -26,6 +26,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * Budget-cycle send gate: order cost per category vs remaining
  * (budget − MTD received spend) and the owner emergency ceiling.
+ * Second half: draft line replacement — the "adjust to fit" path.
  */
 final class OrderSheetBudgetGateTest extends TestCase
 {
@@ -188,5 +189,45 @@ final class OrderSheetBudgetGateTest extends TestCase
 		$this->movements->expects($this->never())->method('receivedSpendByCategorySince');
 		$this->sheets->expects($this->once())->method('setStatus');
 		$this->svc->send('u1', 7);
+	}
+
+	public function testReplaceLinesRetotalsDraft(): void
+	{
+		$this->sheets->method('findById')->willReturn($this->sheet());
+		$this->items->method('findById')->willReturn($this->item(1, 'CLIN', 100));
+		$this->lines->method('findBySheet')->willReturn([$this->line(1, 5)]);
+		$this->lines->expects($this->once())->method('deleteBySheet')->with(7);
+		$this->lines->expects($this->once())->method('insert');
+		$this->sheets->expects($this->once())->method('update')
+			->with($this->callback(static fn (OrderSheet $s) => $s->getTotalMinor() === 500));
+		$out = $this->svc->replaceLines('u1', 7, [['itemId' => 1, 'qty' => 5]]);
+		self::assertSame('draft', $out['sheet']['status']);
+		self::assertCount(1, $out['lines']);
+	}
+
+	public function testReplaceLinesRejectsNonDraft(): void
+	{
+		$sent = $this->sheet();
+		$sent->setStatus(OrderSheet::STATUS_SENT);
+		$this->sheets->method('findById')->willReturn($sent);
+		$this->lines->expects($this->never())->method('deleteBySheet');
+		$this->expectException(ValidationException::class);
+		$this->svc->replaceLines('u1', 7, [['itemId' => 1, 'qty' => 5]]);
+	}
+
+	public function testReplaceLinesRejectsEmptyEffective(): void
+	{
+		$this->sheets->method('findById')->willReturn($this->sheet());
+		$this->lines->expects($this->once())->method('deleteBySheet'); // rolled back with the throw
+		$this->expectException(ValidationException::class);
+		$this->svc->replaceLines('u1', 7, [['itemId' => 0, 'qty' => 5]]);
+	}
+
+	public function testReplaceLinesRejectsBadQty(): void
+	{
+		$this->sheets->method('findById')->willReturn($this->sheet());
+		$this->items->method('findById')->willReturn($this->item(1, 'CLIN', 100));
+		$this->expectException(ValidationException::class);
+		$this->svc->replaceLines('u1', 7, [['itemId' => 1, 'qty' => 0]]);
 	}
 }

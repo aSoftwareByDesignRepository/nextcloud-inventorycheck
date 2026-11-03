@@ -138,6 +138,9 @@
     "/api/order-sheets/{id}": {
       "get": { "responses": { "200": { "description": "OK" } } }
     },
+    "/api/order-sheets/{id}/lines": {
+      "put": { "responses": { "200": { "description": "OK" } } }
+    },
     "/api/order-sheets/{id}/send": {
       "post": { "responses": { "200": { "description": "OK" } } }
     },

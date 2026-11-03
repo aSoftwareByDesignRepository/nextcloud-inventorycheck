@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- **Restock & procurement suite (W1–W5):** priced reorder list with order packs and estimated line cost; item categories with per-category monthly budgets; supplier fields plus a supplier registry with preferred-supplier links; on-order markers with stale ageing and post-export bulk marking; overstock estimate; consumption-velocity suggestions; criticality flag; valuation + movement-value reports; weekly reorder digest; `stock.change` webhook; procedure kits with atomic component issue; lot expiry tracking with FEFO hint and expiring-soon warnings.
+- **Monthly budget cycle:** the optional "total paid" field on receives feeds month-to-date spend, so each category's remaining budget reflects what was already delivered this month; the reorder view shows "left of total" per category.
+- **Owner emergency allowance:** over-budget estimates badge "within emergency allowance"; sending an order sheet over the remaining budget needs an app administrator (the owner's authorization) — beyond the configured emergency allowance nobody can send. Views and exports stay warn-only.
+- **Order sheets:** draft → sent → received/cancelled lifecycle created from the low-stock list; draft lines are editable (trim quantities / remove lines to fit the budget); supplier email and print view; order approval threshold option.
+- **Mobile companion:** kits, lots, and restock endpoints.
+
 ## 1.5.1 - 2026-10-25
 
 ### Fixed

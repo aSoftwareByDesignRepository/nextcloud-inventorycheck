@@ -29,6 +29,15 @@ class OrderSheetLineMapper extends QBMapper
 		return $this->findEntities($qb);
 	}
 
+	/** replaceLines: drop a draft's lines before re-inserting (draft only). */
+	public function deleteBySheet(int $sheetId): void
+	{
+		$qb = $this->db->getQueryBuilder();
+		$qb->delete($this->getTableName())
+			->where($qb->expr()->eq('sheet_id', $qb->createNamedParameter($sheetId, \PDO::PARAM_INT)));
+		$qb->executeStatement();
+	}
+
 	/** F-13: a receive of qty against item covers open lines oldest-first. */
 	public function decrementLine(int $lineId, int $qty): void
 	{

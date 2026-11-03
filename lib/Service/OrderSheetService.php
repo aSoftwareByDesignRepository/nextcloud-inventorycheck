@@ -94,7 +94,6 @@ class OrderSheetService
 			$supplierName = $s->getName();
 		}
 		$now = $this->clock->now();
-		$factor = QtyScale::factor($this->config);
 		$sheetId = 0;
 		$this->db->beginTransaction();
 		try {
@@ -107,30 +106,11 @@ class OrderSheetService
 			$sheet->setCreatedAt($now);
 			$sheet = $this->sheets->insert($sheet);
 			$sheetId = (int)$sheet->getId();
-			$total = 0;
-			$seen = [];
-			foreach ($linesIn as $l) {
-				$itemId = (int)($l['itemId'] ?? 0);
-				$qty = (int)($l['qty'] ?? 0);
-				if ($itemId <= 0 || isset($seen[$itemId])) {
-					continue;
-				}
-				$item = $this->items->findById($itemId);
-				$max = QtyScale::maxStorage($this->config);
-				if ($qty < 1 || $qty > $max) {
-					throw new ValidationException('validation_failed', '', [['field' => 'qty', 'code' => 'validation_failed']]);
-				}
-				$est = RestockEstimate::lineMinor($qty, $item->getOrderPackQty(), $item->getOrderPackPriceMinor(), $item->getLastPriceMinor(), $factor);
-				$total += $est ?? 0;
-				$line = new OrderSheetLine();
-				$line->setSheetId($sheetId);
-				$line->setItemId($itemId);
-				$line->setQty($qty);
-				$line->setLineEstMinor($est);
-				$this->lines->insert($line);
-				$seen[$itemId] = true;
+			$res = $this->insertDraftLines($sheetId, $linesIn);
+			if ($res['count'] === 0) {
+				throw new ValidationException('validation_failed', '', [['field' => 'lines', 'code' => 'validation_failed']]);
 			}
-			$sheet->setTotalMinor($total);
+			$sheet->setTotalMinor($res['total']);
 			$this->sheets->update($sheet);
 			$this->db->commit();
 		} catch (\Throwable $e) {
@@ -138,6 +118,79 @@ class OrderSheetService
 			throw $e;
 		}
 		return $this->show($actorUid, $sheetId);
+	}
+
+	/**
+	 * Replace a draft's lines wholesale — the "adjust the order to fit the
+	 * budget" path (Reynolds ruling): office+ trims quantities or drops
+	 * lines, the sheet re-totals, and send() re-checks the cycle. Draft
+	 * only: sent sheets are immutable snapshots whose lines carry
+	 * received_qty against open receives.
+	 *
+	 * @param list<array{itemId:int, qty:int}> $linesIn storage units
+	 * @return array{sheet: array<string, mixed>, lines: list<array<string, mixed>>}
+	 */
+	public function replaceLines(string $actorUid, int $id, array $linesIn): array
+	{
+		$this->access->requireOffice($actorUid);
+		if (count($linesIn) === 0 || count($linesIn) > 200) {
+			throw new ValidationException('validation_failed', '', [['field' => 'lines', 'code' => 'validation_failed']]);
+		}
+		$this->db->beginTransaction();
+		try {
+			$sheet = $this->sheets->findById($id);
+			if ($sheet->getStatus() !== OrderSheet::STATUS_DRAFT) {
+				throw new ValidationException('order_sheet_not_draft');
+			}
+			$this->lines->deleteBySheet($id);
+			$res = $this->insertDraftLines($id, $linesIn);
+			if ($res['count'] === 0) {
+				throw new ValidationException('validation_failed', '', [['field' => 'lines', 'code' => 'validation_failed']]);
+			}
+			$sheet->setTotalMinor($res['total']);
+			$this->sheets->update($sheet);
+			$this->db->commit();
+		} catch (\Throwable $e) {
+			$this->db->rollBack();
+			throw $e;
+		}
+		return $this->show($actorUid, $id);
+	}
+
+	/**
+	 * Insert deduped lines for a sheet — shared by create() and
+	 * replaceLines() so both paths validate identically.
+	 *
+	 * @param list<array{itemId:int, qty:int}> $linesIn storage units
+	 * @return array{total: int, count: int}
+	 */
+	private function insertDraftLines(int $sheetId, array $linesIn): array
+	{
+		$total = 0;
+		$seen = [];
+		$factor = QtyScale::factor($this->config);
+		$max = QtyScale::maxStorage($this->config);
+		foreach ($linesIn as $l) {
+			$itemId = (int)($l['itemId'] ?? 0);
+			$qty = (int)($l['qty'] ?? 0);
+			if ($itemId <= 0 || isset($seen[$itemId])) {
+				continue;
+			}
+			$item = $this->items->findById($itemId);
+			if ($qty < 1 || $qty > $max) {
+				throw new ValidationException('validation_failed', '', [['field' => 'qty', 'code' => 'validation_failed']]);
+			}
+			$est = RestockEstimate::lineMinor($qty, $item->getOrderPackQty(), $item->getOrderPackPriceMinor(), $item->getLastPriceMinor(), $factor);
+			$total += $est ?? 0;
+			$line = new OrderSheetLine();
+			$line->setSheetId($sheetId);
+			$line->setItemId($itemId);
+			$line->setQty($qty);
+			$line->setLineEstMinor($est);
+			$this->lines->insert($line);
+			$seen[$itemId] = true;
+		}
+		return ['total' => $total, 'count' => count($seen)];
 	}
 
 	/**

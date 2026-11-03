@@ -890,6 +890,20 @@ label.iv-switch-field {
 	margin-left: auto;
 }
 
+/* Order-sheet draft line editor: labelled qty field + remove action per row. */
+.iv-sheet-lines__row {
+	display: flex;
+	align-items: flex-end;
+	gap: var(--iv-space-3, 12px);
+}
+.iv-sheet-lines__row .iv-field {
+	flex: 1;
+	min-width: 0;
+}
+.iv-sheet-lines__row .iv-input {
+	width: 100%;
+}
+
 /* Reorder estimate summary line — separated chips, never merged runs. */
 .iv-meta {
 	display: flex;

@@ -49,12 +49,38 @@ class OrderSheetController extends Controller
 	public function create(): JSONResponse
 	{
 		$p = $this->request->getParams();
-		$linesIn = $p['lines'] ?? [];
-		if (!is_array($linesIn)) {
+		$created = $this->sheets->create(
+			$this->access->currentUserId(),
+			isset($p['supplierId']) && $p['supplierId'] !== '' ? (int)$p['supplierId'] : null,
+			isset($p['supplierName']) ? (string)$p['supplierName'] : null,
+			isset($p['note']) ? (string)$p['note'] : null,
+			$this->parseLines($p['lines'] ?? []),
+		);
+		return new JSONResponse($created, 201);
+	}
+
+	/** Replace a draft's lines — trim quantities / drop lines to fit the budget. */
+	#[NoAdminRequired]
+	public function updateLines(int $id): JSONResponse
+	{
+		$p = $this->request->getParams();
+		return new JSONResponse($this->sheets->replaceLines(
+			$this->access->currentUserId(),
+			$id,
+			$this->parseLines($p['lines'] ?? []),
+		));
+	}
+
+	/**
+	 * @return list<array{itemId:int, qty:int}> qty in storage units
+	 */
+	private function parseLines(mixed $raw): array
+	{
+		if (!is_array($raw)) {
 			throw new ValidationException('validation_failed', '', [['field' => 'lines', 'code' => 'invalid_type']]);
 		}
 		$lines = [];
-		foreach ($linesIn as $l) {
+		foreach ($raw as $l) {
 			if (!is_array($l)) {
 				throw new ValidationException('validation_failed', '', [['field' => 'lines', 'code' => 'invalid_type']]);
 			}
@@ -63,14 +89,7 @@ class OrderSheetController extends Controller
 				'qty' => isset($l['qty']) ? QtyScale::toStorage($this->config, $l['qty']) : 0,
 			];
 		}
-		$created = $this->sheets->create(
-			$this->access->currentUserId(),
-			isset($p['supplierId']) && $p['supplierId'] !== '' ? (int)$p['supplierId'] : null,
-			isset($p['supplierName']) ? (string)$p['supplierName'] : null,
-			isset($p['note']) ? (string)$p['note'] : null,
-			$lines,
-		);
-		return new JSONResponse($created, 201);
+		return $lines;
 	}
 
 	#[NoAdminRequired]
