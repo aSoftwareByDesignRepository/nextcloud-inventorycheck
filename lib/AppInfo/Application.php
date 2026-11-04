@@ -410,6 +410,7 @@ class Application extends App implements IBootstrap
 				$c->get(ItemMapper::class),
 				$c->get(AccessControlService::class),
 				$c->get(Clock::class),
+				$c->get(\Psr\Log\LoggerInterface::class),
 			);
 		});
 		$context->registerService(CycleCountService::class, static function ($c): CycleCountService {

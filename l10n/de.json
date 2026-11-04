@@ -99,7 +99,7 @@
 		"Adding users or groups here only lets them open InventoryCheck. Office rights and location ACL still decide what they can book. Administrators always keep access.": "Benutzer oder Gruppen hier hinzuzufügen erlaubt nur das Öffnen von InventoryCheck. Bürorechte und Standort-ACL entscheiden weiterhin, was gebucht werden darf. Administratoren behalten immer Zugang.",
 		"Additional invoiceable options": "Weitere verrechenbare Optionen",
 		"Adjust": "Korrektur",
-		"Adjust quantities or remove lines so the order fits the budget.": "Passen Sie Mengen an oder entfernen Sie Positionen, damit die Bestellung ins Budget passt.",
+		"Adjust quantities or remove lines so the order fits the budget.": "Korrigieren Sie Mengen oder entfernen Sie Positionen, damit die Bestellung ins Budget passt.",
 		"Adjust stock": "Bestand korrigieren",
 		"Administration": "Verwaltung",
 		"Administrator": "Administrator",

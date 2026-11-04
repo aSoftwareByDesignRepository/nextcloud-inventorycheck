@@ -11,6 +11,7 @@ use OCA\InventoryCheck\Exception\ValidationException;
 use OCP\Files\IAppData;
 use OCP\Files\NotFoundException as FilesNotFoundException;
 use OCP\IDBConnection;
+use Psr\Log\LoggerInterface;
 
 /**
  * One primary item photo via AppData (Wave A4). ≤ 2 MB; JPEG/PNG/WebP only.
@@ -28,6 +29,7 @@ class ItemPhotoService
 		private readonly ItemMapper $items,
 		private readonly AccessControlService $access,
 		private readonly Clock $clock,
+		private readonly LoggerInterface $logger,
 	) {
 	}
 
@@ -153,7 +155,13 @@ class ItemPhotoService
 	{
 		try {
 			$this->folder()->getFile($fileName)->delete();
-		} catch (\Throwable) {
+		} catch (\Throwable $e) {
+			// Best-effort orphan cleanup — the row is already committed; log so a
+			// failing storage backend stops hiding leaked photo files.
+			$this->logger->warning('InventoryCheck: could not delete item photo file', [
+				'file' => $fileName,
+				'exception' => $e,
+			]);
 		}
 	}
 

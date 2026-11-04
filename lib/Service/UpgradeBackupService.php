@@ -412,7 +412,14 @@ class UpgradeBackupService
 	{
 		try {
 			$this->getSnapshotFolder($snapshotId)->delete();
-		} catch (\Throwable) {
+		} catch (\Throwable $e) {
+			// best-effort cleanup only: a failed snapshot delete must not abort
+			// rotation or creation rollback, but the failure stays observable.
+			$this->logger->warning('InventoryCheck: could not delete upgrade backup snapshot folder', [
+				'app' => UpgradeBackupCatalog::APP_ID,
+				'folder' => $snapshotId,
+				'exception' => $e,
+			]);
 		}
 	}
 
@@ -614,9 +621,8 @@ class UpgradeBackupService
 		UpgradeBackupIntegrity::assertAppDataFolderName($folderName);
 
 		$destPath = $this->getAppDataPath($folderName);
-		try {
+		if ($this->rootFolder->nodeExists($destPath)) {
 			$this->rootFolder->get($destPath)->delete();
-		} catch (NotFoundException) {
 		}
 
 		try {

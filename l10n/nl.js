@@ -97,7 +97,7 @@ OC.L10N.register(
 	"Adding users or groups here only lets them open InventoryCheck. Office rights and location ACL still decide what they can book. Administrators always keep access." : "Gebruikers of groepen hier toevoegen laat ze alleen InventoryCheck openen. Kantoorrechten en locatie ACL beslissen nog steeds wat ze kunnen boeken. Beheerders hebben altijd toegang.",
 	"Additional invoiceable options" : "Aanvullende factureerbare opties",
 	"Adjust" : "Correctie",
-	"Adjust quantities or remove lines so the order fits the budget." : "Pas aantallen aan of verwijder regels zodat de bestelling binnen het budget past.",
+	"Adjust quantities or remove lines so the order fits the budget." : "Aantallen aanpassen of regels verwijderen, zodat de bestelling binnen het budget past.",
 	"Adjust stock" : "Voorraad aanpassen",
 	"Administration" : "Administratie",
 	"Administrator" : "Beheerder",
