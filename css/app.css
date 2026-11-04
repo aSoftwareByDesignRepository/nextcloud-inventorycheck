@@ -321,7 +321,7 @@ a.button {
 	padding: var(--iv-space-2, 8px) var(--iv-space-3, 12px);
 	border: 1px solid var(--iv-form-border, var(--iv-border));
 	border-radius: var(--iv-radius-sm, 6px);
-	background: var(--color-main-background);
+	background-color: var(--color-main-background);
 	color: var(--color-main-text);
 	font-size: var(--iv-fs-md, 1rem);
 	box-sizing: border-box;
@@ -2813,7 +2813,7 @@ button.iv-hint-dismiss:focus-visible {
 	min-height: 44px;
 	border-radius: var(--iv-radius-sm, 6px);
 	border: 1px solid var(--iv-form-border, var(--iv-border));
-	background: var(--color-main-background);
+	background-color: var(--color-main-background);
 	color: var(--color-main-text);
 	box-sizing: border-box;
 }
