@@ -369,3 +369,58 @@ First production release of InventoryCheck: stock ledger on Nextcloud with items
 - **UX:** Check-family `iv-` shell, empty states, inline 422 field errors, balance flash, EN/DE l10n, Support & Us
 - **Ops:** schema ensure + one-shot demo seed (`demo_seeded`), uninstall drop, upgrade backups, rebuild-balances
 - **Gauntlet:** unit, integration, JS contracts, custom mutation killers
+
+## [1.5.2] — 2026-11-05
+
+### Added
+
+- — orders adjusted to fit
+- — common path = categories + budgets only
+- — no more silent dead ends
+- send
+- + owner emergency allowance
+- preview
+- — list + atomic issue
+- item
+- view
+- + supplier API URLs into page ctx
+- digest
+- webhook
+- endpoint
+- stock, top items)
+- issue)
+- send
+- job
+- rows
+- column, F-27 delivery-note + item detail fields
+- endpoint
+- + supplier registry backend
+- W1-W2, receive spend/expiry, velocity coverage
+- estimator+budgets+on-order, W2 lots/expiry/spend backend
+
+### Fixed
+
+- — background:→background-color: on .iv-input rules
+- + observable best-effort deletes
+- — budget_exceeded arm, truthful send-gating hint
+- 8.4 deprecation)
+- — nullable booleans on restock tables
+- — one term per locale
+- 'Label actions' — periphrasis matching sibling pattern
+- — scope+!important iv-btn--{primary,secondary,ghost,danger,tertiary} across overlay scope list
+- + order-sheet lines — CASE WHEN bound as literal
+- — dashboard render crash, dead dashboard widget, optional pack-qty required flag
+- — kit list 500, order-sheet filter, approval code, l10n
+- + table count 21
+- break-word)
+- 'Seats' wrong-sense 'Plaatsen' -> 'Seats' loan canon
+
+### Changed
+
+- Refresh App Store screenshots from clean marketing captures
+- — MSI 14/14
+- SF-01/AS-01 — batch item loads, bound MTD window
+- fix(restock+csv): suggestion-mode select, export→import price round-trip, live column help — intake 20261102T011532Z
+- + restock sections in surface contracts
+- — atlas-farm artifacts, docs and l10n batch 2026-10-25
+
