@@ -200,6 +200,7 @@ class PageController extends Controller
 	): TemplateResponse {
 		Util::addScript(Application::APP_ID, 'app');
 		Util::addScript(Application::APP_ID, 'common/app-feedback');
+		Util::addScript(Application::APP_ID, 'common/money-input');
 		Util::addScript(Application::APP_ID, 'common/product-lookup');
 		// Soft keyboard: keep focused notes/inputs above the IME on phones.
 		Util::addScript(Application::APP_ID, 'common/keep-focused-visible');

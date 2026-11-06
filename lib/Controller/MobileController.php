@@ -8,6 +8,7 @@ use OCA\InventoryCheck\AppInfo\Application;
 use OCA\InventoryCheck\Db\ScanDevice;
 use OCA\InventoryCheck\Exception\AppAccessDeniedException;
 use OCA\InventoryCheck\Exception\MobileGateException;
+use OCA\InventoryCheck\Exception\ValidationException;
 use OCA\InventoryCheck\Service\AccessControlService;
 use OCA\InventoryCheck\Service\BalanceService;
 use OCA\InventoryCheck\Service\CycleCountService;
@@ -72,6 +73,7 @@ class MobileController extends Controller
 		private readonly IL10N $l10n,
 		private readonly ?\OCA\InventoryCheck\Service\LotRecallService $lotRecall = null,
 		private readonly ?\OCA\InventoryCheck\Service\KitService $kits = null,
+		private readonly ?\OCA\InventoryCheck\Service\LowStockService $lowStock = null,
 	) {
 		parent::__construct(Application::APP_ID, $request);
 	}
@@ -218,6 +220,30 @@ class MobileController extends Controller
 		return new JSONResponse($result);
 	}
 
+	/**
+	 * Restock: read-only low-stock list for office seats — same pipeline as
+	 * the web endpoint (money stays office-scoped inside LowStockService,
+	 * location ACL applies identically). Device tokens and field seats are
+	 * refused: a scanner must never enumerate the reorder list.
+	 */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[NoAdminRequired]
+	public function lowStock(): JSONResponse
+	{
+		[$uid] = $this->requireSessionUser();
+		$this->gate->assertGate($uid, null);
+		$this->access->requireOffice($uid);
+		$ls = $this->lowStock ?? \OCP\Server::get(\OCA\InventoryCheck\Service\LowStockService::class);
+		$page = Pagination::parse($this->request->getParam('limit'), $this->request->getParam('offset'));
+		$result = $ls->list($uid, $page['limit'], $page['offset']);
+		$result['data'] = array_map(
+			fn (array $row) => QtyScale::formatLowStock($row, $this->config),
+			$result['data'],
+		);
+		return new JSONResponse($result);
+	}
+
 	#[PublicPage]
 	#[NoCSRFRequired]
 	#[NoAdminRequired]
@@ -268,6 +294,21 @@ class MobileController extends Controller
 			$lotCode = (string)$p['lotCode'];
 		}
 		try {
+			// F-06 parity with MovementController::receive — optional invoice-line
+			// total on receives feeds the monthly budget spend. Must stay inside
+			// try/catch so a rejected value releases the idempotency claim.
+			$spendMinor = null;
+			if (array_key_exists('spendMinor', $p) && $p['spendMinor'] !== null && $p['spendMinor'] !== '') {
+				if (!is_int($p['spendMinor']) && !(is_string($p['spendMinor']) && preg_match('/^\d+$/', $p['spendMinor']) === 1)) {
+					throw new ValidationException('validation_failed', '', [['field' => 'spendMinor', 'code' => 'validation_failed']]);
+				}
+				$spendMinor = (int)$p['spendMinor'];
+			}
+			// A money value on a non-receive kind must fail loud, never drop
+			// silently — postSingle holds the same contract downstream.
+			if ($spendMinor !== null && strtolower(trim((string)($p['kind'] ?? ''))) !== 'receive') {
+				throw new ValidationException('validation_failed', '', [['field' => 'spendMinor', 'code' => 'validation_failed']]);
+			}
 			$result = $this->movements->scan(
 				$actor,
 				(string)($p['code'] ?? ''),
@@ -283,6 +324,7 @@ class MobileController extends Controller
 				isset($p['locationCode']) ? (string)$p['locationCode'] : (isset($p['location_code']) ? (string)$p['location_code'] : null),
 				isset($p['toLocationCode']) ? (string)$p['toLocationCode'] : (isset($p['to_location_code']) ? (string)$p['to_location_code'] : null),
 				isset($p['expiresAt']) && $p['expiresAt'] !== '' ? (int)$p['expiresAt'] : null,
+				$spendMinor,
 			);
 		} catch (\Throwable $e) {
 			if ($clientRequestId !== null) {
@@ -304,6 +346,17 @@ class MobileController extends Controller
 				fn (array $b) => QtyScale::formatBalance($b, $this->config),
 				$result['balances'],
 			);
+			// F-06 feedback: an office receive carries a post-commit budget
+			// snapshot so the scanner sees the spend land on the monthly
+			// budget. Field/device callers never get money keys (A7 / NN-03).
+			if ($asOffice && strtolower(trim((string)($p['kind'] ?? ''))) === 'receive') {
+				$ls = $this->lowStock ?? \OCP\Server::get(\OCA\InventoryCheck\Service\LowStockService::class);
+				$itemId = (int)($result['movements'][0]['itemId'] ?? 0);
+				$budget = $itemId > 0 ? $ls->budgetForItem($actor, $itemId) : null;
+				if ($budget !== null) {
+					$formatted['budget'] = $budget;
+				}
+			}
 		} catch (\Throwable $e) {
 			if ($clientRequestId !== null) {
 				$this->scanIdempotency->complete($actor, $clientRequestId, $result);

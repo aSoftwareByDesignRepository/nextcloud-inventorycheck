@@ -77,6 +77,17 @@ class ScanIdempotencyService
 			'toLocationCode' => $this->nullableString(
 				$params['toLocationCode'] ?? ($params['to_location_code'] ?? null),
 			),
+			// Mirroring MobileController::scan — the fingerprint must cover every
+			// payload field it consumes, else an edited value replays the old
+			// response instead of colliding as payload_mismatch.
+			'expiresAt' => array_key_exists('expiresAt', $params) && $params['expiresAt'] !== null && $params['expiresAt'] !== ''
+				? (int)$params['expiresAt']
+				: null,
+			'spendMinor' => array_key_exists('spendMinor', $params) && $params['spendMinor'] !== null && $params['spendMinor'] !== ''
+				? (is_int($params['spendMinor']) || (is_string($params['spendMinor']) && preg_match('/^\d+$/', $params['spendMinor']) === 1)
+					? (int)$params['spendMinor']
+					: 'invalid:' . (string)$params['spendMinor'])
+				: null,
 		];
 		return hash('sha256', json_encode($canon, JSON_THROW_ON_ERROR));
 	}

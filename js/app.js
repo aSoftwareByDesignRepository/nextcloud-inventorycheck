@@ -50,6 +50,15 @@
 		return (Number(n) / 100).toFixed(2);
 	}
 
+	/** Money inputs are typed decimals ("12.99" / "12,99") → minor units. */
+	function minorToInput(n) {
+		return window.SbdMoneyInput.toInput(n);
+	}
+
+	function parseMoneyInput(s) {
+		return window.SbdMoneyInput.parse(s);
+	}
+
 	function formatQty(n, scale) {
 		if (n === null || n === undefined || n === '') return '0';
 		if (typeof n === 'string') {
@@ -2440,9 +2449,9 @@
 			]);
 			// Restock F-06/F-07: receive-only spend + lot-expiry fields (office surface).
 			var spendInput = el('input', {
-				type: 'number', className: 'iv-input', min: '0', step: '1',
-				'aria-label': tr('Total paid in cents'),
-				placeholder: tr('e.g. 1299'),
+				type: 'text', inputmode: 'decimal', className: 'iv-input',
+				'aria-label': tr('Total paid'),
+				placeholder: tr('e.g. 12.99'),
 			});
 			var expiryInput = el('input', {
 				type: 'date', className: 'iv-input',
@@ -2450,7 +2459,7 @@
 			});
 			var receiveRestockWrap = opts.path === 'receive' && (ctx.isOffice || ctx.isAppAdmin)
 				? el('div', { 'data-iv-receive-restock': '1' }, [
-					field(tr('Total paid in cents (optional)'), spendInput, { name: 'spendMinor' }),
+					field(tr('Total paid (optional)'), spendInput, { name: 'spendMinor' }),
 					field(tr('Lot expiry date (optional)'), expiryInput, { name: 'expiresAt' }),
 				])
 				: null;
@@ -2711,8 +2720,13 @@
 					reason: reason.value || null,
 				};
 				if (opts.path === 'receive') {
-					var spendVal = spendInput.value.trim();
-					body.spendMinor = spendVal === '' ? null : Number(spendVal);
+					var spendVal = parseMoneyInput(spendInput.value);
+					if (spendVal === null) {
+						return Promise.reject(new ApiError('validation_failed', tr('Enter amounts like 12.99.'), [
+							{ field: 'spendMinor', code: 'invalid', message: tr('Enter amounts like 12.99.') },
+						]));
+					}
+					body.spendMinor = spendVal === '' ? null : spendVal;
 					var expVal = expiryInput.value;
 					if (expVal) {
 						// Send end-of-day UTC epoch seconds — lot expiry is a date.
@@ -3343,8 +3357,8 @@
 			value: existing && existing.supplierNote ? existing.supplierNote : '',
 		});
 		var lastPrice = el('input', {
-			type: 'number', className: 'iv-input', min: '0', step: '1',
-			value: existing && existing.lastPriceMinor != null ? String(existing.lastPriceMinor) : '',
+			type: 'text', inputmode: 'decimal', className: 'iv-input',
+			value: existing && existing.lastPriceMinor != null ? minorToInput(existing.lastPriceMinor) : '',
 		});
 		// Restock suite fields (office+ surfaces only — field users never see them).
 		var categoryList = [];
@@ -3368,8 +3382,8 @@
 		}));
 		orderPackQty.placeholder = tr('e.g. 100');
 		var orderPackPrice = el('input', {
-			type: 'number', className: 'iv-input', min: '0', step: '1',
-			value: existing && existing.orderPackPriceMinor != null ? String(existing.orderPackPriceMinor) : '',
+			type: 'text', inputmode: 'decimal', className: 'iv-input',
+			value: existing && existing.orderPackPriceMinor != null ? minorToInput(existing.orderPackPriceMinor) : '',
 		});
 		var criticalitySel = el('select', { className: 'iv-input', 'aria-label': tr('Criticality') }, [
 			el('option', { value: 'none', text: tr('Normal') }),
@@ -3407,13 +3421,13 @@
 				text: tr('Lot and serial tracking require a code on every stock movement. Serial items always move one unit at a time. Clear stock to zero before switching an existing item up to lot or serial tracking.'),
 			}),
 			field(tr('Supplier note (optional)'), supplierNote, { name: 'supplierNote' }),
-			field(tr('Last price in cents (optional)'), lastPrice, { name: 'lastPriceMinor' }),
+			field(tr('Last price (optional)'), lastPrice, { name: 'lastPriceMinor' }),
 			(ctx.isOffice || ctx.isAppAdmin) ? field(tr('Category (optional)'), categorySel, { name: 'category' }) : null,
 			(ctx.isOffice || ctx.isAppAdmin) ? field(tr('Supplier name (optional)'), supplierName, { name: 'supplierName' }) : null,
 			(ctx.isOffice || ctx.isAppAdmin) ? field(tr('Supplier article no. (optional)'), supplierSku, { name: 'supplierSku' }) : null,
 			(ctx.isOffice || ctx.isAppAdmin) ? field(tr('Lead time in days (optional)'), supplierLeadDays, { name: 'supplierLeadDays' }) : null,
 			(ctx.isOffice || ctx.isAppAdmin) ? field(tr('Units per order pack (optional)'), orderPackQty, { name: 'orderPackQty' }) : null,
-			(ctx.isOffice || ctx.isAppAdmin) ? field(tr('Pack price in cents (optional)'), orderPackPrice, { name: 'orderPackPriceMinor' }) : null,
+			(ctx.isOffice || ctx.isAppAdmin) ? field(tr('Pack price (optional)'), orderPackPrice, { name: 'orderPackPriceMinor' }) : null,
 			(ctx.isOffice || ctx.isAppAdmin) ? field(tr('Criticality'), criticalitySel, { name: 'criticality' }) : null,
 		].filter(Boolean);
 		clear(categorySel);
@@ -3438,6 +3452,14 @@
 			}) : null,
 		].filter(Boolean));
 		dialog(existing ? tr('Edit item') : tr('New item'), fields, function () {
+			var lastPriceMinor = parseMoneyInput(lastPrice.value);
+			var orderPackPriceMinor = parseMoneyInput(orderPackPrice.value);
+			if (lastPriceMinor === null || orderPackPriceMinor === null) {
+				var badField = lastPriceMinor === null ? 'lastPriceMinor' : 'orderPackPriceMinor';
+				return Promise.reject(new ApiError('validation_failed', tr('Enter amounts like 12.99.'), [
+					{ field: badField, code: 'invalid', message: tr('Enter amounts like 12.99.') },
+				]));
+			}
 			var body = {
 				sku: sku.value.trim(),
 				scanCode: scan.value.trim(),
@@ -3448,12 +3470,12 @@
 				defaultLocationId: defaultLocation.value === '' ? null : Number(defaultLocation.value),
 				trackMode: trackMode.value,
 				supplierNote: supplierNote.value.trim() || null,
-				lastPriceMinor: lastPrice.value.trim() === '' ? null : Number(lastPrice.value),
+				lastPriceMinor: lastPriceMinor === '' ? null : lastPriceMinor,
 				supplierName: supplierName.value.trim() || null,
 				supplierSku: supplierSku.value.trim() || null,
 				supplierLeadDays: supplierLeadDays.value.trim() === '' ? null : Number(supplierLeadDays.value),
 				orderPackQty: orderPackQty.value.trim() === '' ? null : orderPackQty.value.trim(),
-				orderPackPriceMinor: orderPackPrice.value.trim() === '' ? null : Number(orderPackPrice.value),
+				orderPackPriceMinor: orderPackPriceMinor === '' ? null : orderPackPriceMinor,
 				category: categorySel.value === '' ? null : categorySel.value,
 				criticality: criticalitySel.value,
 				description: description.value.trim() || null,
@@ -6025,9 +6047,9 @@
 				var catInputs = {};
 				var catRows = restockCats.map(function (cat) {
 					var budgetInput = el('input', {
-						type: 'number', className: 'iv-input', min: '0', step: '1',
-						value: restockBudgets[cat] != null ? String(restockBudgets[cat]) : '',
-						'aria-label': tr('Budget in cents for {cat}', { cat: cat }),
+						type: 'text', inputmode: 'decimal', className: 'iv-input',
+						value: restockBudgets[cat] != null ? minorToInput(restockBudgets[cat]) : '',
+						'aria-label': tr('Monthly budget for {cat}', { cat: cat }),
 						disabled: canEditRestock ? null : '',
 					});
 					catInputs[cat] = budgetInput;
@@ -6074,15 +6096,15 @@
 				]);
 				suggestionModeSel.value = cfg.suggestionMode === 'coverage' ? 'coverage' : 'static';
 				var thresholdInput = el('input', {
-					type: 'number', className: 'iv-input', min: '0', step: '1',
-					value: cfg.approvalThresholdMinor != null ? String(cfg.approvalThresholdMinor) : '',
-					'aria-label': tr('Approval threshold in cents'),
+					type: 'text', inputmode: 'decimal', className: 'iv-input',
+					value: cfg.approvalThresholdMinor != null ? minorToInput(cfg.approvalThresholdMinor) : '',
+					'aria-label': tr('Order approval threshold'),
 					disabled: canEditRestock ? null : '',
 				});
 				var emergencyInput = el('input', {
-					type: 'number', className: 'iv-input', min: '0', step: '1',
-					value: cfg.emergencyBudgetMinor != null ? String(cfg.emergencyBudgetMinor) : '',
-					'aria-label': tr('Emergency budget in cents'),
+					type: 'text', inputmode: 'decimal', className: 'iv-input',
+					value: cfg.emergencyBudgetMinor != null ? minorToInput(cfg.emergencyBudgetMinor) : '',
+					'aria-label': tr('Emergency budget'),
 					disabled: canEditRestock ? null : '',
 				});
 				var restockKids = [
@@ -6093,7 +6115,7 @@
 					}),
 					el('p', {
 						className: 'iv-field__hint',
-						text: tr('Budgets are per category, in cents. Over-budget estimates get a warning; sending them needs an app administrator, and past the emergency allowance nobody can send.'),
+						text: tr('Budgets are per category. Over-budget estimates get a warning; sending them needs an app administrator, and past the emergency allowance nobody can send.'),
 					}),
 					el('ul', { className: 'iv-category-list' }, catRows),
 					canEditRestock ? el('div', { className: 'iv-inline-form' }, [
@@ -6120,8 +6142,8 @@
 							className: 'iv-field__hint',
 							text: tr('Coverage mode suggests enough stock for expected consumption during the window plus supplier lead time.'),
 						}),
-						field(tr('Order approval threshold in cents (empty = no approval)'), thresholdInput, { name: 'approvalThresholdMinor' }),
-						field(tr('Emergency budget in cents (empty = none)'), emergencyInput, { name: 'emergencyBudgetMinor' }),
+						field(tr('Order approval threshold (empty = no approval)'), thresholdInput, { name: 'approvalThresholdMinor' }),
+						field(tr('Emergency budget (empty = none)'), emergencyInput, { name: 'emergencyBudgetMinor' }),
 						el('p', {
 							className: 'iv-field__hint',
 							text: tr('Received deliveries reduce the monthly budget. The emergency allowance is the extra amount only the owner may go over by.'),
@@ -6133,12 +6155,33 @@
 						primary: true,
 						className: 'iv-btn--touch',
 						onclick: function () {
+							clearFieldErrors(mount);
+							var moneyMsg = tr('Enter amounts like 12.99.');
+							var badCats = [];
 							var budgets = {};
 							restockCats.forEach(function (cat) {
-								var v = catInputs[cat] ? catInputs[cat].value.trim() : '';
-								if (v !== '') budgets[cat] = Number(v);
+								var v = catInputs[cat] ? parseMoneyInput(catInputs[cat].value) : '';
+								if (v === null) {
+									catInputs[cat].setAttribute('aria-invalid', 'true');
+									badCats.push(cat);
+								} else if (v !== '') {
+									budgets[cat] = v;
+								}
 							});
-							clearFieldErrors(mount);
+							var thresholdMinor = parseMoneyInput(thresholdInput.value);
+							var emergencyMinor = parseMoneyInput(emergencyInput.value);
+							var moneyErrs = [];
+							if (thresholdMinor === null) {
+								moneyErrs.push({ field: 'approvalThresholdMinor', code: 'invalid', message: moneyMsg });
+							}
+							if (emergencyMinor === null) {
+								moneyErrs.push({ field: 'emergencyBudgetMinor', code: 'invalid', message: moneyMsg });
+							}
+							if (badCats.length || moneyErrs.length) {
+								applyFieldErrors(mount, moneyErrs, moneyMsg);
+								toast(moneyMsg, true);
+								return;
+							}
 							api('POST', ctx.urls.api.configRestock, {
 								categoryList: restockCats,
 								restockBudgets: budgets,
@@ -6146,8 +6189,8 @@
 								expiryWarnDays: Number(expiryDaysInput.value),
 								velocityWindowDays: Number(velocityDaysInput.value),
 								suggestionMode: suggestionModeSel.value,
-								approvalThresholdMinor: thresholdInput.value.trim() === '' ? null : Number(thresholdInput.value),
-								emergencyBudgetMinor: emergencyInput.value.trim() === '' ? null : Number(emergencyInput.value),
+								approvalThresholdMinor: thresholdMinor === '' ? null : thresholdMinor,
+								emergencyBudgetMinor: emergencyMinor === '' ? null : emergencyMinor,
 							}).then(function () {
 								toast(tr('Restock settings saved.'));
 							}).catch(function (err) {

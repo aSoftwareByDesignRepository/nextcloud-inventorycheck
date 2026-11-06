@@ -138,6 +138,7 @@ return [
 		['name' => 'mobile#locations', 'url' => '/mobile/v1/locations', 'verb' => 'GET'],
 		['name' => 'mobile#balances', 'url' => '/mobile/v1/balances', 'verb' => 'GET'],
 		['name' => 'mobile#movements', 'url' => '/mobile/v1/movements', 'verb' => 'GET'],
+		['name' => 'mobile#lowStock', 'url' => '/mobile/v1/low-stock', 'verb' => 'GET'],
 		['name' => 'mobile#scan', 'url' => '/mobile/v1/movements/scan', 'verb' => 'POST'],
 		['name' => 'mobile#pairDevice', 'url' => '/mobile/v1/devices/pair', 'verb' => 'POST'],
 		['name' => 'mobile#favourites', 'url' => '/mobile/v1/favourites/locations', 'verb' => 'GET'],

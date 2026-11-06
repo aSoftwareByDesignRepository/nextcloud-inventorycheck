@@ -7,8 +7,10 @@ namespace OCA\InventoryCheck\Service;
 use OCA\InventoryCheck\AppInfo\Application;
 use OCA\InventoryCheck\Db\LocationMapper;
 use OCA\InventoryCheck\Db\ScanDeviceMapper;
+use OCA\InventoryCheck\Exception\ConflictException;
 use OCA\InventoryCheck\Exception\NotFoundException;
 use OCA\InventoryCheck\Exception\ValidationException;
+use OCP\DB\Exception as DBException;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IConfig;
 use OCP\IDBConnection;
@@ -314,7 +316,9 @@ class LocationAclService
 			if ($this->db->inTransaction()) {
 				$this->db->rollBack();
 			}
-			throw $e;
+			// Unique-index backstop: a concurrent replace of the same subject
+			// collides on iv_lacl_uq — surface 409, never a naked 500.
+			throw $this->isUniqueConstraintViolation($e) ? new ConflictException('conflict') : $e;
 		}
 	}
 
@@ -349,6 +353,7 @@ class LocationAclService
 	{
 		$this->access->requireAppAdmin($actorUid);
 		$clean = [];
+		$seen = [];
 		foreach ($rows as $row) {
 			$type = strtolower(trim((string)($row['subjectType'] ?? $row['subject_type'] ?? '')));
 			$id = trim((string)($row['subjectId'] ?? $row['subject_id'] ?? ''));
@@ -363,6 +368,11 @@ class LocationAclService
 				$id = (string)(int)$id;
 			}
 			$this->locations->findById($locId);
+			$key = $type . "\x1F" . $id . "\x1F" . $locId;
+			if (isset($seen[$key])) {
+				continue;
+			}
+			$seen[$key] = true;
 			$clean[] = [$type, $id, $locId];
 		}
 		$this->db->beginTransaction();
@@ -382,9 +392,21 @@ class LocationAclService
 			if ($this->db->inTransaction()) {
 				$this->db->rollBack();
 			}
-			throw $e;
+			// Unique-index backstop: concurrent ACL replaces collide on
+			// iv_lacl_uq — surface 409, never a naked 500.
+			throw $this->isUniqueConstraintViolation($e) ? new ConflictException('conflict') : $e;
 		}
 		return $this->listAll();
+	}
+
+	private function isUniqueConstraintViolation(\Throwable $e): bool
+	{
+		if ($e instanceof DBException
+			&& $e->getReason() === DBException::REASON_UNIQUE_CONSTRAINT_VIOLATION) {
+			return true;
+		}
+		$previous = $e->getPrevious();
+		return $previous instanceof \Throwable && $this->isUniqueConstraintViolation($previous);
 	}
 
 	private function assertSubjectExists(string $type, string $id): void

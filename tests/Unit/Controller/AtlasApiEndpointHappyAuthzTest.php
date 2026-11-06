@@ -148,7 +148,7 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 		],
 		MobileController::class => [
 			'bootstrap', 'byCode', 'itemPhoto', 'locationByCode', 'locations',
-			'balances', 'movements', 'scan', 'pairDevice', 'favourites',
+			'balances', 'movements', 'lowStock', 'scan', 'pairDevice', 'favourites',
 			'addFavourite', 'removeFavourite', 'cycleCounts', 'cycleCountShow',
 			'cycleCountSetCount', 'productLookup', 'createItem', 'lotByCode', 'kits', 'kitIssue',
 		],

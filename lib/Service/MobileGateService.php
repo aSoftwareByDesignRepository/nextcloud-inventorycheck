@@ -110,6 +110,10 @@ class MobileGateService
 				'deviceLocationAcl' => true,
 				'deviceLocationStrict' => true,
 				'productLookup' => true,
+				// Restock wave: scan accepts spendMinor on office receives and
+				// GET /mobile/v1/low-stock exists (office seats only).
+				'receiveSpend' => true,
+				'lowStock' => true,
 				'qtyScale' => $qtyScale,
 			],
 			'reasonCodes' => ReasonCodes::catalog(),

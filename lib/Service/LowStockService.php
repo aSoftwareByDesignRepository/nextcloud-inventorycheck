@@ -202,6 +202,51 @@ class LowStockService
 		return $out;
 	}
 
+	/**
+	 * Post-receive budget snapshot for the item's category (mobile scan
+	 * feedback). Office only — money keys never reach field callers
+	 * (A7 / NN-03). Callers compute this AFTER the receive commits, so the
+	 * just-booked spend is already inside spentMtdMinor. A null return simply
+	 * means "no budget story to tell" (no budget set, non-office actor, or the
+	 * optional deps are absent) — the response then carries no budget block.
+	 *
+	 * @return array{category: string, budgetMinor: int, spentMtdMinor: int, remainingMinor: int|null, emergencyMinor: int|null}|null
+	 */
+	public function budgetForItem(string $actorUid, int $itemId): ?array
+	{
+		if ($this->access === null || $this->restock === null || $this->movements === null) {
+			return null;
+		}
+		if (!$this->access->isOffice($actorUid)) {
+			return null;
+		}
+		try {
+			$item = $this->items->findById($itemId);
+		} catch (\Throwable) {
+			// Informational block only — a lookup hiccup after a committed
+			// receive must never fail the booking response.
+			return null;
+		}
+		$cat = $item->getCategory() ?? RestockConfig::UNCATEGORIZED;
+		$budget = $this->restock->budgets()[$cat] ?? null;
+		if ($budget === null || $budget <= 0) {
+			return null;
+		}
+		$now = (new \DateTimeImmutable())->getTimestamp();
+		$cycleStart = (new \DateTimeImmutable('first day of this month'))->setTime(0, 0, 0)->getTimestamp();
+		$mtdByCat = $this->movements->receivedSpendByCategorySince($cycleStart, $now);
+		// Uncategorized buckets receive the NULL-category spend too (same merge as list()).
+		$mtd = ($mtdByCat[$cat] ?? 0) + ($cat === RestockConfig::UNCATEGORIZED ? ($mtdByCat[''] ?? 0) : 0);
+		$emergency = $this->restock->emergencyBudgetMinor() ?? 0;
+		return [
+			'category' => $cat,
+			'budgetMinor' => $budget,
+			'spentMtdMinor' => $mtd,
+			'remainingMinor' => BudgetClassifier::remaining($budget, $mtd),
+			'emergencyMinor' => $emergency > 0 ? $emergency : null,
+		];
+	}
+
 	public function isPerLocationHintEnabled(): bool
 	{
 		return $this->config->getAppValue(Application::APP_ID, self::KEY_LOCATION_REORDER_HINT_ENABLED, '0') === '1';

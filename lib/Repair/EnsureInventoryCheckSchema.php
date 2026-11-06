@@ -7,6 +7,7 @@ namespace OCA\InventoryCheck\Repair;
 use OC\DB\Connection;
 use OC\DB\MigrationService;
 use OCA\InventoryCheck\Service\ReasonCodes;
+use OCP\DB\Exception as DBException;
 use OCP\IConfig;
 use OCP\IDBConnection;
 use OCP\Migration\IOutput;
@@ -114,7 +115,16 @@ final class EnsureInventoryCheckSchema implements IRepairStep
 				'updated_at' => $qb->createNamedParameter($now, \PDO::PARAM_INT),
 				'created_by' => $qb->createNamedParameter('system'),
 			]);
-			$qb->executeStatement();
+			try {
+				$qb->executeStatement();
+			} catch (DBException $e) {
+				// Racing repair/seed runs collide on iv_loc_code_uq — the
+				// other writer already seeded this row; treat as done.
+				if ($e->getReason() !== DBException::REASON_UNIQUE_CONSTRAINT_VIOLATION) {
+					throw $e;
+				}
+				continue;
+			}
 			$inserted++;
 		}
 		foreach (self::SEED_ITEMS as $row) {
@@ -139,7 +149,15 @@ final class EnsureInventoryCheckSchema implements IRepairStep
 				'updated_at' => $qb->createNamedParameter($now, \PDO::PARAM_INT),
 				'created_by' => $qb->createNamedParameter('system'),
 			]);
-			$qb->executeStatement();
+			try {
+				$qb->executeStatement();
+			} catch (DBException $e) {
+				// Same backstop on iv_item_sku_uq / iv_item_scan_uq.
+				if ($e->getReason() !== DBException::REASON_UNIQUE_CONSTRAINT_VIOLATION) {
+					throw $e;
+				}
+				continue;
+			}
 			$inserted++;
 		}
 
