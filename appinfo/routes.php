@@ -153,4 +153,5 @@ return [
 		['name' => 'mobile#kitIssue', 'url' => '/mobile/v1/kits/{id}/issue', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
 		['name' => 'mobile#lotByCode', 'url' => '/mobile/v1/lots/by-code/{code}', 'verb' => 'GET', 'requirements' => ['code' => '[^/]+']],
 	],
+		['name' => 'mobile#widgetSnapshot', 'url' => '/api/widget-snapshot', 'verb' => 'GET'],
 ];
