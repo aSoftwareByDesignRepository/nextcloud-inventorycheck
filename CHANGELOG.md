@@ -5,7 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 1.5.3 - 2026-11-07
+
+### Added
+
+- **Companion low-stock endpoint:** `GET /mobile/v1/low-stock` (office seats) serves the new companion LowStockScreen, including the critical flag.
+- **Post-receive budget echo:** the scan receive endpoint accepts `spendMinor` and answers with the item's category budget block (month-to-date spend, remaining budget, emergency allowance) so the companion can show it right after booking. Decimal money input fields ship in `js/common/money-input`.
+
+### Fixed
+
+- `EnsureInventoryCheckSchema` seed race skip; `LocationAclService` 409/dedupe hardening.
+
+## 1.5.2 - 2026-11-06
 
 ### Added
 
