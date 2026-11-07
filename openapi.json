@@ -294,6 +294,9 @@
     "/mobile/v1/low-stock": {
       "get": { "responses": { "200": { "description": "OK" } } }
     },
+    "/mobile/v1/widget-snapshot": {
+      "get": { "responses": { "200": { "description": "OK" } } }
+    },
     "/mobile/v1/movements/scan": {
       "post": { "responses": { "200": { "description": "OK" } } }
     },

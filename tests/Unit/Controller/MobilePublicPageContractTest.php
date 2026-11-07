@@ -18,6 +18,7 @@ final class MobilePublicPageContractTest extends TestCase
 		foreach ([
 			'bootstrap', 'byCode', 'itemPhoto', 'locationByCode', 'locations', 'balances', 'movements', 'scan', 'pairDevice',
 			'favourites', 'addFavourite', 'removeFavourite', 'cycleCounts', 'cycleCountShow', 'cycleCountSetCount',
+			'widgetSnapshot',
 		] as $method) {
 			$this->assertMatchesRegularExpression(
 				'/\#\[PublicPage\]\s*(?:\#\[[^\]]+\]\s*)*public function ' . preg_quote($method, '/') . '\b/s',

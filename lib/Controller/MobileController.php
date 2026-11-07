@@ -74,6 +74,7 @@ class MobileController extends Controller
 		private readonly ?\OCA\InventoryCheck\Service\LotRecallService $lotRecall = null,
 		private readonly ?\OCA\InventoryCheck\Service\KitService $kits = null,
 		private readonly ?\OCA\InventoryCheck\Service\LowStockService $lowStock = null,
+		private readonly ?\OCP\ICacheFactory $cacheFactory = null,
 	) {
 		parent::__construct(Application::APP_ID, $request);
 	}
@@ -234,14 +235,23 @@ class MobileController extends Controller
 		[$uid] = $this->requireSessionUser();
 		$this->gate->assertGate($uid, null);
 		$this->access->requireOffice($uid);
-		$ls = $this->lowStock ?? \OCP\Server::get(\OCA\InventoryCheck\Service\LowStockService::class);
 		$page = Pagination::parse($this->request->getParam('limit'), $this->request->getParam('offset'));
-		$result = $ls->list($uid, $page['limit'], $page['offset']);
+		return new JSONResponse($this->lowStockData($uid, $page['limit'], $page['offset']));
+	}
+
+	/**
+	 * Gated low-stock payload shared by lowStock() and widgetSnapshot() —
+	 * callers must run the session + gate + office checks first.
+	 */
+	private function lowStockData(string $uid, int $limit, int $offset): array
+	{
+		$ls = $this->lowStock ?? \OCP\Server::get(\OCA\InventoryCheck\Service\LowStockService::class);
+		$result = $ls->list($uid, $limit, $offset);
 		$result['data'] = array_map(
 			fn (array $row) => QtyScale::formatLowStock($row, $this->config),
 			$result['data'],
 		);
-		return new JSONResponse($result);
+		return $result;
 	}
 
 	#[PublicPage]
@@ -747,16 +757,29 @@ class MobileController extends Controller
 		}
 		return [$user->getUID(), null];
 	}
-	/** Compact widget snapshot (NH-P2): one doc per sync + serverNow (MH-P18), 60 s/user cache. */
+	/**
+	 * Compact widget snapshot (NH-P2): one doc per sync + serverNow (MH-P18),
+	 * 60 s/user cache. Same session + office gate as lowStock — device tokens
+	 * and field seats are refused, and the gate runs BEFORE the cache read so
+	 * a revoked seat can never be served a stale hit.
+	 */
+	#[PublicPage]
+	#[NoCSRFRequired]
 	#[NoAdminRequired]
 	public function widgetSnapshot(): JSONResponse
 	{
-		$uid = \OCP\Server::get(\OCP\IUserSession::class)->getUser()?->getUID();
-		if ($uid === null) return new JSONResponse(['error' => 'unauthenticated'], 401);
-		$cache = \OCP\Server::get(\OCP\ICacheFactory::class)->createDistributed('inventorycheck_wsnap');
+		[$uid] = $this->requireSessionUser();
+		$this->gate->assertGate($uid, null);
+		$this->access->requireOffice($uid);
+		$cacheFactory = $this->cacheFactory ?? \OCP\Server::get(\OCP\ICacheFactory::class);
+		$cache = $cacheFactory->createDistributed('inventorycheck_wsnap');
 		$key = $uid . ':lowStock';
-		if (($hit = $cache->get($key)) !== null) return new JSONResponse($hit);
-		$status = $this->lowStock()->getData();
+		if (($hit = $cache->get($key)) !== null) {
+			return new JSONResponse($hit);
+		}
+		// Fixed doc — pagination params do not apply to the snapshot contract,
+		// so a cached hit can never disagree with a cold-compute on params.
+		$status = $this->lowStockData($uid, Pagination::DEFAULT_LIMIT, 0);
 		$payload = ['status' => $status,
 			'serverNow' => (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format(\DateTimeInterface::ATOM)];
 		$cache->set($key, $payload, 60);
