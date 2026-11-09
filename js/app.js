@@ -2965,6 +2965,12 @@
 					resultBox.appendChild(el('p', {
 						text: tr('{ok} row(s) look fine.', { ok: String(report.ok) }),
 					}));
+					if (Number(report.updates) > 0) {
+						resultBox.appendChild(el('p', {
+							className: 'iv-field__hint',
+							text: tr('{updates} row(s) update existing items.', { updates: String(report.updates) }),
+						}));
+					}
 					if (report.errors && report.errors.length) {
 						resultBox.appendChild(el('ul', { className: 'iv-import-errors' }, report.errors.slice(0, 20).map(function (e) {
 							return el('li', { text: tr('Line {line}: {message}', { line: String(e.line), message: e.message || e.code }) });
@@ -3021,6 +3027,10 @@
 				className: 'iv-field__hint',
 				text: tr('We check your file automatically as you paste or choose it.'),
 			}),
+			el('p', {
+				className: 'iv-field__hint',
+				text: tr('Rows whose SKU or scan code already exists update that item instead of being skipped — columns missing from the file keep their stored values.'),
+			}),
 			resultBox,
 			skipErrors,
 		], function () {
@@ -3048,8 +3058,9 @@
 					// Bachus: confirming after a dry-run that listed errors = consent to skip them.
 					var willSkip = lastDry.errors > 0 || !!skipErrors.checked;
 					return api('POST', ctx.urls.api.importCommit, { csv: text, skipErrors: willSkip }).then(function (report) {
-						toast(tr('Imported: {created} new, {received} received, {skipped} skipped.', {
+						toast(tr('Imported: {created} new, {updated} updated, {received} received, {skipped} skipped.', {
 							created: String(report.created),
+							updated: String(report.updated || 0),
 							received: String(report.received),
 							skipped: String(report.skipped),
 						}));

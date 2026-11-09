@@ -363,7 +363,7 @@ OC.L10N.register(
 	"Import CSV" : "Importera CSV",
 	"Import items from CSV" : "Importera artiklar från CSV",
 	"Import will skip rows with errors and keep the good ones." : "Importen hoppar över rader med fel och behåller de korrekta.",
-	"Imported: {created} new, {received} received, {skipped} skipped." : "Importerat: {created} nya, {received} mottagna, {skipped} överhoppade.",
+	"Imported: {created} new, {updated} updated, {received} received, {skipped} skipped." : "Importerat: {created} nya, {updated} uppdaterade, {received} mottagna, {skipped} överhoppade.",
 	"Inactive" : "Inaktiv",
 	"InventoryCheck" : "InventoryCheck",
 	"InventoryCheck navigation" : "InventoryCheck-navigering",
@@ -681,6 +681,7 @@ OC.L10N.register(
 	"Reverse posts a compensating booking. History stays complete — nothing is deleted." : "Ångra skapar en kompenserande bokföring. Historiken förblir komplett — inget raderas.",
 	"Review conflict lines, then confirm you accept the counted quantities." : "Granska konfliktrader och bekräfta sedan att de räknade mängderna accepteras.",
 	"Role" : "Roll",
+	"Rows whose SKU or scan code already exists update that item instead of being skipped — columns missing from the file keep their stored values." : "Rader vars SKU eller skanningskod redan finns uppdaterar artikeln istället för att hoppas över — kolumner som saknas i filen behåller sina sparade värden.",
 	"SKU" : "SKU",
 	"SKU and name are enough. Reorder level and more options sit under More when you need them." : "SKU och namn räcker. Beställningsnivå och fler alternativ finns under Mer vid behov.",
 	"SKU and scan codes" : "SKU och skanningskoder",
@@ -947,6 +948,7 @@ OC.L10N.register(
 	"{n} stale order marker" : "{n} föråldrade beställningsmarkeringar",
 	"{n} unpriced" : "{n} utan pris",
 	"{ok} row(s) look fine." : "{ok} rad(er) ser bra ut.",
+	"{updates} row(s) update existing items." : "{updates} rad(er) uppdaterar befintliga artiklar.",
 	"★ Remove from favourites" : "★ Ta bort från favoriter",
 	"☆ Add to favourites" : "☆ Lägg till i favoriter"
 	}

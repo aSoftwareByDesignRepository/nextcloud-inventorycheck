@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OCA\InventoryCheck\Service;
 
+use OCA\InventoryCheck\Db\CycleLineMapper;
 use OCA\InventoryCheck\Db\Item;
 use OCA\InventoryCheck\Db\ItemMapper;
 use OCA\InventoryCheck\Db\LocationMapper;
@@ -19,12 +20,21 @@ use OCP\Lock\LockedException;
 /**
  * CSV item import with dry-run and atomic commit (Wave A2).
  *
- * Opening balances post as receive movements — ledger invariant preserved.
+ * Upsert semantics: a row whose sku/scan_code identifies exactly one
+ * existing item updates it — columns absent from the file keep their
+ * stored values, codes and stock are never rewritten by an update row.
+ * Rows matching nothing are created; rows matching two different items
+ * stay an error (never merge blindly).
+ *
+ * Opening balances post as receive movements on create only — ledger
+ * invariant preserved, re-imports cannot double-post stock.
  * Wave C1: reorder_level and opening_qty are display values converted to
  * storage via {@see QtyScale::toStorage}.
  */
 class CsvImportService
 {
+	/** matchExistingItemId sentinel: row's codes point at two different items. */
+	private const MATCH_AMBIGUOUS = -1;
 	/**
 	 * Canonical column keys validateAll actually reads after
 	 * {@see Csv::canonicalizeHeader}. A detected header mapping to anything
@@ -64,11 +74,12 @@ class CsvImportService
 		private readonly Clock $clock,
 		private readonly ILockingProvider $locking,
 		private readonly IConfig $config,
+		private readonly CycleLineMapper $cycleLines,
 	) {
 	}
 
 	/**
-	 * @return array{ok: int, errors: list<array{line: int, code: string, message: string}>}
+	 * @return array{ok: int, updates: int, errors: list<array{line: int, code: string, message: string}>, headers: list<array{raw: string, field: string, ignored: bool}>}
 	 */
 	public function dryRun(string $actorUid, string $csvText): array
 	{
@@ -78,11 +89,16 @@ class CsvImportService
 			static fn (array $h): array => $h + ['ignored' => !in_array($h['field'], self::CONSUMED_COLUMNS, true)],
 			Csv::headerMap($csvText),
 		);
-		return ['ok' => $report['ok'], 'errors' => $report['errors'], 'headers' => $headers];
+		return [
+			'ok' => $report['ok'],
+			'updates' => $report['updates'],
+			'errors' => $report['errors'],
+			'headers' => $headers,
+		];
 	}
 
 	/**
-	 * @return array{ok: int, created: int, received: int, skipped: int, errors: list<array{line: int, code: string, message: string}>}
+	 * @return array{ok: int, created: int, updated: int, received: int, skipped: int, errors: list<array{line: int, code: string, message: string}>}
 	 */
 	public function commit(string $actorUid, string $csvText, bool $skipErrors = false): array
 	{
@@ -92,6 +108,7 @@ class CsvImportService
 			return [
 				'ok' => 0,
 				'created' => 0,
+				'updated' => 0,
 				'received' => 0,
 				'skipped' => 0,
 				'errors' => $report['errors'],
@@ -99,18 +116,24 @@ class CsvImportService
 		}
 
 		$created = 0;
+		$updated = 0;
 		$received = 0;
 		$skipped = count($report['errors']);
-		/** @var list<array{sku: string, scan_code: string, name: string, description: ?string, uom: string, reorder_level: int, active: bool, supplier_note: ?string, last_price_minor: ?int, opening_qty: ?int, opening_location_id: ?int}> $rows */
+		/** @var list<array{sku: string, scan_code: string, name: string, description: ?string, uom: string, reorder_level: int, active: bool, supplier_note: ?string, last_price_minor: ?int, opening_qty: ?int, opening_location_id: ?int, update_item_id: ?int, update_input: array<string, string|int|bool|null>}> $rows */
 		$rows = $report['rows'] ?? [];
 		/** @var list<int> $notifyItemIds */
 		$notifyItemIds = [];
 
-		$this->withCodesLock(function () use ($actorUid, $rows, &$created, &$received, &$notifyItemIds): void {
+		$this->withCodesLock(function () use ($actorUid, $rows, &$created, &$updated, &$received, &$notifyItemIds): void {
 			$this->db->beginTransaction();
 			try {
 				foreach ($rows as $row) {
 					$now = $this->clock->now();
+					if ($row['update_item_id'] !== null) {
+						$this->applyUpdateRow($row, $now);
+						$updated++;
+						continue;
+					}
 					$item = new Item();
 					$item->setSku($row['sku']);
 					$item->setScanCode($row['scan_code']);
@@ -170,6 +193,7 @@ class CsvImportService
 		return [
 			'ok' => count($rows),
 			'created' => $created,
+			'updated' => $updated,
 			'received' => $received,
 			'skipped' => $skipped,
 			'errors' => $skipErrors ? $report['errors'] : [],
@@ -177,10 +201,69 @@ class CsvImportService
 	}
 
 	/**
+	 * Update path for an import row matched to an existing item. Writes only
+	 * the columns the file actually carries via a targeted UPDATE, under the
+	 * item's exclusive row lock so the deactivation guard re-check is
+	 * authoritative (validate-time was only a dry-run preview).
+	 *
+	 * @param array{update_item_id: ?int, sku: string, scan_code: string, update_input: array<string, string|int|bool|null>} $row
+	 */
+	private function applyUpdateRow(array $row, int $now): void
+	{
+		$itemId = (int)$row['update_item_id'];
+		$item = $this->items->lockById($itemId, true);
+		// Re-verify the match under the lock: the row's identity resolved
+		// pre-lock, so a concurrent code edit must not turn this update into
+		// a write on an item the codes no longer point at.
+		if ($item->getSku() !== $row['sku'] && $item->getScanCode() !== $row['sku']
+			&& $item->getSku() !== $row['scan_code'] && $item->getScanCode() !== $row['scan_code']) {
+			throw new ConflictException('conflict');
+		}
+		$cols = $row['update_input'];
+		if (($cols['active'] ?? true) === false && $item->getActive()) {
+			if ($this->items->hasNonZeroBalance($itemId)) {
+				throw new ConflictException('item_has_stock');
+			}
+			if ($this->cycleLines->countOpenCampaignsForItem($itemId) > 0) {
+				throw new ConflictException('item_in_open_stocktake');
+			}
+		}
+		$cols['updated_at'] = $now;
+		$this->items->updateColumns($itemId, $cols);
+	}
+
+	/**
+	 * Upsert matching: the existing item whose sku or scan_code equals the
+	 * row's sku or scan_code. Returns the item id, null when nothing matches
+	 * (create path), or {@see MATCH_AMBIGUOUS} when the row's two codes point
+	 * at two different items — merging is never guessed.
+	 *
+	 * @param list<array{id: int, sku: string, scanCode: string}> $existing
+	 */
+	private function matchExistingItemId(string $sku, string $scan, array $existing): ?int
+	{
+		$ids = [];
+		foreach ($existing as $row) {
+			if ((int)$row['id'] === 0) {
+				continue; // pseudo-row appended from an earlier accepted file line
+			}
+			if ($row['sku'] === $sku || $row['scanCode'] === $sku
+				|| $row['sku'] === $scan || $row['scanCode'] === $scan) {
+				$ids[(int)$row['id']] = true;
+			}
+		}
+		if (count($ids) > 1) {
+			return self::MATCH_AMBIGUOUS;
+		}
+		return $ids === [] ? null : (int)array_key_first($ids);
+	}
+
+	/**
 	 * @return array{
 	 *   ok: int,
+	 *   updates: int,
 	 *   errors: list<array{line: int, code: string, message: string}>,
-	 *   rows?: list<array{sku: string, scan_code: string, name: string, description: ?string, uom: string, reorder_level: int, active: bool, supplier_note: ?string, last_price_minor: ?int, opening_qty: ?int, opening_location_id: ?int}>
+	 *   rows?: list<array{sku: string, scan_code: string, name: string, description: ?string, uom: string, reorder_level: int, active: bool, supplier_note: ?string, last_price_minor: ?int, opening_qty: ?int, opening_location_id: ?int, update_item_id: ?int, update_input: array<string, string|int|bool|null>}>
 	 * }
 	 */
 	private function validateAll(string $csvText, bool $includeRows): array
@@ -200,8 +283,10 @@ class CsvImportService
 		$existing = $this->items->allCodePairs();
 		$seenSku = [];
 		$seenScan = [];
+		$seenIds = [];
 		$errors = [];
 		$rows = [];
+		$updates = 0;
 
 		foreach ($parsed as $i => $raw) {
 			$line = $i + 2;
@@ -214,6 +299,10 @@ class CsvImportService
 			$uom = CodeRules::trim((string)($raw['uom'] ?? 'pcs'));
 			if ($uom === '') {
 				$uom = 'pcs';
+			}
+			if (mb_strlen($uom) > 32) {
+				$errors[] = ['line' => $line, 'code' => 'invalid_uom', 'message' => 'uom too long'];
+				continue;
 			}
 			$desc = CodeRules::trim((string)($raw['description'] ?? ''));
 			$desc = $desc === '' ? null : $desc;
@@ -269,10 +358,6 @@ class CsvImportService
 				$errors[] = ['line' => $line, 'code' => 'invalid_code_format', 'message' => 'Invalid sku or scan_code'];
 				continue;
 			}
-			if ($name === '' || mb_strlen($name) > 255) {
-				$errors[] = ['line' => $line, 'code' => 'name_required', 'message' => 'Name is required'];
-				continue;
-			}
 			if ($reorder < 0 || $reorder > QtyScale::maxStorage($this->config)) {
 				$errors[] = ['line' => $line, 'code' => 'invalid_reorder', 'message' => 'reorder_level out of range'];
 				continue;
@@ -281,12 +366,35 @@ class CsvImportService
 				$errors[] = ['line' => $line, 'code' => 'code_exists', 'message' => 'Duplicate sku/scan_code in file'];
 				continue;
 			}
-			if (CodeRules::conflictsWithOthers(null, $sku, $scan, $existing)) {
-				$errors[] = ['line' => $line, 'code' => 'code_exists', 'message' => 'sku or scan_code already exists'];
+			// Upsert: a row whose codes identify exactly one existing item
+			// updates it. Codes pointing at two different items — or a second
+			// row targeting an item another row already updates — stay errors:
+			// silently picking a winner would be a blind merge.
+			$updateItemId = $this->matchExistingItemId($sku, $scan, $existing);
+			if ($updateItemId === self::MATCH_AMBIGUOUS) {
+				$errors[] = ['line' => $line, 'code' => 'code_exists', 'message' => 'Codes match more than one existing item'];
 				continue;
 			}
-			if (CodeRules::conflictsWithLocationCodes($sku, $scan, $this->locations->allCodes())) {
-				$errors[] = ['line' => $line, 'code' => 'code_exists', 'message' => 'sku or scan_code collides with a location code'];
+			if ($updateItemId !== null && isset($seenIds[$updateItemId])) {
+				$errors[] = ['line' => $line, 'code' => 'code_exists', 'message' => 'Another row already updates this item'];
+				continue;
+			}
+			if ($updateItemId === null) {
+				if (CodeRules::conflictsWithOthers(null, $sku, $scan, $existing)) {
+					$errors[] = ['line' => $line, 'code' => 'code_exists', 'message' => 'sku or scan_code already exists'];
+					continue;
+				}
+				if (CodeRules::conflictsWithLocationCodes($sku, $scan, $this->locations->allCodes())) {
+					$errors[] = ['line' => $line, 'code' => 'code_exists', 'message' => 'sku or scan_code collides with a location code'];
+					continue;
+				}
+			}
+			// Name is required to create; on update rows only a *present*
+			// name column must be non-empty — a minimal "sku;category" file
+			// can update without restating every column.
+			if (($updateItemId === null || array_key_exists('name', $raw))
+				&& ($name === '' || mb_strlen($name) > 255)) {
+				$errors[] = ['line' => $line, 'code' => 'name_required', 'message' => 'Name is required'];
 				continue;
 			}
 
@@ -294,7 +402,9 @@ class CsvImportService
 			$openingQtyRaw = $raw['opening_qty'] ?? '';
 			$openingQty = null;
 			$openingLocId = null;
-			if ($openingLocCode !== '' || $openingQtyRaw !== '') {
+			// Opening balances are create-only — on update rows they are
+			// ignored entirely so a re-import can never double-post stock.
+			if ($updateItemId === null && ($openingLocCode !== '' || $openingQtyRaw !== '')) {
 				if ($openingLocCode === '' || $openingQtyRaw === '') {
 					$errors[] = ['line' => $line, 'code' => 'invalid_opening', 'message' => 'opening_location_code and opening_qty must both be set'];
 					continue;
@@ -351,8 +461,63 @@ class CsvImportService
 				continue;
 			}
 
+			$updateInput = [];
+			if ($updateItemId !== null) {
+				$matched = $this->items->findById($updateItemId);
+				// No reorder_level column → the stored level stays, so the
+				// target_stock floor is the item's real reorder level, not a
+				// phantom 0 from the defaulted row parse.
+				if (!array_key_exists('reorder_level', $raw) && array_key_exists('target_stock', $raw)
+					&& $targetStock !== null && $targetStock < $matched->getReorderLevel()) {
+					$errors[] = ['line' => $line, 'code' => 'invalid_target', 'message' => 'target_stock out of range or below reorder_level'];
+					continue;
+				}
+				// Same deactivation guards as ItemService::update — per-row
+				// here so dry-run predicts them and skipErrors can skip just
+				// the blocked lines; re-checked under the row lock at commit.
+				if (array_key_exists('active', $raw) && !$active && $matched->getActive()) {
+					if ($this->items->hasNonZeroBalance($updateItemId)) {
+						$errors[] = ['line' => $line, 'code' => 'item_has_stock', 'message' => 'Item still has stock — cannot deactivate'];
+						continue;
+					}
+					if ($this->cycleLines->countOpenCampaignsForItem($updateItemId) > 0) {
+						$errors[] = ['line' => $line, 'code' => 'item_in_open_stocktake', 'message' => 'Item is in an open stocktake — cannot deactivate'];
+						continue;
+					}
+				}
+				// Column-presence merge: only columns the file actually
+				// carries are applied — absent columns keep stored values,
+				// present-but-empty cells clear nullable fields.
+				$present = [
+					'name' => $name,
+					'description' => $desc,
+					'uom' => $uom,
+					'reorder_level' => $reorder,
+					'target_stock' => $targetStock,
+					'active' => $active,
+					'supplier_note' => $supplierNote,
+					'last_price_minor' => $lastPriceMinor,
+					'order_pack_qty' => $orderPackQty ?: null,
+					'order_pack_price_minor' => $orderPackPrice ?: null,
+					'supplier_name' => $supplierName !== '' ? $supplierName : null,
+					'supplier_sku' => $supplierSku !== '' ? $supplierSku : null,
+					'supplier_lead_days' => $leadDays ?: null,
+					'category' => $category !== '' ? $category : null,
+					'criticality' => $criticality,
+				];
+				foreach ($present as $col => $value) {
+					if (array_key_exists($col, $raw)) {
+						$updateInput[$col] = $value;
+					}
+				}
+			}
+
 			$seenSku[$sku] = true;
 			$seenScan[$scan] = true;
+			if ($updateItemId !== null) {
+				$seenIds[$updateItemId] = true;
+				$updates++;
+			}
 			$existing[] = ['id' => 0, 'sku' => $sku, 'scanCode' => $scan];
 			$rows[] = [
 				'sku' => $sku,
@@ -374,11 +539,14 @@ class CsvImportService
 				'supplier_lead_days' => $leadDays ?: null,
 				'category' => $category !== '' ? $category : null,
 				'criticality' => $criticality,
+				'update_item_id' => $updateItemId,
+				'update_input' => $updateInput,
 			];
 		}
 
 		$out = [
 			'ok' => count($rows),
+			'updates' => $updates,
 			'errors' => $errors,
 		];
 		if ($includeRows) {

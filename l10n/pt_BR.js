@@ -363,7 +363,7 @@ OC.L10N.register(
 	"Import CSV" : "Importar CSV",
 	"Import items from CSV" : "Importar itens de CSV",
 	"Import will skip rows with errors and keep the good ones." : "A importação pulará as linhas com erros e manterá as boas.",
-	"Imported: {created} new, {received} received, {skipped} skipped." : "Importado: {created} novo, {received} recebido, {skipped} ignorado.",
+	"Imported: {created} new, {updated} updated, {received} received, {skipped} skipped." : "Importado: {created} novo, {updated} atualizado, {received} recebido, {skipped} ignorado.",
 	"Inactive" : "Inativo",
 	"InventoryCheck" : "InventoryCheck",
 	"InventoryCheck navigation" : "InventoryCheck navegação",
@@ -681,6 +681,7 @@ OC.L10N.register(
 	"Reverse posts a compensating booking. History stays complete — nothing is deleted." : "Reverter registra um lançamento de compensação. O histórico permanece completo — nada é excluído.",
 	"Review conflict lines, then confirm you accept the counted quantities." : "Revise as linhas de conflito e confirme que as quantidades contadas são aceitas.",
 	"Role" : "Papel",
+	"Rows whose SKU or scan code already exists update that item instead of being skipped — columns missing from the file keep their stored values." : "As linhas cujo SKU ou código de leitura já existe atualizam o item em vez de serem ignoradas — as colunas ausentes no arquivo mantêm os valores salvos.",
 	"SKU" : "SKU",
 	"SKU and name are enough. Reorder level and more options sit under More when you need them." : "SKU e nome são suficientes. O nível de reposição e mais opções ficam em Mais opções.",
 	"SKU and scan codes" : "SKU e códigos de digitalização",
@@ -947,6 +948,7 @@ OC.L10N.register(
 	"{n} stale order marker" : "{n} marcas de encomenda obsoletas",
 	"{n} unpriced" : "{n} sem preço",
 	"{ok} row(s) look fine." : "As linhas {ok} parecem boas.",
+	"{updates} row(s) update existing items." : "{updates} linha(s) atualizam itens existentes.",
 	"★ Remove from favourites" : "★ Remover dos favoritos",
 	"☆ Add to favourites" : "☆ Adicionar aos favoritos"
 	}

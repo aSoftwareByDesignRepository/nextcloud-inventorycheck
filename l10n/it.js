@@ -363,7 +363,7 @@ OC.L10N.register(
 	"Import CSV" : "Importare CSV",
 	"Import items from CSV" : "Importare articoli da CSV",
 	"Import will skip rows with errors and keep the good ones." : "L'importazione salterà le righe con errori e manterrà quelle valide.",
-	"Imported: {created} new, {received} received, {skipped} skipped." : "Importati: {created} nuovi, {received} ricevuti, {skipped} saltati.",
+	"Imported: {created} new, {updated} updated, {received} received, {skipped} skipped." : "Importati: {created} nuovi, {updated} aggiornati, {received} ricevuti, {skipped} saltati.",
 	"Inactive" : "Inattivo",
 	"InventoryCheck" : "InventoryCheck",
 	"InventoryCheck navigation" : "Navigazione di InventoryCheck",
@@ -681,6 +681,7 @@ OC.L10N.register(
 	"Reverse posts a compensating booking. History stays complete — nothing is deleted." : "Lo storno registra una registrazione di compensazione. La cronologia resta completa — nulla viene eliminato.",
 	"Review conflict lines, then confirm you accept the counted quantities." : "Verificare le righe in conflitto, quindi confermare di accettare le quantità contate.",
 	"Role" : "Ruolo",
+	"Rows whose SKU or scan code already exists update that item instead of being skipped — columns missing from the file keep their stored values." : "Le righe il cui SKU o codice di scansione esiste già aggiornano l'articolo invece di essere saltate — le colonne assenti dal file mantengono i valori salvati.",
 	"SKU" : "SKU",
 	"SKU and name are enough. Reorder level and more options sit under More when you need them." : "SKU e nome sono sufficienti. Punto di riordino e altre opzioni si trovano sotto Altro quando servono.",
 	"SKU and scan codes" : "SKU e codici di scansione",
@@ -947,6 +948,7 @@ OC.L10N.register(
 	"{n} stale order marker" : "{n} segni di ordine obsoleti",
 	"{n} unpriced" : "{n} senza prezzo",
 	"{ok} row(s) look fine." : "{ok} riga\/he sembrano corrette.",
+	"{updates} row(s) update existing items." : "{updates} riga\/he aggiornano articoli esistenti.",
 	"★ Remove from favourites" : "★ Rimuovere dai preferiti",
 	"☆ Add to favourites" : "☆ Aggiungere ai preferiti"
 	}

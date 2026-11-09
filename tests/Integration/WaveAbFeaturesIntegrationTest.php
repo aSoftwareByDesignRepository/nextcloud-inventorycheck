@@ -110,9 +110,138 @@ final class WaveAbFeaturesIntegrationTest extends TestCase
 		self::assertNotNull($bal);
 		self::assertSame(7, $bal->getQty());
 
-		$refuse = $this->import->commit($this->uid, $csv, false);
-		self::assertSame(0, $refuse['created']);
-		self::assertNotEmpty($refuse['errors']);
+		// Upsert: re-importing the same file updates the matched rows instead
+		// of erroring, and never re-posts the opening receive.
+		$again = $this->import->commit($this->uid, $csv, false);
+		self::assertSame(0, $again['created']);
+		self::assertSame(2, $again['updated']);
+		self::assertSame(0, $again['received']);
+		self::assertSame([], $again['errors']);
+		$bal = $this->balances->findPair((int)$item['id'], (int)$loc['id']);
+		self::assertSame(7, $bal->getQty(), 're-import must not double-post opening stock');
+	}
+
+	public function testCsvUpsertAppliesOnlyPresentColumns(): void
+	{
+		$suffix = bin2hex(random_bytes(3));
+		$loc = $this->locations->create($this->uid, [
+			'code' => 'UP-L-' . $suffix,
+			'name' => 'Upsert Loc',
+			'kind' => 'warehouse',
+		]);
+		$sku = 'UP-A-' . $suffix;
+		$csv = "sku;name;description;reorder_level;opening_location_code;opening_qty\n"
+			. "{$sku};Alpha;Keep me;3;{$loc['code']};5\n";
+		$this->import->commit($this->uid, $csv, false);
+
+		// A minimal sku+category file must work too — name is not restated,
+		// and every absent column keeps its stored value.
+		$csv2 = "sku;category\n"
+			. "{$sku};ClinicalSupplies\n";
+		$dry = $this->import->dryRun($this->uid, $csv2);
+		self::assertSame(1, $dry['ok']);
+		self::assertSame(1, $dry['updates']);
+		self::assertSame([], $dry['errors']);
+
+		$again = $this->import->commit($this->uid, $csv2, false);
+		self::assertSame(0, $again['created']);
+		self::assertSame(1, $again['updated']);
+
+		$item = $this->items->byCode($this->uid, $sku);
+		self::assertSame('Alpha', $item['name']);
+		self::assertSame('ClinicalSupplies', $item['category']);
+		self::assertSame('Keep me', $item['description']);
+		self::assertSame(3, $item['reorderLevel']);
+
+		$bal = $this->balances->findPair((int)$item['id'], (int)$loc['id']);
+		self::assertSame(5, $bal->getQty());
+
+		// target_stock without a reorder_level column is floored against the
+		// item's *stored* reorder level (3), not a defaulted 0.
+		$badTarget = $this->import->dryRun($this->uid, "sku;target_stock\n{$sku};2\n");
+		self::assertSame('invalid_target', $badTarget['errors'][0]['code']);
+		$goodTarget = $this->import->dryRun($this->uid, "sku;target_stock\n{$sku};9\n");
+		self::assertSame([], $goodTarget['errors']);
+		self::assertSame(1, $goodTarget['updates']);
+
+		// Opening columns are create-only — on update rows they are ignored
+		// entirely, even when the values would fail create-path validation.
+		$ignoredOpening = $this->import->dryRun($this->uid, "sku;opening_location_code;opening_qty\n{$sku};NOPE-{$suffix};9\n");
+		self::assertSame(1, $ignoredOpening['updates']);
+		self::assertSame([], $ignoredOpening['errors']);
+	}
+
+	public function testCsvUpsertRefusesAmbiguousAndRepeatedMatches(): void
+	{
+		$suffix = bin2hex(random_bytes(3));
+		$itemA = $this->items->create($this->uid, [
+			'sku' => 'AMB-A-' . $suffix,
+			'scanCode' => 'AMB-SA-' . $suffix,
+			'name' => 'Amb A',
+			'uom' => 'pcs',
+			'reorderLevel' => 0,
+		]);
+		$this->items->create($this->uid, [
+			'sku' => 'AMB-B-' . $suffix,
+			'scanCode' => 'AMB-SB-' . $suffix,
+			'name' => 'Amb B',
+			'uom' => 'pcs',
+			'reorderLevel' => 0,
+		]);
+
+		// sku points at A, scan_code at B — merging is never guessed.
+		$csv = "sku;scan_code;name\n"
+			. "AMB-A-{$suffix};AMB-SB-{$suffix};Crossed\n";
+		$dry = $this->import->dryRun($this->uid, $csv);
+		self::assertSame(0, $dry['ok']);
+		self::assertSame('code_exists', $dry['errors'][0]['code']);
+
+		// Two rows resolving to the same item — second one is a row error,
+		// not a silent last-writer-wins.
+		$csv2 = "sku;name\n"
+			. "AMB-A-{$suffix};First\n"
+			. "AMB-SA-{$suffix};Second\n";
+		$dry2 = $this->import->dryRun($this->uid, $csv2);
+		self::assertSame(1, $dry2['ok']);
+		self::assertSame(1, $dry2['updates']);
+		self::assertCount(1, $dry2['errors']);
+		self::assertSame('code_exists', $dry2['errors'][0]['code']);
+
+		$commit = $this->import->commit($this->uid, $csv2, true);
+		self::assertSame(1, $commit['updated']);
+		$item = $this->items->get($this->uid, (int)$itemA['id']);
+		self::assertSame('First', $item['name']);
+	}
+
+	public function testCsvUpsertDeactivationHonoursStockAndStocktakeGuards(): void
+	{
+		$suffix = bin2hex(random_bytes(3));
+		$loc = $this->locations->create($this->uid, [
+			'code' => 'GD-L-' . $suffix,
+			'name' => 'Guard Loc',
+			'kind' => 'warehouse',
+		]);
+		$sku = 'GD-I-' . $suffix;
+		$item = $this->items->create($this->uid, [
+			'sku' => $sku,
+			'name' => 'Guarded',
+			'uom' => 'pcs',
+			'reorderLevel' => 0,
+		]);
+		$this->movements->receive($this->uid, (int)$item['id'], (int)$loc['id'], 4, 'seed');
+
+		$csv = "sku;name;active\n{$sku};Guarded;0\n";
+		$dry = $this->import->dryRun($this->uid, $csv);
+		self::assertSame(0, $dry['ok']);
+		self::assertSame('item_has_stock', $dry['errors'][0]['code']);
+		self::assertTrue($this->items->get($this->uid, (int)$item['id'])['active']);
+
+		// Stock cleared but an open stocktake still pins the item.
+		$this->movements->adjust($this->uid, (int)$item['id'], (int)$loc['id'], 'set', 0, null, 'clear', null, true, 'correction');
+		$this->counts->create($this->uid, (int)$loc['id'], 'Guard ' . $suffix);
+		$dry2 = $this->import->dryRun($this->uid, $csv);
+		self::assertSame('item_in_open_stocktake', $dry2['errors'][0]['code']);
+		self::assertTrue($this->items->get($this->uid, (int)$item['id'])['active']);
 	}
 
 	public function testCycleCountPostsAdjustOnCloseAndBlocksIncomplete(): void

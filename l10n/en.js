@@ -363,7 +363,7 @@ OC.L10N.register(
 	"Import CSV" : "Import CSV",
 	"Import items from CSV" : "Import items from CSV",
 	"Import will skip rows with errors and keep the good ones." : "Import will skip rows with errors and keep the good ones.",
-	"Imported: {created} new, {received} received, {skipped} skipped." : "Imported: {created} new, {received} received, {skipped} skipped.",
+	"Imported: {created} new, {updated} updated, {received} received, {skipped} skipped." : "Imported: {created} new, {updated} updated, {received} received, {skipped} skipped.",
 	"Inactive" : "Inactive",
 	"InventoryCheck" : "InventoryCheck",
 	"InventoryCheck navigation" : "InventoryCheck navigation",
@@ -681,6 +681,7 @@ OC.L10N.register(
 	"Reverse posts a compensating booking. History stays complete — nothing is deleted." : "Reverse posts a compensating booking. History stays complete — nothing is deleted.",
 	"Review conflict lines, then confirm you accept the counted quantities." : "Review conflict lines, then confirm you accept the counted quantities.",
 	"Role" : "Role",
+	"Rows whose SKU or scan code already exists update that item instead of being skipped — columns missing from the file keep their stored values." : "Rows whose SKU or scan code already exists update that item instead of being skipped — columns missing from the file keep their stored values.",
 	"SKU" : "SKU",
 	"SKU and name are enough. Reorder level and more options sit under More when you need them." : "SKU and name are enough. Reorder level and more options sit under More when you need them.",
 	"SKU and scan codes" : "SKU and scan codes",
@@ -947,6 +948,7 @@ OC.L10N.register(
 	"{n} stale order marker" : "{n} stale order marker",
 	"{n} unpriced" : "{n} unpriced",
 	"{ok} row(s) look fine." : "{ok} row(s) look fine.",
+	"{updates} row(s) update existing items." : "{updates} row(s) update existing items.",
 	"★ Remove from favourites" : "★ Remove from favourites",
 	"☆ Add to favourites" : "☆ Add to favourites"
 	}

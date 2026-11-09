@@ -363,7 +363,7 @@ OC.L10N.register(
 	"Import CSV" : "Importer CSV",
 	"Import items from CSV" : "Importer des articles de CSV",
 	"Import will skip rows with errors and keep the good ones." : "Importer va sauter les lignes avec des erreurs et garder les bonnes.",
-	"Imported: {created} new, {received} received, {skipped} skipped." : "Importé : {created} neuf, {received} reçu, {skipped} ignoré.",
+	"Imported: {created} new, {updated} updated, {received} received, {skipped} skipped." : "Importé : {created} neuf, {updated} mis à jour, {received} reçu, {skipped} ignoré.",
 	"Inactive" : "Inactif",
 	"InventoryCheck" : "InventoryCheck",
 	"InventoryCheck navigation" : "Navigation InventoryCheck",
@@ -681,6 +681,7 @@ OC.L10N.register(
 	"Reverse posts a compensating booking. History stays complete — nothing is deleted." : "Inverser enregistre une écriture de compensation. L’historique reste complet — rien n’est supprimé.",
 	"Review conflict lines, then confirm you accept the counted quantities." : "Examiner les lignes de conflit, puis confirmer que vous acceptez les quantités comptées.",
 	"Role" : "Rôle",
+	"Rows whose SKU or scan code already exists update that item instead of being skipped — columns missing from the file keep their stored values." : "Les lignes dont l'UGS ou le code de numérisation existe déjà mettent à jour l'article au lieu d'être ignorées — les colonnes absentes du fichier conservent leurs valeurs enregistrées.",
 	"SKU" : "UGS",
 	"SKU and name are enough. Reorder level and more options sit under More when you need them." : "SKU et le nom suffisent. Le seuil de réapprovisionnement et plus d'options sont sous Plus d'options.",
 	"SKU and scan codes" : "Codes SKU et numérisation",
@@ -947,6 +948,7 @@ OC.L10N.register(
 	"{n} stale order marker" : "{n} marques de commande obsolètes",
 	"{n} unpriced" : "{n} sans prix",
 	"{ok} row(s) look fine." : "Les lignes {ok} semblent bien.",
+	"{updates} row(s) update existing items." : "{updates} ligne(s) mettent à jour des articles existants.",
 	"★ Remove from favourites" : "★ Supprimer des favoris",
 	"☆ Add to favourites" : "Ajouter aux favoris"
 	}

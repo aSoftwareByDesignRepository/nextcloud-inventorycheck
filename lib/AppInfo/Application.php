@@ -401,6 +401,7 @@ class Application extends App implements IBootstrap
 				$c->get(Clock::class),
 				$c->get(ILockingProvider::class),
 				$c->get(IConfig::class),
+				$c->get(CycleLineMapper::class),
 			);
 		});
 		$context->registerService(ItemPhotoService::class, static function ($c): ItemPhotoService {

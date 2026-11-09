@@ -363,7 +363,7 @@ OC.L10N.register(
 	"Import CSV" : "Importuj CSV",
 	"Import items from CSV" : "Importuj pozycje od CSV",
 	"Import will skip rows with errors and keep the good ones." : "Import pominie wiersze z błędami i zatrzyma dobre.",
-	"Imported: {created} new, {received} received, {skipped} skipped." : "Importowane: {created} new, {received} odebrane, {skipped} pominięte.",
+	"Imported: {created} new, {updated} updated, {received} received, {skipped} skipped." : "Importowane: {created} new, {updated} zaktualizowane, {received} odebrane, {skipped} pominięte.",
 	"Inactive" : "Nieaktywny",
 	"InventoryCheck" : "InventoryCheck",
 	"InventoryCheck navigation" : "Nawigacja InventoryCheck",
@@ -681,6 +681,7 @@ OC.L10N.register(
 	"Reverse posts a compensating booking. History stays complete — nothing is deleted." : "Cofnięcie księguje kompensatę. Historia pozostaje kompletna — nic nie jest usuwane.",
 	"Review conflict lines, then confirm you accept the counted quantities." : "Przejrzyj linie konfliktu, a następnie potwierdź akceptację liczonych ilości.",
 	"Role" : "Rola",
+	"Rows whose SKU or scan code already exists update that item instead of being skipped — columns missing from the file keep their stored values." : "Wiersze, których SKU lub kod skanowania już istnieje, aktualizują ten artykuł zamiast zostać pominięte — kolumny nieobecne w pliku zachowują zapisane wartości.",
 	"SKU" : "SKU",
 	"SKU and name are enough. Reorder level and more options sit under More when you need them." : "SKU i nazwa wystarczą. Poziom zamówienia i więcej opcji jest pod Więcej opcji.",
 	"SKU and scan codes" : "SKU i kody skanowania",
@@ -947,6 +948,7 @@ OC.L10N.register(
 	"{n} stale order marker" : "{n} przeterminowane oznaczenia zamówień",
 	"{n} unpriced" : "{n} bez ceny",
 	"{ok} row(s) look fine." : "Wiersze {ok} wyglądają dobrze.",
+	"{updates} row(s) update existing items." : "{updates} wiersz(e) aktualizują istniejące pozycje.",
 	"★ Remove from favourites" : "-------------------------------------------------- Usuń z ulubionych",
 	"☆ Add to favourites" : "Dodaj do ulubionych"
 	}

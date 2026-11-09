@@ -86,6 +86,51 @@ class ItemMapper extends QBMapper
 		$qb->executeStatement();
 	}
 
+	/**
+	 * CSV upsert: targeted column UPDATE for import-matched rows — never a
+	 * full-entity save (a stale entity would lose-update on_order_* markers
+	 * and fields the importer does not know; same contract as markOnOrder).
+	 * Keys are whitelisted; caller must hold the item row lock inside a TX.
+	 *
+	 * @param array<string, string|int|bool|null> $cols
+	 */
+	public function updateColumns(int $id, array $cols): void
+	{
+		static $types = [
+			'name' => \PDO::PARAM_STR,
+			'description' => \PDO::PARAM_STR,
+			'uom' => \PDO::PARAM_STR,
+			'reorder_level' => \PDO::PARAM_INT,
+			'target_stock' => \PDO::PARAM_INT,
+			'active' => \PDO::PARAM_BOOL,
+			'supplier_note' => \PDO::PARAM_STR,
+			'last_price_minor' => \PDO::PARAM_INT,
+			'order_pack_qty' => \PDO::PARAM_INT,
+			'order_pack_price_minor' => \PDO::PARAM_INT,
+			'supplier_name' => \PDO::PARAM_STR,
+			'supplier_sku' => \PDO::PARAM_STR,
+			'supplier_lead_days' => \PDO::PARAM_INT,
+			'category' => \PDO::PARAM_STR,
+			'criticality' => \PDO::PARAM_STR,
+			'updated_at' => \PDO::PARAM_INT,
+		];
+		$qb = $this->db->getQueryBuilder();
+		$qb->update($this->getTableName());
+		$set = false;
+		foreach ($cols as $col => $value) {
+			if (!isset($types[$col])) {
+				throw new \InvalidArgumentException('updateColumns: column not writable: ' . $col);
+			}
+			$qb->set($col, $qb->createNamedParameter($value, $value === null ? \PDO::PARAM_NULL : $types[$col]));
+			$set = true;
+		}
+		if (!$set) {
+			return;
+		}
+		$qb->where($qb->expr()->eq('id', $qb->createNamedParameter($id, \PDO::PARAM_INT)));
+		$qb->executeStatement();
+	}
+
 	public function findById(int $id): Item
 	{
 		$qb = $this->db->getQueryBuilder();
