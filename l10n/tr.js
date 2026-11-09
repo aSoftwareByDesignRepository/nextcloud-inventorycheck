@@ -302,7 +302,7 @@ OC.L10N.register(
 	"Export variance CSV" : "Fark CSV'si dışa aktar",
 	"Favourites appear first when booking stock or starting a stocktake." : "Stok kaydı girerken veya sayım başlatırken sık kullanılanlar önce görünür.",
 	"Favourites appear first when you book stock or start a stocktake." : "Stok kaydı girdiğinizde veya sayım başlattığınızda sık kullanılanlar önce görünür.",
-	"Field" : "Alan",
+	"Field" : "Saha",
 	"Field users issue from vans. Transfer moves stock between locations. Every booking lands under Recent movements." : "Saha kullanıcıları araçlardan çıkış yapar. Transfer, stoğu konumlar arasında taşır. Her kayıt Son hareketler altına düşer.",
 	"Fill up to target stock or reorder level" : "Hedef stoğa veya yeniden sipariş seviyesine kadar tamamla",
 	"Filter" : "Filtrele",
@@ -363,7 +363,7 @@ OC.L10N.register(
 	"Import CSV" : "CSV içe aktar",
 	"Import items from CSV" : "Kalemleri CSV'den içe aktar",
 	"Import will skip rows with errors and keep the good ones." : "İçe aktarma, hatalı satırları atlayıp sorunsuz olanları tutar.",
-	"Imported: {created} new, {received} received, {skipped} skipped." : "İçe aktarıldı: {created} yeni, {received} stok girişi, {skipped} atlandı.",
+	"Imported: {created} new, {updated} updated, {received} received, {skipped} skipped." : "İçe aktarıldı: {created} yeni, {updated} güncellendi, {received} stok girişi, {skipped} atlandı.",
 	"Inactive" : "Etkin değil",
 	"InventoryCheck" : "InventoryCheck",
 	"InventoryCheck navigation" : "InventoryCheck gezintisi",
@@ -681,6 +681,7 @@ OC.L10N.register(
 	"Reverse posts a compensating booking. History stays complete — nothing is deleted." : "Geri alma, dengeleyici bir kayıt işler. Geçmiş eksiksiz kalır — hiçbir şey silinmez.",
 	"Review conflict lines, then confirm you accept the counted quantities." : "Çakışan satırları inceleyin, sonra sayılan miktarları kabul ettiğinizi onaylayın.",
 	"Role" : "Rol",
+	"Rows whose SKU or scan code already exists update that item instead of being skipped — columns missing from the file keep their stored values." : "SKU'su veya tarama kodu zaten var olan satırlar, atlanmak yerine o ürünü günceller — dosyada bulunmayan sütunlar kayıtlı değerlerini korur.",
 	"SKU" : "SKU",
 	"SKU and name are enough. Reorder level and more options sit under More when you need them." : "SKU ve ad yeterli. Yeniden sipariş seviyesi ve diğer seçenekler gerektiğinde Diğer altındadır.",
 	"SKU and scan codes" : "SKU ve barkodlar",
@@ -947,6 +948,7 @@ OC.L10N.register(
 	"{n} stale order marker" : "{n} eski sipariş işareti",
 	"{n} unpriced" : "{n} fiyatsız",
 	"{ok} row(s) look fine." : "{ok} satır sorunsuz görünüyor.",
+	"{updates} row(s) update existing items." : "{updates} satır mevcut ürünleri günceller.",
 	"★ Remove from favourites" : "★ Sık kullanılanlardan çıkar",
 	"☆ Add to favourites" : "☆ Sık kullanılanlara ekle"
 	}
