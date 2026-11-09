@@ -54,6 +54,24 @@ final class LabelPrintContractTest extends TestCase
 		self::assertStringContainsString('LabelSvg::forItem', $src);
 	}
 
+	public function testPrintTemplateInlineScriptsCarryCspNonce(): void
+	{
+		// RENDER_AS_BLANK responses emit script-src 'nonce-…' + script-src-elem
+		// 'strict-dynamic' (TemplateResponse seeds ContentSecurityPolicy, not the
+		// empty policy). An inline <script> without a matching nonce is blocked —
+		// dead Print button. OC_Template injects $_['cspNonce'] on every render,
+		// so any <script> in a print template must carry the nonce attribute.
+		foreach (['label-print.php', 'label-sheet-print.php'] as $tpl) {
+			$src = (string)file_get_contents(dirname(__DIR__, 3) . '/templates/' . $tpl);
+			preg_match_all('/<script(?![^>]*type="application\/json")[^>]*>/', $src, $m);
+			self::assertNotEmpty($m[0], $tpl . ' must keep its inline print script');
+			foreach ($m[0] as $tag) {
+				self::assertStringContainsString('nonce=', $tag, $tpl . ' inline script missing CSP nonce (dead Print button under script-src nonce policy): ' . $tag);
+				self::assertStringContainsString('cspNonce', $tag, $tpl . ' nonce must bind \$_' . "['cspNonce'], not a literal: " . $tag);
+			}
+		}
+	}
+
 	public function testLocationBulkLabelsPassesLabelsHtmlMatchingTemplate(): void
 	{
 		$controller = (string)file_get_contents(dirname(__DIR__, 3) . '/lib/Controller/LocationController.php');
