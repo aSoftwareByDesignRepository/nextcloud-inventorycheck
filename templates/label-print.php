@@ -67,7 +67,7 @@ $scan = (string)($item['scanCode'] ?? '');
 		<?php print_unescaped($svg); ?>
 		<p class="iv-label-print__code" id="iv-label-code"><?php p($scan); ?></p>
 	</main>
-	<script>
+	<script nonce="<?php p($_['cspNonce'] ?? ''); ?>">
 		document.getElementById('iv-label-print-btn')?.addEventListener('click', function () {
 			window.print();
 		});

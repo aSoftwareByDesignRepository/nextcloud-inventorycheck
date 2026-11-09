@@ -20,6 +20,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IRequest;
 use OCP\IURLGenerator;
+use OC\Security\CSP\ContentSecurityPolicyNonceManager;
 
 class LocationController extends Controller
 {
@@ -28,6 +29,7 @@ class LocationController extends Controller
 		private readonly LocationService $locations,
 		private readonly AccessControlService $access,
 		private readonly IURLGenerator $urlGenerator,
+		private readonly ContentSecurityPolicyNonceManager $nonceManager,
 	) {
 		parent::__construct(Application::APP_ID, $request);
 	}
@@ -117,6 +119,7 @@ class LocationController extends Controller
 				'svg' => $svg,
 				'backUrl' => $this->urlGenerator->linkToRoute('inventorycheck.page.location', ['id' => $id]),
 				'downloadUrl' => $this->urlGenerator->linkToRoute('inventorycheck.location.label', ['id' => $id]),
+				'cspNonce' => $this->nonceManager->getNonce(),
 			],
 		);
 		$response->renderAs(TemplateResponse::RENDER_AS_BLANK);

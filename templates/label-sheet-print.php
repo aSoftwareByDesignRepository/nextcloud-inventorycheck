@@ -89,7 +89,7 @@ $count = (int)($_['count'] ?? 0);
 	<main aria-label="<?php p($l->t('Label sheet')); ?>">
 		<?php print_unescaped($labelsHtml); ?>
 	</main>
-	<script>
+	<script nonce="<?php p($_['cspNonce'] ?? ''); ?>">
 		document.getElementById('iv-label-sheet-print-btn')?.addEventListener('click', function () {
 			window.print();
 		});

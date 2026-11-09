@@ -22,6 +22,7 @@ use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IConfig;
 use OCP\IRequest;
 use OCP\IURLGenerator;
+use OC\Security\CSP\ContentSecurityPolicyNonceManager;
 
 /**
  * Wave C1: reorderLevel is converted display → storage before it reaches
@@ -36,6 +37,7 @@ class ItemController extends Controller
 		private readonly AccessControlService $access,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly IConfig $config,
+		private readonly ContentSecurityPolicyNonceManager $nonceManager,
 	) {
 		parent::__construct(Application::APP_ID, $request);
 	}
@@ -110,6 +112,7 @@ class ItemController extends Controller
 				'svg' => $svg,
 				'backUrl' => $this->urlGenerator->linkToRoute('inventorycheck.page.item', ['id' => $id]),
 				'downloadUrl' => $this->urlGenerator->linkToRoute('inventorycheck.item.label', ['id' => $id]),
+				'cspNonce' => $this->nonceManager->getNonce(),
 			],
 		);
 		$response->renderAs(TemplateResponse::RENDER_AS_BLANK);
