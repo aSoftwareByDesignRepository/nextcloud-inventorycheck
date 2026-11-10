@@ -979,7 +979,7 @@ OC.L10N.register(
 	"not imported" : "non importata",
 	"stale" : "obsoleto",
 	"to" : "a",
-	"undo via snapshot" : "annulla tramite snapshot",
+	"undo via snapshot" : "annulla tramite istantanea",
 	"unpriced" : "senza prezzo",
 	"usage spike" : "picco di utilizzo",
 	"{count} item(s) were never counted." : "{count} articolo\/i non sono mai stati contati.",

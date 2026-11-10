@@ -795,7 +795,7 @@ OC.L10N.register(
 	"Status" : "Estado",
 	"Still checking the file… Try Import again in a moment." : "Ainda a verificar o ficheiro… Tente Importar novamente dentro de momentos.",
 	"Still saving counts… Try again in a moment." : "Ainda a guardar contagens… Tente novamente dentro de momentos.",
-	"Stock" : "Estoque",
+	"Stock" : "Stock",
 	"Stock & movements" : "Stock e movimentos",
 	"Stock adjusted." : "Stock ajustado.",
 	"Stock at this place" : "Stock neste local",
