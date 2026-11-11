@@ -24,6 +24,7 @@ const routes = [
 	{ path: '/apps/inventorycheck/settings/policies', ready: '#iv-page-title, .iv-howto, #iv-policies-title, .iv-settings-page', creds: 'ADMIN' },
 	{ path: '/apps/inventorycheck/settings/restock', ready: '#iv-page-title, .iv-howto, #iv-restock-title, .iv-settings-page', creds: 'ADMIN' },
 	{ path: '/apps/inventorycheck/settings/license', ready: '#iv-page-title, .iv-howto, #iv-license-title, .iv-settings-page', creds: 'ADMIN' },
+	{ path: '/apps/inventorycheck/settings/transfer', ready: '#iv-page-title, #iv-xfer-export-h, .iv-settings-page', creds: 'ADMIN' },
 	{ path: '/apps/inventorycheck/settings/support', ready: '#iv-page-title, .iv-howto, #iv-support-us, [data-support-us="1"]', creds: 'ADMIN' },
 ]
 
