@@ -22,7 +22,8 @@ const NAV = '#app-navigation, nav, #header, .iv-sr-only'
 // quickstart steps, menus, breadcrumbs) — NOT prose lists.
 const LIST_ALLOW = '.iv-nav__list, .iv-quickstart, .iv-chips, '
 	+ '.iv-picker__results, .iv-picker__empty-chip, .iv-actions-more__menu, '
-	+ '.iv-nav-footer__menu, .user-picker__list, .iv-breadcrumb__list'
+	+ '.iv-nav-footer__menu, .user-picker__list, .iv-breadcrumb__list, '
+	+ '.iv-category-list'
 
 // Every shipped page route (app mounts into #iv-main-content inside
 // #app-content; denied surfaces render .iv-access-denied instead).
@@ -45,6 +46,7 @@ const PAGES = [
 	{ name: 'settings-policies', url: '/apps/inventorycheck/settings/policies' },
 	{ name: 'settings-restock', url: '/apps/inventorycheck/settings/restock' },
 	{ name: 'settings-license', url: '/apps/inventorycheck/settings/license' },
+	{ name: 'settings-transfer', url: '/apps/inventorycheck/settings/transfer' },
 	{ name: 'settings-support', url: '/apps/inventorycheck/settings/support' },
 ]
 
