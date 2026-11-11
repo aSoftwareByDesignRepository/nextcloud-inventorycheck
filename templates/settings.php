@@ -13,6 +13,13 @@ if ($ivSettingsSection !== '' && !empty($_['isAppAdmin'])) {
 	<p class="iv-loading"><?php p($l->t('Loading…')); ?></p>
 </div>
 <?php
+if ($ivSettingsSection === 'transfer' && !empty($_['isAppAdmin'])) {
+	// Server-rendered transfer cards — js/app.js wraps them into the
+	// settingsPageSection('transfer', …) shell inside #iv-page-root.
+	echo '<div id="iv-transfer-server-part">';
+	require __DIR__ . '/parts/settings/transfer.php';
+	echo '</div>';
+}
 if ($ivSettingsSection === 'support' && !empty($_['isAppAdmin'])) {
 	$supportUsLinks = new \OCA\InventoryCheck\Support\SupportUsLinks(
 		'InventoryCheck',

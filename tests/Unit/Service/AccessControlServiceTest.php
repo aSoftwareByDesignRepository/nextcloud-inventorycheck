@@ -10,6 +10,7 @@ use OCA\InventoryCheck\Service\AccessControlService;
 use OCP\IConfig;
 use OCP\IGroupManager;
 use OCP\IUser;
+use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -72,7 +73,12 @@ final class AccessControlServiceTest extends TestCase
 			return $user;
 		});
 
-		$this->acl = new AccessControlService($config, $groupManager, $userSession);
+		$userManager = $this->createMock(IUserManager::class);
+		$userManager->method('userExists')->willReturnCallback(
+			fn (string $uid): bool => array_key_exists($uid, $this->groups) || in_array($uid, $this->systemAdmins, true),
+		);
+
+		$this->acl = new AccessControlService($config, $groupManager, $userSession, $userManager);
 	}
 
 	/**

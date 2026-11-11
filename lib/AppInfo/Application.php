@@ -137,6 +137,7 @@ class Application extends App implements IBootstrap
 				$c->get(IConfig::class),
 				$c->get(IGroupManager::class),
 				$c->get(IUserSession::class),
+				$c->get(IUserManager::class),
 			);
 		});
 		$context->registerService(DirectoryOptionsService::class, static function ($c): DirectoryOptionsService {
@@ -503,6 +504,65 @@ class Application extends App implements IBootstrap
 				$c->get(UpgradeBackupService::class),
 			);
 		});
+
+		// ── Config & data transfer (test → production) ──────────────────
+		$context->registerService(\OCA\InventoryCheck\ConfigTransfer\TransferManifest::class, fn () => new \OCA\InventoryCheck\ConfigTransfer\TransferManifest());
+		$context->registerService(\OCA\InventoryCheck\ConfigTransfer\TransferHooks::class, function ($c): \OCA\InventoryCheck\ConfigTransfer\TransferHooks {
+			return new \OCA\InventoryCheck\ConfigTransfer\TransferHooks(
+				$c->get(AccessControlService::class),
+				$c->get(\OCA\InventoryCheck\Service\RestockConfig::class),
+				$c->get(ProductLookupService::class),
+				$c->get(UpgradeBackupService::class),
+				$c->get(IDBConnection::class),
+				$c->get(IConfig::class),
+				$c->get(IUserManager::class),
+				$c->get(IGroupManager::class),
+				$c->get(\Psr\Log\LoggerInterface::class),
+			);
+		});
+		$context->registerService(\OCA\InventoryCheck\ConfigTransfer\TransferPendingStore::class, fn ($c) => new \OCA\InventoryCheck\ConfigTransfer\TransferPendingStore($c->get(IRootFolder::class), $c->get(IConfig::class), 'inventorycheck'));
+		$context->registerService(\OCA\InventoryCheck\ConfigTransfer\TransferReceiptStore::class, fn ($c) => new \OCA\InventoryCheck\ConfigTransfer\TransferReceiptStore($c->get(IConfig::class), 'inventorycheck'));
+		$context->registerService(\OCA\InventoryCheck\ConfigTransfer\TransferService::class, function ($c): \OCA\InventoryCheck\ConfigTransfer\TransferService {
+			return new \OCA\InventoryCheck\ConfigTransfer\TransferService(
+				$c->get(IDBConnection::class),
+				$c->get(IConfig::class),
+				$c->get(IUserManager::class),
+				$c->get(IGroupManager::class),
+				$c->get(IRootFolder::class),
+				$c->get(IAppManager::class),
+				$c->get(ILockingProvider::class),
+				$c->get(\OCP\IURLGenerator::class),
+				$c->get(\Psr\Log\LoggerInterface::class),
+				$c->get(\OCA\InventoryCheck\ConfigTransfer\TransferManifest::class),
+				$c->get(\OCA\InventoryCheck\ConfigTransfer\TransferHooks::class),
+				$c->get(\OCA\InventoryCheck\ConfigTransfer\TransferPendingStore::class),
+				$c->get(\OCA\InventoryCheck\ConfigTransfer\TransferReceiptStore::class),
+				'inventorycheck',
+				$c->get(\OCP\IAppConfig::class),
+			);
+		});
+		$context->registerService(\OCA\InventoryCheck\BackgroundJob\TransferApplyJob::class, function ($c): \OCA\InventoryCheck\BackgroundJob\TransferApplyJob {
+			return new \OCA\InventoryCheck\BackgroundJob\TransferApplyJob(
+				$c->get(\OCP\AppFramework\Utility\ITimeFactory::class),
+				$c->get(\OCA\InventoryCheck\ConfigTransfer\TransferService::class),
+				$c->get(ILockingProvider::class),
+				$c->get(\OCP\BackgroundJob\IJobList::class),
+				$c->get(\Psr\Log\LoggerInterface::class),
+			);
+		});
+		$context->registerService(\OCA\InventoryCheck\Controller\TransferApiController::class, function ($c): \OCA\InventoryCheck\Controller\TransferApiController {
+			return new \OCA\InventoryCheck\Controller\TransferApiController(
+				'inventorycheck',
+				$c->get(\OCP\IRequest::class),
+				$c->get(\OCA\InventoryCheck\ConfigTransfer\TransferHooks::class),
+				$c->get(\OCA\InventoryCheck\ConfigTransfer\TransferService::class),
+				$c->get(\OCP\BackgroundJob\IJobList::class),
+				$c->get(\OCP\Security\Bruteforce\IThrottler::class),
+				$c->get(\OCP\IGroupManager::class),
+				$c->get(\OCP\IUserSession::class),
+			);
+		});
+
 		$context->registerService(RebuildBalancesCommand::class, static function ($c): RebuildBalancesCommand {
 			return new RebuildBalancesCommand(
 				$c->get(IDBConnection::class),

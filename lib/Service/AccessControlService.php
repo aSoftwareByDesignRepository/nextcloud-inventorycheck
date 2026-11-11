@@ -9,6 +9,7 @@ use OCA\InventoryCheck\Exception\AppAccessDeniedException;
 use OCA\InventoryCheck\Exception\PermissionDeniedException;
 use OCP\IConfig;
 use OCP\IGroupManager;
+use OCP\IUserManager;
 use OCP\IUserSession;
 
 /**
@@ -35,6 +36,7 @@ class AccessControlService
 		private readonly IConfig $config,
 		private readonly IGroupManager $groupManager,
 		private readonly IUserSession $userSession,
+		private readonly IUserManager $userManager,
 	) {
 	}
 
@@ -261,5 +263,150 @@ class AccessControlService
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * Current L1/L2 door policy as one array — the read half of
+	 * {@see saveAppPolicy()} and the overlay base the config-transfer
+	 * hooks decode mirrored keys onto.
+	 *
+	 * @return array{appAdminUserIds:list<string>,allowedUserIds:list<string>,allowedGroupIds:list<string>,accessRestrictionEnabled:bool}
+	 */
+	public function appPolicy(): array
+	{
+		return [
+			'appAdminUserIds' => $this->getJsonIdList(self::KEY_APP_ADMINS),
+			'allowedUserIds' => $this->getJsonIdList(self::KEY_ACCESS_ALLOWED_USER_IDS),
+			'allowedGroupIds' => $this->getJsonIdList(self::KEY_ACCESS_ALLOWED_GROUP_IDS),
+			'accessRestrictionEnabled' => $this->isAccessRestrictionEnabled(),
+		];
+	}
+
+	/**
+	 * Central atomic door-policy writer (config-transfer mirrored keys,
+	 * spec NN-02): validate every field first, then persist all four keys —
+	 * a restricted door with empty allowlists is rejected, never
+	 * half-written. Same invariants {@see ConfigController::saveAccess()}
+	 * enforces.
+	 *
+	 * @param array<string,mixed> $payload {
+	 *   appAdminUserIds:list<string>, allowedUserIds:list<string>,
+	 *   allowedGroupIds:list<string>, accessRestrictionEnabled:bool|string
+	 * }
+	 * @return array{appAdminUserIds:list<string>,allowedUserIds:list<string>,allowedGroupIds:list<string>,accessRestrictionEnabled:bool}
+	 */
+	public function saveAppPolicy(array $payload): array
+	{
+		foreach (['appAdminUserIds', 'allowedUserIds', 'allowedGroupIds', 'accessRestrictionEnabled'] as $field) {
+			if (!array_key_exists($field, $payload)) {
+				throw new \InvalidArgumentException('POLICY_FIELD_REQUIRED');
+			}
+		}
+		foreach (['appAdminUserIds', 'allowedUserIds', 'allowedGroupIds'] as $listKey) {
+			if (!is_array($payload[$listKey])) {
+				throw new \InvalidArgumentException('POLICY_FIELD_REQUIRED');
+			}
+		}
+
+		$appAdmins = $this->cleanIdList($payload['appAdminUserIds']);
+		$allowedUsers = $this->cleanIdList($payload['allowedUserIds']);
+		$allowedGroups = $this->cleanIdList($payload['allowedGroupIds']);
+		$restriction = $payload['accessRestrictionEnabled'];
+		$restriction = $restriction === true || $restriction === 1 || $restriction === '1';
+		if (!is_bool($payload['accessRestrictionEnabled'])
+			&& !in_array($payload['accessRestrictionEnabled'], [0, 1, '0', '1'], true)) {
+			throw new \InvalidArgumentException('INVALID_ACCESS_RESTRICTION');
+		}
+
+		foreach ($appAdmins as $uid) {
+			if (!$this->userManager->userExists($uid)) {
+				throw new \InvalidArgumentException('INVALID_APP_ADMIN_USER');
+			}
+		}
+		foreach ($allowedUsers as $uid) {
+			if (!$this->userManager->userExists($uid)) {
+				throw new \InvalidArgumentException('INVALID_ALLOWED_USER');
+			}
+		}
+		foreach ($allowedGroups as $gid) {
+			if (!$this->groupManager->groupExists($gid)) {
+				throw new \InvalidArgumentException('INVALID_ALLOWED_GROUP');
+			}
+		}
+		if ($restriction && $allowedUsers === [] && $allowedGroups === []) {
+			throw new \InvalidArgumentException('ACCESS_LIST_REQUIRED');
+		}
+
+		$this->setJsonIdList(self::KEY_APP_ADMINS, $appAdmins);
+		$this->setJsonIdList(self::KEY_ACCESS_ALLOWED_USER_IDS, $allowedUsers);
+		$this->setJsonIdList(self::KEY_ACCESS_ALLOWED_GROUP_IDS, $allowedGroups);
+		$this->setAccessRestrictionEnabled($restriction);
+
+		return $this->appPolicy();
+	}
+
+	/**
+	 * Validate + normalise ONE access-door appconfig value exactly the way
+	 * {@see saveAppPolicy()} persists it — the shared normaliser the
+	 * config-transfer engine calls (NN-08: import grants no validation
+	 * bypass). Existence checks stay in saveAppPolicy/validateMirrored;
+	 * this only enforces the stored shape.
+	 *
+	 * @throws \InvalidArgumentException on unknown keys or malformed values
+	 */
+	public function normalizeForWrite(string $key, string $value): string
+	{
+		return match ($key) {
+			self::KEY_ACCESS_RESTRICTION => in_array($value, ['0', '1'], true)
+				? $value
+				: throw new \InvalidArgumentException('INVALID_ACCESS_RESTRICTION'),
+			self::KEY_APP_ADMINS,
+			self::KEY_ACCESS_ALLOWED_USER_IDS,
+			self::KEY_ACCESS_ALLOWED_GROUP_IDS,
+			self::KEY_OFFICE_USER_IDS,
+			self::KEY_OFFICE_GROUP_IDS => self::normalizeIdListValue($value),
+			default => throw new \InvalidArgumentException('UNKNOWN_SETTING'),
+		};
+	}
+
+	/**
+	 * Same canonical form {@see setJsonIdList()} stores: JSON list of
+	 * non-empty unique string ids.
+	 */
+	public static function normalizeIdListValue(string $value): string
+	{
+		$list = json_decode($value, true, 64, JSON_THROW_ON_ERROR);
+		if (!is_array($list) || !array_is_list($list)) {
+			throw new \InvalidArgumentException('INVALID_ID_LIST');
+		}
+		$clean = [];
+		foreach ($list as $id) {
+			if (is_string($id) || is_int($id)) {
+				$id = trim((string)$id);
+				if ($id !== '') {
+					$clean[] = $id;
+				}
+			}
+		}
+		return json_encode(array_values(array_unique($clean)), JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+	}
+
+	/**
+	 * @param array<mixed> $ids
+	 * @return list<string>
+	 */
+	private function cleanIdList(array $ids): array
+	{
+		$clean = [];
+		foreach ($ids as $id) {
+			if (!is_string($id) && !is_int($id)) {
+				throw new \InvalidArgumentException('INVALID_ID_LIST');
+			}
+			$id = trim((string)$id);
+			if ($id !== '') {
+				$clean[] = $id;
+			}
+		}
+		return array_values(array_unique($clean));
 	}
 }

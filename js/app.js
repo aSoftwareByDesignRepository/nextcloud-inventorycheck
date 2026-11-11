@@ -5148,6 +5148,23 @@
 			}
 			return;
 		}
+		if (section === 'transfer') {
+			// Server-rendered markup (templates/parts/settings/transfer.php,
+			// synced pack) — relocate it into the standard settings-page
+			// shell; transfer.js binds by id, so structure is preserved.
+			clear(mount);
+			setBusy(mount, false);
+			var transferHost = document.getElementById('iv-transfer-server-part');
+			var transferKids = [settingsSrTitle('iv-transfer-title', tr('Transfer configuration'))];
+			if (transferHost) {
+				while (transferHost.firstChild) {
+					transferKids.push(transferHost.firstChild);
+				}
+				transferHost.parentNode.removeChild(transferHost);
+			}
+			mount.appendChild(settingsPageSection('transfer', 'iv-transfer-title', transferKids));
+			return;
+		}
 		Promise.all([
 			api('GET', ctx.urls.api.config),
 			api('GET', ctx.urls.api.license),

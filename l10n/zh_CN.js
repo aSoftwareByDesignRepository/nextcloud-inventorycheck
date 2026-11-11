@@ -3,7 +3,7 @@ OC.L10N.register(
 	{
 	"\"From\" must be on or before \"To\"." : "“从”必须早于或等于“至”。",
 	"%1$s (%2$s) is below reorder level: %3$s on hand, reorder at %4$s." : "%1$s（%2$s）低于补货点：现有 %3$s，补货点 %4$s。",
-	"%n label" : ["%n label"],
+	"%n label" : "%n 张标签",
 	"%n labels" : "%n 张标签",
 	"%s stays free (AGPL) on your Nextcloud. Bug reports and ideas on GitHub stay welcome — that is free open-source care. If your organisation needs bookable help on an invoice — or official mobile licenses — choose an option below:" : "%s 在您的 Nextcloud 上保持免费（AGPL）。欢迎在 GitHub 提交缺陷报告和建议——这是自由开源的关怀。如果您的组织需要可开票的帮助或官方移动端许可证，请选择下方选项：",
 	"%s stays free (AGPL) on your Nextcloud. Bug reports and ideas on GitHub stay welcome — that is free open-source care. If your organisation needs bookable help on an invoice, choose an option below:" : "%s 在您的 Nextcloud 上保持免费（AGPL）。欢迎在 GitHub 提交缺陷报告和建议——这是自由开源的关怀。如果您的组织需要可开票的帮助，请选择下方选项：",

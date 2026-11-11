@@ -40,6 +40,7 @@ class PageController extends Controller
 		private readonly IConfig $config,
 		private readonly SettingsSectionCatalog $settingsSections,
 		private readonly ProductLookupService $productLookup,
+		private readonly \OCA\InventoryCheck\ConfigTransfer\TransferReceiptStore $transferReceipts,
 	) {
 		parent::__construct(Application::APP_ID, $request);
 	}
@@ -342,7 +343,13 @@ class PageController extends Controller
 
 		if ($pageId === 'settings' && $settingsSection !== null) {
 			Util::addScript(Application::APP_ID, 'settings-legacy-redirect');
+			if ($settingsSection === 'transfer') {
+				Util::addStyle(Application::APP_ID, 'common/transfer');
+				Util::addScript(Application::APP_ID, 'transfer-bridge');
+				Util::addScript(Application::APP_ID, 'transfer');
+			}
 			$params['settingsSection'] = $settingsSection;
+			$params['transferLastReceipt'] = $this->transferReceipts->lastReceipt();
 			$licenseAbsolute = $this->urlGenerator->linkToRouteAbsolute(
 				'inventorycheck.page.settingsSection',
 				['section' => 'license'],

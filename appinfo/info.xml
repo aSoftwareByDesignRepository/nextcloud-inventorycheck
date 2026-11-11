@@ -346,6 +346,9 @@ Vi forbedrer denne appen med bruk i praksis. Feilrapporter, friksjon og idéer h
 	<commands>
 		<command>OCA\InventoryCheck\Command\RebuildBalancesCommand</command>
 		<command>OCA\InventoryCheck\Command\UpgradeBackupCommand</command>
+		<command>OCA\InventoryCheck\Command\ConfigExportCommand</command>
+		<command>OCA\InventoryCheck\Command\ConfigImportCommand</command>
+		<command>OCA\InventoryCheck\Command\ConfigReconcileCommand</command>
 	</commands>
 	<activity>
 		<providers>

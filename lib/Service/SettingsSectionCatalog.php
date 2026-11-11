@@ -36,6 +36,7 @@ final class SettingsSectionCatalog
 		'policies',
 		'restock',
 		'license',
+		'transfer',
 		'support',
 	];
 
@@ -92,6 +93,7 @@ final class SettingsSectionCatalog
 			'policies' => $l->t('Scan & adjust policies'),
 			'restock' => $l->t('Restock & procurement'),
 			'license' => $l->t('Official mobile & scanner licenses'),
+			'transfer' => $l->t('Transfer configuration'),
 			'support' => $l->t('Support & us'),
 			default => $l->t('Settings'),
 		};
@@ -110,6 +112,7 @@ final class SettingsSectionCatalog
 			'policies' => $l->t('Policies'),
 			'restock' => $l->t('Restock'),
 			'license' => $l->t('License'),
+			'transfer' => $l->t('Data transfer'),
 			'support' => $l->t('Support & us'),
 			default => $l->t('Settings'),
 		};
@@ -128,6 +131,7 @@ final class SettingsSectionCatalog
 			'policies' => $l->t('Warehouse hygiene for phone scan and inventur — reason codes and location scan confirm.'),
 			'restock' => $l->t('Reorder budgets and categories, stale-order warning, expiry horizon, velocity window and the order approval threshold.'),
 			'license' => $l->t('Paste an official IV2 key, assign mobile seats, and create scanner device slots.'),
+			'transfer' => $l->t('Copy all settings, catalogues and data between a test and a production instance — one encrypted file, dry-run before anything is written.'),
 			'support' => $l->t('How to get help, report bugs, and support InventoryCheck development.'),
 			default => '',
 		};

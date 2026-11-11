@@ -5,6 +5,22 @@
     "version": "1.0.0"
   },
   "paths": {
+    "/api/admin/transfer/status": {
+      "get": { "responses": { "200": { "description": "OK" } } }
+    },
+    "/api/admin/transfer/export": {
+      "post": { "responses": { "200": { "description": "OK" } } }
+    },
+    "/api/admin/transfer/preview": {
+      "post": { "responses": { "200": { "description": "OK" } } }
+    },
+    "/api/admin/transfer/apply": {
+      "post": { "responses": { "200": { "description": "OK" } } }
+    },
+    "/api/admin/transfer/reconcile": {
+      "post": { "responses": { "200": { "description": "OK" } } }
+    },
+
     "/api/locations": {
       "get": { "responses": { "200": { "description": "OK" } } },
       "post": { "responses": { "200": { "description": "OK" } } }
