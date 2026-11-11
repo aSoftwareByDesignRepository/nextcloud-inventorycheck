@@ -736,7 +736,7 @@ OC.L10N.register(
 	"SKU and name are enough. Reorder level and more options sit under More when you need them." : "SKU e nome chegam. O nível de reposição e mais opções ficam em Mais quando precisar deles.",
 	"SKU and scan codes" : "SKU e códigos de leitura",
 	"SKU or name" : "SKU ou nome",
-	"Safety snapshot" : "Instant\u00e2neo de seguran\u00e7a",
+	"Safety snapshot" : "Instantâneo de segurança",
 	"Save" : "Guardar",
 	"Save access" : "Guardar acesso",
 	"Save connection settings" : "Guardar definições de ligação",
