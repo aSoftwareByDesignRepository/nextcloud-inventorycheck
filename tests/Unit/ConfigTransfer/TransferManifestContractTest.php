@@ -19,7 +19,7 @@ namespace OCA\InventoryCheck\Tests\Unit\ConfigTransfer;
 
 use OCA\InventoryCheck\ConfigTransfer\AbstractTransferManifest;
 use OCA\InventoryCheck\ConfigTransfer\TransferManifest;
-use Test\TestCase;
+use PHPUnit\Framework\TestCase;
 
 final class TransferManifestContractTest extends TestCase
 {
