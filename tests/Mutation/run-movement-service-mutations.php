@@ -18,8 +18,8 @@ runMutations(dirname(__DIR__, 2), 'MovementLockingProtocolTest|LocationScanPolic
 	[
 		'name' => 'receive-office-gate-dropped',
 		'file' => $movement,
-		'search' => "\$this->access->requireOffice(\$actorUid);\n\t\t\$this->assertLocationAccess(\$actorUid, \$locationId);\n\t\treturn \$this->postSingle(\$actorUid, 'receive', \$itemId, \$locationId, \$qty, \$reason, \$lotCode, \$notifyLowStock);",
-		'replace' => "\$this->assertLocationAccess(\$actorUid, \$locationId);\n\t\treturn \$this->postSingle(\$actorUid, 'receive', \$itemId, \$locationId, \$qty, \$reason, \$lotCode, \$notifyLowStock);",
+		'search' => "\$this->access->requireOffice(\$actorUid);\n\t\t\$this->assertLocationAccess(\$actorUid, \$locationId);\n\t\treturn \$this->postSingle(\$actorUid, 'receive', \$itemId, \$locationId, \$qty, \$reason, \$lotCode, \$notifyLowStock, \$spendMinor, \$expiresAt);",
+		'replace' => "\$this->assertLocationAccess(\$actorUid, \$locationId);\n\t\treturn \$this->postSingle(\$actorUid, 'receive', \$itemId, \$locationId, \$qty, \$reason, \$lotCode, \$notifyLowStock, \$spendMinor, \$expiresAt);",
 	],
 	[
 		'name' => 'lock-order-item-reversed',

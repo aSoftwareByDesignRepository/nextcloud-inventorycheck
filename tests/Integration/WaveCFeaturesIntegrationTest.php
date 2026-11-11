@@ -434,6 +434,17 @@ final class WaveCFeaturesIntegrationTest extends TestCase
 		$this->config->setAppValue(Application::APP_ID, LocationAclService::KEY_ENABLED, '0');
 	}
 
+	public function testMalformedDeviceSubjectsFailClosedWhenAclOn(): void
+	{
+		$this->config->setAppValue(Application::APP_ID, LocationAclService::KEY_ENABLED, '1');
+		$this->config->setAppValue(Application::APP_ID, LocationAclService::KEY_DEVICES_STRICT, '0');
+		foreach (['device:', 'device:abc', 'device:0', 'device:-1', 'device:007x', 'device: 7'] as $actor) {
+			self::assertSame([], $this->acl->visibleLocationIds($actor), $actor);
+			self::assertFalse($this->acl->canAccessLocation($actor, 999999), $actor);
+		}
+		$this->config->setAppValue(Application::APP_ID, LocationAclService::KEY_ENABLED, '0');
+	}
+
 	public function testDeviceActorsHonourLocationGrantsWhenBound(): void
 	{
 		$suffix = bin2hex(random_bytes(3));

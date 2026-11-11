@@ -10,7 +10,7 @@ runMutations(dirname(__DIR__, 2), 'CsvAndLabelSheetTest', [
 	[
 		'name' => 'formula-sanitize-disabled',
 		'file' => $file,
-		'search' => "if (\$first === '=' || \$first === '+' || \$first === '-' || \$first === '@' || \$first === \"\\t\" || \$first === \"\\r\") {\n\t\t\treturn \"'\" . \$value;\n\t\t}",
+		'search' => "if (in_array(\$first, ['=', '+', '-', '@', \"\\t\", \"\\r\", \"\\n\", \"\\x0B\"], true)) {\n\t\t\treturn \"'\" . \$value;\n\t\t}",
 		'replace' => "if (false) {\n\t\t\treturn \"'\" . \$value;\n\t\t}",
 	],
 	[
