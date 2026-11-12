@@ -285,6 +285,7 @@ OC.L10N.register(
 	"Detected columns" : "Identifierade kolumner",
 	"Device deactivated." : "Enhet inaktiverad.",
 	"Devices" : "Enheter",
+	"Dismiss" : "Stäng",
 	"Done" : "Klart",
 	"Download SVG" : "Ladda ner SVG",
 	"Download all settings, catalogues and business data as one encrypted file — then import it on your production instance." : "Ladda ner alla inställningar, kataloger och affärsdata som en krypterad fil — importera den sedan på din produktionsinstans.",

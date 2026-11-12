@@ -67,14 +67,105 @@
 			}));
 		},
 	};
-	window.InventoryCheckMessaging = {
-		alert(text) {
-			if (window.OC && OC.Notification && OC.Notification.showTemporary) {
-				OC.Notification.showTemporary(text);
+	// Messaging: the synced transfer.js asks for .alert/.polite — map both
+	// onto the app-owned toast announcer (visible .iv-toast + live regions)
+	// and always mirror into the iv-transfer-result-live status region the
+	// synced part renders. OC.Notification is gone from NC≥31 bundles — it
+	// may only ever be a fallback behind the app-owned channel, never the
+	// only write.
+	const t = (s) => (window.OC && OC.L10N && OC.L10N.translate)
+		? OC.L10N.translate('inventorycheck', s) : s;
+	let toastContainer = null;
+	function ensureToastContainer() {
+		if (toastContainer && document.body.contains(toastContainer)) {
+			return toastContainer;
+		}
+		toastContainer = document.createElement('div');
+		toastContainer.className = 'iv-toasts';
+		toastContainer.id = 'iv-toasts';
+		document.body.appendChild(toastContainer);
+		return toastContainer;
+	}
+	function toast(text, kind) {
+		const k = kind === 'error' ? 'error' : (kind === 'warning' ? 'warning' : 'success');
+		const container = ensureToastContainer();
+		// Dedup on kind+text with timer reset — identical toasts must not
+		// stack (rapid retries, repeated API failures).
+		const dedupKey = k + '|' + String(text);
+		const existing = typeof container.querySelectorAll === 'function'
+			? container.querySelectorAll('.iv-toast[data-iv-toast-key]')
+			: Array.prototype.slice.call(container.childNodes || []);
+		for (const prev of existing) {
+			const prevKey = typeof prev.getAttribute === 'function'
+				? prev.getAttribute('data-iv-toast-key') : prev._ivToastKey;
+			if (prevKey === dedupKey || prev._ivToastKey === dedupKey) {
+				if (prev._ivDismissTimer) window.clearTimeout(prev._ivDismissTimer);
+				prev._ivDismissTimer = window.setTimeout(() => {
+					if (prev.parentNode) prev.parentNode.removeChild(prev);
+				}, k === 'error' ? 7000 : 4000);
+				return;
 			}
-			const el = document.getElementById('iv-transfer-result-live');
-			if (el) el.textContent = text;
-		},
-		polite(text) { this.alert(text); },
-	};
+		}
+		const toastEl = document.createElement('div');
+		toastEl.className = 'iv-toast iv-toast--' + k;
+		toastEl.setAttribute('role', k === 'error' ? 'alert' : 'status');
+		toastEl.setAttribute('data-iv-toast-key', dedupKey);
+		toastEl._ivToastKey = dedupKey;
+		const content = document.createElement('span');
+		content.className = 'iv-toast__content';
+		const msgText = document.createElement('span');
+		msgText.className = 'iv-toast__text';
+		msgText.textContent = String(text);
+		content.appendChild(msgText);
+		if (k === 'error') {
+			// §13 family contract: error toasts offer a "Report this
+			// problem" mailto when the shared feedback pack is loaded.
+			try {
+				const feedback = window.SbdAppFeedback;
+				if (feedback && typeof feedback.buildMailto === 'function') {
+					const link = document.createElement('a');
+					link.className = 'iv-toast__link';
+					link.href = feedback.buildMailto('problem', {});
+					link.textContent = t('Report this problem');
+					content.appendChild(link);
+				}
+			} catch (e) { /* never break the toast */ }
+		}
+		const close = document.createElement('button');
+		close.type = 'button';
+		close.className = 'iv-toast__close';
+		close.setAttribute('aria-label', t('Dismiss'));
+		close.textContent = '✕';
+		close.addEventListener('click', () => toastEl.remove());
+		toastEl.appendChild(content);
+		toastEl.appendChild(close);
+		container.appendChild(toastEl);
+		toastEl._ivDismissTimer = window.setTimeout(() => {
+			if (toastEl.parentNode) toastEl.parentNode.removeChild(toastEl);
+		}, k === 'error' ? 7000 : 4000);
+	}
+	function live(text) {
+		const el = document.getElementById('iv-transfer-result-live');
+		if (el) el.textContent = text;
+	}
+	function announce(text, kind) {
+		try {
+			toast(text, kind);
+			return;
+		} catch (e) { /* fall through to the platform fallback */ }
+		if (window.OC && OC.Notification && OC.Notification.showTemporary) {
+			OC.Notification.showTemporary(text);
+		}
+	}
+	const msg = window.InventoryCheckMessaging || {};
+	if (typeof msg.announce !== 'function') {
+		msg.announce = announce;
+	}
+	if (typeof msg.alert !== 'function') {
+		msg.alert = function (text) { msg.announce(text, 'error'); live(text); };
+	}
+	if (typeof msg.polite !== 'function') {
+		msg.polite = function (text) { msg.announce(text, 'success'); live(text); };
+	}
+	window.InventoryCheckMessaging = msg;
 })();

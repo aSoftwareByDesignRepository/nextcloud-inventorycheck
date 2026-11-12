@@ -285,6 +285,7 @@ OC.L10N.register(
 	"Detected columns" : "Colonne rilevate",
 	"Device deactivated." : "Dispositivo disattivato.",
 	"Devices" : "Dispositivi",
+	"Dismiss" : "Ignora",
 	"Done" : "Fine",
 	"Download SVG" : "Scaricare SVG",
 	"Download all settings, catalogues and business data as one encrypted file — then import it on your production instance." : "Scarica tutte le impostazioni, i cataloghi e i dati aziendali in un unico file cifrato — poi importalo sull’istanza di produzione.",

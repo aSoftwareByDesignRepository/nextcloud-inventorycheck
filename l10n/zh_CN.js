@@ -285,6 +285,7 @@ OC.L10N.register(
 	"Detected columns" : "检测到的列",
 	"Device deactivated." : "设备已停用。",
 	"Devices" : "设备",
+	"Dismiss" : "忽略",
 	"Done" : "完成",
 	"Download SVG" : "下载 SVG",
 	"Download all settings, catalogues and business data as one encrypted file — then import it on your production instance." : "将所有设置、目录和业务数据下载为一个加密文件——然后在生产实例上导入。",
