@@ -47,6 +47,35 @@ async function shot(page, name) {
 }
 
 /**
+ * native_dialog_margin_reset_uncentered (2026-11-12 family class): NC core's
+ * 'html,body,…,dialog,…{margin:0}' reset collapses the UA 'margin:auto' that
+ * centers a top-layer <dialog>. margin:auto on .iv-dialog restores it; the
+ * ≤480px media query re-asserts margin:0 for the full-bleed sheet
+ * (dialog.iv-dialog at 0,1,1 so app unified-dialog rules cannot keep the
+ * sheet capped). RED when the dialog anchors to the viewport top-left.
+ * @param {import('@playwright/test').Locator} dlg — native <dialog>
+ */
+async function expectTopLayerCentered(dlg, page) {
+	const vp = page.viewportSize()
+	const box = await dlg.boundingBox()
+	expect(box, 'dialog has no box').toBeTruthy()
+	expect(Math.abs(box.x + box.width / 2 - vp.width / 2), 'dialog not horizontally centered')
+		.toBeLessThan(4)
+	expect(Math.abs(box.y + box.height / 2 - vp.height / 2), 'dialog not vertically centered')
+		.toBeLessThan(24)
+	expect(box.y, 'dialog anchored to viewport top (margin:auto missing)')
+		.toBeGreaterThan(40)
+}
+
+async function expectFullBleedSheet(dlg, page) {
+	const vp = page.viewportSize()
+	const box = await dlg.boundingBox()
+	expect(box, 'dialog has no box').toBeTruthy()
+	expect(box.x, 'dialog not full-bleed left').toBeLessThan(8)
+	expect(box.width, 'dialog not full-bleed width').toBeGreaterThan(vp.width - 16)
+}
+
+/**
  * overlay_toast_button_armor_gap (2026-11-12 family sweep, donor leg
  * dutycheck @8e369e3): <button class="iv-toast__close"> renders inside
  * the body-mounted #iv-toasts stack (appended to document.body, outside
@@ -134,15 +163,18 @@ test.describe('craft transfer', () => {
 
 		// correct passphrase → preview → report dialog (interpolated counters)
 		await page.locator('#iv-transfer-import-passphrase').fill(PASS)
-		const report = page.locator('#iv-transfer-report')
+		const report = page.locator('dialog#iv-transfer-report')
 		await expect(report).toBeVisible({ timeout: 30_000 })
+		await page.waitForTimeout(400) // top-layer settle
+		await expectTopLayerCentered(report, page)
 		await expect(page.locator('#iv-transfer-report-verdict')).toContainText(/\d/)
 		await shot(page, 'iv-admin-transfer-report-dialog-light-1280')
 
 		// apply → progress dialog stays open while the job waits queued
 		await page.locator('#iv-transfer-confirm').click()
-		const progress = page.locator('#iv-transfer-progress')
+		const progress = page.locator('dialog#iv-transfer-progress')
 		await expect(progress).toBeVisible({ timeout: 10_000 })
+		await expectTopLayerCentered(progress, page)
 		await expect(page.locator('#iv-transfer-progress-text')).not.toBeEmpty()
 		await shot(page, 'iv-admin-transfer-progress-light-1280')
 
@@ -189,6 +221,19 @@ test.describe('craft transfer', () => {
 		await expectOverlayCloseArmored(errToast375.locator('.iv-toast__close'), '.iv-toast')
 		await expect(page.locator('#iv-transfer-result-live')).not.toBeEmpty()
 		await shot(page, 'iv-admin-transfer-fileerror-light-375')
+
+		// ≤480px: media query re-asserts margin:0 — the report dialog is a
+		// full-bleed sheet, not a centered card (native_dialog_margin_reset_-
+		// uncentered narrow leg).
+		await page.locator('#iv-transfer-import-passphrase').fill(PASS)
+		const report375 = page.locator('dialog#iv-transfer-report')
+		await expect(report375).toBeVisible({ timeout: 30_000 })
+		await page.waitForTimeout(400) // top-layer settle
+		await expectFullBleedSheet(report375, page)
+		await shot(page, 'iv-admin-transfer-report-dialog-light-375')
+
+		// Leave the surface clean for sibling lanes.
+		await page.locator('#iv-transfer-cancel').click().catch(() => {})
 	})
 
 	test('admin transfer replace-confirm token row wide (cramped_form_controls)', async ({ page, request }) => {
@@ -208,8 +253,12 @@ test.describe('craft transfer', () => {
 			name: 't.nctransfer', mimeType: 'application/json', buffer: bytes,
 		})
 		await page.locator('#iv-transfer-import-passphrase').fill(PASS)
-		const report = page.locator('#iv-transfer-report')
+		const report = page.locator('dialog#iv-transfer-report')
 		await expect(report).toBeVisible({ timeout: 30_000 })
+		await page.waitForTimeout(400) // top-layer settle
+		// destructive-type confirm surface (replace mode) — same centered
+		// top-layer contract as the merge preview.
+		await expectTopLayerCentered(report, page)
 		const token = page.locator('#iv-transfer-replace-token')
 		await expect(page.locator('#iv-transfer-replace-confirm')).toBeVisible()
 		await expect(token).toBeVisible()
