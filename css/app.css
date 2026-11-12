@@ -3324,7 +3324,7 @@ textarea {
 @media (min-width:769px){.iv-toasts{inset-inline-start:auto;inset-inline-end:calc(var(--iv-space-4,16px) + env(safe-area-inset-right,0px));max-width:min(400px,90vw);}}
 .iv-toast{background:var(--iv-bg-card,var(--color-main-background));color:var(--color-main-text);border:1px solid color-mix(in srgb,var(--color-main-text) 12%,transparent);border-left:4px solid var(--color-primary-element);padding:12px 16px;border-radius:8px;box-shadow:0 2px 8px color-mix(in srgb,var(--color-main-text) 25%,transparent);display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
 .iv-toast__content{display:flex;flex-direction:column;align-items:flex-start;flex:1 1 auto;min-width:0;}
-.iv-toast__text{color:inherit;overflow-wrap:anywhere;}
+.iv-toast__text{color:inherit;flex:1 1 auto;min-width:0;overflow-wrap:anywhere;}
 .iv-toast__link{margin-top:4px;}
 .iv-toast--success{border-left-color:var(--color-success-text,#46ba61);}
 .iv-toast--error{border-left-color:var(--color-error-text,var(--iv-danger-ink,#cc4646));}
