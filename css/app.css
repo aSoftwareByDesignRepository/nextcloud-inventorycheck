@@ -3330,3 +3330,26 @@ textarea {
 .iv-toast--error{border-left-color:var(--color-error-text,var(--iv-danger-ink,#cc4646));}
 .iv-toast--warning{border-left-color:var(--color-warning-text,#c98600);}
 .iv-toast__close{margin-left:auto;display:inline-flex;align-items:center;justify-content:center;background:transparent;border:0;cursor:pointer;padding:8px;min-height:44px;min-width:44px;box-sizing:border-box;line-height:1;font:inherit;color:inherit;}
+
+/* ── Overlay close-control armor ───────────────────────────────────
+ * Same mechanism as the variant armor: <button class="iv-toast__close">
+ * renders inside the body-mounted #iv-toasts stack (appended to
+ * document.body, outside #app-content.iv-app), so app-scoped rules can
+ * never reach it and the bare (0,1,0) class rules above lose to core's
+ * button repaint (width:130px / pale fill / border / padding at 0-1-1,
+ * margin-inline-start:0 at 0-2-1). The overlay-scoped selector pins
+ * every repainted property !important — the close stays a transparent
+ * ~44px icon docked at the toast's inline-end, not a ~130px pale block.
+ * (overlay_toast_button_armor_gap; donor shape: dutycheck @8e369e3 /
+ * portalcheck @6328cb6 / whistlecheck .wc-toasts button.wc-toast__close.) */
+.iv-toasts button.iv-toast__close,
+#iv-toasts button.iv-toast__close {
+	width: auto !important;
+	margin: 0 !important;
+	margin-inline-start: auto !important;
+	padding: var(--iv-space-2, 8px) !important;
+	background: transparent !important;
+	border: 0 !important;
+	min-width: 44px;
+	min-height: 44px;
+}

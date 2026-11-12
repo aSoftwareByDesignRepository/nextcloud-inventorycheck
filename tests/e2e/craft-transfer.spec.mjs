@@ -46,6 +46,52 @@ async function shot(page, name) {
 	await page.screenshot({ path: resolve(OUT, `${name}.png`), fullPage: false })
 }
 
+/**
+ * overlay_toast_button_armor_gap (2026-11-12 family sweep, donor leg
+ * dutycheck @8e369e3): <button class="iv-toast__close"> renders inside
+ * the body-mounted #iv-toasts stack (appended to document.body, outside
+ * #app-content.iv-app), so NC core's native button repaint (width:130px
+ * + pale fill + border at 0-1-1, margin-inline-start:0 at 0-2-1) must
+ * not reach it. Assert the painted geometry is the declared transparent
+ * ~44px icon-close docked at the toast's inline-end — not the collapsed
+ * ~130px pale core-skin block. RED on the pre-armor css, GREEN with it.
+ * @param {import('@playwright/test').Locator} close
+ * @param {string} hostSelector — closest() host the close docks inside
+ */
+async function expectOverlayCloseArmored(close, hostSelector) {
+	await expect(close).toBeVisible()
+	const m = await close.evaluate((el, sel) => {
+		const r = el.getBoundingClientRect()
+		const cs = getComputedStyle(el)
+		const host = el.closest(sel).getBoundingClientRect()
+		return {
+			x: r.x, w: r.width, h: r.height,
+			bottom: r.y + r.height,
+			hostX: host.x, hostW: host.width, hostBottom: host.y + host.height,
+			bg: cs.backgroundColor, bw: cs.borderWidth,
+			dir: cs.direction,
+		}
+	}, hostSelector)
+	expect(m.bg, 'close keeps transparent background (no pale core skin)')
+		.toBe('rgba(0, 0, 0, 0)')
+	expect(m.bw, 'close keeps border:0').toBe('0px')
+	expect(m.w, 'close ≈44px — core width:130px repaint would blow it out')
+		.toBeLessThanOrEqual(56)
+	expect(m.w).toBeGreaterThanOrEqual(40)
+	expect(m.h).toBeGreaterThanOrEqual(40)
+	expect(m.h).toBeLessThanOrEqual(64)
+	// inline-end dock + single row: glyph sits in the host's trailing half
+	// (leading half under rtl) and inside its height — the collapsed block
+	// wrapped to a second row instead.
+	const center = m.x + m.w / 2
+	const dockedEnd = m.dir === 'rtl'
+		? center < m.hostX + m.hostW / 2
+		: center > m.hostX + m.hostW / 2
+	expect(dockedEnd, 'close docks at the host inline-end').toBe(true)
+	expect(m.bottom, 'close stays on the host row (no wrap)')
+		.toBeLessThanOrEqual(m.hostBottom + 1)
+}
+
 async function exportBytes(request) {
 	const { username, password } = creds
 	const auth = 'Basic ' + Buffer.from(`${username}:${password}`).toString('base64')
@@ -80,7 +126,9 @@ test.describe('craft transfer', () => {
 		await page.locator('#iv-transfer-import-passphrase').fill('wrong-passphrase-000')
 		// dead_platform_toast_api: the failure must paint a VISIBLE app-owned
 		// toast, not only the visually-hidden live region.
-		await expect(page.locator('.iv-toast--error').first()).toBeVisible({ timeout: 30_000 })
+		const errToast = page.locator('.iv-toast--error').first()
+		await expect(errToast).toBeVisible({ timeout: 30_000 })
+		await expectOverlayCloseArmored(errToast.locator('.iv-toast__close'), '.iv-toast')
 		await expect(page.locator('#iv-transfer-result-live')).not.toBeEmpty()
 		await shot(page, 'iv-admin-transfer-fileerror-light-1280')
 
@@ -136,7 +184,9 @@ test.describe('craft transfer', () => {
 			name: 't.nctransfer', mimeType: 'application/json', buffer: bytes,
 		})
 		await page.locator('#iv-transfer-import-passphrase').fill('wrong-passphrase-000')
-		await expect(page.locator('.iv-toast--error').first()).toBeVisible({ timeout: 30_000 })
+		const errToast375 = page.locator('.iv-toast--error').first()
+		await expect(errToast375).toBeVisible({ timeout: 30_000 })
+		await expectOverlayCloseArmored(errToast375.locator('.iv-toast__close'), '.iv-toast')
 		await expect(page.locator('#iv-transfer-result-live')).not.toBeEmpty()
 		await shot(page, 'iv-admin-transfer-fileerror-light-375')
 	})
