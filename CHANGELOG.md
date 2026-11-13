@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.5.4 - 2026-11-13
+
+### Fixed
+
+- re-sync pack css — promote ≤480px sheet rule to dialog.iv-dialog
+- margin:auto pack dialog sync; sort uninstall drop-table catalog alphabetically
+- armor body-mounted toast close against NC core button repaint
+- zh_CN/zh_TW in parity roster + bidirectional catalog guard
+- sync config-transfer pack — schema cache, file-input specificity, sheet clip
+- iv-toast__text non-zero flex-basis so narrow wrap can trigger
+- route bridge alerts through an app-owned toast announcer
+- pack re-sync — schemaCache + 320px clip armor + localized receipt enum
+- regen pt/pt_BR js mirrors via canonical emitter
+- sync config-transfer pack — positional t() interpolation
+- canonical snapshot/stock terms in delta-wave cells
+- tr role label 'Field' was 'Alan' (form-field sense) -> 'Saha'
+- label print templates + controllers
+- reachable + gated widget-snapshot endpoint
+
+### Added
+
+- config & data transfer — encrypted test→prod pack
+- CSV import upserts matched items instead of rejecting them
+- widget-snapshot endpoint
+
+### Changed
+
+- pack-dialog centering legs — native_dialog_margin_reset_uncentered
+- kill surviving wave mutant + resync two stale mutant defs
+- cover settings/transfer surface + allowlist marker-less category rows
+- l10n/e2e: transfer-pack msgid catalogs all 15 locales + transfer settings route in a11y sweep
+- pack re-sync — replace-confirm token width (cramped_form_controls)
+- l10n: zh-Hant/zh_TW catalog + locale wiring
+- l10n: add zh_CN catalog
+- l10n: complete translations across the app language set
+- pin CSP nonce on inline print-template scripts
+
 ## 1.5.3 - 2026-11-07
 
 ### Added
