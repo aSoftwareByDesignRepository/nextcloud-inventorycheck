@@ -177,6 +177,23 @@ final class AzcShellParityContractTest extends TestCase
 		$this->assertStringContainsString('nav-item-inset', $css);
 	}
 
+	public function testDisclosureChevronPinsToTrailingEdge(): void
+	{
+		$css = (string)file_get_contents($this->root . '/css/navigation.css');
+		// <button> keeps intrinsic sizing; the li must be a flex column so the
+		// toggle row fills the sidebar instead of hugging its label text.
+		$this->assertMatchesRegularExpression(
+			'/\.nav-item-has-children\s*\{[^}]*display:\s*flex[^}]*flex-direction:\s*column/s',
+			$css,
+			'.nav-item-has-children must be a flex column (button rows must fill the sidebar)'
+		);
+		$this->assertMatchesRegularExpression(
+			'/\.nav-parent-chevron\s*\{[^}]*margin-inline-start:\s*auto/s',
+			$css,
+			'.nav-parent-chevron must pin to the trailing edge via margin-inline-start:auto'
+		);
+	}
+
 	public function testLayoutCssPinsMidDesktopNavWidthLikeAzc(): void
 	{
 		$layout = (string)file_get_contents($this->root . '/css/common/app-layout.css');
