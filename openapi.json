@@ -528,6 +528,15 @@
 				}
 			}
 		},
+		"/api/license/devices/remove": {
+			"post": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			}
+		},
 		"/api/license/devices/{id}/pair-code": {
 			"post": {
 				"responses": {

@@ -144,7 +144,7 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 		DirectoryController::class => ['searchUsers', 'searchGroups'],
 		LicenseController::class => [
 			'show', 'apply', 'remove', 'seats', 'assignSeat', 'removeSeatPost', 'removeSeat',
-			'devices', 'createDevice', 'regeneratePairCode', 'removeDevice',
+			'devices', 'createDevice', 'regeneratePairCode', 'removeDevicePost', 'removeDevice',
 		],
 		MobileController::class => [
 			'bootstrap', 'byCode', 'itemPhoto', 'locationByCode', 'locations',
@@ -834,6 +834,7 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 			'userId' => 'bob',
 			'key' => 'LIC-TEST',
 			'displayName' => 'Scanner 1',
+			'deviceId' => 1,
 			'pairCode' => 'PAIR01',
 			'countedQty' => 1,
 			'qtyCounted' => 1,
