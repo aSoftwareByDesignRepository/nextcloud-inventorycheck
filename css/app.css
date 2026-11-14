@@ -3341,7 +3341,7 @@ textarea {
  * every repainted property !important — the close stays a transparent
  * ~44px icon docked at the toast's inline-end, not a ~130px pale block.
  * (overlay_toast_button_armor_gap; donor shape: dutycheck @8e369e3 /
- * portalcheck @6328cb6 / whistlecheck .wc-toasts button.wc-toast__close.) */
+ * kanzleicheck @6328cb6 / whistlecheck .wc-toasts button.wc-toast__close.) */
 .iv-toasts button.iv-toast__close,
 #iv-toasts button.iv-toast__close {
 	width: auto !important;
