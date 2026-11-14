@@ -7,15 +7,16 @@ namespace OCA\InventoryCheck\Dashboard;
 use OCA\InventoryCheck\AppInfo\Application;
 use OCA\InventoryCheck\Service\AccessControlService;
 use OCA\InventoryCheck\Service\LowStockService;
-use OCP\Dashboard\IAPIWidget;
+use OCP\Dashboard\IAPIWidgetV2;
 use OCP\Dashboard\IButtonWidget;
 use OCP\Dashboard\Model\WidgetButton;
 use OCP\Dashboard\Model\WidgetItem;
+use OCP\Dashboard\Model\WidgetItems;
 use OCP\IURLGenerator;
 use OCP\IL10N;
 
 /** F-21 dashboard widget — top low-stock items, money-free payload. */
-class LowStockWidget implements IAPIWidget, IButtonWidget
+class LowStockWidget implements IAPIWidgetV2, IButtonWidget
 {
 	public function __construct(
 		private readonly LowStockService $lowStock,
@@ -55,12 +56,13 @@ class LowStockWidget implements IAPIWidget, IButtonWidget
 		// API-driven widget — nothing to inject eagerly.
 	}
 
-	public function getItems(string $userId, ?string $since = null, int $limit = 7): array
+	public function getItemsV2(string $userId, ?string $since = null, int $limit = 7): WidgetItems
 	{
+		$empty = $this->l10n->t('Nothing is below reorder level.');
 		try {
 			$rows = $this->lowStock->list($userId, min(20, $limit), 0)['data'] ?? [];
 		} catch (\Throwable) {
-			return [];
+			return new WidgetItems([], $empty);
 		}
 		$icon = $this->urlGenerator->getAbsoluteURL(
 			$this->urlGenerator->imagePath(Application::APP_ID, 'app-dark.svg'),
@@ -76,7 +78,7 @@ class LowStockWidget implements IAPIWidget, IButtonWidget
 				(string)($item['id'] ?? ''),
 			);
 		}
-		return $items;
+		return new WidgetItems($items, $empty);
 	}
 
 	public function getWidgetButtons(string $userId): array
