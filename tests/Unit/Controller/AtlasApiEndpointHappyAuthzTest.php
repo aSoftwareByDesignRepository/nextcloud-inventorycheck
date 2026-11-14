@@ -143,7 +143,7 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 		],
 		DirectoryController::class => ['searchUsers', 'searchGroups'],
 		LicenseController::class => [
-			'show', 'apply', 'remove', 'seats', 'assignSeat', 'removeSeat',
+			'show', 'apply', 'remove', 'seats', 'assignSeat', 'removeSeatPost', 'removeSeat',
 			'devices', 'createDevice', 'regeneratePairCode', 'removeDevice',
 		],
 		MobileController::class => [
@@ -653,7 +653,7 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 			$mock->method('remove')->willReturn(['ok' => true]);
 			$mock->method('listSeats')->willReturn(['seats' => [], 'total' => 0]);
 			$mock->method('assignSeat')->willReturn(['seat' => ['userId' => 'bob']]);
-			$mock->method('removeSeat')->willReturnCallback(static function (): void {});
+			$mock->method('removeSeat')->willReturn(new \OCA\InventoryCheck\Db\MobileSeat());
 			$mock->method('listDevices')->willReturn(['devices' => [], 'total' => 0]);
 			$mock->method('createDevice')->willReturn(['id' => 1, 'pairCode' => 'ABC']);
 			$mock->method('regeneratePairCode')->willReturn(['id' => 1, 'pairCode' => 'XYZ']);

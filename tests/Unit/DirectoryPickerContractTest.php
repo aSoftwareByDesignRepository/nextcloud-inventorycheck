@@ -71,10 +71,11 @@ final class DirectoryPickerContractTest extends TestCase
 	{
 		$js = $this->appJs();
 		self::assertSame(
-			10,
+			9,
 			substr_count($js, 'createIdPicker('),
-			'Expected 1 factory function definition + 9 call sites: officeUsers, officeGroups, '
-				. 'allowedUsers, allowedGroups, appAdmins, notifyUsers, notifyGroups, ACL subject, mobile seat.',
+			'Expected 1 factory function definition + 8 call sites: officeUsers, officeGroups, '
+				. 'allowedUsers, allowedGroups, appAdmins, notifyUsers, notifyGroups, ACL subject. '
+				. 'Mobile seats use the shared license-page people-search combobox.',
 		);
 		self::assertStringContainsString('officeUsersPicker = createIdPicker(', $js);
 		self::assertStringContainsString('officeGroupsPicker = createIdPicker(', $js);
@@ -84,7 +85,10 @@ final class DirectoryPickerContractTest extends TestCase
 		self::assertStringContainsString('notifyUsersPicker = createIdPicker(', $js);
 		self::assertStringContainsString('notifyGroupsPicker = createIdPicker(', $js);
 		self::assertStringContainsString('aclSubjectPicker = createIdPicker(', $js);
-		self::assertStringContainsString('seatUidPicker = createIdPicker(', $js);
+		// The mobile-seat picker is the shared license-page combobox
+		// (js/common/license-page.js → apiSearchUsersUrl); no raw-uid input.
+		$licensePage = (string)file_get_contents(dirname(__DIR__, 2) . '/js/common/license-page.js');
+		self::assertStringContainsString('-seat-search-results', $licensePage);
 	}
 
 	public function testPickerHasNoManualOrDirectEntryFallback(): void

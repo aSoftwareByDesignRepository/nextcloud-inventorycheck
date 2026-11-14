@@ -5165,6 +5165,25 @@
 			mount.appendChild(settingsPageSection('transfer', 'iv-transfer-title', transferKids));
 			return;
 		}
+		if (section === 'license') {
+			// Server-rendered shared license page — relocate into the
+			// settings-page shell; common/license-page.js binds by
+			// [data-license-root] on the moved nodes.
+			clear(mount);
+			setBusy(mount, false);
+			var licenseHost = document.getElementById('iv-license-server-part');
+			var licenseKids = [settingsSrTitle('iv-license-title', tr('License & devices'))];
+			if (licenseHost) {
+				while (licenseHost.firstChild) {
+					licenseKids.push(licenseHost.firstChild);
+				}
+				licenseHost.parentNode.removeChild(licenseHost);
+			}
+			var licenseSection = settingsPageSection('license', 'iv-license-title', licenseKids);
+			licenseSection.id = 'iv-license';
+			mount.appendChild(licenseSection);
+			return;
+		}
 		Promise.all([
 			api('GET', ctx.urls.api.config),
 			api('GET', ctx.urls.api.license),
@@ -5855,185 +5874,6 @@
 				].concat(statsKids))));
 			}
 
-			var keyInput = el('textarea', {
-				className: 'iv-input',
-				rows: '3',
-				id: 'iv-license-key',
-				placeholder: 'IV2.…',
-				'aria-label': tr('License key'),
-			});
-			var stateText = lic.state
-				? (lic.state.customerId + ' · ' + lic.state.validUntil + (lic.state.valid ? ' · ' + tr('Valid') : ' · ' + tr('Expired')))
-				: tr('No license stored');
-			var seatUidPicker = createIdPicker({
-				kind: 'user',
-				multi: false,
-				searchUrls: directoryUrls,
-			});
-			var deviceLabel = el('input', {
-				type: 'text',
-				className: 'iv-input',
-				id: 'iv-device-label',
-				placeholder: tr('Scanner label'),
-				'aria-label': tr('Scanner label'),
-			});
-			var deviceCreateLocationPicker = createLocalOptionPicker({
-				rootId: 'iv-device-create-locs',
-				searchId: 'iv-device-create-loc-search',
-				ariaLabel: tr('Locations for new scanner (optional)'),
-				placeholder: tr('Search locations…'),
-				options: flangeLocations.map(function (loc) {
-					return { id: loc.id, label: loc.name + ' — ' + loc.code };
-				}),
-			});
-			var seatsHost = el('div', { className: 'iv-stack', id: 'iv-seats-list' });
-			var devicesHost = el('div', { className: 'iv-stack', id: 'iv-devices-list' });
-			var pairCodeHost = el('div', {
-				className: 'iv-pair-code-panel',
-				id: 'iv-pair-code-panel',
-				role: 'status',
-				'aria-live': 'polite',
-				hidden: '',
-			});
-
-			function deviceStateLabel(d) {
-				if (!d.active || d.state === 'inactive') return tr('Inactive');
-				if (d.state === 'paired') return tr('Paired');
-				if (d.state === 'expired') return tr('Expired pair code');
-				if (d.state === 'pending' || d.hasPendingPairCode) return tr('Pending pair code');
-				return tr('Empty slot');
-			}
-
-			function showPairCodeOnce(code) {
-				clear(pairCodeHost);
-				if (!code) {
-					pairCodeHost.setAttribute('hidden', '');
-					return;
-				}
-				pairCodeHost.removeAttribute('hidden');
-				pairCodeHost.appendChild(el('p', {
-					className: 'iv-pair-code-panel__lead',
-					text: tr('Copy this code now. It is shown only once.'),
-				}));
-				pairCodeHost.appendChild(el('p', {
-					className: 'iv-mono iv-pair-code-panel__code',
-					id: 'iv-pair-code-once',
-					text: code,
-					'aria-label': tr('Pairing code'),
-				}));
-				pairCodeHost.appendChild(btn(tr('Copy code'), {
-					primary: true,
-					className: 'iv-btn--touch',
-					onclick: function () {
-						if (navigator.clipboard && code) {
-							navigator.clipboard.writeText(code).then(function () {
-								toast(tr('Pairing code copied.'));
-							}).catch(function () {
-								toast(tr('Could not copy. Select the code manually.'), true);
-							});
-						} else {
-							toast(tr('Select the code manually to copy.'), true);
-						}
-					},
-				}));
-				try {
-					pairCodeHost.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-				} catch (e) { /* ignore */ }
-			}
-
-			function refreshSeatsAndDevices() {
-				return Promise.all([
-					api('GET', ctx.urls.api.licenseSeats + '?limit=100&offset=0'),
-					api('GET', ctx.urls.api.licenseDevices + '?limit=100&offset=0'),
-				]).then(function (lists) {
-					clear(seatsHost);
-					if (!lists[0].data.length) {
-						seatsHost.appendChild(el('p', { className: 'iv-muted', text: tr('No seats assigned yet.') }));
-					} else {
-						lists[0].data.forEach(function (s) {
-							var titleKids = [el('span', { className: 'iv-row__title', text: s.displayName || s.uid })];
-							if (s.withinLimit === false) {
-								titleKids.push(el('span', {
-									className: 'iv-chip iv-chip--over-limit',
-									text: tr('Over seat limit'),
-								}));
-							}
-							seatsHost.appendChild(el('div', { className: 'iv-row' }, [
-								el('div', { className: 'iv-row__main' }, titleKids),
-								btn(tr('Remove'), {
-									onclick: function () {
-										api('DELETE', ctx.urls.api.licenseSeats.replace(/\/?$/, '/') + encodeURIComponent(s.uid))
-											.then(function () {
-												toast(tr('Seat removed.'));
-												renderSettings(ctx);
-											})
-											.catch(function (err) { toast(err.message, true); });
-									},
-								}),
-							]));
-						});
-					}
-					clear(devicesHost);
-					if (!lists[1].data.length) {
-						devicesHost.appendChild(el('p', { className: 'iv-muted', text: tr('No device slots yet.') }));
-					} else {
-						lists[1].data.forEach(function (d) {
-							var actions = [];
-							if (d.active) {
-								actions.push(btn(tr('Regenerate code'), {
-									onclick: function (ev) {
-										var trigger = ev && ev.currentTarget ? ev.currentTarget : null;
-										dialog(tr('Regenerate the pairing code?'), [
-											el('p', { className: 'iv-muted', text: tr('The current code stops working immediately. Show the new one-time code on this device and pair it again.') }),
-										], function () {
-											return api('POST', ctx.urls.api.licenseDevices.replace(/\/?$/, '/') + d.id + '/pair-code')
-												.then(function (res) {
-													showPairCodeOnce(res.pairCode || '');
-													return refreshSeatsAndDevices();
-												});
-										}, tr('Regenerate'), { restoreFocusTo: trigger });
-									},
-								}));
-								actions.push(btn(tr('Deactivate'), {
-									onclick: function (ev) {
-										var trigger = ev && ev.currentTarget ? ev.currentTarget : null;
-										dialog(tr('Deactivate this device?'), [
-											el('p', { className: 'iv-muted', text: tr('The device slot is deactivated and its location access grants are removed. It can be reactivated later with a new pairing code.') }),
-										], function () {
-											return api('DELETE', ctx.urls.api.licenseDevices.replace(/\/?$/, '/') + d.id)
-												.then(function () {
-													toast(tr('Device deactivated.'));
-													renderSettings(ctx);
-												});
-										}, tr('Deactivate'), { restoreFocusTo: trigger });
-									},
-								}));
-							}
-							devicesHost.appendChild(el('div', { className: 'iv-row' }, [
-								el('div', { className: 'iv-row__main' }, [
-									el('span', { className: 'iv-row__title', text: d.label }),
-									el('span', { className: 'iv-muted', text: deviceStateLabel(d) }),
-								]),
-								el('div', { className: 'iv-row__actions' }, actions),
-							]));
-						});
-					}
-				});
-			}
-
-			
-			var requireAdjustReason = el('input', {
-				type: 'checkbox',
-				className: 'iv-switch__input',
-				id: 'iv-require-adjust-reason',
-				checked: cfg.requireAdjustReason ? '' : null,
-			});
-			var requireLocationScan = el('input', {
-				type: 'checkbox',
-				className: 'iv-switch__input',
-				id: 'iv-require-location-scan',
-				checked: cfg.requireLocationScan ? '' : null,
-			});
 			if (section === 'policies') {
 				mount.appendChild(settingsPageSection('policies', 'iv-policies-title', withSettingsHowTo(ctx, 'policies', [
 					settingsSrTitle('iv-policies-title', tr('Scan & adjust policies')),
@@ -6231,93 +6071,6 @@
 				mount.appendChild(settingsPageSection('restock', 'iv-restock-title', withSettingsHowTo(ctx, 'restock', restockKids.filter(Boolean))));
 			}
 
-			if (section === 'license') {
-				var licenseSection = settingsPageSection('license', 'iv-license-title', withSettingsHowTo(ctx, 'license', [
-					settingsSrTitle('iv-license-title', tr('Official mobile & scanner licenses')),
-					el('div', {
-						className: 'iv-license-status',
-						role: 'status',
-					}, [
-						el('p', { className: 'iv-license-status__state', text: stateText }),
-						el('p', {
-							className: 'iv-license-status__counts',
-							text: tr('Seats') + ': ' + lic.seats.assigned + ' / ' + lic.seats.limit
-								+ ' · ' + tr('Devices') + ': ' + lic.devices.active + ' / ' + lic.devices.limit,
-						}),
-					]),
-					field(tr('Paste IV2 key'), keyInput, { name: 'key' }),
-					settingsFormActions(btn(tr('Apply key'), {
-						primary: true,
-						className: 'iv-btn--touch',
-						onclick: function () {
-							api('POST', ctx.urls.api.license, { key: keyInput.value }).then(function () {
-								toast(tr('License applied.'));
-								renderSettings(ctx);
-							}).catch(function (err) { toast(err.message, true); });
-						},
-					})),
-					disclosureSection(tr('Mobile seats'), [
-						seatsHost,
-						pickerField(tr('Assign seat to user'), seatUidPicker, { name: 'uid' }),
-						btn(tr('Assign seat'), {
-							onclick: function () {
-								api('POST', ctx.urls.api.licenseSeats, { uid: seatUidPicker.getId() }).then(function () {
-									toast(tr('Seat assigned.'));
-									renderSettings(ctx);
-								}).catch(function (err) {
-									toast(err.message, true);
-									if (err && err.code === 'seat_limit_reached') {
-										toast(tr('All licensed seats are assigned. Ask about upgrading mobile seats.'), true);
-									}
-								});
-							},
-						}),
-					], { open: !!(lic.seats && lic.seats.assigned > 0) }),
-					disclosureSection(tr('Scanner device slots'), [
-						devicesHost,
-						field(tr('New device label'), deviceLabel, { name: 'label' }),
-						pickerField(tr('Locations for new scanner (optional)'), deviceCreateLocationPicker, { name: 'locationIds' }),
-						el('p', {
-							className: 'iv-field__hint',
-							text: tr('Optional. Bind this scanner to locations when you create it. You can also grant locations later under Location access.'),
-						}),
-						btn(tr('Create device slot'), {
-							onclick: function () {
-								var body = { label: deviceLabel.value.trim() };
-								var bindIds = deviceCreateLocationPicker.getIds().map(function (id) {
-									return Number(id);
-								}).filter(function (n) { return n > 0; });
-								if (bindIds.length) {
-									body.locationIds = bindIds;
-								}
-								api('POST', ctx.urls.api.licenseDevices, body).then(function (res) {
-									deviceLabel.value = '';
-									deviceCreateLocationPicker.reset();
-									showPairCodeOnce(res.pairCode || '');
-									return refreshSeatsAndDevices();
-								}).catch(function (err) {
-									toast(err.message, true);
-									if (err && err.code === 'device_limit_reached') {
-										toast(tr('All licensed device slots are used. Ask about upgrading scanner licenses.'), true);
-									}
-								});
-							},
-						}),
-						pairCodeHost,
-					], { open: !!(lic.devices && lic.devices.active > 0) }),
-					el('p', { className: 'iv-muted', text: tr('Pair shared scanners in the InventoryCheck mobile app (cold start or Settings). Device slots and pairing codes work here.') }),
-					el('p', null, [
-						el('a', {
-							href: 'mailto:info@software-by-design.de?subject=' + encodeURIComponent('InventoryCheck: Mobile / Scanner Lizenzen'),
-							className: 'button',
-							text: tr('Ask about mobile & scanner licenses'),
-						}),
-					]),
-				]));
-				licenseSection.id = 'iv-license';
-				mount.appendChild(licenseSection);
-				refreshSeatsAndDevices().catch(function (err) { toast(err.message, true); });
-			}
 		}).catch(function (err) {
 			setBusy(mount, false);
 			clear(mount);

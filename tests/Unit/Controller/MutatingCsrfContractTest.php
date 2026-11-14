@@ -22,7 +22,7 @@ final class MutatingCsrfContractTest extends TestCase
 		'receive', 'issue', 'transfer', 'adjust', 'scan',
 		'saveAccess', 'saveOffice', 'saveNotify', 'saveFractional', 'saveWaveD', 'saveLocationAcl',
 		'saveProductLookup',
-		'apply', 'remove', 'assignSeat', 'removeSeat',
+		'apply', 'remove', 'assignSeat', 'removeSeatPost', 'removeSeat',
 		'createDevice', 'regeneratePairCode', 'removeDevice',
 		'start', 'setCount', 'close',
 		'dryRun', 'commit',

@@ -132,6 +132,7 @@ return [
 		['name' => 'license#remove', 'url' => '/api/license', 'verb' => 'DELETE'],
 		['name' => 'license#seats', 'url' => '/api/license/seats', 'verb' => 'GET'],
 		['name' => 'license#assignSeat', 'url' => '/api/license/seats', 'verb' => 'POST'],
+		['name' => 'license#removeSeatPost', 'url' => '/api/license/seats/remove', 'verb' => 'POST'],
 		['name' => 'license#removeSeat', 'url' => '/api/license/seats/{uid}', 'verb' => 'DELETE'],
 		['name' => 'license#devices', 'url' => '/api/license/devices', 'verb' => 'GET'],
 		['name' => 'license#createDevice', 'url' => '/api/license/devices', 'verb' => 'POST'],

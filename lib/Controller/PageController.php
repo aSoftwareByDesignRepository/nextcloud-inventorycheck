@@ -40,6 +40,7 @@ class PageController extends Controller
 		private readonly IConfig $config,
 		private readonly SettingsSectionCatalog $settingsSections,
 		private readonly ProductLookupService $productLookup,
+		private readonly LicenseService $license,
 		private readonly \OCA\InventoryCheck\ConfigTransfer\TransferReceiptStore $transferReceipts,
 	) {
 		parent::__construct(Application::APP_ID, $request);
@@ -343,6 +344,15 @@ class PageController extends Controller
 
 		if ($pageId === 'settings' && $settingsSection !== null) {
 			Util::addScript(Application::APP_ID, 'settings-legacy-redirect');
+			if ($settingsSection === 'license' && $isAppAdmin) {
+				Util::addStyle(Application::APP_ID, 'common/license-page');
+				Util::addScript(Application::APP_ID, 'common/license-page');
+				$params['licenseStatus'] = $this->license->status();
+				$params['licenseSeatsList'] = $this->license->listSeats(200, 0);
+				$params['licenseDevicesList'] = $this->license->listDevices(200, 0);
+				$params['urlGenerator'] = $this->urlGenerator;
+				$params['requesttoken'] = \OCP\Util::callRegister();
+			}
 			if ($settingsSection === 'transfer') {
 				Util::addStyle(Application::APP_ID, 'common/transfer');
 				Util::addScript(Application::APP_ID, 'transfer-bridge');

@@ -10,6 +10,7 @@ use OCA\InventoryCheck\Service\LicenseService;
 use OCA\InventoryCheck\Service\LocationAclService;
 use OCA\InventoryCheck\Service\Pagination;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -77,7 +78,20 @@ class LicenseController extends Controller
 		$target = $this->request->getParam('uid');
 		$result = $this->license->assignSeat($uid, $target);
 		$this->auditPolicyChange($uid, 'seat_assigned', ['targetUid' => is_scalar($target) ? (string)$target : null]);
-		return new JSONResponse($result);
+		return new JSONResponse(['ok' => true] + $result);
+	}
+
+	#[NoAdminRequired]
+	public function removeSeatPost(): JSONResponse
+	{
+		$actor = $this->access->currentUserId();
+		$this->access->requireAppAdmin($actor);
+		$target = (string)$this->request->getParam('uid', (string)$this->request->getParam('userId', ''));
+		if ($target === '' || $this->license->removeSeat($target) === null) {
+			return new JSONResponse(['ok' => false, 'error' => 'seat_not_found'], Http::STATUS_NOT_FOUND);
+		}
+		$this->auditPolicyChange($actor, 'seat_removed', ['targetUid' => $target]);
+		return new JSONResponse(['ok' => true]);
 	}
 
 	#[NoAdminRequired]
@@ -145,7 +159,7 @@ class LicenseController extends Controller
 			'deviceId' => $created['device']['id'] ?? null,
 			'boundLocations' => $bindIds !== null ? count($bindIds) : 0,
 		]);
-		return new JSONResponse($created);
+		return new JSONResponse(['ok' => true] + $created);
 	}
 
 	#[NoAdminRequired]
@@ -156,7 +170,7 @@ class LicenseController extends Controller
 		$result = $this->license->regeneratePairCode($uid, $id);
 		// Audit: pair code rotated — never log the code itself.
 		$this->auditPolicyChange($uid, 'device_pair_code_regenerated', ['deviceId' => $id]);
-		return new JSONResponse($result);
+		return new JSONResponse(['ok' => true] + $result);
 	}
 
 	#[NoAdminRequired]

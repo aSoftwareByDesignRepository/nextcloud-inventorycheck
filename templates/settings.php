@@ -13,6 +13,13 @@ if ($ivSettingsSection !== '' && !empty($_['isAppAdmin'])) {
 	<p class="iv-loading"><?php p($l->t('Loading…')); ?></p>
 </div>
 <?php
+if ($ivSettingsSection === 'license' && !empty($_['isAppAdmin'])) {
+	// Server-rendered shared license page — js/app.js relocates it into the
+	// settingsPageSection('license', …) shell inside #iv-page-root.
+	echo '<div id="iv-license-server-part">';
+	require __DIR__ . '/parts/settings/license.php';
+	echo '</div>';
+}
 if ($ivSettingsSection === 'transfer' && !empty($_['isAppAdmin'])) {
 	// Server-rendered transfer cards — js/app.js wraps them into the
 	// settingsPageSection('transfer', …) shell inside #iv-page-root.

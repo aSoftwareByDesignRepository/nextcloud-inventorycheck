@@ -152,7 +152,10 @@ final class BachusSimplicityUxContractTest extends TestCase
 		self::assertStringContainsString('Clear grants', $this->js);
 		self::assertStringNotContainsString('Native scanner app: coming soon', $this->js);
 		self::assertStringNotContainsString('Hold Ctrl (or Cmd on Mac)', $this->js);
-		self::assertStringContainsString('iv-pair-code-panel', $this->js);
+		// One-time pair code display now lives in the shared license page
+		// (templates/common/license-page.php token modal).
+		$sharedTpl = (string)file_get_contents(dirname(__DIR__, 3) . '/templates/common/license-page.php');
+		self::assertStringContainsString('-license-token', $sharedTpl);
 		self::assertStringContainsString('We check your file automatically', $this->js);
 		self::assertStringContainsString('iv-import-columns', $this->js);
 		self::assertStringContainsString('scheduleDryRun', $this->js);
@@ -190,8 +193,8 @@ final class BachusSimplicityUxContractTest extends TestCase
 		self::assertStringContainsString('Showing transfer group', $this->js);
 		self::assertStringContainsString('Export DATEV-style CSV', $this->js);
 		self::assertStringContainsString('perLoc.data && perLoc.data.length > 0', $this->js);
-		self::assertStringContainsString("disclosureSection(tr('Mobile seats')", $this->js);
-		self::assertStringContainsString("disclosureSection(tr('Scanner device slots')", $this->js);
+		// Seats + scanner slots are rendered by the shared license page.
+		self::assertStringContainsString("iv-license-server-part", $this->js);
 	}
 
 	public function testPass6TransferConfirmStocktakeImportFavourites(): void
