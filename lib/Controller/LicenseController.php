@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\InventoryCheck\Controller;
 
 use OCA\InventoryCheck\AppInfo\Application;
+use OCA\InventoryCheck\Exception\NotFoundException;
 use OCA\InventoryCheck\Service\AccessControlService;
 use OCA\InventoryCheck\Service\LicenseService;
 use OCA\InventoryCheck\Service\LocationAclService;
@@ -182,7 +183,11 @@ class LicenseController extends Controller
 		if ($id <= 0) {
 			return new JSONResponse(['ok' => false, 'error' => 'device_not_found'], Http::STATUS_NOT_FOUND);
 		}
-		$this->license->deactivateDevice($id);
+		try {
+			$this->license->deactivateDevice($id);
+		} catch (NotFoundException) {
+			return new JSONResponse(['ok' => false, 'error' => 'device_not_found'], Http::STATUS_NOT_FOUND);
+		}
 		$this->locationAcl->purgeDevice($id);
 		$this->auditPolicyChange($actor, 'device_removed', ['deviceId' => $id]);
 		return new JSONResponse(['ok' => true]);
