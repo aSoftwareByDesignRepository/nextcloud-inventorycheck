@@ -5158,7 +5158,7 @@
 			var transferKids = [settingsSrTitle('iv-transfer-title', tr('Transfer configuration'))];
 			if (transferHost) {
 				while (transferHost.firstChild) {
-					transferKids.push(transferHost.firstChild);
+					transferKids.push(transferHost.removeChild(transferHost.firstChild));
 				}
 				transferHost.parentNode.removeChild(transferHost);
 			}
@@ -5175,7 +5175,7 @@
 			var licenseKids = [settingsSrTitle('iv-license-title', tr('License & devices'))];
 			if (licenseHost) {
 				while (licenseHost.firstChild) {
-					licenseKids.push(licenseHost.firstChild);
+					licenseKids.push(licenseHost.removeChild(licenseHost.firstChild));
 				}
 				licenseHost.parentNode.removeChild(licenseHost);
 			}
@@ -5874,6 +5874,18 @@
 				].concat(statsKids))));
 			}
 
+			var requireAdjustReason = el('input', {
+				type: 'checkbox',
+				className: 'iv-switch__input',
+				id: 'iv-require-adjust-reason',
+				checked: cfg.requireAdjustReason ? '' : null,
+			});
+			var requireLocationScan = el('input', {
+				type: 'checkbox',
+				className: 'iv-switch__input',
+				id: 'iv-require-location-scan',
+				checked: cfg.requireLocationScan ? '' : null,
+			});
 			if (section === 'policies') {
 				mount.appendChild(settingsPageSection('policies', 'iv-policies-title', withSettingsHowTo(ctx, 'policies', [
 					settingsSrTitle('iv-policies-title', tr('Scan & adjust policies')),
