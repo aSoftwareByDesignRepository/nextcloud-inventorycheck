@@ -79,7 +79,7 @@ class LicenseController extends Controller
 		$target = $this->request->getParam('uid');
 		$result = $this->license->assignSeat($uid, $target);
 		$this->auditPolicyChange($uid, 'seat_assigned', ['targetUid' => is_scalar($target) ? (string)$target : null]);
-		return new JSONResponse(['ok' => true] + $result);
+		return new JSONResponse(['ok' => true] + $result + $this->seatSummary());
 	}
 
 	#[NoAdminRequired]
@@ -92,7 +92,7 @@ class LicenseController extends Controller
 			return new JSONResponse(['ok' => false, 'error' => 'seat_not_found'], Http::STATUS_NOT_FOUND);
 		}
 		$this->auditPolicyChange($actor, 'seat_removed', ['targetUid' => $target]);
-		return new JSONResponse(['ok' => true]);
+		return new JSONResponse(['ok' => true] + $this->seatSummary());
 	}
 
 	#[NoAdminRequired]
@@ -103,7 +103,7 @@ class LicenseController extends Controller
 		if ($this->license->removeSeat($uid) !== null) {
 			$this->auditPolicyChange($actor, 'seat_removed', ['targetUid' => $uid]);
 		}
-		return new JSONResponse(['ok' => true]);
+		return new JSONResponse(['ok' => true] + $this->seatSummary());
 	}
 
 	#[NoAdminRequired]
@@ -160,7 +160,9 @@ class LicenseController extends Controller
 			'deviceId' => $created['device']['id'] ?? null,
 			'boundLocations' => $bindIds !== null ? count($bindIds) : 0,
 		]);
-		return new JSONResponse(['ok' => true] + $created);
+		// Shared pack re-renders the terminal table + slot counter from the
+		// mutation response — without a fresh list the new row never paints.
+		return new JSONResponse(['ok' => true] + $created + $this->terminalSummary());
 	}
 
 	#[NoAdminRequired]
@@ -190,7 +192,66 @@ class LicenseController extends Controller
 		}
 		$this->locationAcl->purgeDevice($id);
 		$this->auditPolicyChange($actor, 'device_removed', ['deviceId' => $id]);
-		return new JSONResponse(['ok' => true]);
+		return new JSONResponse(['ok' => true] + $this->terminalSummary());
+	}
+
+	/**
+	 * Active-terminal list + slot counters in the shape the shared license-page
+	 * pack's applyDeviceMutationResponse()/normalizeDevices() consumes to
+	 * re-render the table after a register/revoke mutation.
+	 *
+	 * @return array{terminals: list<array<string, string>>, terminalDevicesUsed: int, terminalDevicesLimit: int}
+	 */
+	private function terminalSummary(): array
+	{
+		$terminals = [];
+		foreach (($this->license->listDevices(200, 0)['data'] ?? []) as $row) {
+			if (!is_array($row) || empty($row['active'])) {
+				continue;
+			}
+			$createdAt = $row['createdAt'] ?? null;
+			$terminals[] = [
+				'id' => (string)($row['id'] ?? ''),
+				'label' => (string)($row['label'] ?? ''),
+				'meta' => (string)($row['state'] ?? ''),
+				'registeredAt' => is_int($createdAt) ? date('c', $createdAt) : (string)$createdAt,
+			];
+		}
+		$counts = $this->license->status()['devices'] ?? [];
+		return [
+			'terminals' => $terminals,
+			'terminalDevicesUsed' => (int)($counts['active'] ?? count($terminals)),
+			'terminalDevicesLimit' => (int)($counts['limit'] ?? 0),
+		];
+	}
+
+	/**
+	 * Seat list + counters in the shape the shared license-page pack's
+	 * applySeatMutationResponse()/normalizeSeats() consumes to re-render the
+	 * seat table after an assign/remove mutation.
+	 *
+	 * @return array{seats: list<array<string, mixed>>, mobileSeatsUsed: int, mobileSeatsLimit: int}
+	 */
+	private function seatSummary(): array
+	{
+		$seats = [];
+		foreach (($this->license->listSeats(200, 0)['data'] ?? []) as $row) {
+			if (!is_array($row)) {
+				continue;
+			}
+			$assignedAt = $row['assignedAt'] ?? '';
+			$seats[] = [
+				'userId' => (string)($row['uid'] ?? ''),
+				'displayName' => (string)($row['displayName'] ?? ($row['uid'] ?? '')),
+				'assignedAt' => is_int($assignedAt) ? date('c', $assignedAt) : (string)$assignedAt,
+			];
+		}
+		$counts = $this->license->status()['seats'] ?? [];
+		return [
+			'seats' => $seats,
+			'mobileSeatsUsed' => (int)($counts['assigned'] ?? count($seats)),
+			'mobileSeatsLimit' => (int)($counts['limit'] ?? 0),
+		];
 	}
 
 	#[NoAdminRequired]
@@ -201,6 +262,6 @@ class LicenseController extends Controller
 		$this->license->deactivateDevice($id);
 		$this->locationAcl->purgeDevice($id);
 		$this->auditPolicyChange($actor, 'device_removed', ['deviceId' => $id]);
-		return new JSONResponse(['ok' => true]);
+		return new JSONResponse(['ok' => true] + $this->terminalSummary());
 	}
 }

@@ -178,15 +178,20 @@ async function revokeDeviceByLabel(page, label) {
 
 /** Drop every leftover craft device row (stale rows block the license device cap). */
 async function purgeCraftDevices(page) {
+	let purged = false
 	for (;;) {
 		const btn = page.locator('#iv-license-page tr[data-device-id]', { hasText: 'iv-craft-' })
 			.locator('.iv-terminal-revoke').first()
-		if (await btn.count() === 0) return
+		if (await btn.count() === 0) break
 		const id = await btn.locator('xpath=./ancestor::tr[1]').getAttribute('data-device-id')
 		await btn.click()
 		await confirmDangerModal(page)
 		await expect(page.locator(`tr[data-device-id="${id}"]`)).toHaveCount(0, { timeout: 15_000 })
+		purged = true
 	}
+	// The pack's client-side "N / cap used" counter does not re-read after
+	// revoke — reload so the terminal-label input re-enables.
+	if (purged) await gotoLicense(page)
 }
 
 test.describe('craft license delta r39', () => {
