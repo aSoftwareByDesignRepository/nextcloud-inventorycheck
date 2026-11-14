@@ -209,8 +209,8 @@
       ],
       "web": [
         {
-          "file": "js/app.js",
-          "needles": ["pairCode", "pairCodeHost"]
+          "file": "js/common/license-page.js",
+          "needles": ["pairCode", "apiRegenDevice"]
         }
       ],
       "mobile": [

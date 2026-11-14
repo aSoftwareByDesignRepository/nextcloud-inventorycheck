@@ -63,7 +63,7 @@ class LowStockWidget implements IAPIWidget, IButtonWidget
 			return [];
 		}
 		$icon = $this->urlGenerator->getAbsoluteURL(
-			$this->urlGenerator->imagePath(Application::APP_ID, 'app.svg'),
+			$this->urlGenerator->imagePath(Application::APP_ID, 'app-dark.svg'),
 		);
 		$items = [];
 		foreach ($rows as $r) {

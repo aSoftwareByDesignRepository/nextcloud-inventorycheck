@@ -46,7 +46,7 @@ class Provider implements IProvider
 			[$name, $sku, $total, $reorder],
 		));
 		$event->setIcon($this->urlGenerator->getAbsoluteURL(
-			$this->urlGenerator->imagePath(Application::APP_ID, 'app.svg'),
+			$this->urlGenerator->imagePath(Application::APP_ID, 'app-dark.svg'),
 		));
 		$objectId = $event->getObjectId();
 		if ($objectId > 0) {
