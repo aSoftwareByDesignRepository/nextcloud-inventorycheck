@@ -174,6 +174,21 @@ class LicenseController extends Controller
 	}
 
 	#[NoAdminRequired]
+	public function removeDevicePost(): JSONResponse
+	{
+		$actor = $this->access->currentUserId();
+		$this->access->requireAppAdmin($actor);
+		$id = (int)($this->request->getParam('deviceId') ?? $this->request->getParam('id') ?? 0);
+		if ($id <= 0) {
+			return new JSONResponse(['ok' => false, 'error' => 'device_not_found'], Http::STATUS_NOT_FOUND);
+		}
+		$this->license->deactivateDevice($id);
+		$this->locationAcl->purgeDevice($id);
+		$this->auditPolicyChange($actor, 'device_removed', ['deviceId' => $id]);
+		return new JSONResponse(['ok' => true]);
+	}
+
+	#[NoAdminRequired]
 	public function removeDevice(int $id): JSONResponse
 	{
 		$actor = $this->access->currentUserId();

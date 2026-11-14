@@ -157,6 +157,38 @@ async function closeTokenModal(page) {
 	await expect(page.locator('dialog#iv-license-token-modal')).toBeHidden({ timeout: 10_000 })
 }
 
+/** Confirm the shared confirm modal after a destructive trigger click. */
+async function confirmDangerModal(page) {
+	const dlg = page.locator('dialog#iv-license-confirm-modal')
+	await expect(dlg).toBeVisible({ timeout: 10_000 })
+	await dlg.locator('#iv-license-confirm-ok').click()
+	await expect(dlg).toBeHidden({ timeout: 10_000 })
+}
+
+/** Revoke a registered device row via its UI Revoke button (frees the license cap). */
+async function revokeDeviceByLabel(page, label) {
+	const row = page.locator('#iv-license-page tr[data-device-id]', { hasText: label })
+	const btn = row.locator('.iv-terminal-revoke')
+	await expect(btn).toBeVisible({ timeout: 15_000 })
+	const id = await row.getAttribute('data-device-id')
+	await btn.click()
+	await confirmDangerModal(page)
+	await expect(page.locator(`tr[data-device-id="${id}"]`)).toHaveCount(0, { timeout: 15_000 })
+}
+
+/** Drop every leftover craft device row (stale rows block the license device cap). */
+async function purgeCraftDevices(page) {
+	for (;;) {
+		const btn = page.locator('#iv-license-page tr[data-device-id]', { hasText: 'iv-craft-' })
+			.locator('.iv-terminal-revoke').first()
+		if (await btn.count() === 0) return
+		const id = await btn.locator('xpath=./ancestor::tr[1]').getAttribute('data-device-id')
+		await btn.click()
+		await confirmDangerModal(page)
+		await expect(page.locator(`tr[data-device-id="${id}"]`)).toHaveCount(0, { timeout: 15_000 })
+	}
+}
+
 test.describe('craft license delta r39', () => {
 	test.skip(!creds, 'no NC_ADMIN_*/NC_E2E_* creds')
 
@@ -180,12 +212,16 @@ test.describe('craft license delta r39', () => {
 			await closeConfirm(page)
 			await expectClosedModalsHidden(page)
 
-			// (a2) token modal — real device registration shows the pair code
-			const token = await openTokenModal(page, `iv-craft-${themeId}-1280-${TS}`)
+			// (a2) token modal — real device registration shows the pair code;
+			// purge stale craft rows first so the license device cap cannot starve us
+			await purgeCraftDevices(page)
+			const tag1280 = `iv-craft-${themeId}-1280-${TS}`
+			const token = await openTokenModal(page, tag1280)
 			await expectTopLayerCentered(token, page)
 			await shot(page, `iv-license-token-modal-${themeId}-1280`)
 			await closeTokenModal(page)
 			await expectClosedModalsHidden(page)
+			await revokeDeviceByLabel(page, tag1280)
 
 			// (a3) clear modal — destructive confirm, then cancel out
 			await page.locator('#iv-license-clear').click()
@@ -218,10 +254,13 @@ test.describe('craft license delta r39', () => {
 			await closeConfirm(page)
 			await expectClosedModalsHidden(page)
 
-			const token = await openTokenModal(page, `iv-craft-${themeId}-375-${TS}`)
+			await purgeCraftDevices(page)
+			const tag375 = `iv-craft-${themeId}-375-${TS}`
+			const token = await openTokenModal(page, tag375)
 			await shot(page, `iv-license-token-modal-${themeId}-375`)
 			await closeTokenModal(page)
 			await expectClosedModalsHidden(page)
+			await revokeDeviceByLabel(page, tag375)
 
 			await page.locator('#iv-license-clear').click()
 			const clear = page.locator('dialog#iv-license-clear-modal')

@@ -120,7 +120,7 @@ $_['apiSeatsBatchUrl'] = '';
 $_['apiRemoveSeatUrl'] = $urlGenerator ? $urlGenerator->linkToRoute('inventorycheck.license.removeSeatPost') : '';
 $_['apiSearchUsersUrl'] = $urlGenerator ? $urlGenerator->linkToRoute('inventorycheck.directory.searchUsers') : '';
 $_['apiRegisterDeviceUrl'] = $devicesBase;
-$_['apiRevokeDeviceUrl'] = $devicesBase;
+$_['apiRevokeDeviceUrl'] = $urlGenerator ? $urlGenerator->linkToRoute('inventorycheck.license.removeDevicePost') : '';
 $_['apiRegenDeviceUrl'] = $devicesBase !== '' ? $devicesBase . '/{id}/pair-code' : '';
 $_['licenseRenewMailto'] = 'mailto:info@software-by-design.de?subject=' . rawurlencode('InventoryCheck mobile & scanner licenses');
 $_['productsUrl'] = 'https://nextcloud.software-by-design.de/';

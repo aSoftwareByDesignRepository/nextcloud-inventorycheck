@@ -137,6 +137,7 @@ return [
 		['name' => 'license#devices', 'url' => '/api/license/devices', 'verb' => 'GET'],
 		['name' => 'license#createDevice', 'url' => '/api/license/devices', 'verb' => 'POST'],
 		['name' => 'license#regeneratePairCode', 'url' => '/api/license/devices/{id}/pair-code', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
+		['name' => 'license#removeDevicePost', 'url' => '/api/license/devices/remove', 'verb' => 'POST'],
 		['name' => 'license#removeDevice', 'url' => '/api/license/devices/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\\d+']],
 
 		['name' => 'mobile#bootstrap', 'url' => '/mobile/v1/bootstrap', 'verb' => 'GET'],
