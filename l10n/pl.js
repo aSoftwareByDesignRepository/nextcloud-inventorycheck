@@ -677,7 +677,7 @@ OC.L10N.register(
 	"Order sheet sent." : "Karta zamówienia wysłana.",
 	"Order sheet updated." : "Karta zamówień zaktualizowana.",
 	"Order sheets" : "Karty zamówień",
-	"Organisation license" : "Organisation licencja",
+	"Organisation license" : "Licencja organizacji",
 	"Organisations can book prioritised features via the contact options below." : "Organizacje mogą zamawiać priorytetowe funkcje przez poniższe opcje kontaktowe.",
 	"Other" : "Inny",
 	"Other Check apps can issue stock for you when you allow it." : "Inne aplikacje Check mogą księgować wydania zapasów, gdy użytkownik na to zezwoli.",
