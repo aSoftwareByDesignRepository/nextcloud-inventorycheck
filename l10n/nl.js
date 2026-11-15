@@ -863,7 +863,7 @@ OC.L10N.register(
 	"Search the web for this barcode" : "Zoek op het web naar deze barcode",
 	"Searching product databases…" : "Productdatabases worden doorzocht …",
 	"Searching…" : "Zoeken…",
-	"Seat assigned." : "Seat toegewezen.",
+	"Seat assigned." : "Plaats toegewezen.",
 	"Seat removed." : "Plaats verwijderd.",
 	"Seats" : "Seats",
 	"Secrets are never included." : "Geheimen worden nooit meegenomen.",

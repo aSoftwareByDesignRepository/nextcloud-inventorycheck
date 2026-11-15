@@ -905,7 +905,7 @@ OC.L10N.register(
 	"Starting count…" : "Rozpoczynanie liczenia…",
 	"Starting…" : "Uruchamianie…",
 	"State" : "Stan",
-	"Status" : "Stan",
+	"Status" : "Status",
 	"Still checking the file… Try Import again in a moment." : "Sprawdzanie pliku nadal trwa… Spróbuj ponownie zaimportować za chwilę.",
 	"Still saving counts… Try again in a moment." : "Nadal zapisuję liczenia… Spróbuj za chwilę ponownie.",
 	"Stock" : "Magazyn",
