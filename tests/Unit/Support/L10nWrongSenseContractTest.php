@@ -800,7 +800,7 @@ final class L10nWrongSenseContractTest extends TestCase
 		],
 		'Seat assigned.' => [
 			'de' => 'sitz', 'da' => 'plads', 'es' => 'plaza', 'fr' => 'poste',
-			'it' => 'posto', 'nb' => 'plass', 'nl' => 'seat', 'pl' => 'miejsce|stanowisk',
+			'it' => 'posto', 'nb' => 'plass', 'nl' => 'plaats', 'pl' => 'miejsce|stanowisk',
 			'sv' => 'plats', 'pt' => 'lugar', 'pt_BR' => 'assento',
 		],
 		// iv-crit9 sentinel cells — the exact cells the critic flagged
