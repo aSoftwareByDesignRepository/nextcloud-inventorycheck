@@ -4,8 +4,6 @@
 		"%1$d of %2$d device slots in use.": "%1$d van %2$d apparaatplaatsen in gebruik.",
 		"%1$d of %2$d seats assigned": "%1$d van %2$d plaatsen toegewezen",
 		"%1$s (%2$s) is below reorder level: %3$s on hand, reorder at %4$s.": "%1$s (%2$s) ligt onder het bestelniveau: %3$s op voorraad, bestel op %4$s.",
-		"%d row(s) need a value on this instance": "%d rij(en) hebben een waarde nodig op deze installatie",
-		"%d row(s) skipped and %d reference(s) unresolved — see the groups below.": "%d rij(en) overgeslagen en %d verwijzing(en) onopgelost — zie de groepen hieronder.",
 		"%n label": [
 			"%n etiket",
 			"%n etiketten"
@@ -13,10 +11,6 @@
 		"%n labels": "%n etiketten",
 		"%s stays free (AGPL) on your Nextcloud. Bug reports and ideas on GitHub stay welcome — that is free open-source care. If your organisation needs bookable help on an invoice — or official mobile licenses — choose an option below:": "%s blijft gratis (AGPL) op uw Nextcloud. Bugmeldingen en ideeën op GitHub blijven welkom — dat is gratis open-sourcezorg. Als uw organisatie boekbare hulp op factuur nodig heeft — of officiële mobiele licenties — kies dan hieronder een optie:",
 		"%s stays free (AGPL) on your Nextcloud. Bug reports and ideas on GitHub stay welcome — that is free open-source care. If your organisation needs bookable help on an invoice, choose an option below:": "%s blijft gratis (AGPL) op uw Nextcloud. Bugmeldingen en ideeën op GitHub blijven welkom — dat is gratis open-sourcezorg. Als uw organisatie boekbare hulp op factuur nodig heeft, kies dan hieronder een optie:",
-		"(%d env-bound value(s) emptied)": "(%d installatiegebonden waarden geleegd)",
-		"(%d filtered)": "(%d gefilterd)",
-		"(%d secret(s) redacted)": "(%d geheimen gemaskeerd)",
-		"(%d unresolved ref)": "(%d onopgeloste verwijzingen)",
 		"(no supplier)": "(geen leverancier)",
 		"(not in list)": "(niet in lijst)",
 		"(opens in a new tab)": "(opent in een nieuw tabblad)",
@@ -147,11 +141,11 @@
 		"Ask about mobile & scanner licenses": "Vraag naar mobiele & scannerlicenties",
 		"Ask about setup or training": "Vragen over installatie of training",
 		"Ask for a partner offer": "Een partneraanbieding aanvragen",
-		"Assign mobile seats to %1$d people? %2$d seats remaining.": "Mobiele plekken toewijzen aan %1$d personen? Nog %2$d plekken over.",
-		"Assign mobile seats?": "Mobiele plekken toewijzen?",
+		"Assign mobile seats to %1$d people? %2$d seats remaining.": "Mobiele plaatsen toewijzen aan %1$d personen? Nog %2$d plaatsen over.",
+		"Assign mobile seats?": "Mobiele plaatsen toewijzen?",
 		"Assign seat": "Seat toewijzen",
 		"Assign seat to user": "Seat aan gebruiker toewijzen",
-		"Assign seats": "Plekken toewijzen",
+		"Assign seats": "Plaatsen toewijzen",
 		"Assign selected": "Selectie toewijzen",
 		"Assign selected (%n)": "Selectie toewijzen (%n)",
 		"Assigned": "Toegewezen",
@@ -249,7 +243,7 @@
 		"Copy code": "Kopieer code",
 		"Copy this code now. It is shown only once.": "Kopieer deze code nu. Het wordt slechts één keer getoond.",
 		"Copy token": "Token kopiëren",
-		"Could not assign seat.": "Kan plek niet toewijzen.",
+		"Could not assign seat.": "Kan plaats niet toewijzen.",
 		"Could not check the file.": "Kon het bestand niet controleren.",
 		"Could not copy. Select the code manually.": "Kon niet kopiëren. Selecteer de code handmatig.",
 		"Could not generate a pairing code.": "De koppelcode kon niet worden gegenereerd.",
@@ -263,7 +257,7 @@
 		"Could not load variance.": "Kon variantie niet laden.",
 		"Could not register device.": "Apparaat kon niet worden geregistreerd.",
 		"Could not remove license.": "Kan licentie niet verwijderen.",
-		"Could not remove seat.": "Kan de plek niet verwijderen.",
+		"Could not remove seat.": "Kan de plaats niet verwijderen.",
 		"Could not revoke device.": "Apparaat kon niet worden ingetrokken.",
 		"Could not save license.": "Kan licentie niet opslaan.",
 		"Could not save settings. Check the fields and try again.": "Kon instellingen niet opslaan. Controleer de velden en probeer het opnieuw.",
@@ -276,7 +270,6 @@
 		"Count this page as system": "Tel deze pagina als systeem",
 		"Counted qty": "Geteld aantal",
 		"Counted quantity": "Getelde hoeveelheid",
-		"Counted {count} line(s) as system quantity.": "Telde {count} lijn(s) als systeemhoeveelheid.",
 		"Counted {done} of {total}.": "Telde {done} van {total}.",
 		"Counting": "Tellen",
 		"Counting options": "Telopties",
@@ -531,7 +524,7 @@
 		"Menu": "Menu",
 		"Merge": "Samenvoegen",
 		"Mobile & terminal": "Mobiel en terminal",
-		"Mobile seats": "Mobiele seats",
+		"Mobile seats": "Mobiele plaatsen",
 		"Mobile seats used": "Mobiele plaatsen in gebruik",
 		"Mode": "Modus",
 		"Monthly budget for {cat}": "Maandbudget voor {cat}",
@@ -772,7 +765,7 @@
 		"Remove": "Verwijderen",
 		"Remove favourite": "Favoriet verwijderen",
 		"Remove license": "Licentie verwijderen",
-		"Remove mobile seat": "Mobiele plek verwijderen",
+		"Remove mobile seat": "Mobiele plaats verwijderen",
 		"Remove mobile seat for this person?": "Mobiele plaats voor deze persoon verwijderen?",
 		"Remove photo": "Foto verwijderen",
 		"Remove the organisation license and revoke all seats and devices? This cannot be undone.": "Organisatielicentie verwijderen en alle plaatsen en apparaten intrekken? Dit kan niet ongedaan worden gemaakt.",
@@ -1075,7 +1068,6 @@
 		"Warehouses, vans, and site boxes": "Magazijnen, bestelwagens en terreindozen",
 		"Warn about expiring lots within (days)": "Waarschuwen voor vervallende partijen binnen (dagen)",
 		"Warn when an order marker is older than (days)": "Waarschuwen als een bestelmarkering ouder is dan (dagen)",
-		"Warning: %d row(s) will be permanently deleted, then the file data is loaded.": "Waarschuwing: %d rij(en) worden definitief verwijderd, daarna worden de bestandsgegevens geladen.",
 		"Wave D settings are unavailable on this server.": "Wave D-instellingen zijn niet beschikbaar op deze server.",
 		"We check your file automatically as you paste or choose it.": "We controleren uw bestand automatisch wanneer u plakt of kiest.",
 		"We snapshot every active item at that location.": "We maken een momentopname van elk actief item op die locatie.",
@@ -1101,7 +1093,7 @@
 		"You do not have a mobile seat assigned.": "U heeft geen mobiele seat toegewezen.",
 		"You do not have permission for this action.": "U heeft geen rechten voor deze actie.",
 		"You do not have the rights for this action.": "U heeft geen rechten voor deze actie.",
-		"You selected %1$d people but only %2$d seats remain. Only free seats will be assigned.": "U selecteerde %1$d personen maar er zijn nog maar %2$d plekken. Alleen vrije plekken worden toegewezen.",
+		"You selected %1$d people but only %2$d seats remain. Only free seats will be assigned.": "U selecteerde %1$d personen maar er zijn nog maar %2$d plaatsen. Alleen vrije plaatsen worden toegewezen.",
 		"Your license expires within 30 days. Contact your vendor to renew.": "Je licentie verloopt binnen 30 dagen. Neem contact op met je leverancier om te verlengen.",
 		"Your mobile seat is above the licensed limit.": "Uw mobiele seat ligt boven de gelicentieerde limiet.",
 		"Your organisation restricts InventoryCheck access. You are not on the allow-list.": "De organisatie beperkt de toegang tot InventoryCheck. Geen vermelding op de toegestane lijst.",
@@ -1126,18 +1118,68 @@
 		"unpriced": "zonder prijs",
 		"usage spike": "gebruikspiek",
 		"will be skipped": "wordt overgeslagen",
-		"{count} item(s) were never counted.": "{count} item(s) werden nooit geteld.",
-		"{count} item(s) were never counted. Confirming leaves those items unchanged.": "{count} item(s) werden nooit geteld. Bevestigen laat die items ongewijzigd.",
-		"{count} line(s) changed after this stocktake started. Closing with the counted quantities will overwrite those later movements.": "{count} regel(s) is veranderd nadat deze voorraadtelling is gestart. Afsluiten met de getelde hoeveelheden zal die latere bewegingen overschrijven.",
-		"{count} line(s) changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities.": "{count} regel(s) is veranderd nadat deze voorraadtelling is gestart. De actuele hoeveelheid wijkt af van de momentopname — los dit vóór het sluiten op, of bevestig dat u de getelde hoeveelheden accepteert.",
 		"{left} left of {total} this month": "{left} over van {total} deze maand",
 		"{n} d": "{n} d",
 		"{n} stale order marker": "{n} verlopen bestelmarkeringen",
 		"{n} unpriced": "{n} zonder prijs",
-		"{ok} row(s) look fine.": "{ok} rij(s) ziet er prima uit.",
-		"{updates} row(s) update existing items.": "{updates} rij(en) werken bestaande artikelen bij.",
 		"★ Remove from favourites": "★ Uit favorieten verwijderen",
-		"☆ Add to favourites": "Aan favorieten toevoegen"
+		"☆ Add to favourites": "Aan favorieten toevoegen",
+		"_(1 env-bound value emptied)_::_(%n env-bound values emptied)_": [
+			"(1 installatiegebonden waarde geleegd)",
+			"(%n installatiegebonden waarden geleegd)"
+		],
+		"_(1 filtered)_::_(%n filtered)_": [
+			"(1 gefilterd)",
+			"(%n gefilterd)"
+		],
+		"_(1 secret redacted)_::_(%n secrets redacted)_": [
+			"(1 geheim gemaskeerd)",
+			"(%n geheimen gemaskeerd)"
+		],
+		"_(1 unresolved ref)_::_(%n unresolved refs)_": [
+			"(1 onopgeloste verwijzing)",
+			"(%n onopgeloste verwijzingen)"
+		],
+		"_1 reference unresolved — see the groups below._::_%n references unresolved — see the groups below._": [
+			"1 verwijzing onopgelost — zie de groepen hieronder.",
+			"%n verwijzingen onopgelost — zie de groepen hieronder."
+		],
+		"_1 row needs a value on this instance_::_%n rows need a value on this instance_": [
+			"1 rij heeft een waarde nodig op deze installatie",
+			"%n rijen hebben een waarde nodig op deze installatie"
+		],
+		"_1 row skipped._::_%n rows skipped._": [
+			"1 rij overgeslagen.",
+			"%n rijen overgeslagen."
+		],
+		"_Warning: 1 row will be permanently deleted, then the file data is loaded._::_Warning: %n rows will be permanently deleted, then the file data is loaded._": [
+			"Waarschuwing: 1 rij wordt definitief verwijderd, daarna worden de bestandsgegevens geladen.",
+			"Waarschuwing: %n rijen worden definitief verwijderd, daarna worden de bestandsgegevens geladen."
+		],
+		"_1 row looks fine._::_%n rows look fine._": [
+			"1 rij ziet er prima uit.",
+			"%n rijen zien er prima uit."
+		],
+		"_1 row updates an existing item._::_%n rows update existing items._": [
+			"1 rij werkt een bestaand artikel bij.",
+			"%n rijen werken bestaande artikelen bij."
+		],
+		"_Counted 1 line as system quantity._::_Counted %n lines as system quantity._": [
+			"Telde 1 lijn als systeemhoeveelheid.",
+			"Telde %n lijnen als systeemhoeveelheid."
+		],
+		"_1 line changed after this stocktake started. Closing with the counted quantities will overwrite those later movements._::_%n lines changed after this stocktake started. Closing with the counted quantities will overwrite those later movements._": [
+			"1 regel is veranderd nadat deze voorraadtelling is gestart. Afsluiten met de getelde hoeveelheden zal die latere bewegingen overschrijven.",
+			"%n regels zijn veranderd nadat deze voorraadtelling is gestart. Afsluiten met de getelde hoeveelheden zal die latere bewegingen overschrijven."
+		],
+		"_1 line changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities._::_%n lines changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities._": [
+			"1 regel is veranderd nadat deze voorraadtelling is gestart. De actuele hoeveelheid wijkt af van de momentopname — los dit vóór het sluiten op, of bevestig dat u de getelde hoeveelheden accepteert.",
+			"%n regels zijn veranderd nadat deze voorraadtelling is gestart. De actuele hoeveelheid wijkt af van de momentopname — los dit vóór het sluiten op, of bevestig dat u de getelde hoeveelheden accepteert."
+		],
+		"_1 item was never counted. Confirming leaves those items unchanged._::_%n items were never counted. Confirming leaves those items unchanged._": [
+			"1 item werd nooit geteld. Bevestigen laat die items ongewijzigd.",
+			"%n items werden nooit geteld. Bevestigen laat die items ongewijzigd."
+		]
 	},
 	"pluralForm": "nplurals=2; plural=(n != 1);"
 }

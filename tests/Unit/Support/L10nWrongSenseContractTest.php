@@ -795,7 +795,7 @@ final class L10nWrongSenseContractTest extends TestCase
 		],
 		'Mobile seats' => [
 			'de' => 'sitz', 'da' => 'plads', 'es' => 'plaza', 'fr' => 'poste',
-			'it' => 'post', 'nb' => 'plass', 'nl' => 'seat', 'pl' => 'stanowisk|miejsc',
+			'it' => 'post', 'nb' => 'plass', 'nl' => 'plaats', 'pl' => 'stanowisk|miejsc',
 			'sv' => 'plats', 'pt' => 'lugar', 'pt_BR' => 'assento',
 		],
 		'Seat assigned.' => [
@@ -1013,9 +1013,12 @@ final class L10nWrongSenseContractTest extends TestCase
 				foreach ($perLoc as $loc => $termRegex) {
 					$tr = self::loadTranslations($loc);
 					$val = $tr[$key] ?? null;
-					self::assertIsString($val, sprintf('Missing translation %s for key %s', $loc, $key));
-					if (!preg_match('/' . $termRegex . '/iu', (string)$val)) {
-						$violations[] = sprintf('%s | %s => %s (want /%s/)', $loc, $key, $val, $termRegex);
+					// _sg_::_pl_ combined keys carry [sg, pl] arrays — the canon
+					// term must show up in the cell regardless of form count.
+					$haystack = is_array($val) ? implode(' ', $val) : $val;
+					self::assertIsString($haystack, sprintf('Missing translation %s for key %s', $loc, $key));
+					if (!preg_match('/' . $termRegex . '/iu', $haystack)) {
+						$violations[] = sprintf('%s | %s => %s (want /%s/)', $loc, $key, $haystack, $termRegex);
 					}
 				}
 			}

@@ -39,9 +39,58 @@ final class L10nParityContractTest extends TestCase
 		}
 		self::assertSame([], $missingEn, 'Missing EN keys: ' . implode(' | ', $missingEn));
 		self::assertSame([], $missingDe, 'Missing DE keys: ' . implode(' | ', $missingDe));
+		self::assertPluralPairsExist($enT, $deT);
 		self::assertArrayNotHasKey('Device pairing: coming soon', $enT);
 		self::assertArrayNotHasKey('Device pairing: coming soon', $deT);
 		self::assertArrayNotHasKey('Native scanner app: coming soon. Device slots and pairing codes work now.', $enT);
 		self::assertArrayNotHasKey('Native scanner app: coming soon. Device slots and pairing codes work now.', $deT);
+	}
+
+	/**
+	 * Every nr()/n() plural call site must resolve a _sg_::_pl_ combined
+	 * catalog key holding a two-form array (singular msgid carries the
+	 * literal '1', plural carries %n — lazy_plural_paren class).
+	 *
+	 * @param array<string, mixed> $enT
+	 * @param array<string, mixed> $deT
+	 */
+	private static function assertPluralPairsExist(array $enT, array $deT): void
+	{
+		$root = dirname(__DIR__, 3);
+		$pairs = [];
+		foreach (['js/app.js' => 'nr', 'js/transfer.js' => 'n'] as $file => $fn) {
+			$js = (string)file_get_contents($root . '/' . $file);
+			preg_match_all(
+				'/\b' . $fn . "\\('((?:\\\\'|[^'])*)'\\s*,\\s*'((?:\\\\'|[^'])*)'\\s*,/",
+				$js,
+				$m,
+			);
+			foreach ($m[1] as $i => $sg) {
+				$pairs[] = [
+					str_replace("\\'", "'", $sg),
+					str_replace("\\'", "'", $m[2][$i]),
+					$file . ' ' . $fn . '()',
+				];
+			}
+		}
+		self::assertNotEmpty($pairs, 'no plural call sites found — extractor drifted');
+
+		$missingEn = $missingDe = $badShape = [];
+		foreach ($pairs as [$sg, $pl, $site]) {
+			$key = '_' . $sg . '_::_' . $pl . '_';
+			if (!array_key_exists($key, $enT)) {
+				$missingEn[] = $site . ' ' . $key;
+				continue;
+			}
+			if (!array_key_exists($key, $deT)) {
+				$missingDe[] = $site . ' ' . $key;
+			}
+			if (!is_array($enT[$key]) || count($enT[$key]) !== 2) {
+				$badShape[] = $key;
+			}
+		}
+		self::assertSame([], $missingEn, 'Missing EN plural keys: ' . implode(' | ', $missingEn));
+		self::assertSame([], $missingDe, 'Missing DE plural keys: ' . implode(' | ', $missingDe));
+		self::assertSame([], $badShape, 'Plural keys without [sg, pl] array: ' . implode(' | ', $badShape));
 	}
 }

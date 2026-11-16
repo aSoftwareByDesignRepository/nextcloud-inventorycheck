@@ -4,8 +4,6 @@
 		"%1$d of %2$d device slots in use.": "%2$d cihaz yuvasından %1$d tanesi kullanımda.",
 		"%1$d of %2$d seats assigned": "%2$d lisans hakkından %1$d'i atandı",
 		"%1$s (%2$s) is below reorder level: %3$s on hand, reorder at %4$s.": "%1$s (%2$s) yeniden sipariş seviyesinin altında: elde %3$s, yeniden sipariş seviyesi %4$s.",
-		"%d row(s) need a value on this instance": "%d satırın bu örnekte bir değere ihtiyacı var",
-		"%d row(s) skipped and %d reference(s) unresolved — see the groups below.": "%d satır atlandı ve %d başvuru çözümlenemedi — aşağıdaki gruplara bakın.",
 		"%n label": [
 			"%n etiket",
 			"%n etiket"
@@ -13,10 +11,6 @@
 		"%n labels": "%n etiket",
 		"%s stays free (AGPL) on your Nextcloud. Bug reports and ideas on GitHub stay welcome — that is free open-source care. If your organisation needs bookable help on an invoice — or official mobile licenses — choose an option below:": "%s, Nextcloud'unuzda ücretsiz kalır (AGPL). GitHub'daki hata raporları ve fikirler her zaman beklenir — bu, ücretsiz açık kaynak katkısıdır. Kurumunuzun fatura karşılığı satın alınabilir yardıma — veya resmî mobil lisanslara — ihtiyacı varsa aşağıdan bir seçenek belirleyin:",
 		"%s stays free (AGPL) on your Nextcloud. Bug reports and ideas on GitHub stay welcome — that is free open-source care. If your organisation needs bookable help on an invoice, choose an option below:": "%s, Nextcloud'unuzda ücretsiz kalır (AGPL). GitHub'daki hata raporları ve fikirler her zaman beklenir — bu, ücretsiz açık kaynak katkısıdır. Kurumunuzun fatura karşılığı satın alınabilir yardıma ihtiyacı varsa aşağıdan bir seçenek belirleyin:",
-		"(%d env-bound value(s) emptied)": "(%d örneğe bağlı değer boşaltıldı)",
-		"(%d filtered)": "(%d filtrelendi)",
-		"(%d secret(s) redacted)": "(%d sır gizlendi)",
-		"(%d unresolved ref)": "(%d çözümlenemeyen başvuru)",
 		"(no supplier)": "(tedarikçi yok)",
 		"(not in list)": "(listede yok)",
 		"(opens in a new tab)": "(yeni sekmede açılır)",
@@ -276,7 +270,6 @@
 		"Count this page as system": "Bu sayfayı sistem miktarı olarak say",
 		"Counted qty": "Sayılan miktar",
 		"Counted quantity": "Sayılan miktar",
-		"Counted {count} line(s) as system quantity.": "{count} satır sistem miktarı olarak sayıldı.",
 		"Counted {done} of {total}.": "{done} / {total} sayıldı.",
 		"Counting": "Sayım sürüyor",
 		"Counting options": "Sayım seçenekleri",
@@ -1075,7 +1068,6 @@
 		"Warehouses, vans, and site boxes": "Depolar, araçlar ve şantiye kutuları",
 		"Warn about expiring lots within (days)": "Son kullanma tarihi şu süre içinde dolan lotlar için uyar (gün)",
 		"Warn when an order marker is older than (days)": "Sipariş işareti şu süreden eskiyse uyar (gün)",
-		"Warning: %d row(s) will be permanently deleted, then the file data is loaded.": "Uyarı: %d satır kalıcı olarak silinecek, ardından dosya verileri yüklenecek.",
 		"Wave D settings are unavailable on this server.": "Wave D ayarları bu sunucuda kullanılamıyor.",
 		"We check your file automatically as you paste or choose it.": "Dosyanızı siz yapıştırırken veya seçerken otomatik denetleriz.",
 		"We snapshot every active item at that location.": "O konumdaki her etkin kalemin anlık görüntüsünü alırız.",
@@ -1126,18 +1118,68 @@
 		"unpriced": "fiyatsız",
 		"usage spike": "kullanım artışı",
 		"will be skipped": "atlanacak",
-		"{count} item(s) were never counted.": "{count} kalem hiç sayılmadı.",
-		"{count} item(s) were never counted. Confirming leaves those items unchanged.": "{count} kalem hiç sayılmadı. Onaylarsanız bu kalemler değişmeden kalır.",
-		"{count} line(s) changed after this stocktake started. Closing with the counted quantities will overwrite those later movements.": "Bu sayım başladıktan sonra {count} satır değişti. Sayılan miktarlarla kapatmak, sonraki bu hareketlerin üzerine yazacak.",
-		"{count} line(s) changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities.": "Bu sayım başladıktan sonra {count} satır değişti. Güncel miktar anlık görüntüden farklı — kapatmadan önce çözün veya sayılan miktarları kabul ettiğinizi onaylayın.",
 		"{left} left of {total} this month": "Bu ay {total} içinden {left} kaldı",
 		"{n} d": "{n} g",
 		"{n} stale order marker": "{n} eski sipariş işareti",
 		"{n} unpriced": "{n} fiyatsız",
-		"{ok} row(s) look fine.": "{ok} satır sorunsuz görünüyor.",
-		"{updates} row(s) update existing items.": "{updates} satır mevcut ürünleri günceller.",
 		"★ Remove from favourites": "★ Sık kullanılanlardan çıkar",
-		"☆ Add to favourites": "☆ Sık kullanılanlara ekle"
+		"☆ Add to favourites": "☆ Sık kullanılanlara ekle",
+		"_(1 env-bound value emptied)_::_(%n env-bound values emptied)_": [
+			"(1 örneğe bağlı değer boşaltıldı)",
+			"(%n örneğe bağlı değer boşaltıldı)"
+		],
+		"_(1 filtered)_::_(%n filtered)_": [
+			"(1 filtrelendi)",
+			"(%n filtrelendi)"
+		],
+		"_(1 secret redacted)_::_(%n secrets redacted)_": [
+			"(1 sır gizlendi)",
+			"(%n sır gizlendi)"
+		],
+		"_(1 unresolved ref)_::_(%n unresolved refs)_": [
+			"(1 çözümlenemeyen başvuru)",
+			"(%n çözümlenemeyen başvuru)"
+		],
+		"_1 reference unresolved — see the groups below._::_%n references unresolved — see the groups below._": [
+			"1 başvuru çözümlenemedi — aşağıdaki gruplara bakın.",
+			"%n başvuru çözümlenemedi — aşağıdaki gruplara bakın."
+		],
+		"_1 row needs a value on this instance_::_%n rows need a value on this instance_": [
+			"1 satırın bu örnekte bir değere ihtiyacı var",
+			"%n satırın bu örnekte bir değere ihtiyacı var"
+		],
+		"_1 row skipped._::_%n rows skipped._": [
+			"1 satır atlandı.",
+			"%n satır atlandı."
+		],
+		"_Warning: 1 row will be permanently deleted, then the file data is loaded._::_Warning: %n rows will be permanently deleted, then the file data is loaded._": [
+			"Uyarı: 1 satır kalıcı olarak silinecek, ardından dosya verileri yüklenecek.",
+			"Uyarı: %n satır kalıcı olarak silinecek, ardından dosya verileri yüklenecek."
+		],
+		"_1 row looks fine._::_%n rows look fine._": [
+			"1 satır sorunsuz görünüyor.",
+			"%n satır sorunsuz görünüyor."
+		],
+		"_1 row updates an existing item._::_%n rows update existing items._": [
+			"1 satır mevcut bir ürünü günceller.",
+			"%n satır mevcut ürünleri günceller."
+		],
+		"_Counted 1 line as system quantity._::_Counted %n lines as system quantity._": [
+			"1 satır sistem miktarı olarak sayıldı.",
+			"%n satır sistem miktarı olarak sayıldı."
+		],
+		"_1 line changed after this stocktake started. Closing with the counted quantities will overwrite those later movements._::_%n lines changed after this stocktake started. Closing with the counted quantities will overwrite those later movements._": [
+			"Bu sayım başladıktan sonra 1 satır değişti. Sayılan miktarlarla kapatmak, sonraki bu hareketlerin üzerine yazacak.",
+			"Bu sayım başladıktan sonra %n satır değişti. Sayılan miktarlarla kapatmak, sonraki bu hareketlerin üzerine yazacak."
+		],
+		"_1 line changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities._::_%n lines changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities._": [
+			"Bu sayım başladıktan sonra 1 satır değişti. Güncel miktar anlık görüntüden farklı — kapatmadan önce çözün veya sayılan miktarları kabul ettiğinizi onaylayın.",
+			"Bu sayım başladıktan sonra %n satır değişti. Güncel miktar anlık görüntüden farklı — kapatmadan önce çözün veya sayılan miktarları kabul ettiğinizi onaylayın."
+		],
+		"_1 item was never counted. Confirming leaves those items unchanged._::_%n items were never counted. Confirming leaves those items unchanged._": [
+			"1 kalem hiç sayılmadı. Onaylarsanız bu kalemler değişmeden kalır.",
+			"%n kalem hiç sayılmadı. Onaylarsanız bu kalemler değişmeden kalır."
+		]
 	},
 	"pluralForm": "nplurals=2; plural=(n != 1);"
 }

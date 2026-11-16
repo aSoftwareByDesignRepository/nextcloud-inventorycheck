@@ -4,8 +4,6 @@
 		"%1$d of %2$d device slots in use.": "%1$d de %2$d espacios para dispositivos en uso.",
 		"%1$d of %2$d seats assigned": "%1$d de %2$d plazas asignadas",
 		"%1$s (%2$s) is below reorder level: %3$s on hand, reorder at %4$s.": "%1$s (%2$s) está por debajo del nivel de reposición: %3$s en stock, reponer en %4$s.",
-		"%d row(s) need a value on this instance": "%d fila(s) necesitan un valor en esta instancia",
-		"%d row(s) skipped and %d reference(s) unresolved — see the groups below.": "%d fila(s) omitida(s) y %d referencia(s) sin resolver — consulta los grupos siguientes.",
 		"%n label": [
 			"%n etiqueta",
 			"%n etiquetas"
@@ -13,10 +11,6 @@
 		"%n labels": "%n etiquetas",
 		"%s stays free (AGPL) on your Nextcloud. Bug reports and ideas on GitHub stay welcome — that is free open-source care. If your organisation needs bookable help on an invoice — or official mobile licenses — choose an option below:": "%s permanece gratuito (AGPL) en su Nextcloud. Los informes de errores e ideas en GitHub siguen siendo bienvenidos: eso es el cuidado gratuito del código abierto. Si su organización necesita ayuda reservable con factura — o licencias móviles oficiales — elija una opción a continuación:",
 		"%s stays free (AGPL) on your Nextcloud. Bug reports and ideas on GitHub stay welcome — that is free open-source care. If your organisation needs bookable help on an invoice, choose an option below:": "%s permanece gratuito (AGPL) en su Nextcloud. Los informes de errores e ideas en GitHub siguen siendo bienvenidos: eso es el cuidado gratuito del código abierto. Si su organización necesita ayuda reservable con factura, elija una opción a continuación:",
-		"(%d env-bound value(s) emptied)": "(%d valor(es) ligados a la instancia vaciados)",
-		"(%d filtered)": "(%d filtrada(s))",
-		"(%d secret(s) redacted)": "(%d secreto(s) ocultado(s))",
-		"(%d unresolved ref)": "(%d referencia(s) sin resolver)",
 		"(no supplier)": "(sin proveedor)",
 		"(not in list)": "(no está en la lista)",
 		"(opens in a new tab)": "(se abre en una pestaña nueva)",
@@ -276,7 +270,6 @@
 		"Count this page as system": "Cuenta esta página como sistema",
 		"Counted qty": "Cantidad contada",
 		"Counted quantity": "Cantidad contada",
-		"Counted {count} line(s) as system quantity.": "Contada línea {count} (s) como cantidad del sistema.",
 		"Counted {done} of {total}.": "Cuenta {done} de {total}.",
 		"Counting": "Contando",
 		"Counting options": "Opciones de conteo",
@@ -380,7 +373,7 @@
 		"Find items by name or SKU.": "Encontrar artículos por nombre o SKU.",
 		"Find locations by code or name.": "Encontrar ubicaciones por código o nombre.",
 		"Fix the errors below, or turn on “Skip rows with errors”.": "Fijar los errores a continuación, o encender “Skip filas con errores”.",
-		"Format: %1$s followed by a signed payload. One key per organisation.": "Formato: %1$s seguido de una carga firmada. Una clave por organización.",
+		"Format: %1$s followed by a signed payload. One key per organisation.": "Formato: %1$s seguido de una carga útil firmada. Una clave por organización.",
 		"Fractional quantities": "Cantidades fraccionadas",
 		"Fractional quantities are on": "Las cantidades fraccionadas están activadas (hasta 3 decimales). No se puede desactivar.",
 		"Fractional quantities are on (up to 3 decimal places). This cannot be turned off.": "Las cantidades fraccionadas están activadas (hasta 3 decimales). No se puede desactivar.",
@@ -1075,7 +1068,6 @@
 		"Warehouses, vans, and site boxes": "Almacenes, furgonetas y cajas de sitios",
 		"Warn about expiring lots within (days)": "Avisar sobre lotes que caducan en (días)",
 		"Warn when an order marker is older than (days)": "Avisar cuando una marca de pedido tenga más de (días)",
-		"Warning: %d row(s) will be permanently deleted, then the file data is loaded.": "Advertencia: %d fila(s) se eliminarán permanentemente y después se cargarán los datos del archivo.",
 		"Wave D settings are unavailable on this server.": "Los ajustes de Wave D no están disponibles en este servidor.",
 		"We check your file automatically as you paste or choose it.": "Revisamos su archivo automáticamente mientras lo pega o lo elige.",
 		"We snapshot every active item at that location.": "Tomamos una instantánea de cada elemento activo en esa ubicación.",
@@ -1126,18 +1118,68 @@
 		"unpriced": "sin precio",
 		"usage spike": "pico de uso",
 		"will be skipped": "se omitirá",
-		"{count} item(s) were never counted.": "Los elementos {count} nunca fueron contados.",
-		"{count} item(s) were never counted. Confirming leaves those items unchanged.": "{count} artículo(s) nunca fueron contados. Confirmar deja esos artículos sin cambios.",
-		"{count} line(s) changed after this stocktake started. Closing with the counted quantities will overwrite those later movements.": "{count} línea(s) cambiaron después de que este inventario comenzara. Cerrar con las cantidades contadas sobrescribirá esos movimientos posteriores.",
-		"{count} line(s) changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities.": "{count} línea(s) cambiaron después de que este inventario comenzara. La cantidad actual difiere de la instantánea — resuélvalo antes de cerrar, o confirme que acepta las cantidades contadas.",
 		"{left} left of {total} this month": "{left} restante de {total} este mes",
 		"{n} d": "{n} d",
 		"{n} stale order marker": "{n} marcas de pedido obsoletas",
 		"{n} unpriced": "{n} sin precio",
-		"{ok} row(s) look fine.": "Las filas {ok} se ven bien.",
-		"{updates} row(s) update existing items.": "{updates} fila(s) actualizan artículos existentes.",
 		"★ Remove from favourites": "★ Eliminar de favoritos",
-		"☆ Add to favourites": "☆ Añadir a favoritos"
+		"☆ Add to favourites": "☆ Añadir a favoritos",
+		"_(1 env-bound value emptied)_::_(%n env-bound values emptied)_": [
+			"(1 valor ligado a la instancia vaciado)",
+			"(%n valores ligados a la instancia vaciados)"
+		],
+		"_(1 filtered)_::_(%n filtered)_": [
+			"(1 filtrada)",
+			"(%n filtradas)"
+		],
+		"_(1 secret redacted)_::_(%n secrets redacted)_": [
+			"(1 secreto ocultado)",
+			"(%n secretos ocultados)"
+		],
+		"_(1 unresolved ref)_::_(%n unresolved refs)_": [
+			"(1 referencia sin resolver)",
+			"(%n referencias sin resolver)"
+		],
+		"_1 reference unresolved — see the groups below._::_%n references unresolved — see the groups below._": [
+			"1 referencia sin resolver — consulta los grupos siguientes.",
+			"%n referencias sin resolver — consulta los grupos siguientes."
+		],
+		"_1 row needs a value on this instance_::_%n rows need a value on this instance_": [
+			"1 fila necesita un valor en esta instancia",
+			"%n filas necesitan un valor en esta instancia"
+		],
+		"_1 row skipped._::_%n rows skipped._": [
+			"1 fila omitida.",
+			"%n filas omitidas."
+		],
+		"_Warning: 1 row will be permanently deleted, then the file data is loaded._::_Warning: %n rows will be permanently deleted, then the file data is loaded._": [
+			"Advertencia: 1 fila se eliminará permanentemente y después se cargarán los datos del archivo.",
+			"Advertencia: %n filas se eliminarán permanentemente y después se cargarán los datos del archivo."
+		],
+		"_1 row looks fine._::_%n rows look fine._": [
+			"1 fila se ve bien.",
+			"%n filas se ven bien."
+		],
+		"_1 row updates an existing item._::_%n rows update existing items._": [
+			"1 fila actualiza un artículo existente.",
+			"%n filas actualizan artículos existentes."
+		],
+		"_Counted 1 line as system quantity._::_Counted %n lines as system quantity._": [
+			"Contada 1 línea como cantidad del sistema.",
+			"Contadas %n líneas como cantidad del sistema."
+		],
+		"_1 line changed after this stocktake started. Closing with the counted quantities will overwrite those later movements._::_%n lines changed after this stocktake started. Closing with the counted quantities will overwrite those later movements._": [
+			"1 línea cambió después de que este inventario comenzara. Cerrar con las cantidades contadas sobrescribirá esos movimientos posteriores.",
+			"%n líneas cambiaron después de que este inventario comenzara. Cerrar con las cantidades contadas sobrescribirá esos movimientos posteriores."
+		],
+		"_1 line changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities._::_%n lines changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities._": [
+			"1 línea cambió después de que este inventario comenzara. La cantidad actual difiere de la instantánea — resuélvalo antes de cerrar, o confirme que acepta las cantidades contadas.",
+			"%n líneas cambiaron después de que este inventario comenzara. La cantidad actual difiere de la instantánea — resuélvalo antes de cerrar, o confirme que acepta las cantidades contadas."
+		],
+		"_1 item was never counted. Confirming leaves those items unchanged._::_%n items were never counted. Confirming leaves those items unchanged._": [
+			"1 artículo nunca fue contado. Confirmar deja esos artículos sin cambios.",
+			"%n artículos nunca fueron contados. Confirmar deja esos artículos sin cambios."
+		]
 	},
 	"pluralForm": "nplurals=2; plural=(n != 1);"
 }

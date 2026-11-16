@@ -23,6 +23,21 @@
 		return out;
 	}
 
+	/* Plural-aware translate — window.n resolves the _sg_::_pl_ combined
+	 * catalog key and substitutes %n. Singular msgids carry the literal '1',
+	 * plurals carry %n. Never '(s)'-hack a count into a single msgid —
+	 * lazy_plural_paren class. */
+	function nr(singular, plural, count) {
+		var c = Number(count);
+		if (!isFinite(c)) {
+			c = 0;
+		}
+		if (typeof window !== 'undefined' && typeof window.n === 'function') {
+			return window.n(APP, singular, plural, c);
+		}
+		return String(c === 1 ? singular : plural).replace('%n', String(c));
+	}
+
 	function kindMeta(kind) {
 		switch (kind) {
 			case 'receive': return { label: tr('Receive'), badge: 'iv-badge--done' };
@@ -2963,12 +2978,12 @@
 						resultBox.appendChild(mapBox);
 					}
 					resultBox.appendChild(el('p', {
-						text: tr('{ok} row(s) look fine.', { ok: String(report.ok) }),
+						text: nr('1 row looks fine.', '%n rows look fine.', report.ok),
 					}));
 					if (Number(report.updates) > 0) {
 						resultBox.appendChild(el('p', {
 							className: 'iv-field__hint',
-							text: tr('{updates} row(s) update existing items.', { updates: String(report.updates) }),
+							text: nr('1 row updates an existing item.', '%n rows update existing items.', report.updates),
 						}));
 					}
 					if (report.errors && report.errors.length) {
@@ -6766,7 +6781,7 @@
 				mount.appendChild(el('p', {
 					className: 'iv-section__hint',
 					role: 'status',
-					text: tr('{count} line(s) changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities.', { count: String(conflictCount) }),
+					text: nr('1 line changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities.', '%n lines changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities.', conflictCount),
 				}));
 			}
 
@@ -6845,7 +6860,7 @@
 				})).then(function () {
 					updateStocktakeProgress();
 					renderCountTable();
-					toast(tr('Counted {count} line(s) as system quantity.', { count: String(pending.length) }));
+					toast(nr('Counted 1 line as system quantity.', 'Counted %n lines as system quantity.', pending.length));
 				}).catch(function (err) {
 					toast(err.message, true);
 					renderCountTable();
@@ -7046,7 +7061,7 @@
 			body.push(el('p', {
 				className: 'iv-section__hint',
 				role: 'status',
-				text: tr('{count} line(s) changed after this stocktake started. Closing with the counted quantities will overwrite those later movements.', { count: String(conflicts) }),
+				text: nr('1 line changed after this stocktake started. Closing with the counted quantities will overwrite those later movements.', '%n lines changed after this stocktake started. Closing with the counted quantities will overwrite those later movements.', conflicts),
 			}));
 			body.push(el('p', {
 				className: 'iv-muted',
@@ -7057,7 +7072,7 @@
 		if (uncounted > 0) {
 			body.push(el('p', {
 				className: 'iv-muted',
-				text: tr('{count} item(s) were never counted. Confirming leaves those items unchanged.', { count: String(uncounted) }),
+				text: nr('1 item was never counted. Confirming leaves those items unchanged.', '%n items were never counted. Confirming leaves those items unchanged.', uncounted),
 			}));
 			confirmLabel = conflicts > 0
 				? tr('Close anyway')
