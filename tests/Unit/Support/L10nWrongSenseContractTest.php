@@ -76,9 +76,10 @@ final class L10nWrongSenseContractTest extends TestCase
 			'nb' => ['/sete[rtn]?\b/iu', '/\bstol(?:e|en|ene|er|erne)?\b/iu'],
 			'it' => ['/\bpostazion/iu', '/\bsedia|\bsedile/iu'],
 			'es' => ['/\bpuestos?\b/iu', '/\basientos?\b/iu', '/\bsilla/iu'],
-			'fr' => ['/\bsièg/iu', '/\bchaise/iu'],
+			'fr' => ['/\bsièg/iu', '/\bchaise/iu', '/\bpostes?\b/iu'],
+			'de' => ['/\bsitz(?:e|en|es)?\b/iu'],
 			'pt' => ['/\bcadeira/iu'],
-			'pt_BR' => ['/licença móvel/iu', '/\bcadeira/iu'],
+			'pt_BR' => ['/licença móvel/iu', '/\bcadeira/iu', '/\bassentos?\b/iu'],
 		],
 		// device slots: allocation slots — never slit/track/gambling senses
 		// (fr "machines à sous", nb "enhetsspor", pl "szczelina" all shipped).
@@ -476,17 +477,17 @@ final class L10nWrongSenseContractTest extends TestCase
 			'sv' => 'skann',
 		],
 		'/\bseats?\b/iu' => [
-			'de' => 'sitz|pl[äa]tz|lizenz',
+			'de' => 'pl[äa]tz|lizenz',
 			'da' => 'plads|licens',
 			'es' => 'plaza|licencia',
-			'fr' => 'poste|place|licence',
+			'fr' => 'place|licence',
 			'it' => 'posto|posti|posizion|postazion|licenza',
 			'nb' => 'plass|lisens',
 			'nl' => 'seat|plek|plaats|licentie',
 			'pl' => 'miejsce|miejsc|stanowisk|licencj',
 			'sv' => 'plats|licens',
 			'pt' => 'lugar|licença|vaga',
-			'pt_BR' => 'assento|licença|lugar',
+			'pt_BR' => 'vaga|licença|lugar',
 		],
 		'/\bstocktake/iu' => [
 			'de' => 'inventur|zählung',
@@ -794,14 +795,14 @@ final class L10nWrongSenseContractTest extends TestCase
 			'sv' => 'räknad', 'pt' => 'contad', 'pt_BR' => 'contad',
 		],
 		'Mobile seats' => [
-			'de' => 'sitz', 'da' => 'plads', 'es' => 'plaza', 'fr' => 'poste',
+			'de' => 'pl[äa]tz', 'da' => 'plads', 'es' => 'plaza', 'fr' => 'place',
 			'it' => 'post', 'nb' => 'plass', 'nl' => 'plaats', 'pl' => 'stanowisk|miejsc',
-			'sv' => 'plats', 'pt' => 'lugar', 'pt_BR' => 'assento',
+			'sv' => 'plats', 'pt' => 'lugar', 'pt_BR' => 'vaga',
 		],
 		'Seat assigned.' => [
-			'de' => 'sitz', 'da' => 'plads', 'es' => 'plaza', 'fr' => 'poste',
+			'de' => 'pl[äa]tz', 'da' => 'plads', 'es' => 'plaza', 'fr' => 'place',
 			'it' => 'posto', 'nb' => 'plass', 'nl' => 'plaats', 'pl' => 'miejsce|stanowisk',
-			'sv' => 'plats', 'pt' => 'lugar', 'pt_BR' => 'assento',
+			'sv' => 'plats', 'pt' => 'lugar', 'pt_BR' => 'vaga',
 		],
 		// iv-crit9 sentinel cells — the exact cells the critic flagged
 		'Paste IV2 key' => [
