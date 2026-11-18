@@ -78,58 +78,72 @@
 		"3. Tighten scanners if needed": "3. Zaciśnięte skanery w razie potrzeby",
 		"_(1 env-bound value emptied)_::_(%n env-bound values emptied)_": [
 			"(1 opróżniona wartość związana z instancją)",
+			"(%n opróżnione wartości związane z instancją)",
 			"(%n opróżnionych wartości związanych z instancją)"
 		],
 		"_(1 filtered)_::_(%n filtered)_": [
 			"(1 odfiltrowane)",
+			"(%n odfiltrowane)",
 			"(%n odfiltrowanych)"
 		],
 		"_(1 secret redacted)_::_(%n secrets redacted)_": [
 			"(1 ukryty sekret)",
+			"(%n ukryte sekrety)",
 			"(%n ukrytych sekretów)"
 		],
 		"_(1 unresolved ref)_::_(%n unresolved refs)_": [
 			"(1 nierozwiązane odwołanie)",
+			"(%n nierozwiązane odwołania)",
 			"(%n nierozwiązanych odwołań)"
 		],
 		"_1 item was never counted. Confirming leaves those items unchanged._::_%n items were never counted. Confirming leaves those items unchanged._": [
 			"1 pozycja nigdy nie była liczona. Potwierdzenie pozostawia te pozycje bez zmian.",
+			"%n pozycje nigdy nie były liczone. Potwierdzenie pozostawia te pozycje bez zmian.",
 			"%n pozycji nigdy nie było liczonych. Potwierdzenie pozostawia te pozycje bez zmian."
 		],
 		"_1 line changed after this stocktake started. Closing with the counted quantities will overwrite those later movements._::_%n lines changed after this stocktake started. Closing with the counted quantities will overwrite those later movements._": [
 			"1 linia zmieniła się po rozpoczęciu tej inwentaryzacji. Zamknięcie z policzonymi ilościami nadpisze te późniejsze ruchy.",
+			"%n linie zmieniły się po rozpoczęciu tej inwentaryzacji. Zamknięcie z policzonymi ilościami nadpisze te późniejsze ruchy.",
 			"%n linii zmieniło się po rozpoczęciu tej inwentaryzacji. Zamknięcie z policzonymi ilościami nadpisze te późniejsze ruchy."
 		],
 		"_1 line changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities._::_%n lines changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities._": [
 			"1 linia zmieniła się po rozpoczęciu tej inwentaryzacji. Aktualna ilość różni się od migawki — rozwiąż przed zamknięciem albo potwierdź akceptację policzonych ilości.",
+			"%n linie zmieniły się po rozpoczęciu tej inwentaryzacji. Aktualna ilość różni się od migawki — rozwiąż przed zamknięciem albo potwierdź akceptację policzonych ilości.",
 			"%n linii zmieniło się po rozpoczęciu tej inwentaryzacji. Aktualna ilość różni się od migawki — rozwiąż przed zamknięciem albo potwierdź akceptację policzonych ilości."
 		],
 		"_1 reference unresolved — see the groups below._::_%n references unresolved — see the groups below._": [
 			"Nierozwiązano 1 odwołanie — zobacz grupy poniżej.",
+			"Nierozwiązano %n odwołania — zobacz grupy poniżej.",
 			"Nierozwiązano %n odwołań — zobacz grupy poniżej."
 		],
 		"_1 row looks fine._::_%n rows look fine._": [
 			"1 wiersz wygląda dobrze.",
+			"%n wiersze wyglądają dobrze.",
 			"%n wierszy wygląda dobrze."
 		],
 		"_1 row needs a value on this instance_::_%n rows need a value on this instance_": [
 			"1 wiersz wymaga wartości na tej instancji",
+			"%n wiersze wymagają wartości na tej instancji",
 			"%n wierszy wymaga wartości na tej instancji"
 		],
 		"_1 row skipped._::_%n rows skipped._": [
 			"Pominięto 1 wiersz.",
+			"Pominięto %n wiersze.",
 			"Pominięto %n wierszy."
 		],
 		"_1 row updates an existing item._::_%n rows update existing items._": [
 			"1 wiersz aktualizuje istniejącą pozycję.",
+			"%n wiersze aktualizują istniejące pozycje.",
 			"%n wierszy aktualizuje istniejące pozycje."
 		],
 		"_Counted 1 line as system quantity._::_Counted %n lines as system quantity._": [
 			"Policzono 1 linię jako ilość systemową.",
+			"Policzono %n linie jako ilość systemową.",
 			"Policzono %n linii jako ilość systemową."
 		],
 		"_Warning: 1 row will be permanently deleted, then the file data is loaded._::_Warning: %n rows will be permanently deleted, then the file data is loaded._": [
 			"Ostrzeżenie: 1 wiersz zostanie trwale usunięty, a następnie dane z pliku zostaną wczytane.",
+			"Ostrzeżenie: %n wiersze zostaną trwale usunięte, a następnie dane z pliku zostaną wczytane.",
 			"Ostrzeżenie: %n wierszy zostanie trwale usuniętych, a następnie dane z pliku zostaną wczytane."
 		],
 		"A license key is stored, but this server cannot verify its signature with the vendor public key. The companion apps will reject the license until the key was signed with the matching vendor signing key. Re-apply a correctly signed license, or contact support if this persists after an app update.": "Klucz licencyjny jest zapisany, ale ten serwer nie może zweryfikować jego podpisu kluczem publicznym dostawcy. Aplikacje towarzyszące odrzucą licencję, dopóki klucz nie zostanie podpisany pasującym kluczem podpisującym dostawcy. Zastosuj ponownie poprawnie podpisaną licencję albo skontaktuj się ze wsparciem, jeśli problem nadal występuje po aktualizacji aplikacji.",

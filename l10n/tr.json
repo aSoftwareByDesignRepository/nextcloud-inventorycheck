@@ -76,59 +76,45 @@
 		"3. Save": "3. Kaydedin",
 		"3. Tighten scanners if needed": "3. Gerekirse tarayıcıları sıkılaştırın",
 		"_(1 env-bound value emptied)_::_(%n env-bound values emptied)_": [
-			"(1 örneğe bağlı değer boşaltıldı)",
 			"(%n örneğe bağlı değer boşaltıldı)"
 		],
 		"_(1 filtered)_::_(%n filtered)_": [
-			"(1 filtrelendi)",
 			"(%n filtrelendi)"
 		],
 		"_(1 secret redacted)_::_(%n secrets redacted)_": [
-			"(1 sır gizlendi)",
 			"(%n sır gizlendi)"
 		],
 		"_(1 unresolved ref)_::_(%n unresolved refs)_": [
-			"(1 çözümlenemeyen başvuru)",
 			"(%n çözümlenemeyen başvuru)"
 		],
 		"_1 item was never counted. Confirming leaves those items unchanged._::_%n items were never counted. Confirming leaves those items unchanged._": [
-			"1 kalem hiç sayılmadı. Onaylarsanız bu kalemler değişmeden kalır.",
 			"%n kalem hiç sayılmadı. Onaylarsanız bu kalemler değişmeden kalır."
 		],
 		"_1 line changed after this stocktake started. Closing with the counted quantities will overwrite those later movements._::_%n lines changed after this stocktake started. Closing with the counted quantities will overwrite those later movements._": [
-			"Bu sayım başladıktan sonra 1 satır değişti. Sayılan miktarlarla kapatmak, sonraki bu hareketlerin üzerine yazacak.",
 			"Bu sayım başladıktan sonra %n satır değişti. Sayılan miktarlarla kapatmak, sonraki bu hareketlerin üzerine yazacak."
 		],
 		"_1 line changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities._::_%n lines changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities._": [
-			"Bu sayım başladıktan sonra 1 satır değişti. Güncel miktar anlık görüntüden farklı — kapatmadan önce çözün veya sayılan miktarları kabul ettiğinizi onaylayın.",
 			"Bu sayım başladıktan sonra %n satır değişti. Güncel miktar anlık görüntüden farklı — kapatmadan önce çözün veya sayılan miktarları kabul ettiğinizi onaylayın."
 		],
 		"_1 reference unresolved — see the groups below._::_%n references unresolved — see the groups below._": [
-			"1 başvuru çözümlenemedi — aşağıdaki gruplara bakın.",
 			"%n başvuru çözümlenemedi — aşağıdaki gruplara bakın."
 		],
 		"_1 row looks fine._::_%n rows look fine._": [
-			"1 satır sorunsuz görünüyor.",
 			"%n satır sorunsuz görünüyor."
 		],
 		"_1 row needs a value on this instance_::_%n rows need a value on this instance_": [
-			"1 satırın bu örnekte bir değere ihtiyacı var",
 			"%n satırın bu örnekte bir değere ihtiyacı var"
 		],
 		"_1 row skipped._::_%n rows skipped._": [
-			"1 satır atlandı.",
 			"%n satır atlandı."
 		],
 		"_1 row updates an existing item._::_%n rows update existing items._": [
-			"1 satır mevcut bir ürünü günceller.",
 			"%n satır mevcut ürünleri günceller."
 		],
 		"_Counted 1 line as system quantity._::_Counted %n lines as system quantity._": [
-			"1 satır sistem miktarı olarak sayıldı.",
 			"%n satır sistem miktarı olarak sayıldı."
 		],
 		"_Warning: 1 row will be permanently deleted, then the file data is loaded._::_Warning: %n rows will be permanently deleted, then the file data is loaded._": [
-			"Uyarı: 1 satır kalıcı olarak silinecek, ardından dosya verileri yüklenecek.",
 			"Uyarı: %n satır kalıcı olarak silinecek, ardından dosya verileri yüklenecek."
 		],
 		"A license key is stored, but this server cannot verify its signature with the vendor public key. The companion apps will reject the license until the key was signed with the matching vendor signing key. Re-apply a correctly signed license, or contact support if this persists after an app update.": "Bir lisans anahtarı kayıtlı ancak bu sunucu imzasını satıcı genel anahtarıyla doğrulayamıyor. Eşlik eden uygulamalar, anahtar eşleşen satıcı imzalama anahtarıyla imzalanana kadar lisansı reddeder. Doğru imzalanmış bir lisansı yeniden uygula veya bir uygulama güncellemesinden sonra sorun devam ederse destek ile iletişime geç.",
