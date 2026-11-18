@@ -2,7 +2,7 @@
 	"translations": {
 		"\"From\" must be on or before \"To\".": "\"De\" deve estar ligado ou antes de \"Para\".",
 		"%1$d of %2$d device slots in use.": "%1$d de %2$d espaços para dispositivos em uso.",
-		"%1$d of %2$d seats assigned": "%1$d de %2$d assentos atribuídos",
+		"%1$d of %2$d seats assigned": "%1$d de %2$d vagas atribuídas",
 		"%1$s (%2$s) is below reorder level: %3$s on hand, reorder at %4$s.": "%1$s (%2$s) está abaixo do nível de reposição: %3$s em estoque, repor em %4$s.",
 		"%n label": [
 			"%n etiqueta",
@@ -37,7 +37,7 @@
 		"1. Turn on a connection": "1. Ative uma conexão",
 		"1. Type the quantity on the shelf": "1. Digite a quantidade na prateleira",
 		"2. Add allowlist entries before turning restriction on": "2. Adicione entradas à lista de permissões antes de ativar a restrição",
-		"2. Assign mobile seats": "2. Atribuir assentos móveis",
+		"2. Assign mobile seats": "2. Atribuir vagas móveis",
 		"2. Count on the shelf": "2. Conte na prateleira",
 		"2. Count what is on the shelf": "2. Conte o que está na prateleira",
 		"2. Create an item and scan the barcode": "2. Crie um item e escaneie o código de barras",
@@ -118,10 +118,10 @@
 		"All kinds": "Todos os tipos",
 		"All licensed device slots are used. Ask about upgrading scanner licenses.": "Todos os slots de dispositivos licenciados são usados. Pergunte sobre a atualização de licenças de scanner.",
 		"All licensed device slots are used. Remove a device or upgrade the license.": "Todos os slots de dispositivos licenciados são usados. Remova um dispositivo ou atualize a licença.",
-		"All licensed seats are assigned. Ask about upgrading mobile seats.": "Todos os assentos licenciados são atribuídos. Pergunte sobre a atualização de assentos móveis.",
-		"All licensed seats are assigned. Remove a seat or upgrade the license.": "Todos os assentos licenciados são atribuídos. Remova um assento ou atualize a licença.",
+		"All licensed seats are assigned. Ask about upgrading mobile seats.": "Todas as vagas licenciadas são atribuídas. Pergunte sobre a atualização de vagas móveis.",
+		"All licensed seats are assigned. Remove a seat or upgrade the license.": "Todas as vagas licenciadas são atribuídas. Remova uma vaga ou atualize a licença.",
 		"All locations": "Todos os locais",
-		"All mobile seats are assigned. Remove a user or upgrade your license.": "Todos os assentos móveis são atribuídos. Remova um usuário ou atualize sua licença.",
+		"All mobile seats are assigned. Remove a user or upgrade your license.": "Todas as vagas móveis estão atribuídas. Remova um usuário ou atualize sua licença.",
 		"Allow negative stock": "Permitir estoque negativo",
 		"Allowed groups": "Grupos permitidos",
 		"Allowed users": "Usuários permitidos",
@@ -141,11 +141,11 @@
 		"Ask about mobile & scanner licenses": "Pergunte sobre licenças de dispositivos móveis e scanners",
 		"Ask about setup or training": "Pergunte sobre configuração ou treinamento",
 		"Ask for a partner offer": "Peça uma oferta de parceiro",
-		"Assign mobile seats to %1$d people? %2$d seats remaining.": "Atribuir assentos móveis a %1$d pessoas? Restam %2$d assentos.",
-		"Assign mobile seats?": "Atribuir assentos móveis?",
-		"Assign seat": "Atribuir assento",
-		"Assign seat to user": "Atribuir assento ao usuário",
-		"Assign seats": "Atribuir assentos",
+		"Assign mobile seats to %1$d people? %2$d seats remaining.": "Atribuir vagas móveis a %1$d pessoas? Restam %2$d vagas.",
+		"Assign mobile seats?": "Atribuir vagas móveis?",
+		"Assign seat": "Atribuir vaga",
+		"Assign seat to user": "Atribuir vaga ao usuário",
+		"Assign seats": "Atribuir vagas",
 		"Assign selected": "Atribuir selecionados",
 		"Assign selected (%n)": "Atribuir selecionados (%n)",
 		"Assigned": "Atribuído",
@@ -243,7 +243,7 @@
 		"Copy code": "Copiar código",
 		"Copy this code now. It is shown only once.": "Copie este código agora. É mostrado apenas uma vez.",
 		"Copy token": "Copiar token",
-		"Could not assign seat.": "Não foi possível atribuir assento.",
+		"Could not assign seat.": "Não foi possível atribuir vaga.",
 		"Could not check the file.": "Não foi possível verificar o arquivo.",
 		"Could not copy. Select the code manually.": "Não foi possível copiar. Selecione o código manualmente.",
 		"Could not generate a pairing code.": "Não foi possível gerar o código de emparelhamento.",
@@ -257,7 +257,7 @@
 		"Could not load variance.": "Não foi possível carregar a variação.",
 		"Could not register device.": "Não foi possível registrar o dispositivo.",
 		"Could not remove license.": "Não foi possível remover a licença.",
-		"Could not remove seat.": "Não foi possível remover o assento.",
+		"Could not remove seat.": "Não foi possível remover a vaga.",
 		"Could not revoke device.": "Não foi possível revogar o dispositivo.",
 		"Could not save license.": "Não foi possível salvar a licença.",
 		"Could not save settings. Check the fields and try again.": "Não foi possível salvar as configurações. Verifique os campos e tente novamente.",
@@ -321,7 +321,7 @@
 		"Download encrypted transfer file": "Baixar arquivo de transferência criptografado",
 		"Download the starter CSV with all import columns": "Baixar o CSV inicial com todas as colunas de importação",
 		"Each line autosaves when you leave the field. Blind mode hides the system quantity so you count without bias.": "Cada linha é salva automaticamente ao sair do campo. O modo cego oculta a quantidade do sistema para que a contagem ocorra sem viés.",
-		"Each phone user needs a seat. Remove seats you no longer need.": "Cada usuário móvel precisa de um assento. Remova assentos que não são mais necessários.",
+		"Each phone user needs a seat. Remove seats you no longer need.": "Cada usuário móvel precisa de uma vaga. Remova vagas que não são mais necessárias.",
 		"Each row is on-hand at a place. Empty means this item is not stocked anywhere yet.": "Cada linha está disponível em um local. Vazio significa que este item ainda não está em estoque.",
 		"Edit": "Editar",
 		"Edit item": "Editar item",
@@ -524,8 +524,8 @@
 		"Menu": "Menu",
 		"Merge": "Mesclar",
 		"Mobile & terminal": "Celular e terminal",
-		"Mobile seats": "Assentos móveis",
-		"Mobile seats used": "Assentos móveis usados",
+		"Mobile seats": "Vagas móveis",
+		"Mobile seats used": "Vagas móveis usadas",
 		"Mode": "Modo",
 		"Monthly budget for {cat}": "Orçamento mensal para {cat}",
 		"More": "Mais",
@@ -538,7 +538,7 @@
 		"Movements: Booking history": "Movimentações: histórico de lançamentos",
 		"Name": "Nome",
 		"Name, description, and an empty SKU fill in — everything else stays yours.": "Nome, descrição e um SKU vazio são preenchidos — todo o resto continua seu.",
-		"Named seats for the official apps — a software licence on invoice.": "Assentos nomeados para os aplicativos oficiais – uma licença de software na fatura.",
+		"Named seats for the official apps — a software licence on invoice.": "Vagas nomeadas para os aplicativos oficiais – uma licença de software na fatura.",
 		"Narrow bookings by kind, item, location, or date.": "Limite os lançamentos por tipo, item, local ou data.",
 		"Narrow by kind, item, location, or dates. Results update as you choose. Clear resets the list.": "Restrinja por tipo, item, local ou datas. Resultados são atualizados conforme as escolhas. Limpar redefine a lista.",
 		"Narrow the list by kind, item, location, or date, then click Apply.": "Limite a lista por tipo, item, local ou data e clique em Aplicar.",
@@ -579,7 +579,7 @@
 		"No matching location — pick a suggestion or clear the field.": "Nenhum local correspondente. Escolha uma sugestão ou limpe o campo.",
 		"No matching people found.": "Nenhuma pessoa correspondente encontrada.",
 		"No mobile license is stored on this server.": "Nenhuma licença móvel é armazenada neste servidor.",
-		"No mobile seats assigned yet.": "Nenhum assento móvel atribuído ainda.",
+		"No mobile seats assigned yet.": "Nenhuma vaga móvel atribuída ainda.",
 		"No movements match these filters": "Nenhum movimento corresponde a esses filtros",
 		"No movements yet": "Nenhum movimento ainda",
 		"No open order sheets.": "Sem folhas de pedido abertas.",
@@ -589,7 +589,7 @@
 		"No product found for this barcode — fill in the details yourself.": "Nenhum produto encontrado para este código de barras — preencha os dados você mesmo.",
 		"No scanner selected": "Nenhum scanner selecionado",
 		"No scanner slots yet.": "Ainda não há slots de scanner.",
-		"No seats assigned yet.": "Nenhum assento atribuído ainda.",
+		"No seats assigned yet.": "Nenhuma vaga atribuída ainda.",
 		"No stock at this location.": "Sem estoque neste local.",
 		"No stock yet.": "Ainda sem estoque.",
 		"No stocktakes yet": "Ainda não há inventários",
@@ -679,7 +679,7 @@
 		"Otherwise you can lock yourself out until a system admin re-opens the app.": "Caso contrário, o acesso pode ser bloqueado até que um administrador do sistema reabra o app.",
 		"Over budget": "Acima do orçamento",
 		"Over budget — within emergency allowance": "Acima do orçamento — dentro do orçamento de emergência",
-		"Over seat limit": "Acima do limite de assentos",
+		"Over seat limit": "Acima do limite de vagas",
 		"Pack price (optional)": "Preço da embalagem (opcional)",
 		"Packages and terms:": "Pacotes e termos:",
 		"Page {page} of {pages}": "Página {page} de {pages}",
@@ -697,8 +697,8 @@
 		"Paste CSV here, or choose a file above.": "Cole CSV aqui ou escolha um arquivo acima.",
 		"Paste IV2 key": "Colar chave IV2",
 		"Paste SKU or scan code": "Cole o SKU ou o código de digitalização",
-		"Paste an IV2 key, then assign seats and scanner slots.": "Cole uma chave IV2 e atribua assentos e slots de scanner.",
-		"Paste an official IV2 key, assign mobile seats, and create scanner device slots.": "Cole uma chave IV2 oficial, atribua assentos móveis e crie slots para dispositivos de scanner.",
+		"Paste an IV2 key, then assign seats and scanner slots.": "Cole uma chave IV2 e atribua vagas e slots de scanner.",
+		"Paste an official IV2 key, assign mobile seats, and create scanner device slots.": "Cole uma chave IV2 oficial, atribua vagas móveis e crie slots para dispositivos de scanner.",
 		"Paste the license key you received after purchase. The web app stays free — this key unlocks %1$s for your organisation.": "Cole a chave de licença recebida após a compra. O app web continua gratuito — esta chave desbloqueia %1$s para a sua organização.",
 		"Paste your %1$s license key below to unlock %2$s. The web app stays free.": "Cole sua chave de licença %1$s abaixo para desbloquear %2$s. O app web continua gratuito.",
 		"Pending invoice pushes": "Envios de fatura pendentes",
@@ -765,10 +765,10 @@
 		"Remove": "Remover",
 		"Remove favourite": "Remover favorito",
 		"Remove license": "Remover licença",
-		"Remove mobile seat": "Remover assento móvel",
-		"Remove mobile seat for this person?": "Remover o assento móvel desta pessoa?",
+		"Remove mobile seat": "Remover vaga móvel",
+		"Remove mobile seat for this person?": "Remover a vaga móvel desta pessoa?",
 		"Remove photo": "Remover foto",
-		"Remove the organisation license and revoke all seats and devices? This cannot be undone.": "Remover a licença da organização e revogar todos os assentos e dispositivos? Esta ação não pode ser desfeita.",
+		"Remove the organisation license and revoke all seats and devices? This cannot be undone.": "Remover a licença da organização e revogar todas as vagas e dispositivos? Esta ação não pode ser desfeita.",
 		"Remove {name}": "Remover {name}",
 		"Removed from favourites.": "Removido dos favoritos.",
 		"Removed {name}.": "{name} removido.",
@@ -858,9 +858,9 @@
 		"Search the web for this barcode": "Pesquisar este código de barras na web",
 		"Searching product databases…": "Pesquisando bancos de dados de produtos…",
 		"Searching…": "Pesquisando…",
-		"Seat assigned.": "Assento atribuído.",
-		"Seat removed.": "Assento removido.",
-		"Seats": "Assentos",
+		"Seat assigned.": "Vaga atribuída.",
+		"Seat removed.": "Vaga removida.",
+		"Seats": "Vagas",
 		"Secrets are never included.": "Os segredos nunca são incluídos.",
 		"Secrets not transferred": "Segredos não transferidos",
 		"Security-relevant changes": "Alterações relevantes para a segurança",
@@ -1082,7 +1082,7 @@
 		"Where are you counting?": "Onde ocorre a contagem?",
 		"Who gets a notice the first time an item drops below its reorder level.": "Quem recebe um aviso na primeira vez que um item cai abaixo de seu nível de reposição.",
 		"Who may receive, adjust, and run stocktakes — and whether negative stock is allowed.": "Quem pode receber, ajustar e executar inventários — e se estoque negativo é permitido.",
-		"Without restriction, any logged-in Nextcloud user can open InventoryCheck. Field users still need location access (and seats for mobile) to book stock.": "Sem restrição, qualquer usuário Nextcloud conectado pode abrir o InventoryCheck. Os usuários de campo ainda precisam de acesso ao local (e assentos para móvel) para lançar estoque.",
+		"Without restriction, any logged-in Nextcloud user can open InventoryCheck. Field users still need location access (and seats for mobile) to book stock.": "Sem restrição, qualquer usuário Nextcloud conectado pode abrir o InventoryCheck. Os usuários de campo ainda precisam de acesso ao local (e vagas para móvel) para lançar estoque.",
 		"Writing data": "Gravando dados",
 		"Writing settings": "Gravando configurações",
 		"Yes": "Sim",
@@ -1090,13 +1090,69 @@
 		"You are not allowed to use InventoryCheck right now.": "O uso do InventoryCheck não é permitido no momento.",
 		"You are not allowed to use InventoryCheck.": "O uso do InventoryCheck não é permitido.",
 		"You can close this — the result is saved and shown under “Last transfer”.": "Você pode fechar isto — o resultado é salvo e mostrado em “Última transferência”.",
-		"You do not have a mobile seat assigned.": "Nenhum assento móvel está atribuído a você.",
+		"You do not have a mobile seat assigned.": "Nenhuma vaga móvel está atribuída a você.",
 		"You do not have permission for this action.": "Não há permissão para esta ação.",
 		"You do not have the rights for this action.": "Você não tem permissões para esta ação.",
-		"You selected %1$d people but only %2$d seats remain. Only free seats will be assigned.": "Selecionou %1$d pessoas mas restam apenas %2$d assentos. Apenas os assentos livres serão atribuídos.",
+		"You selected %1$d people but only %2$d seats remain. Only free seats will be assigned.": "Selecionou %1$d pessoas mas restam apenas %2$d vagas. Apenas as vagas livres serão atribuídas.",
 		"Your license expires within 30 days. Contact your vendor to renew.": "Sua licença expira em 30 dias. Entre em contato com seu fornecedor para renovar.",
-		"Your mobile seat is above the licensed limit.": "Seu assento móvel está acima do limite licenciado.",
+		"Your mobile seat is above the licensed limit.": "Sua vaga móvel está acima do limite licenciado.",
 		"Your organisation restricts InventoryCheck access. You are not on the allow-list.": "A organização restringe o acesso ao InventoryCheck. Sem registro na lista de permissões.",
+		"_(1 env-bound value emptied)_::_(%n env-bound values emptied)_": [
+			"(1 valor vinculado à instância esvaziado)",
+			"(%n valores vinculados à instância esvaziados)"
+		],
+		"_(1 filtered)_::_(%n filtered)_": [
+			"(1 filtrada)",
+			"(%n filtradas)"
+		],
+		"_(1 secret redacted)_::_(%n secrets redacted)_": [
+			"(1 segredo ocultado)",
+			"(%n segredos ocultados)"
+		],
+		"_(1 unresolved ref)_::_(%n unresolved refs)_": [
+			"(1 referência não resolvida)",
+			"(%n referências não resolvidas)"
+		],
+		"_1 item was never counted. Confirming leaves those items unchanged._::_%n items were never counted. Confirming leaves those items unchanged._": [
+			"1 item nunca foi contado. A confirmação deixa esses itens inalterados.",
+			"%n itens nunca foram contados. A confirmação deixa esses itens inalterados."
+		],
+		"_1 line changed after this stocktake started. Closing with the counted quantities will overwrite those later movements._::_%n lines changed after this stocktake started. Closing with the counted quantities will overwrite those later movements._": [
+			"1 linha alterada depois que este inventário começou. Fechar com as quantidades contadas sobrescreverá as movimentações posteriores.",
+			"%n linhas alteradas depois que este inventário começou. Fechar com as quantidades contadas sobrescreverá as movimentações posteriores."
+		],
+		"_1 line changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities._::_%n lines changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities._": [
+			"1 linha alterada depois que este inventário começou. A quantidade atual difere do instantâneo — resolva antes de fechar, ou confirme que aceita as quantidades contadas.",
+			"%n linhas alteradas depois que este inventário começou. A quantidade atual difere do instantâneo — resolva antes de fechar, ou confirme que aceita as quantidades contadas."
+		],
+		"_1 reference unresolved — see the groups below._::_%n references unresolved — see the groups below._": [
+			"1 referência não resolvida — veja os grupos abaixo.",
+			"%n referências não resolvidas — veja os grupos abaixo."
+		],
+		"_1 row looks fine._::_%n rows look fine._": [
+			"1 linha parece boa.",
+			"%n linhas parecem boas."
+		],
+		"_1 row needs a value on this instance_::_%n rows need a value on this instance_": [
+			"1 linha precisa de um valor nesta instância",
+			"%n linhas precisam de um valor nesta instância"
+		],
+		"_1 row skipped._::_%n rows skipped._": [
+			"1 linha ignorada.",
+			"%n linhas ignoradas."
+		],
+		"_1 row updates an existing item._::_%n rows update existing items._": [
+			"1 linha atualiza um item existente.",
+			"%n linhas atualizam itens existentes."
+		],
+		"_Counted 1 line as system quantity._::_Counted %n lines as system quantity._": [
+			"Contada 1 linha como quantidade do sistema.",
+			"Contadas %n linhas como quantidade do sistema."
+		],
+		"_Warning: 1 row will be permanently deleted, then the file data is loaded._::_Warning: %n rows will be permanently deleted, then the file data is loaded._": [
+			"Aviso: 1 linha será excluída permanentemente e, em seguida, os dados do arquivo serão carregados.",
+			"Aviso: %n linhas serão excluídas permanentemente e, em seguida, os dados do arquivo serão carregados."
+		],
 		"add and update; nothing is deleted": "adicionar e atualizar; nada é excluído",
 		"applied": "aplicado",
 		"critical": "crítico",
@@ -1123,63 +1179,7 @@
 		"{n} stale order marker": "{n} marcas de encomenda obsoletas",
 		"{n} unpriced": "{n} sem preço",
 		"★ Remove from favourites": "★ Remover dos favoritos",
-		"☆ Add to favourites": "☆ Adicionar aos favoritos",
-		"_(1 env-bound value emptied)_::_(%n env-bound values emptied)_": [
-			"(1 valor vinculado à instância esvaziado)",
-			"(%n valores vinculados à instância esvaziados)"
-		],
-		"_(1 filtered)_::_(%n filtered)_": [
-			"(1 filtrada)",
-			"(%n filtradas)"
-		],
-		"_(1 secret redacted)_::_(%n secrets redacted)_": [
-			"(1 segredo ocultado)",
-			"(%n segredos ocultados)"
-		],
-		"_(1 unresolved ref)_::_(%n unresolved refs)_": [
-			"(1 referência não resolvida)",
-			"(%n referências não resolvidas)"
-		],
-		"_1 reference unresolved — see the groups below._::_%n references unresolved — see the groups below._": [
-			"1 referência não resolvida — veja os grupos abaixo.",
-			"%n referências não resolvidas — veja os grupos abaixo."
-		],
-		"_1 row needs a value on this instance_::_%n rows need a value on this instance_": [
-			"1 linha precisa de um valor nesta instância",
-			"%n linhas precisam de um valor nesta instância"
-		],
-		"_1 row skipped._::_%n rows skipped._": [
-			"1 linha ignorada.",
-			"%n linhas ignoradas."
-		],
-		"_Warning: 1 row will be permanently deleted, then the file data is loaded._::_Warning: %n rows will be permanently deleted, then the file data is loaded._": [
-			"Aviso: 1 linha será excluída permanentemente e, em seguida, os dados do arquivo serão carregados.",
-			"Aviso: %n linhas serão excluídas permanentemente e, em seguida, os dados do arquivo serão carregados."
-		],
-		"_1 row looks fine._::_%n rows look fine._": [
-			"1 linha parece boa.",
-			"%n linhas parecem boas."
-		],
-		"_1 row updates an existing item._::_%n rows update existing items._": [
-			"1 linha atualiza um item existente.",
-			"%n linhas atualizam itens existentes."
-		],
-		"_Counted 1 line as system quantity._::_Counted %n lines as system quantity._": [
-			"Contada 1 linha como quantidade do sistema.",
-			"Contadas %n linhas como quantidade do sistema."
-		],
-		"_1 line changed after this stocktake started. Closing with the counted quantities will overwrite those later movements._::_%n lines changed after this stocktake started. Closing with the counted quantities will overwrite those later movements._": [
-			"1 linha alterada depois que este inventário começou. Fechar com as quantidades contadas sobrescreverá as movimentações posteriores.",
-			"%n linhas alteradas depois que este inventário começou. Fechar com as quantidades contadas sobrescreverá as movimentações posteriores."
-		],
-		"_1 line changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities._::_%n lines changed after this stocktake started. Live quantity differs from the snapshot — resolve before closing, or confirm you accept the counted quantities._": [
-			"1 linha alterada depois que este inventário começou. A quantidade atual difere do instantâneo — resolva antes de fechar, ou confirme que aceita as quantidades contadas.",
-			"%n linhas alteradas depois que este inventário começou. A quantidade atual difere do instantâneo — resolva antes de fechar, ou confirme que aceita as quantidades contadas."
-		],
-		"_1 item was never counted. Confirming leaves those items unchanged._::_%n items were never counted. Confirming leaves those items unchanged._": [
-			"1 item nunca foi contado. A confirmação deixa esses itens inalterados.",
-			"%n itens nunca foram contados. A confirmação deixa esses itens inalterados."
-		]
+		"☆ Add to favourites": "☆ Adicionar aos favoritos"
 	},
 	"pluralForm": "nplurals=2; plural=(n > 1);"
 }
