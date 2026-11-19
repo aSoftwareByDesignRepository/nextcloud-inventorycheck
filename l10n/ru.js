@@ -731,7 +731,7 @@ OC.L10N.register(
 	"Phase: %s" : "Этап: %s",
 	"Photo removed." : "Фото удалено.",
 	"Photo uploaded." : "Фото загружено.",
-	"Pick a file or paste CSV text — the check lists every column it recognises and marks the ones it ignores." : "Выберите файл или вставьте текст CSV — проверка перечислит каждый распознанный столбец и отметит игнорируемые. Немецкие заголовки тоже работают.",
+	"Pick a file or paste CSV text — the check lists every column it recognises and marks the ones it ignores. German headers also work." : "Выберите файл или вставьте текст CSV — проверка перечислит каждый распознанный столбец и отметит игнорируемые. Немецкие заголовки тоже работают.",
 	"Pick a scanner device" : "Выберите устройство-сканер",
 	"Pick a transfer file, enter its passphrase, review the preview — then confirm. Nothing is written before you confirm." : "Выберите файл переноса, введите его парольную фразу, проверьте предпросмотр — затем подтвердите. До подтверждения ничего не записывается.",
 	"Pick a user, group, or scanner device, then the places they may use." : "Выберите пользователя, группу или сканер, затем места, которые им можно использовать.",
