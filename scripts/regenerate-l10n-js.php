@@ -15,7 +15,7 @@ declare(strict_types=1);
  */
 
 $base = __DIR__ . '/../l10n';
-$locales = ['en', 'de', 'da', 'es', 'fr', 'it', 'nb', 'nl', 'pl', 'sv', 'pt', 'pt_BR', 'tr', 'zh_CN', 'zh_TW'];
+$locales = ['en', 'de', 'da', 'es', 'fr', 'it', 'nb', 'nl', 'pl', 'sv', 'pt', 'pt_BR', 'tr', 'zh_CN', 'zh_TW', 'ru'];
 
 foreach ($locales as $lang) {
 	$jsonPath = $base . '/' . $lang . '.json';
