@@ -521,7 +521,7 @@ OC.L10N.register(
 	"Lookup settings are unavailable on this server." : "Настройки поиска недоступны на этом сервере.",
 	"Lookup settings saved." : "Настройки поиска сохранены.",
 	"Lookup unavailable — fill in the details yourself." : "Поиск недоступен — заполните данные сами.",
-	"Lookups so far: {total} — found: {hits}, not found: {misses}, errors: {errors}, rate-limited: {limited}, saved by cache: {cache}" : "Поисков пока: {total} — найдено: {hits}, не найдено: {misses}, ошибок: {errors}, ограничено частотой: {limited}, сэкономлено кешем: {cache}",
+	"Lookups so far: {total} — found: {hits}, not found: {misses}, errors: {errors}, rate-limited: {limited}, saved by cache: {cache}" : "Поисков пока: {total} — найдено: {hits}, не найдено: {misses}, ошибок: {errors}, ограничено: {limited}, из кеша: {cache}",
 	"Lot \/ batch tracking" : "Учёт по партиям",
 	"Lot \/ serial" : "Партия \/ серия",
 	"Lot \/ serial (optional)" : "Партия \/ серия (необязательно)",
