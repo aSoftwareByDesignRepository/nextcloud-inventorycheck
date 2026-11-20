@@ -423,7 +423,7 @@ final class L10nWrongSenseContractTest extends TestCase
 		// clipboard-paste canon per locale (iv-crit9 family)
 		'/\bpaste\b/iu' => [
 			'de' => 'einfüg|einsetz|tipp|füg\w*\b[^.]{0,60}\bein\b',
-			'es' => 'peg',
+			'es' => 'p[eé]g',
 			'fr' => 'coll',
 			'it' => 'incoll',
 			'da' => 'indsæt',
