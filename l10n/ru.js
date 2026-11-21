@@ -976,7 +976,7 @@ OC.L10N.register(
 	"Thank you for considering support — options are listed below." : "Спасибо за готовность поддержать — варианты перечислены ниже.",
 	"The action conflicts with the current state. Reload and try again." : "Действие конфликтует с текущим состоянием. Перезагрузите и попробуйте снова.",
 	"The booking is saved immediately and shows under Recent movements." : "Проводка сохраняется немедленно и появляется в «Последних движениях».",
-	"The code format is not valid. Use letters, digits, and . _ \/ - only." : "Формат кода недействителен. Используйте только буквы, цифры и . _ \/ -",
+	"The code format is not valid. Use letters, digits, and . _ \/ - only." : "Формат кода недействителен. Используйте только буквы, цифры и . _ \/ -.",
 	"the companion apps" : "приложения-компаньоны",
 	"The current code stops working immediately. Show the new one-time code on this device and pair it again." : "Текущий код сразу перестаёт работать. Покажите новый одноразовый код на этом устройстве и сопрягите его заново.",
 	"The device slot is deactivated and its location access grants are removed. It can be reactivated later with a new pairing code." : "Слот устройства деактивирован, его права доступа к местам удалены. Его можно реактивировать позже новым кодом сопряжения.",

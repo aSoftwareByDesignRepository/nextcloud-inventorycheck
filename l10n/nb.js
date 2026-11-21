@@ -394,7 +394,7 @@ OC.L10N.register(
 	"Fix the errors below, or turn on “Skip rows with errors”." : "Løs feilene nedenfor, eller slå på \\\"Hopp rader med feil\\\".",
 	"Format: %1$s followed by a signed payload. One key per organisation." : "Format: %1$s etterfulgt av en signert nyttelast. Én nøkkel per organisasjon.",
 	"Fractional quantities" : "Fraksjonsmengder",
-	"Fractional quantities are on" : "Fraksjonerte mengder er på (inntil 3 desimaler). Dette kan ikke skrus av.",
+	"Fractional quantities are on" : "Fraksjonerte mengder er på.",
 	"Fractional quantities are on (up to 3 decimal places). This cannot be turned off." : "Fraksjonerte mengder er på (inntil 3 desimaler). Dette kan ikke skrus av.",
 	"Fractional quantities enabled. Reload the page to use decimal steps." : "Fraksjonelle mengder er aktivert. Last siden på nytt for å bruke desimaltrinn.",
 	"Fractional quantities enabled. Reloading…" : "Fraksjonelle mengder aktivert. Oppdaterer...",

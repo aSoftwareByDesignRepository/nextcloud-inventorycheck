@@ -5,7 +5,6 @@
 		"%1$d of %2$d seats assigned": "%2$d lisans hakkından %1$d'i atandı",
 		"%1$s (%2$s) is below reorder level: %3$s on hand, reorder at %4$s.": "%1$s (%2$s) yeniden sipariş seviyesinin altında: elde %3$s, yeniden sipariş seviyesi %4$s.",
 		"%n label": [
-			"%n etiket",
 			"%n etiket"
 		],
 		"%n labels": "%n etiket",
@@ -1179,5 +1178,5 @@
 		"This will update %1$s and %2$s — nothing is deleted.": "Bu işlem %1$s ve %2$s güncelleyecek — hiçbir şey silinmeyecek.",
 		"Import applied. %1$s and %2$s written.": "İçe aktarma uygulandı. %1$s ve %2$s yazıldı."
 	},
-	"pluralForm": "nplurals=2; plural=(n != 1);"
+	"pluralForm": "nplurals=1; plural=0;"
 }

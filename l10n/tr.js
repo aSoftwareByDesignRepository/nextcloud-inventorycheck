@@ -5,7 +5,7 @@ OC.L10N.register(
 	"%1$d of %2$d device slots in use." : "%2$d cihaz yuvasından %1$d tanesi kullanımda.",
 	"%1$d of %2$d seats assigned" : "%2$d lisans hakkından %1$d'i atandı",
 	"%1$s (%2$s) is below reorder level: %3$s on hand, reorder at %4$s." : "%1$s (%2$s) yeniden sipariş seviyesinin altında: elde %3$s, yeniden sipariş seviyesi %4$s.",
-	"%n label" : ["%n etiket","%n etiket"],
+	"%n label" : ["%n etiket"],
 	"%n labels" : "%n etiket",
 	"%s stays free (AGPL) on your Nextcloud. Bug reports and ideas on GitHub stay welcome — that is free open-source care. If your organisation needs bookable help on an invoice — or official mobile licenses — choose an option below:" : "%s, Nextcloud'unuzda ücretsiz kalır (AGPL). GitHub'daki hata raporları ve fikirler her zaman beklenir — bu, ücretsiz açık kaynak katkısıdır. Kurumunuzun fatura karşılığı satın alınabilir yardıma — veya resmî mobil lisanslara — ihtiyacı varsa aşağıdan bir seçenek belirleyin:",
 	"%s stays free (AGPL) on your Nextcloud. Bug reports and ideas on GitHub stay welcome — that is free open-source care. If your organisation needs bookable help on an invoice, choose an option below:" : "%s, Nextcloud'unuzda ücretsiz kalır (AGPL). GitHub'daki hata raporları ve fikirler her zaman beklenir — bu, ücretsiz açık kaynak katkısıdır. Kurumunuzun fatura karşılığı satın alınabilir yardıma ihtiyacı varsa aşağıdan bir seçenek belirleyin:",
