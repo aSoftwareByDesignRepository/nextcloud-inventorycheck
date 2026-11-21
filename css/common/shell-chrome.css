@@ -1306,9 +1306,7 @@ dialog .button.danger:hover,
 [role="alertdialog"] .btn--danger:hover,
 [role="alertdialog"] .btn-danger:hover,
 [role="alertdialog"] .button.danger:hover {
-	background: var(--iv-danger-fill-hover, var(--color-element-error, #c90000)) !important;
-	border-color: var(--iv-danger-fill-hover, var(--color-element-error, #c90000)) !important;
-	color: var(--iv-danger-on-fill, var(--color-primary-element-text, #fff)) !important;
+	filter: brightness(0.92);
 }
 
 #app-content.iv-app .iv-btn--danger:focus-visible,
@@ -1359,11 +1357,9 @@ dialog .button.danger:focus-visible,
 [role="alertdialog"] .btn--danger:focus-visible,
 [role="alertdialog"] .btn-danger:focus-visible,
 [role="alertdialog"] .button.danger:focus-visible {
-	background: var(--iv-danger-fill-hover, var(--color-element-error, #c90000)) !important;
-	border-color: var(--iv-danger-fill-hover, var(--color-element-error, #c90000)) !important;
-	color: var(--iv-danger-on-fill, var(--color-primary-element-text, #fff)) !important;
-	outline: 2px solid var(--iv-danger-fill, var(--color-element-error, #c90000)) !important;
-	outline-offset: 2px;
+	filter: brightness(0.92);
+	outline: 3px solid var(--iv-danger-fill, var(--color-element-error, #c90000)) !important;
+	outline-offset: var(--iv-focus-offset, 2px);
 }
 
 #app-content.iv-app .iv-btn--danger:active,

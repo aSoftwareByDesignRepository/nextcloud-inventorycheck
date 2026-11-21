@@ -307,7 +307,7 @@
 
 #app-content.iv-app .iv-filter-field__control .form-input[aria-invalid='true'],
 #app-content.iv-app .iv-filter-field__control .form-select[aria-invalid='true'] {
-	border-color: var(--iv-danger-border, var(--color-error-text, var(--color-error)));
+	border-color: var(--iv-danger-ink, var(--color-error-text, var(--color-error)));
 	outline-color: var(--iv-danger-ink, var(--color-error-text, var(--color-error)));
 }
 
