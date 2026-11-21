@@ -1,10 +1,9 @@
-/* Auto-adapted from arbeitszeitcheck/css/common/tokens.css for InventoryCheck shell parity. Do not invent divergent layout rules here. */
+/* Auto-adapted from arbeitszeitcheck/css/common/tokens.css for the Check-family shell. Do not invent divergent layout rules here. */
 /*
- * InventoryCheck design tokens (--iv-*).
- * Colors derive from Nextcloud theme variables; no raw hex in feature CSS
- * except the intentional QR/label scan canvas (--iv-qr-canvas).
- * Spacing/typography on :root; theme colors on body + app surfaces
- * (NC sets --color-* on body / [data-theme-*]).
+ * Inventorycheck design tokens (--iv-*).
+ * Colors derive from Nextcloud theme variables; no raw hex in feature CSS.
+ * Spacing/typography on :root; theme colors on body + themed app surfaces
+ * (NC sets --color-* on body [data-theme-*]).
  */
 :root {
 	--iv-space-1: 4px;
@@ -16,11 +15,33 @@
 	--iv-space-7: 48px;
 	--iv-space-8: 64px;
 
-	--iv-radius-sm: 6px;
-	--iv-radius-md: 12px;
-	--iv-radius-lg: 16px;
+	/* Legacy --space-* aliases used by ported AZC layout/dialog sheets */
+	--space-1: var(--iv-space-1);
+	--space-2: var(--iv-space-2);
+	--space-3: var(--iv-space-3);
+	--space-4: var(--iv-space-4);
+	--space-5: var(--iv-space-5);
+	--space-6: var(--iv-space-6);
+	--space-7: var(--iv-space-7);
+	--space-8: var(--iv-space-8);
+	--space-10: 80px;
+	--space-12: 96px;
 
-	--iv-fs-xs: 0.75rem;
+	/* Radii — design-system scale, bound to NC --border-radius-* when present */
+	--iv-radius-sm: var(--border-radius, 6px);
+	--iv-radius-md: var(--border-radius-element, var(--border-radius-large, 12px));
+	--iv-radius-lg: var(--border-radius-large, 16px);
+	--iv-radius-pill: var(--border-radius-pill, 999px);
+
+	/* Legacy --radius-* used by ported app-layout / dialogs sheets */
+	--radius-base: var(--iv-radius-sm);
+	--radius-lg: var(--iv-radius-md);
+	--radius-xl: var(--iv-radius-lg);
+	--radius-2xl: var(--iv-radius-lg);
+	--radius-full: var(--iv-radius-pill);
+
+	/* Floor 0.875rem (14px) — no type below 14px on mobile (responsive directive) */
+	--iv-fs-xs: 0.875rem;
 	--iv-fs-sm: 0.875rem;
 	--iv-fs-md: 1rem;
 	--iv-fs-lg: 1.125rem;
@@ -42,24 +63,15 @@
 	--iv-icon-stroke: 2;
 
 	--iv-tab-num: tabular-nums;
+	/* Touch targets (WCAG 2.5.5 / design-system) */
 	--iv-touch: 44px;
+	--iv-touch-lg: 48px;
 
 	/*
 	 * QR / barcode canvas must stay light for scannability in every theme.
-	 * This is the only intentional non-theme surface in InventoryCheck feature CSS.
+	 * This is the only intentional non-theme surface in Inventorycheck feature CSS.
 	 */
 	--iv-qr-canvas: #ffffff;
-
-	/* Alias scale for shared common/* CSS ported from AZC (uses --space-*) */
-	--space-1: var(--iv-space-1);
-	--space-2: var(--iv-space-2);
-	--space-3: var(--iv-space-3);
-	--space-4: var(--iv-space-4);
-	--space-5: var(--iv-space-5);
-	--space-6: var(--iv-space-6);
-	--space-7: var(--iv-space-7);
-	--space-8: var(--iv-space-8);
-	--space-12: var(--iv-space-7);
 }
 
 /*
@@ -68,41 +80,74 @@
  * :root can fall back to light surfaces while text inherits dark-theme ink.
  */
 body,
+#content.app-inventorycheck,
 #app-content.iv-app,
 .iv-app,
 .iv-dialog,
-.iv-dialog-overlay,
+.iv-modal,
 .iv-toast-region,
-.modal-backdrop.iv-dialog-overlay {
-	/* Fixed overlays (panels, backdrops, mobile nav) sit below NC #header, not under the profile menu */
+.iv-toasts,
+.iv-license-modal {
+	/* Fixed overlays (panels, backdrops, mobile nav) sit below NC #header */
 	--iv-overlay-top: var(--header-height, 50px);
 	--iv-overlay-height: calc(100dvh - var(--header-height, 50px));
 
 	--iv-bg-soft: color-mix(in srgb, var(--color-main-background) 96%, var(--color-main-text) 4%);
 	--iv-bg-card: var(--color-main-background);
 	--iv-bg-stripe: color-mix(in srgb, var(--color-main-background) 92%, var(--color-main-text) 8%);
+	--iv-bg-hover: var(--color-background-hover);
 	--iv-text: var(--color-main-text);
 	--iv-muted: var(--color-text-maxcontrast);
+	/* Muted ink on tinted surfaces (callouts/badges): main-text keeps it
+	   readable where pure maxcontrast washes out on the tint fill. */
+	--iv-muted-on-tint: color-mix(in srgb, var(--color-text-maxcontrast) 55%, var(--color-main-text));
+	/* Monospace for codes/refs (claim numbers, payment refs): NC ships no mono
+	   var, so pin a platform-native stack. */
+	--iv-mono: ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', 'Liberation Mono', Menlo, Consolas, monospace;
 	--iv-border: color-mix(in srgb, var(--color-main-text) 12%, transparent);
-	--iv-border-strong: color-mix(in srgb, var(--color-main-text) 24%, transparent);
+	/* Boundaries of cards/controls/callouts/dialogs need >=3:1 vs the adjacent
+	   surface (WCAG 1.4.11): NC's --color-border-maxcontrast is theme-tuned for
+	   exactly that (dark + high-contrast themes included). The faint 24% mix
+	   measured ~1.3:1 — below the floor in every theme. */
+	--iv-border-strong: var(--color-border-maxcontrast, color-mix(in srgb, var(--color-main-text) 24%, transparent));
 	/* Interactive controls need >=3:1 (WCAG 1.4.11): maxcontrast is NC's own
 	   input border; --color-border / --iv-border stay surface-only. */
 	--iv-form-border: var(--color-border-maxcontrast, var(--iv-border-strong));
+	/* Filled controls (secondary/ghost/summary buttons): the border sits on a
+	   mid-gray fill, so it must read against BOTH fill and page — maxcontrast
+	   lands ~2.9:1 on the 18%-ink secondary fill. Ink-tuned maxcontrast text
+	   token clears 3:1 against both in every theme. */
+	--iv-control-border: var(--color-text-maxcontrast, var(--color-border-maxcontrast, var(--iv-border-strong)));
+
+	/* Primary / focus — track NC accent for custom branding */
+	--iv-primary: var(--color-primary-element);
+	--iv-primary-text: var(--color-primary-element-text);
+	/* Accent used as text/icon ink on surfaces: pure --color-primary-element
+	   drops below WCAG AA 4.5:1 on dark themes (~4.3:1); the dark override
+	   below blends it toward main-text. Fills keep --iv-primary. */
+	--iv-accent-ink: var(--color-primary-element);
+	--iv-focus: 3px solid var(--color-primary-element);
+	--iv-focus-offset: 2px;
 
 	/* Mix with main background — not transparent — so callouts stay visible on all NC themes */
 	--iv-tint-success: color-mix(in srgb, var(--color-success-text, var(--color-success)) 18%, var(--color-main-background));
 	--iv-tint-warning: color-mix(in srgb, var(--color-warning-text, var(--color-warning)) 22%, var(--color-main-background));
 	--iv-tint-danger: color-mix(in srgb, var(--color-error-text, var(--color-error)) 18%, var(--color-main-background));
+	/* Alias used by badges/callouts/toasts — mix into main-bg (never transparent) so dark themes stay visible */
+	--iv-tint-critical: var(--iv-tint-danger);
 	--iv-tint-info: color-mix(in srgb, var(--color-primary-element) 16%, var(--color-main-background));
-	/* Info ink on --iv-tint-info chips/badges. Raw --color-primary-element is
-	 * theme-tuned for the main background, not for a 16% self-tint — dark
-	 * themes need a lightened mix to keep ≥4.5:1 (axe color-contrast). */
-	--iv-info-ink: var(--color-primary-element);
+
+	/*
+	 * Solid danger CTA fill (design-system §3.3 / WCAG 1.4.3).
+	 * NC 30+ maps --color-error to a pale tint — never put on-fill text on that.
+	 */
+	--iv-danger-fill: var(--color-element-error, var(--color-error));
+	--iv-danger-on-fill: var(--color-primary-element-text, var(--color-primary-text));
+	--iv-danger-ink: var(--color-error-text, var(--color-error));
 
 	/*
 	 * Notification icon wells — pale tint + semantic stroke (see .iv-page-header__icon).
 	 * NC *-text tokens are tuned per theme for contrast on main-background.
-	 * Fallbacks omitted: Nextcloud always provides these on authenticated pages.
 	 */
 	--iv-notif-fg-info: var(--color-primary-element);
 	--iv-notif-fg-warning: var(--color-warning-text, var(--color-warning));
@@ -116,59 +161,44 @@ body,
 	/* Overlay scrims — theme ink, never hardcoded #000 */
 	--iv-scrim: color-mix(in srgb, var(--color-main-text) 45%, transparent);
 	--iv-scrim-strong: color-mix(in srgb, var(--color-main-text) 55%, transparent);
-	--iv-press: color-mix(in srgb, var(--color-main-text) 15%, transparent);
-
-	/* Accent alias for components that mirror primary branding */
-	--iv-accent: var(--color-primary-element);
 
 	/*
-	 * Solid danger CTAs (DS checklist): use --color-element-error, never pale
-	 * --color-error tint + white text (fails AA on NC 30+).
+	 * Legacy --inventorycheck-* aliases (shell dialogs / app-layout ported from AZC).
+	 * Feature CSS should prefer --iv-*; every alias maps to NC/--iv-* so
+	 * undefined custom properties never blank out surfaces in any theme.
 	 */
-	--iv-danger-fill: var(--color-element-error, #c90000);
-	--iv-danger-fill-hover: color-mix(in srgb, var(--color-element-error, #c90000) 82%, var(--color-main-text));
-	--iv-danger-on-fill: var(--color-primary-element-text, #ffffff);
-	--iv-danger-ink: var(--color-error-text, var(--color-element-error, #8a0000));
-	--iv-danger-border: var(--color-border-error, var(--color-element-error, #c90000));
-
-	/*
-	 * Legacy --inventorycheck-* aliases → Nextcloud / --iv-* tokens.
-	 * Common CSS ported from older shells still references these names;
-	 * without aliases they resolve to nothing and break dark / HC themes.
-	 */
+	--inventorycheck-color-modal-background: var(--iv-bg-card);
+	--inventorycheck-color-modal-border: var(--iv-border);
+	--inventorycheck-color-modal-footer-background: var(--iv-bg-soft);
+	--inventorycheck-color-background: var(--color-main-background);
+	--inventorycheck-color-background-elevated: var(--iv-bg-card);
+	--inventorycheck-color-background-secondary: var(--iv-bg-soft);
+	--inventorycheck-color-background-tertiary: var(--iv-bg-soft);
+	--inventorycheck-color-text: var(--iv-text);
+	--inventorycheck-color-text-muted: var(--iv-muted);
+	--inventorycheck-color-text-maxcontrast: var(--iv-muted);
+	--inventorycheck-color-text-secondary: var(--iv-muted);
+	--inventorycheck-color-text-tertiary: var(--iv-muted);
 	--inventorycheck-color-primary: var(--color-primary-element);
 	--inventorycheck-color-primary-element: var(--color-primary-element);
-	--inventorycheck-color-primary-light: var(--iv-tint-info);
+	--inventorycheck-color-primary-light: color-mix(in srgb, var(--color-primary-element) 28%, transparent);
+	--inventorycheck-color-border: var(--iv-border);
 	--inventorycheck-color-border-focus: var(--color-primary-element);
-	--inventorycheck-color-text: var(--color-main-text);
-	--inventorycheck-color-text-maxcontrast: var(--color-text-maxcontrast);
-	--inventorycheck-color-text-muted: var(--color-text-maxcontrast);
-	--inventorycheck-color-text-secondary: var(--color-text-maxcontrast);
-	--inventorycheck-color-text-tertiary: var(--color-text-maxcontrast);
-	--inventorycheck-color-border: var(--iv-border, var(--color-border));
-	--inventorycheck-color-background: var(--color-main-background);
-	--inventorycheck-color-background-secondary: var(--iv-bg-soft, var(--color-background-dark));
-	--inventorycheck-color-background-tertiary: var(--color-background-hover, var(--iv-bg-soft));
-	--inventorycheck-color-background-elevated: var(--iv-bg-card, var(--color-main-background));
-	--inventorycheck-color-modal-background: var(--iv-bg-card, var(--color-main-background));
-	--inventorycheck-color-modal-border: var(--iv-border, var(--color-border));
-	--inventorycheck-color-modal-footer-background: var(--iv-bg-soft, var(--color-background-dark));
+	--inventorycheck-color-border-warning: var(--color-warning-text, var(--color-warning));
+	--inventorycheck-color-error: var(--iv-danger-ink);
+	--inventorycheck-color-error-light: color-mix(in srgb, var(--iv-danger-ink) 28%, transparent);
+	--inventorycheck-color-success-light: color-mix(in srgb, var(--color-success-text, var(--color-success)) 28%, transparent);
+	--inventorycheck-color-warning-light: color-mix(in srgb, var(--color-warning-text, var(--color-warning)) 28%, transparent);
+	--inventorycheck-color-form-required: var(--iv-danger-ink);
+	--inventorycheck-color-form-label: var(--iv-text);
 	--inventorycheck-color-form-background: var(--color-main-background);
 	--inventorycheck-color-form-border: var(--color-border-maxcontrast, var(--iv-border-strong));
 	--inventorycheck-color-form-border-focus: var(--color-primary-element);
-	--inventorycheck-color-form-border-error: var(--iv-danger-border, var(--color-error-text, var(--color-error)));
+	--inventorycheck-color-form-border-error: var(--iv-danger-ink);
 	--inventorycheck-color-form-border-success: var(--color-success-text, var(--color-success));
-	--inventorycheck-color-form-label: var(--color-main-text);
-	--inventorycheck-color-form-required: var(--iv-danger-ink, var(--color-error-text, var(--color-error)));
-	--inventorycheck-color-error: var(--iv-danger-ink, var(--color-error-text, var(--color-error)));
-	--inventorycheck-color-error-light: var(--iv-tint-danger);
-	--inventorycheck-color-success-light: var(--iv-tint-success);
-	--inventorycheck-color-warning-light: var(--iv-tint-warning);
-	--inventorycheck-color-border-warning: var(--color-warning-text, var(--color-warning));
-	--inventorycheck-color-table-header-background: var(--color-background-dark, var(--iv-bg-soft));
-	--inventorycheck-color-table-border: var(--iv-border, var(--color-border));
-
-	--inventorycheck-font-family-sans: inherit;
+	--inventorycheck-color-table-border: var(--iv-border);
+	--inventorycheck-color-table-header-background: var(--color-background-dark, var(--iv-bg-stripe));
+	--inventorycheck-font-family-sans: var(--font-face, inherit);
 	--inventorycheck-font-size-sm: var(--iv-fs-sm);
 	--inventorycheck-font-size-base: var(--iv-fs-md);
 	--inventorycheck-font-size-lg: var(--iv-fs-lg);
@@ -177,42 +207,39 @@ body,
 	--inventorycheck-font-weight-medium: 500;
 	--inventorycheck-font-weight-semibold: 600;
 	--inventorycheck-font-weight-bold: 700;
+	--inventorycheck-letter-spacing-tight: -0.02em;
 	--inventorycheck-line-height-tight: var(--iv-line-tight);
 	--inventorycheck-line-height-normal: var(--iv-line-base);
 	--inventorycheck-line-height-relaxed: 1.6;
-	--inventorycheck-letter-spacing-tight: -0.01em;
-
-	--radius-base: var(--iv-radius-sm);
 }
 
-/* Dark themes: NC --color-element-error is a bright accent — darken for on-fill AA.
- * Same surface list as the base token block above: body-mounted overlays
- * (.iv-dialog / .iv-dialog-overlay / .iv-toast-region) re-declare the light
- * tokens on themselves — without their own dark legs they keep the light
- * fill while body flips dark (learned: btn-variant-armor dark dialog probe). */
+/* Bright accent fills on dark themes fail AA with white ink — darken fill + use main-text. */
 body[data-theme-dark],
 body[data-theme-dark-highcontrast],
-[data-theme-dark] #app-content.iv-app,
-[data-theme-dark-highcontrast] #app-content.iv-app,
-[data-theme-dark] .iv-app,
-[data-theme-dark-highcontrast] .iv-app,
-[data-theme-dark] .iv-dialog,
-[data-theme-dark-highcontrast] .iv-dialog,
-[data-theme-dark] .iv-dialog-overlay,
-[data-theme-dark-highcontrast] .iv-dialog-overlay,
-[data-theme-dark] .iv-toast-region,
-[data-theme-dark-highcontrast] .iv-toast-region,
-[data-theme-dark] .modal-backdrop.iv-dialog-overlay,
-[data-theme-dark-highcontrast] .modal-backdrop.iv-dialog-overlay {
-	--iv-danger-fill: color-mix(in srgb, var(--color-element-error, #ff5050) 52%, var(--color-main-background));
-	--iv-danger-fill-hover: color-mix(in srgb, var(--color-element-error, #ff5050) 64%, var(--color-main-background));
-	--iv-danger-border: var(--color-element-error, #ff5050);
-	/* --color-primary-element-text is text-ON-accent ink — black under the
-	   dark themes' bright accents, so it darkens mixes/fills instead of
-	   lightening them. --color-main-text is the light ink in every dark
-	   variant (learned class, sealed azc/crm tokens.css). */
+body[data-theme-dark] #content.app-inventorycheck,
+body[data-theme-dark-highcontrast] #content.app-inventorycheck {
+	--iv-danger-fill: color-mix(
+		in srgb,
+		var(--color-element-error, var(--color-error)) 40%,
+		var(--color-main-background)
+	);
 	--iv-danger-on-fill: var(--color-main-text);
-	--iv-info-ink: color-mix(in srgb, var(--color-primary-element) 62%, var(--color-main-text));
+	--iv-accent-ink: color-mix(in srgb, var(--color-primary-element) 70%, var(--color-main-text));
+}
+
+/* NC high-contrast themes: stronger borders / shadows for 3:1 UI chrome */
+body[data-theme-light-highcontrast],
+body[data-theme-dark-highcontrast],
+body[data-theme-light-highcontrast] #content.app-inventorycheck,
+body[data-theme-dark-highcontrast] #content.app-inventorycheck {
+	--iv-border: color-mix(in srgb, var(--color-main-text) 32%, transparent);
+	/* HC themes push --color-border-maxcontrast to near-ink — keep it first so
+	   boundary chrome stays >=3:1 against HC surfaces. */
+	--iv-border-strong: var(--color-border-maxcontrast, color-mix(in srgb, var(--color-main-text) 48%, transparent));
+	--iv-shadow-sm: 0 0 0 1px var(--iv-border-strong);
+	--iv-shadow-md: 0 0 0 2px var(--iv-border-strong);
+	--inventorycheck-color-border: var(--iv-border);
+	--inventorycheck-color-modal-border: var(--iv-border);
 }
 
 @media (prefers-contrast: more) {
@@ -221,33 +248,22 @@ body[data-theme-dark-highcontrast],
 	}
 
 	body,
+	#content.app-inventorycheck,
 	#app-content.iv-app,
 	.iv-app,
 	.iv-dialog,
-	.iv-dialog-overlay,
+	.iv-modal,
 	.iv-toast-region,
-	.modal-backdrop.iv-dialog-overlay {
+	.iv-toasts,
+	.iv-license-modal {
 		--iv-border: color-mix(in srgb, var(--color-main-text) 28%, transparent);
-		--iv-border-strong: color-mix(in srgb, var(--color-main-text) 40%, transparent);
+		--iv-border-strong: var(--color-border-maxcontrast, color-mix(in srgb, var(--color-main-text) 40%, transparent));
 		--iv-shadow-sm: 0 0 0 1px var(--iv-border-strong);
 		--iv-shadow-md: 0 0 0 1px var(--iv-border-strong);
-		--iv-shadow-lg: 0 0 0 2px var(--iv-border-strong);
 	}
 }
 
-/* Aliases for dead-name refs (literal fallbacks masked them). */
+/* Alias for dead-name ref (literal fallback masked it). */
 body {
 	--iv-bg: var(--iv-bg-card);
-	--iv-fs-base: var(--iv-fs-md);
-}
-
-/* Accent ink for text-on-surface: --color-primary-element as text drops below
-   WCAG AA (~4.3:1) on dark themes — blend toward main-text there. */
-body {
-	--iv-accent-ink: var(--color-primary-element);
-}
-
-body[data-theme-dark],
-body[data-theme-dark-highcontrast] {
-	--iv-accent-ink: color-mix(in srgb, var(--color-primary-element) 70%, var(--color-main-text));
 }
