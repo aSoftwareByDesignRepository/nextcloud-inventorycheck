@@ -8,12 +8,16 @@
 			"%n etiket"
 		],
 		"%n labels": "%n etiket",
+		"%n rows": "%n satır",
+		"%n settings": "%n ayar",
 		"%s stays free (AGPL) on your Nextcloud. Bug reports and ideas on GitHub stay welcome — that is free open-source care. If your organisation needs bookable help on an invoice — or official mobile licenses — choose an option below:": "%s, Nextcloud'unuzda ücretsiz kalır (AGPL). GitHub'daki hata raporları ve fikirler her zaman beklenir — bu, ücretsiz açık kaynak katkısıdır. Kurumunuzun fatura karşılığı satın alınabilir yardıma — veya resmî mobil lisanslara — ihtiyacı varsa aşağıdan bir seçenek belirleyin:",
 		"%s stays free (AGPL) on your Nextcloud. Bug reports and ideas on GitHub stay welcome — that is free open-source care. If your organisation needs bookable help on an invoice, choose an option below:": "%s, Nextcloud'unuzda ücretsiz kalır (AGPL). GitHub'daki hata raporları ve fikirler her zaman beklenir — bu, ücretsiz açık kaynak katkısıdır. Kurumunuzun fatura karşılığı satın alınabilir yardıma ihtiyacı varsa aşağıdan bir seçenek belirleyin:",
 		"(no supplier)": "(tedarikçi yok)",
 		"(not in list)": "(listede yok)",
 		"(opens in a new tab)": "(yeni sekmede açılır)",
 		"(unknown — skipped)": "(bilinmiyor — atlandı)",
+		"1 row": "1 satır",
+		"1 setting": "1 ayar",
 		"1. Add a location": "1. Bir konum ekleyin",
 		"1. Book stock": "1. Stok kaydı girin",
 		"1. Choose the audience": "1. Hedef kitleyi seçin",
@@ -109,6 +113,12 @@
 		],
 		"_1 row updates an existing item._::_%n rows update existing items._": [
 			"%n satır mevcut ürünleri günceller."
+		],
+		"_1 row_::_%n rows_": [
+			"%n satır"
+		],
+		"_1 setting_::_%n settings_": [
+			"%n ayar"
 		],
 		"_Counted 1 line as system quantity._::_Counted %n lines as system quantity._": [
 			"%n satır sistem miktarı olarak sayıldı."
@@ -470,6 +480,7 @@
 		"I reviewed the conflicts and accept the counted quantities": "Çakışmaları inceledim ve sayılan miktarları kabul ediyorum",
 		"If you believe this is a mistake, contact your InventoryCheck administrator.": "Bunun bir hata olduğunu düşünüyorsanız InventoryCheck yöneticinize başvurun.",
 		"Import": "İçe aktar",
+		"Import applied. %1$s and %2$s written.": "İçe aktarma uygulandı. %1$s ve %2$s yazıldı.",
 		"Import applied. %d settings and %d rows written.": "İçe aktarma uygulandı. %d ayar ve %d satır yazıldı.",
 		"Import configuration": "Yapılandırmayı içe aktar",
 		"Import CSV": "CSV içe aktar",
@@ -1059,6 +1070,7 @@
 		"This server’s Nextcloud instance ID (for support / sales reference). Licenses are not instance-bound.": "Bu sunucunun Nextcloud örnek kimliği (destek / satış referansı için). Lisanslar örneğe bağlı değildir.",
 		"This takes a snapshot of the current system quantity for every active item at this location.": "Bu işlem, bu konumdaki her etkin kalemin geçerli sistem miktarının anlık görüntüsünü alır.",
 		"This token is shown only once. Paste it into the companion app on the device.": "Bu token yalnızca bir kez gösterilir. Cihazdaki eşlik uygulamasına yapıştır.",
+		"This will update %1$s and %2$s — nothing is deleted.": "Bu işlem %1$s ve %2$s güncelleyecek — hiçbir şey silinmeyecek.",
 		"This will update %d settings and %d rows — nothing is deleted.": "Bu işlem %d ayarı ve %d satırı güncelleyecek — hiçbir şey silinmeyecek.",
 		"Three short steps when you take stock from a van or shelf.": "Bir araçtan veya raftan stok aldığınızda üç kısa adım.",
 		"Three short steps — tap a location below when you are ready.": "Üç kısa adım — hazır olduğunuzda aşağıdan bir konuma dokunun.",
@@ -1164,19 +1176,7 @@
 		"{n} stale order marker": "{n} eski sipariş işareti",
 		"{n} unpriced": "{n} fiyatsız",
 		"★ Remove from favourites": "★ Sık kullanılanlardan çıkar",
-		"☆ Add to favourites": "☆ Sık kullanılanlara ekle",
-		"1 setting": "1 ayar",
-		"%n settings": "%n ayar",
-		"1 row": "1 satır",
-		"%n rows": "%n satır",
-		"_1 row_::_%n rows_": [
-			"%n satır"
-		],
-		"_1 setting_::_%n settings_": [
-			"%n ayar"
-		],
-		"This will update %1$s and %2$s — nothing is deleted.": "Bu işlem %1$s ve %2$s güncelleyecek — hiçbir şey silinmeyecek.",
-		"Import applied. %1$s and %2$s written.": "İçe aktarma uygulandı. %1$s ve %2$s yazıldı."
+		"☆ Add to favourites": "☆ Sık kullanılanlara ekle"
 	},
 	"pluralForm": "nplurals=1; plural=0;"
 }

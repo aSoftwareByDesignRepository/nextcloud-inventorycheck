@@ -9,12 +9,16 @@
 			"%n etiketten"
 		],
 		"%n labels": "%n etiketten",
+		"%n rows": "%n rijen",
+		"%n settings": "%n instellingen",
 		"%s stays free (AGPL) on your Nextcloud. Bug reports and ideas on GitHub stay welcome — that is free open-source care. If your organisation needs bookable help on an invoice — or official mobile licenses — choose an option below:": "%s blijft gratis (AGPL) op uw Nextcloud. Bugmeldingen en ideeën op GitHub blijven welkom — dat is gratis open-sourcezorg. Als uw organisatie boekbare hulp op factuur nodig heeft — of officiële mobiele licenties — kies dan hieronder een optie:",
 		"%s stays free (AGPL) on your Nextcloud. Bug reports and ideas on GitHub stay welcome — that is free open-source care. If your organisation needs bookable help on an invoice, choose an option below:": "%s blijft gratis (AGPL) op uw Nextcloud. Bugmeldingen en ideeën op GitHub blijven welkom — dat is gratis open-sourcezorg. Als uw organisatie boekbare hulp op factuur nodig heeft, kies dan hieronder een optie:",
 		"(no supplier)": "(geen leverancier)",
 		"(not in list)": "(niet in lijst)",
 		"(opens in a new tab)": "(opent in een nieuw tabblad)",
 		"(unknown — skipped)": "(onbekend — overgeslagen)",
+		"1 row": "1 rij",
+		"1 setting": "1 instelling",
 		"1. Add a location": "1. Voeg een locatie toe",
 		"1. Book stock": "1. Boek voorraad",
 		"1. Choose the audience": "1. Kies het publiek",
@@ -122,6 +126,14 @@
 		"_1 row updates an existing item._::_%n rows update existing items._": [
 			"1 rij werkt een bestaand artikel bij.",
 			"%n rijen werken bestaande artikelen bij."
+		],
+		"_1 row_::_%n rows_": [
+			"1 rij",
+			"%n rijen"
+		],
+		"_1 setting_::_%n settings_": [
+			"1 instelling",
+			"%n instellingen"
 		],
 		"_Counted 1 line as system quantity._::_Counted %n lines as system quantity._": [
 			"Telde 1 lijn als systeemhoeveelheid.",
@@ -485,6 +497,7 @@
 		"I reviewed the conflicts and accept the counted quantities": "Ik heb de conflicten bekeken en de getelde hoeveelheden geaccepteerd.",
 		"If you believe this is a mistake, contact your InventoryCheck administrator.": "Als u denkt dat dit een vergissing is, neem dan contact op met uw InventoryCheck-beheerder.",
 		"Import": "Importeren",
+		"Import applied. %1$s and %2$s written.": "Import toegepast. %1$s en %2$s geschreven.",
 		"Import applied. %d settings and %d rows written.": "Import toegepast. %d instellingen en %d rijen geschreven.",
 		"Import configuration": "Configuratie importeren",
 		"Import CSV": "CSV importeren",
@@ -1074,6 +1087,7 @@
 		"This server’s Nextcloud instance ID (for support / sales reference). Licenses are not instance-bound.": "Nextcloud-instantie-ID van deze server (ter referentie voor support / verkoop). Licenties zijn niet instantiegebonden.",
 		"This takes a snapshot of the current system quantity for every active item at this location.": "Dit maakt een momentopname van de huidige systeemhoeveelheid voor elk actief item op deze locatie.",
 		"This token is shown only once. Paste it into the companion app on the device.": "Dit token wordt slechts één keer getoond. Plak het in de companion-app op het apparaat.",
+		"This will update %1$s and %2$s — nothing is deleted.": "Dit werkt %1$s en %2$s bij — er wordt niets verwijderd.",
 		"This will update %d settings and %d rows — nothing is deleted.": "Dit werkt %d instellingen en %d rijen bij — er wordt niets verwijderd.",
 		"Three short steps when you take stock from a van or shelf.": "Drie korte stappen wanneer u voorraad uit een bestelwagen of plank neemt.",
 		"Three short steps — tap a location below when you are ready.": "Drie korte stappen",
@@ -1179,21 +1193,7 @@
 		"{n} stale order marker": "{n} verlopen bestelmarkeringen",
 		"{n} unpriced": "{n} zonder prijs",
 		"★ Remove from favourites": "★ Uit favorieten verwijderen",
-		"☆ Add to favourites": "Aan favorieten toevoegen",
-		"1 setting": "1 instelling",
-		"%n settings": "%n instellingen",
-		"1 row": "1 rij",
-		"%n rows": "%n rijen",
-		"_1 row_::_%n rows_": [
-			"1 rij",
-			"%n rijen"
-		],
-		"_1 setting_::_%n settings_": [
-			"1 instelling",
-			"%n instellingen"
-		],
-		"This will update %1$s and %2$s — nothing is deleted.": "Dit werkt %1$s en %2$s bij — er wordt niets verwijderd.",
-		"Import applied. %1$s and %2$s written.": "Import toegepast. %1$s en %2$s geschreven."
+		"☆ Add to favourites": "Aan favorieten toevoegen"
 	},
 	"pluralForm": "nplurals=2; plural=(n != 1);"
 }

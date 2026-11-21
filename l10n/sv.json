@@ -9,12 +9,16 @@
 			"%n etiketter"
 		],
 		"%n labels": "%n etiketter",
+		"%n rows": "%n rader",
+		"%n settings": "%n inställningar",
 		"%s stays free (AGPL) on your Nextcloud. Bug reports and ideas on GitHub stay welcome — that is free open-source care. If your organisation needs bookable help on an invoice — or official mobile licenses — choose an option below:": "%s förblir gratis (AGPL) på er Nextcloud. Felrapporter och idéer på GitHub är fortsatt välkomna — det är gratis open source-vård. Om er organisation behöver bokningsbar hjälp på faktura — eller officiella mobillicenser — välj ett alternativ nedan:",
 		"%s stays free (AGPL) on your Nextcloud. Bug reports and ideas on GitHub stay welcome — that is free open-source care. If your organisation needs bookable help on an invoice, choose an option below:": "%s förblir gratis (AGPL) på er Nextcloud. Felrapporter och idéer på GitHub är fortsatt välkomna — det är gratis open source-vård. Om er organisation behöver bokningsbar hjälp på faktura, välj ett alternativ nedan:",
 		"(no supplier)": "(ingen leverantör)",
 		"(not in list)": "(inte i listan)",
 		"(opens in a new tab)": "(öppnas i en ny flik)",
 		"(unknown — skipped)": "(okänd — hoppades över)",
+		"1 row": "1 rad",
+		"1 setting": "1 inställning",
 		"1. Add a location": "1. Lägg till en plats",
 		"1. Book stock": "1. Bokför lager",
 		"1. Choose the audience": "1. Välj mottagare",
@@ -122,6 +126,14 @@
 		"_1 row updates an existing item._::_%n rows update existing items._": [
 			"1 rad uppdaterar en befintlig artikel.",
 			"%n rader uppdaterar befintliga artiklar."
+		],
+		"_1 row_::_%n rows_": [
+			"1 rad",
+			"%n rader"
+		],
+		"_1 setting_::_%n settings_": [
+			"1 inställning",
+			"%n inställningar"
 		],
 		"_Counted 1 line as system quantity._::_Counted %n lines as system quantity._": [
 			"Räknade 1 rad som systemmängd.",
@@ -485,6 +497,7 @@
 		"I reviewed the conflicts and accept the counted quantities": "Jag granskade konflikterna och accepterade de räknade mängderna",
 		"If you believe this is a mistake, contact your InventoryCheck administrator.": "Om detta anses vara ett misstag, kontakta InventoryCheck-administratören.",
 		"Import": "Importera",
+		"Import applied. %1$s and %2$s written.": "Importen har tillämpats. %1$s och %2$s skrivna.",
 		"Import applied. %d settings and %d rows written.": "Importen har tillämpats. %d inställningar och %d rader skrivna.",
 		"Import configuration": "Importera konfiguration",
 		"Import CSV": "Importera CSV",
@@ -1074,6 +1087,7 @@
 		"This server’s Nextcloud instance ID (for support / sales reference). Licenses are not instance-bound.": "Den här serverns Nextcloud-instans-ID (för support-/försäljningsreferens). Licenser är inte instansbundna.",
 		"This takes a snapshot of the current system quantity for every active item at this location.": "Detta tar en ögonblicksbild av den aktuella systemmängden för varje aktiv artikel på platsen.",
 		"This token is shown only once. Paste it into the companion app on the device.": "Denna token visas bara en gång. Klistra in den i kompanjonappen på enheten.",
+		"This will update %1$s and %2$s — nothing is deleted.": "Detta uppdaterar %1$s och %2$s — inget raderas.",
 		"This will update %d settings and %d rows — nothing is deleted.": "Detta uppdaterar %d inställningar och %d rader — inget raderas.",
 		"Three short steps when you take stock from a van or shelf.": "Tre korta steg vid inventering från skåpbil eller hylla.",
 		"Three short steps — tap a location below when you are ready.": "Tre korta steg — tryck på en plats nedan när inventeringen kan påbörjas.",
@@ -1179,21 +1193,7 @@
 		"{n} stale order marker": "{n} föråldrade beställningsmarkeringar",
 		"{n} unpriced": "{n} utan pris",
 		"★ Remove from favourites": "★ Ta bort från favoriter",
-		"☆ Add to favourites": "☆ Lägg till i favoriter",
-		"1 setting": "1 inställning",
-		"%n settings": "%n inställningar",
-		"1 row": "1 rad",
-		"%n rows": "%n rader",
-		"_1 row_::_%n rows_": [
-			"1 rad",
-			"%n rader"
-		],
-		"_1 setting_::_%n settings_": [
-			"1 inställning",
-			"%n inställningar"
-		],
-		"This will update %1$s and %2$s — nothing is deleted.": "Detta uppdaterar %1$s och %2$s — inget raderas.",
-		"Import applied. %1$s and %2$s written.": "Importen har tillämpats. %1$s och %2$s skrivna."
+		"☆ Add to favourites": "☆ Lägg till i favoriter"
 	},
 	"pluralForm": "nplurals=2; plural=(n != 1);"
 }

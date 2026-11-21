@@ -9,12 +9,16 @@
 			"%n etiketter"
 		],
 		"%n labels": "%n etiketter",
+		"%n rows": "%n rader",
+		"%n settings": "%n innstillinger",
 		"%s stays free (AGPL) on your Nextcloud. Bug reports and ideas on GitHub stay welcome — that is free open-source care. If your organisation needs bookable help on an invoice — or official mobile licenses — choose an option below:": "%s forblir gratis (AGPL) på Nextcloud. Feilrapporter og idéer på GitHub er velkomne — det er gratis open source-støtte. Hvis organisasjonen trenger bookbar hjelp på faktura — eller offisielle mobillisenser — velg et alternativ nedenfor:",
 		"%s stays free (AGPL) on your Nextcloud. Bug reports and ideas on GitHub stay welcome — that is free open-source care. If your organisation needs bookable help on an invoice, choose an option below:": "%s forblir gratis (AGPL) på Nextcloud. Feilrapporter og idéer på GitHub er velkomne — det er gratis open source-støtte. Hvis organisasjonen trenger bookbar hjelp på faktura, velg et alternativ nedenfor:",
 		"(no supplier)": "(ingen leverandør)",
 		"(not in list)": "(ikke i listen)",
 		"(opens in a new tab)": "(åpnes i en ny fane)",
 		"(unknown — skipped)": "(ukjent — hoppet over)",
+		"1 row": "1 rad",
+		"1 setting": "1 innstilling",
 		"1. Add a location": "1. Legg til et sted",
 		"1. Book stock": "1. Bokfør lager",
 		"1. Choose the audience": "1. Velg publikum",
@@ -122,6 +126,14 @@
 		"_1 row updates an existing item._::_%n rows update existing items._": [
 			"1 rad oppdaterer en eksisterende vare.",
 			"%n rader oppdaterer eksisterende varer."
+		],
+		"_1 row_::_%n rows_": [
+			"1 rad",
+			"%n rader"
+		],
+		"_1 setting_::_%n settings_": [
+			"1 innstilling",
+			"%n innstillinger"
 		],
 		"_Counted 1 line as system quantity._::_Counted %n lines as system quantity._": [
 			"Telte 1 linje som systemmengde.",
@@ -485,6 +497,7 @@
 		"I reviewed the conflicts and accept the counted quantities": "Jeg har gjennomgått konfliktene og godtar de talte mengdene",
 		"If you believe this is a mistake, contact your InventoryCheck administrator.": "Hvis dette anses som en feil, kontakt InventoryCheck-administratoren.",
 		"Import": "Importer",
+		"Import applied. %1$s and %2$s written.": "Importert. %1$s og %2$s skrevet.",
 		"Import applied. %d settings and %d rows written.": "Importert. %d innstillinger og %d rader skrevet.",
 		"Import configuration": "Importer konfigurasjon",
 		"Import CSV": "Importer CSV",
@@ -1074,6 +1087,7 @@
 		"This server’s Nextcloud instance ID (for support / sales reference). Licenses are not instance-bound.": "Denne serverens Nextcloud-instans-ID (for referanse til brukerstøtte / salg). Lisenser er ikke instansbundet.",
 		"This takes a snapshot of the current system quantity for every active item at this location.": "Dette tar et øyeblikksbilde av gjeldende systemmengde for alle aktive elementer på dette stedet.",
 		"This token is shown only once. Paste it into the companion app on the device.": "Denne tokenen vises kun én gang. Lim den inn i følge-appen på enheten.",
+		"This will update %1$s and %2$s — nothing is deleted.": "Dette oppdaterer %1$s og %2$s — ingenting slettes.",
 		"This will update %d settings and %d rows — nothing is deleted.": "Dette oppdaterer %d innstillinger og %d rader — ingenting slettes.",
 		"Three short steps when you take stock from a van or shelf.": "Tre korte trinn når du tar lager fra en varebil eller hylle.",
 		"Three short steps — tap a location below when you are ready.": "Tre korte trinn — trykk på en plassering nedenfor når tellingen kan startes.",
@@ -1179,21 +1193,7 @@
 		"{n} stale order marker": "{n} utdaterte bestillingsmerker",
 		"{n} unpriced": "{n} uten pris",
 		"★ Remove from favourites": "★ Fjern fra favoritter",
-		"☆ Add to favourites": "☆ Legg til i favoritter",
-		"1 setting": "1 innstilling",
-		"%n settings": "%n innstillinger",
-		"1 row": "1 rad",
-		"%n rows": "%n rader",
-		"_1 row_::_%n rows_": [
-			"1 rad",
-			"%n rader"
-		],
-		"_1 setting_::_%n settings_": [
-			"1 innstilling",
-			"%n innstillinger"
-		],
-		"This will update %1$s and %2$s — nothing is deleted.": "Dette oppdaterer %1$s og %2$s — ingenting slettes.",
-		"Import applied. %1$s and %2$s written.": "Importert. %1$s og %2$s skrevet."
+		"☆ Add to favourites": "☆ Legg til i favoritter"
 	},
 	"pluralForm": "nplurals=2; plural=(n != 1);"
 }

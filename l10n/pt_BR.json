@@ -9,12 +9,16 @@
 			"%n etiquetas"
 		],
 		"%n labels": "%n etiquetas",
+		"%n rows": "%n linhas",
+		"%n settings": "%n configurações",
 		"%s stays free (AGPL) on your Nextcloud. Bug reports and ideas on GitHub stay welcome — that is free open-source care. If your organisation needs bookable help on an invoice — or official mobile licenses — choose an option below:": "%s permanece grátis (AGPL) no seu Nextcloud. Relatórios de bugs e ideias sobre GitHub são bem-vindos - isso é atendimento gratuito de código aberto. Se sua organização precisar de ajuda reservável em uma fatura — ou licenças móveis oficiais — escolha uma opção abaixo:",
 		"%s stays free (AGPL) on your Nextcloud. Bug reports and ideas on GitHub stay welcome — that is free open-source care. If your organisation needs bookable help on an invoice, choose an option below:": "%s permanece grátis (AGPL) no seu Nextcloud. Relatórios de bugs e ideias sobre GitHub são bem-vindos - isso é atendimento gratuito de código aberto. Se sua organização precisar de ajuda reservável em uma fatura, escolha uma opção abaixo:",
 		"(no supplier)": "(sem fornecedor)",
 		"(not in list)": "(fora da lista)",
 		"(opens in a new tab)": "(abre em uma nova aba)",
 		"(unknown — skipped)": "(desconhecido — ignorado)",
+		"1 row": "1 linha",
+		"1 setting": "1 configuração",
 		"1. Add a location": "1. Adicione um local",
 		"1. Book stock": "1. Lance estoque",
 		"1. Choose the audience": "1. Escolha o público",
@@ -122,6 +126,14 @@
 		"_1 row updates an existing item._::_%n rows update existing items._": [
 			"1 linha atualiza um item existente.",
 			"%n linhas atualizam itens existentes."
+		],
+		"_1 row_::_%n rows_": [
+			"1 linha",
+			"%n linhas"
+		],
+		"_1 setting_::_%n settings_": [
+			"1 configuração",
+			"%n configurações"
 		],
 		"_Counted 1 line as system quantity._::_Counted %n lines as system quantity._": [
 			"Contada 1 linha como quantidade do sistema.",
@@ -485,6 +497,7 @@
 		"I reviewed the conflicts and accept the counted quantities": "Analisei os conflitos e aceito as quantidades contadas",
 		"If you believe this is a mistake, contact your InventoryCheck administrator.": "Se isso for considerado um erro, entre em contato com o administrador do InventoryCheck.",
 		"Import": "Importar",
+		"Import applied. %1$s and %2$s written.": "Importação aplicada. %1$s e %2$s gravadas.",
 		"Import applied. %d settings and %d rows written.": "Importação aplicada. %d configurações e %d linhas gravadas.",
 		"Import configuration": "Importar configuração",
 		"Import CSV": "Importar CSV",
@@ -1074,6 +1087,7 @@
 		"This server’s Nextcloud instance ID (for support / sales reference). Licenses are not instance-bound.": "ID da instância Nextcloud deste servidor (referência para suporte / vendas). As licenças não são vinculadas à instância.",
 		"This takes a snapshot of the current system quantity for every active item at this location.": "Isso tira um instantâneo da quantidade atual do sistema para cada item ativo neste local.",
 		"This token is shown only once. Paste it into the companion app on the device.": "Este token é exibido apenas uma vez. Cole-o no aplicativo complementar no dispositivo.",
+		"This will update %1$s and %2$s — nothing is deleted.": "Isso atualizará %1$s e %2$s — nada será excluído.",
 		"This will update %d settings and %d rows — nothing is deleted.": "Isso atualizará %d configurações e %d linhas — nada será excluído.",
 		"Three short steps when you take stock from a van or shelf.": "Três passos curtos ao tirar estoque de um furgão ou prateleira.",
 		"Three short steps — tap a location below when you are ready.": "Três passos curtos: toque em um local abaixo quando estiver pronto.",
@@ -1179,21 +1193,7 @@
 		"{n} stale order marker": "{n} marcas de encomenda obsoletas",
 		"{n} unpriced": "{n} sem preço",
 		"★ Remove from favourites": "★ Remover dos favoritos",
-		"☆ Add to favourites": "☆ Adicionar aos favoritos",
-		"1 setting": "1 configuração",
-		"%n settings": "%n configurações",
-		"1 row": "1 linha",
-		"%n rows": "%n linhas",
-		"_1 row_::_%n rows_": [
-			"1 linha",
-			"%n linhas"
-		],
-		"_1 setting_::_%n settings_": [
-			"1 configuração",
-			"%n configurações"
-		],
-		"This will update %1$s and %2$s — nothing is deleted.": "Isso atualizará %1$s e %2$s — nada será excluído.",
-		"Import applied. %1$s and %2$s written.": "Importação aplicada. %1$s e %2$s gravadas."
+		"☆ Add to favourites": "☆ Adicionar aos favoritos"
 	},
 	"pluralForm": "nplurals=2; plural=(n > 1);"
 }

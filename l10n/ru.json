@@ -6,12 +6,16 @@
 		"%1$s (%2$s) is below reorder level: %3$s on hand, reorder at %4$s.": "%1$s (%2$s) ниже точки заказа: в наличии %3$s, заказывать при %4$s.",
 		"%n label": "%n этикетка",
 		"%n labels": "%n этикеток",
+		"%n rows": "строк: %n",
+		"%n settings": "настроек: %n",
 		"%s stays free (AGPL) on your Nextcloud. Bug reports and ideas on GitHub stay welcome — that is free open-source care. If your organisation needs bookable help on an invoice — or official mobile licenses — choose an option below:": "%s остаётся бесплатным (AGPL) в вашем Nextcloud. Сообщения об ошибках и идеи на GitHub по-прежнему приветствуются — это бесплатная забота открытого кода. Если вашей организации нужна помощь по счёту — или официальные мобильные лицензии — выберите вариант ниже:",
 		"%s stays free (AGPL) on your Nextcloud. Bug reports and ideas on GitHub stay welcome — that is free open-source care. If your organisation needs bookable help on an invoice, choose an option below:": "%s остаётся бесплатным (AGPL) в вашем Nextcloud. Сообщения об ошибках и идеи на GitHub по-прежнему приветствуются — это бесплатная забота открытого кода. Если вашей организации нужна помощь по счёту, выберите вариант ниже:",
 		"(no supplier)": "(без поставщика)",
 		"(not in list)": "(нет в списке)",
 		"(opens in a new tab)": "(открывается в новой вкладке)",
 		"(unknown — skipped)": "(неизвестно — пропущено)",
+		"1 row": "1 строка",
+		"1 setting": "1 настройка",
 		"1. Add a location": "1. Добавьте место хранения",
 		"1. Book stock": "1. Проведите запас",
 		"1. Choose the audience": "1. Выберите получателей",
@@ -131,6 +135,16 @@
 			"1 строка обновляет существующий товар.",
 			"%n строки обновляют существующие товары.",
 			"%n строк обновляют существующие товары."
+		],
+		"_1 row_::_%n rows_": [
+			"1 строка",
+			"%n строки",
+			"%n строк"
+		],
+		"_1 setting_::_%n settings_": [
+			"1 настройка",
+			"%n настройки",
+			"%n настроек"
 		],
 		"_Counted 1 line as system quantity._::_Counted %n lines as system quantity._": [
 			"1 строка посчитана как системное количество.",
@@ -496,6 +510,7 @@
 		"I reviewed the conflicts and accept the counted quantities": "Я проверил конфликты и принимаю посчитанные количества",
 		"If you believe this is a mistake, contact your InventoryCheck administrator.": "Если вы считаете это ошибкой, обратитесь к администратору InventoryCheck.",
 		"Import": "Импорт",
+		"Import applied. %1$s and %2$s written.": "Импорт применён. Записано: %1$s и %2$s.",
 		"Import applied. %d settings and %d rows written.": "Импорт применён. Записано настроек: %d, строк: %d.",
 		"Import configuration": "Импорт конфигурации",
 		"Import CSV": "Импорт CSV",
@@ -1085,6 +1100,7 @@
 		"This server’s Nextcloud instance ID (for support / sales reference). Licenses are not instance-bound.": "ID инстанса Nextcloud этого сервера (для обращений в поддержку / продажи). Лицензии не привязаны к инстансу.",
 		"This takes a snapshot of the current system quantity for every active item at this location.": "Это делает снимок текущего системного количества для каждого активного товара в этом месте.",
 		"This token is shown only once. Paste it into the companion app on the device.": "Этот токен показывается только один раз. Вставьте его в приложение-компаньон на устройстве.",
+		"This will update %1$s and %2$s — nothing is deleted.": "Будут обновлены %1$s и %2$s — ничего не удаляется.",
 		"This will update %d settings and %d rows — nothing is deleted.": "Будут обновлены настройки (%d) и строки (%d) — ничего не удаляется.",
 		"Three short steps when you take stock from a van or shelf.": "Три коротких шага, когда вы выдаёте запас из фургона или с полки.",
 		"Three short steps — tap a location below when you are ready.": "Три коротких шага — нажмите место ниже, когда будете готовы.",
@@ -1190,22 +1206,6 @@
 		"{n} stale order marker": "Устаревших отметок заказа: {n}",
 		"{n} unpriced": "Без цены: {n}",
 		"★ Remove from favourites": "★ Убрать из избранного",
-		"☆ Add to favourites": "☆ Добавить в избранное",
-		"1 setting": "1 настройка",
-		"%n settings": "настроек: %n",
-		"1 row": "1 строка",
-		"%n rows": "строк: %n",
-		"_1 row_::_%n rows_": [
-			"1 строка",
-			"%n строки",
-			"%n строк"
-		],
-		"_1 setting_::_%n settings_": [
-			"1 настройка",
-			"%n настройки",
-			"%n настроек"
-		],
-		"This will update %1$s and %2$s — nothing is deleted.": "Будут обновлены %1$s и %2$s — ничего не удаляется.",
-		"Import applied. %1$s and %2$s written.": "Импорт применён. Записано: %1$s и %2$s."
+		"☆ Add to favourites": "☆ Добавить в избранное"
 	}
 }
