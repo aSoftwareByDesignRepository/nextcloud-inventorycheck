@@ -9,12 +9,16 @@
 			"%n labels"
 		],
 		"%n labels": "%n labels",
+		"%n rows": "%n rows",
+		"%n settings": "%n settings",
 		"%s stays free (AGPL) on your Nextcloud. Bug reports and ideas on GitHub stay welcome — that is free open-source care. If your organisation needs bookable help on an invoice — or official mobile licenses — choose an option below:": "%s stays free (AGPL) on your Nextcloud. Bug reports and ideas on GitHub stay welcome — that is free open-source care. If your organisation needs bookable help on an invoice — or official mobile licenses — choose an option below:",
 		"%s stays free (AGPL) on your Nextcloud. Bug reports and ideas on GitHub stay welcome — that is free open-source care. If your organisation needs bookable help on an invoice, choose an option below:": "%s stays free (AGPL) on your Nextcloud. Bug reports and ideas on GitHub stay welcome — that is free open-source care. If your organisation needs bookable help on an invoice, choose an option below:",
 		"(no supplier)": "(no supplier)",
 		"(not in list)": "(not in list)",
 		"(opens in a new tab)": "(opens in a new tab)",
 		"(unknown — skipped)": "(unknown — skipped)",
+		"1 row": "1 row",
+		"1 setting": "1 setting",
 		"1. Add a location": "1. Add a location",
 		"1. Book stock": "1. Book stock",
 		"1. Choose the audience": "1. Choose the audience",
@@ -122,6 +126,14 @@
 		"_1 row updates an existing item._::_%n rows update existing items._": [
 			"1 row updates an existing item.",
 			"%n rows update existing items."
+		],
+		"_1 row_::_%n rows_": [
+			"1 row",
+			"%n rows"
+		],
+		"_1 setting_::_%n settings_": [
+			"1 setting",
+			"%n settings"
 		],
 		"_Counted 1 line as system quantity._::_Counted %n lines as system quantity._": [
 			"Counted 1 line as system quantity.",
@@ -485,6 +497,7 @@
 		"I reviewed the conflicts and accept the counted quantities": "I reviewed the conflicts and accept the counted quantities",
 		"If you believe this is a mistake, contact your InventoryCheck administrator.": "If you believe this is a mistake, contact your InventoryCheck administrator.",
 		"Import": "Import",
+		"Import applied. %1$s and %2$s written.": "Import applied. %1$s and %2$s written.",
 		"Import applied. %d settings and %d rows written.": "Import applied. %d settings and %d rows written.",
 		"Import configuration": "Import configuration",
 		"Import CSV": "Import CSV",
@@ -1074,6 +1087,7 @@
 		"This server’s Nextcloud instance ID (for support / sales reference). Licenses are not instance-bound.": "This server’s Nextcloud instance ID (for support / sales reference). Licenses are not instance-bound.",
 		"This takes a snapshot of the current system quantity for every active item at this location.": "This takes a snapshot of the current system quantity for every active item at this location.",
 		"This token is shown only once. Paste it into the companion app on the device.": "This token is shown only once. Paste it into the companion app on the device.",
+		"This will update %1$s and %2$s — nothing is deleted.": "This will update %1$s and %2$s — nothing is deleted.",
 		"This will update %d settings and %d rows — nothing is deleted.": "This will update %d settings and %d rows — nothing is deleted.",
 		"Three short steps when you take stock from a van or shelf.": "Three short steps when you take stock from a van or shelf.",
 		"Three short steps — tap a location below when you are ready.": "Three short steps — tap a location below when you are ready.",
@@ -1179,20 +1193,6 @@
 		"{n} stale order marker": "{n} stale order marker",
 		"{n} unpriced": "{n} unpriced",
 		"★ Remove from favourites": "★ Remove from favourites",
-		"☆ Add to favourites": "☆ Add to favourites",
-		"1 setting": "1 setting",
-		"%n settings": "%n settings",
-		"1 row": "1 row",
-		"%n rows": "%n rows",
-		"_1 row_::_%n rows_": [
-			"1 row",
-			"%n rows"
-		],
-		"_1 setting_::_%n settings_": [
-			"1 setting",
-			"%n settings"
-		],
-		"This will update %1$s and %2$s — nothing is deleted.": "This will update %1$s and %2$s — nothing is deleted.",
-		"Import applied. %1$s and %2$s written.": "Import applied. %1$s and %2$s written."
+		"☆ Add to favourites": "☆ Add to favourites"
 	}
 }
