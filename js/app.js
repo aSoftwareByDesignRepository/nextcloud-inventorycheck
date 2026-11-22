@@ -5743,7 +5743,7 @@
 										var n = res && typeof res.count === 'number' ? res.count : 0;
 										dialog(
 											tr('Delete field “{name}”?', { name: r.name }),
-											[el('p', { text: tr('This permanently removes the field and its values on {count} item(s).', { count: n }) })],
+											[el('p', { text: tr('This permanently removes the field and its values. Affected items: {count}.', { count: n }) })],
 											function () {
 												return api('DELETE', urlWithId(ctx.urls.api.fieldById, r.id)).then(function () {
 													toast(tr('Field deleted.'));
