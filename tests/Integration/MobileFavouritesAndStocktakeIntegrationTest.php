@@ -31,7 +31,7 @@ use OCP\Server;
 use Test\TestCase;
 
 /**
- * Companion P1/P2 mobile favourites + bootstrap companionApi=5.
+ * Companion P1/P2 mobile favourites + bootstrap companionApi pin (C-3 Heute + C-8 order sheets).
  *
  * @group DB
  */
@@ -127,10 +127,11 @@ final class MobileFavouritesAndStocktakeIntegrationTest extends TestCase
 		);
 	}
 
-	public function testBootstrapAdvertisesFavouritesAndCompanionApi5(): void
+	public function testBootstrapAdvertisesFavouritesAndCompanionApi(): void
 	{
 		$data = $this->controller()->bootstrap()->getData();
-		self::assertSame(5, $data['companionApi']);
+		// Highest shipped companion API: C-8 order-sheets (7) > C-3 today (6).
+		self::assertSame(7, $data['companionApi']);
 		self::assertTrue($data['capabilities']['favourites']);
 		self::assertTrue($data['capabilities']['cycleCount']);
 		self::assertTrue($data['capabilities']['itemPhoto']);

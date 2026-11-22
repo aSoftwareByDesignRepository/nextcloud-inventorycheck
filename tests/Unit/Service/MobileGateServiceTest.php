@@ -117,7 +117,7 @@ final class MobileGateServiceTest extends TestCase
 		$this->assertTrue($boot['seatWithinLimit']);
 		$this->assertFalse($boot['devicePaired']);
 		$this->assertSame(LicenseService::MOBILE_APP_STATUS, $boot['mobileAppStatus']);
-		$this->assertSame(5, $boot['companionApi']);
+		$this->assertSame(7, $boot['companionApi']);
 		$this->assertTrue($boot['capabilities']['locationByCode']);
 		$this->assertTrue($boot['capabilities']['reasonCodes']);
 		$this->assertArrayHasKey('reasonCodes', $boot);

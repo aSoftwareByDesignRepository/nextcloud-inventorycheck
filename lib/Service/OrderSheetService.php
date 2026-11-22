@@ -305,6 +305,129 @@ class OrderSheetService
 	}
 
 	/**
+	 * IV-RECEIVE-AGAINST-ORDER (C-8): mobile sheet list — same office ACL as
+	 * the web surface (AS-03) but a qty-only payload: no totalMinor, note,
+	 * supplierId or line estimates may cross to a field seat (NN-01).
+	 *
+	 * @return array{data: list<array<string, mixed>>}
+	 */
+	public function listForMobile(string $actorUid, ?string $status, int $limit, int $offset): array
+	{
+		$this->access->requireOffice($actorUid);
+		$sheets = $this->sheets->search($status, $limit, $offset);
+		$counts = $this->lines->lineCountsForSheets(array_map(
+			static fn (OrderSheet $s): int => (int)$s->getId(),
+			$sheets,
+		));
+		return ['data' => array_map(
+			static fn (OrderSheet $s): array => [
+				'id' => (int)$s->getId(),
+				'supplierName' => $s->getSupplierName(),
+				'status' => $s->getStatus(),
+				'lineCount' => $counts[(int)$s->getId()] ?? 0,
+				'createdAt' => $s->getCreatedAt(),
+				'sentAt' => $s->getSentAt(),
+			],
+			$sheets,
+		)];
+	}
+
+	/**
+	 * C-8 mobile sheet detail — per-line ordered / received / open qty plus
+	 * the code fields the receive flow needs (scanCode, sku, trackMode).
+	 * Money keys (totalMinor / lineEstMinor / supplier terms) never leave
+	 * the server on this surface (NN-01).
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function showForMobile(string $actorUid, int $id): array
+	{
+		$this->access->requireOffice($actorUid);
+		$sheet = $this->sheets->findById($id);
+		$lines = $this->lines->findBySheet($id);
+		$itemById = [];
+		$out = [];
+		foreach ($lines as $l) {
+			$itemId = $l->getItemId();
+			if (!isset($itemById[$itemId])) {
+				$itemById[$itemId] = $this->items->findById($itemId);
+			}
+			$item = $itemById[$itemId];
+			$trackMode = $item->getTrackMode();
+			$out[] = [
+				'lineId' => (int)$l->getId(),
+				'itemId' => $itemId,
+				'name' => $item->getName(),
+				'sku' => $item->getSku(),
+				'scanCode' => $item->getScanCode(),
+				'qtyOrdered' => $l->getQty(),
+				'qtyReceived' => $l->getReceivedQty(),
+				'qtyOpen' => max(0, $l->getQty() - $l->getReceivedQty()),
+				'uom' => $item->getUom(),
+				'trackMode' => $trackMode,
+				'lotRequired' => $trackMode !== 'none',
+			];
+		}
+		return [
+			'id' => (int)$sheet->getId(),
+			'supplierName' => $sheet->getSupplierName(),
+			'status' => $sheet->getStatus(),
+			'createdAt' => $sheet->getCreatedAt(),
+			'sentAt' => $sheet->getSentAt(),
+			'lines' => $out,
+		];
+	}
+
+	/**
+	 * C-8: receive scoped to ONE sheet — runs inside the movement TX so a
+	 * failure rolls the booking back atomically. The sheet must still be
+	 * 'sent': a sheet cancelled mid-flow rejects the whole receive with the
+	 * same uniform error the queued outbox entry surfaces (AC-7/AC-11).
+	 *
+	 * Open lines are covered first; any surplus beyond the ordered qty lands
+	 * on the item's last line UNCAPPED so the diff screen can show the
+	 * over-delivery (spec §9 — over must be quittiert, never clamped away).
+	 * An item with no line on this sheet falls back to the global
+	 * oldest-first coverage — the "off-sheet plain receive" branch (AC-2).
+	 */
+	public function applyReceiveToSheet(int $sheetId, int $itemId, int $qty): void
+	{
+		$sheet = $this->sheets->findById($sheetId);
+		if ($sheet->getStatus() !== OrderSheet::STATUS_SENT) {
+			throw new ValidationException('order_sheet_closed');
+		}
+		$lines = $this->lines->linesForItem($itemId, $sheetId);
+		if ($lines === []) {
+			// Off-sheet receive: keep plain-receive semantics for other open
+			// orders (this sheet cannot match — it has no line for the item).
+			$this->applyReceive($itemId, $qty);
+			return;
+		}
+		$remaining = $qty;
+		$lastTouched = null;
+		foreach ($lines as $line) {
+			if ($remaining <= 0) {
+				break;
+			}
+			$open = $line['qty'] - $line['received_qty'];
+			if ($open <= 0) {
+				continue;
+			}
+			$cover = min($remaining, $open);
+			$this->lines->incrementReceivedQty($line['id'], $cover);
+			$remaining -= $cover;
+			$lastTouched = $line['id'];
+		}
+		if ($remaining > 0) {
+			$target = $lastTouched ?? (int)$lines[count($lines) - 1]['id'];
+			$this->lines->incrementReceivedQty($target, $remaining);
+		}
+		if ($this->lines->allLinesReceived($sheetId)) {
+			$this->sheets->setStatus($sheetId, OrderSheet::STATUS_RECEIVED, $this->clock->now());
+		}
+	}
+
+	/**
 	 * F-13 auto-progress: called inside the movement TX after balance locks.
 	 * Covers open sent-sheet lines for the item oldest-first; sheet → received
 	 * when every line is covered.

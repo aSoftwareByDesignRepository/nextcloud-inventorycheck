@@ -47,6 +47,9 @@ use OCP\IDBConnection;
  */
 class MovementService
 {
+	/** C-8: receive-against-order movements carry this ref_type + ref_id=sheetId. */
+	public const REF_TYPE_ORDER_RECEIVE = 'order_receive';
+
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly MovementMapper $movements,
@@ -101,6 +104,38 @@ class MovementService
 	): array {
 		$this->assertLocationAccess($actorUid, $locationId);
 		return $this->postSingle($actorUid, 'receive', $itemId, $locationId, $qty, $reason, $lotCode, $notifyLowStock);
+	}
+
+	/**
+	 * IV-RECEIVE-AGAINST-ORDER (C-8): a receive that attributes its progress
+	 * to exactly one sent order sheet instead of the global oldest-first
+	 * sweep. Same ledger path as {@see receive}; the office gate is asserted
+	 * here too (defense in depth — the mobile controller checks it as well).
+	 * The movement row is stamped ref_type='order_receive', ref_id=sheetId;
+	 * retry idempotency lives in the caller (ScanIdempotencyService claim).
+	 *
+	 * @return array{movements: list<array<string, mixed>>, balances: list<array<string, mixed>>}
+	 */
+	public function receiveAgainstOrder(
+		string $actorUid,
+		int $sheetId,
+		int $itemId,
+		int $locationId,
+		int $qty,
+		?string $reason,
+		?string $lotCode = null,
+		?int $expiresAt = null,
+		?string $locationCode = null,
+	): array {
+		$this->access->requireOffice($actorUid);
+		$this->assertLocationAccess($actorUid, $locationId);
+		// Wave D8 parity: honour require_location_scan like every other
+		// location-bound movement — the ramp is not a bypass.
+		LocationScanPolicy::assertMatches($this->config, $this->locations, $locationId, $locationCode);
+		return $this->postSingle(
+			$actorUid, 'receive', $itemId, $locationId, $qty, $reason, $lotCode,
+			true, null, $expiresAt, $sheetId,
+		);
 	}
 
 	/**
@@ -556,6 +591,7 @@ class MovementService
 		bool $notifyLowStock = true,
 		?int $spendMinor = null,
 		?int $expiresAt = null,
+		?int $orderSheetScope = null,
 	): array {
 		if (!MovementMath::isValidMovementQty($qty, QtyScale::maxStorage($this->config))) {
 			throw new ValidationException('invalid_qty');
@@ -583,7 +619,7 @@ class MovementService
 		$now = $this->clock->now();
 
 		$result = $this->runInTransaction(function () use (
-			$actorUid, $kind, $itemId, $locationId, $qty, $reason, $allowNeg, $delta, $now, $lotCode, $spendMinor, $expiresAt,
+			$actorUid, $kind, $itemId, $locationId, $qty, $reason, $allowNeg, $delta, $now, $lotCode, $spendMinor, $expiresAt, $orderSheetScope,
 		): array {
 			$item = $this->lockActiveItemForMovement($itemId, $kind === 'receive');
 			$lockedLot = $this->enforceTrackMode($item, $lotCode, $kind, $qty);
@@ -614,7 +650,10 @@ class MovementService
 			$this->updateBalance($bal, $qtyAfter, $now);
 			$mov = $this->insertMovement(
 				$itemId, $locationId, $kind, $delta, $qtyAfter,
-				null, null, $reason, $actorUid, $now, null, null, $lockedLot, null, $spendMinor,
+				null, null, $reason, $actorUid, $now,
+				$orderSheetScope !== null ? self::REF_TYPE_ORDER_RECEIVE : null,
+				$orderSheetScope,
+				$lockedLot, null, $spendMinor,
 			);
 
 			// F-07: lot expiry upsert inside the same TX — a differing expiry
@@ -631,8 +670,15 @@ class MovementService
 			}
 
 			// F-13: a receive also covers open order-sheet lines (same TX).
+			// C-8: a scoped receive-against-order attributes to one sheet
+			// (and records over-delivery uncapped); the global path is
+			// unchanged oldest-first coverage.
 			if ($this->orderSheets !== null && $kind === 'receive') {
-				$this->orderSheets->applyReceive($itemId, $delta);
+				if ($orderSheetScope !== null) {
+					$this->orderSheets->applyReceiveToSheet($orderSheetScope, $itemId, $delta);
+				} else {
+					$this->orderSheets->applyReceive($itemId, $delta);
+				}
 			}
 
 			return [

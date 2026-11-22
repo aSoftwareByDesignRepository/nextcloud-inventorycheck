@@ -651,6 +651,71 @@
 					]
 				}
 			]
+		},
+		{
+			"id": "order-sheet-receive",
+			"param": "ref",
+			"description": "IV-RECEIVE-AGAINST-ORDER (C-8): POST /mobile/v1/order-sheets/{id}/receive requires ref (client idempotency key, 'orcv:' claim) plus qty>0 and locationId; lotCode required for lot/serial lines. Seat-gated office+; uniform 404 hides non-entitled sheets; mobile payload is qty-only (NN-01). Companion queues the full body in the outbox with the stable ref so a retry replays one booking (NN-03).",
+			"errorCodes": [
+				"validation_failed",
+				"idempotency_in_flight",
+				"idempotency_payload_mismatch",
+				"order_sheet_closed"
+			],
+			"server": [
+				{
+					"file": "lib/Controller/MobileController.php",
+					"needles": [
+						"orderSheetReceive",
+						"'orcv:' . $ref",
+						"receiveAgainstOrder",
+						"formatMobileOrderSheet"
+					]
+				},
+				{
+					"file": "lib/Service/MovementService.php",
+					"needles": [
+						"REF_TYPE_ORDER_RECEIVE",
+						"receiveAgainstOrder",
+						"applyReceiveToSheet"
+					]
+				},
+				{
+					"file": "lib/Service/OrderSheetService.php",
+					"needles": [
+						"listForMobile",
+						"showForMobile",
+						"applyReceiveToSheet"
+					]
+				}
+			],
+			"web": null,
+			"mobile": [
+				{
+					"file": "src/api/client.ts",
+					"needles": [
+						"postOrderSheetReceive",
+						"orderReceiveBodyFromOutbox",
+						"/order-sheets/${sheetId}/receive"
+					]
+				},
+				{
+					"file": "src/screens/OrderSheetDetailScreen.tsx",
+					"needles": [
+						"ref: refRef.current ?? buildOrderReceiveRef()",
+						"locationId",
+						"enqueueOrderReceive",
+						"postOrderSheetReceive"
+					]
+				},
+				{
+					"file": "src/offline/outbox.ts",
+					"needles": [
+						"enqueueOrderReceive",
+						"postOrderReceive"
+					]
+				}
+			]
 		}
 	]
 }

@@ -166,6 +166,9 @@ return [
 		['name' => 'mobile#kits', 'url' => '/mobile/v1/kits', 'verb' => 'GET'],
 		['name' => 'mobile#kitIssue', 'url' => '/mobile/v1/kits/{id}/issue', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
 		['name' => 'mobile#lotByCode', 'url' => '/mobile/v1/lots/by-code/{code}', 'verb' => 'GET', 'requirements' => ['code' => '[^/]+']],
+		['name' => 'mobile#orderSheets', 'url' => '/mobile/v1/order-sheets', 'verb' => 'GET'],
+		['name' => 'mobile#orderSheetShow', 'url' => '/mobile/v1/order-sheets/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+		['name' => 'mobile#orderSheetReceive', 'url' => '/mobile/v1/order-sheets/{id}/receive', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
 		['name' => 'mobile#widgetSnapshot', 'url' => '/mobile/v1/widget-snapshot', 'verb' => 'GET'],
 	],
 ];

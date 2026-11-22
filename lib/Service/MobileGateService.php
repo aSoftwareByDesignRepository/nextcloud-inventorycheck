@@ -24,6 +24,8 @@ class MobileGateService
 	private const COMPANION_API_MOBILE_STOCKTAKE = 4;
 	/** Mobile read-only item photo GET. */
 	private const COMPANION_API_ITEM_PHOTO = 5;
+	/** IV-RECEIVE-AGAINST-ORDER (C-8): /mobile/v1/order-sheets* receive mirror. */
+	private const COMPANION_API_ORDER_SHEETS = 7;
 
 	public function __construct(
 		private readonly LicenseService $license,
@@ -69,6 +71,7 @@ class MobileGateService
 		// Always advertise the highest shipped companion API; bump further only
 		// when fractional qty requires a higher floor than the photo endpoint.
 		$companionApi = max(
+			self::COMPANION_API_ORDER_SHEETS,
 			self::COMPANION_API_ITEM_PHOTO,
 			$qtyScale === QtyScale::SCALE_MILLI ? self::COMPANION_API_FRACTIONAL : self::COMPANION_API_BASE,
 		);
@@ -114,6 +117,10 @@ class MobileGateService
 				// GET /mobile/v1/low-stock exists (office seats only).
 				'receiveSpend' => true,
 				'lowStock' => true,
+				// C-8: order-sheet read + receive-against mirror. Office ACL is
+				// still enforced per request — the flag only tells the client
+				// the routes exist on this server.
+				'orderSheets' => true,
 				'qtyScale' => $qtyScale,
 			],
 			'reasonCodes' => ReasonCodes::catalog(),

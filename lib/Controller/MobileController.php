@@ -8,9 +8,11 @@ use OCA\InventoryCheck\AppInfo\Application;
 use OCA\InventoryCheck\Db\ScanDevice;
 use OCA\InventoryCheck\Exception\AppAccessDeniedException;
 use OCA\InventoryCheck\Exception\MobileGateException;
+use OCA\InventoryCheck\Exception\NotFoundException;
 use OCA\InventoryCheck\Exception\ValidationException;
 use OCA\InventoryCheck\Service\AccessControlService;
 use OCA\InventoryCheck\Service\BalanceService;
+use OCA\InventoryCheck\Service\CodeRules;
 use OCA\InventoryCheck\Service\CycleCountService;
 use OCA\InventoryCheck\Service\DevicePairingService;
 use OCA\InventoryCheck\Service\ItemPhotoService;
@@ -75,6 +77,8 @@ class MobileController extends Controller
 		private readonly ?\OCA\InventoryCheck\Service\KitService $kits = null,
 		private readonly ?\OCA\InventoryCheck\Service\LowStockService $lowStock = null,
 		private readonly ?\OCP\ICacheFactory $cacheFactory = null,
+		private readonly ?\OCA\InventoryCheck\Service\OrderSheetService $orderSheets = null,
+		private readonly ?\OCA\InventoryCheck\Db\ItemMapper $itemMapper = null,
 	) {
 		parent::__construct(Application::APP_ID, $request);
 	}
@@ -531,6 +535,18 @@ class MobileController extends Controller
 		return $this->kits ?? \OCP\Server::get(\OCA\InventoryCheck\Service\KitService::class);
 	}
 
+	/** OrderSheetService is optional in unit-test constructions — resolve lazily. */
+	private function orderSheetSvc(): \OCA\InventoryCheck\Service\OrderSheetService
+	{
+		return $this->orderSheets ?? \OCP\Server::get(\OCA\InventoryCheck\Service\OrderSheetService::class);
+	}
+
+	/** ItemMapper is optional in unit-test constructions — resolve lazily. */
+	private function itemMapper(): \OCA\InventoryCheck\Db\ItemMapper
+	{
+		return $this->itemMapper ?? \OCP\Server::get(\OCA\InventoryCheck\Db\ItemMapper::class);
+	}
+
 	#[PublicPage]
 	#[NoCSRFRequired]
 	#[NoAdminRequired]
@@ -665,6 +681,215 @@ class MobileController extends Controller
 				$e->status,
 			);
 		}
+	}
+
+	/**
+	 * IV-RECEIVE-AGAINST-ORDER (C-8): sent order sheets for the receiving
+	 * seat. Session users only (a scanner device cannot acknowledge diffs);
+	 * the ACL mirrors the web order-sheet gate — office+ (AS-03, AC-6).
+	 * Payload is qty-only — no price/cost/supplier-term keys exist on the
+	 * mobile mirror (NN-01).
+	 */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[NoAdminRequired]
+	public function orderSheets(): JSONResponse
+	{
+		[$uid] = $this->requireSessionUser();
+		$this->gate->assertGate($uid, null);
+		$this->access->requireOffice($uid);
+		$page = Pagination::parse($this->request->getParam('limit'), $this->request->getParam('offset'));
+		$status = (string)$this->request->getParam('status', 'sent');
+		return new JSONResponse($this->orderSheetSvc()->listForMobile(
+			$uid,
+			$status !== '' ? $status : null,
+			$page['limit'],
+			$page['offset'],
+		));
+	}
+
+	/** Sheet detail with per-line ordered / received / open qty (qty-only). */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[NoAdminRequired]
+	public function orderSheetShow(int $id): JSONResponse
+	{
+		[$uid] = $this->requireSessionUser();
+		$this->gate->assertGate($uid, null);
+		$this->access->requireOffice($uid);
+		return new JSONResponse(
+			$this->formatMobileOrderSheet($this->orderSheetSvc()->showForMobile($uid, $id)),
+		);
+	}
+
+	/**
+	 * C-8 receive-against-order: books one receive movement scoped to the
+	 * sheet (ref_type='order_receive', ref_id=sheetId) and attributes the
+	 * qty to that sheet's open lines inside the same TX — cancelled mid-flow
+	 * rolls the whole booking back with order_sheet_closed (AC-7/AC-11).
+	 *
+	 * `ref` is the required client idempotency key: the 'orcv:' claim rides
+	 * the scan-idempotency store, so an outbox retry replays the stored
+	 * response instead of double-booking (NN-03/AC-8).
+	 */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[NoAdminRequired]
+	public function orderSheetReceive(int $id): JSONResponse
+	{
+		$this->assertSafeMutationChannel();
+		[$uid] = $this->requireSessionUser();
+		$this->gate->assertGate($uid, null);
+		$this->access->requireOffice($uid);
+		$p = $this->request->getParams();
+
+		$itemId = $this->resolveOrderReceiveItemId($p);
+		$locationId = (int)($p['locationId'] ?? ($p['location_id'] ?? 0));
+		if ($locationId <= 0) {
+			throw new ValidationException('validation_failed', '', [
+				['field' => 'locationId', 'code' => 'validation_failed'],
+			]);
+		}
+		$qtyStorage = QtyScale::toStorage($this->config, $p['qty'] ?? '');
+		if ($qtyStorage <= 0) {
+			throw new ValidationException('validation_failed', '', [
+				['field' => 'qty', 'code' => 'validation_failed'],
+			]);
+		}
+		$ref = $this->scanIdempotency->normalizeClientRequestId($p['ref'] ?? null);
+		if ($ref === null) {
+			throw new ValidationException('validation_failed', '', [
+				['field' => 'ref', 'code' => 'validation_failed'],
+			]);
+		}
+		$lotCode = null;
+		if (isset($p['lotCode']) && $p['lotCode'] !== '') {
+			$lotCode = (string)$p['lotCode'];
+		}
+		$expiresAt = isset($p['expiresAt']) && $p['expiresAt'] !== '' ? (int)$p['expiresAt'] : null;
+		$locationCode = isset($p['locationCode'])
+			? (string)$p['locationCode']
+			: (isset($p['location_code']) ? (string)$p['location_code'] : null);
+		$reason = isset($p['reason']) ? (string)$p['reason'] : null;
+
+		$requestId = 'orcv:' . $ref;
+		// Fingerprint covers every consumed field — an edited payload with a
+		// recycled ref must collide as payload_mismatch, never replay stale.
+		$payloadHash = hash('sha256', (string)json_encode([
+			'sheetId' => $id,
+			'itemId' => $itemId,
+			'scanCode' => (string)($p['scanCode'] ?? ($p['scan_code'] ?? '')),
+			'qty' => $p['qty'] ?? null,
+			'locationId' => $locationId,
+			'locationCode' => $locationCode,
+			'lotCode' => $lotCode,
+			'expiresAt' => $expiresAt,
+			'reason' => $reason,
+		]));
+		$prior = $this->scanIdempotency->lookup($uid, $requestId);
+		if ($prior['status'] === ScanIdempotencyService::STATUS_DONE && is_array($prior['response'])) {
+			if (!$this->scanIdempotency->payloadMatches($prior['payloadHash'], $payloadHash)) {
+				throw new MobileGateException('idempotency_payload_mismatch');
+			}
+			return new JSONResponse($prior['response']);
+		}
+		if ($prior['status'] === ScanIdempotencyService::STATUS_PENDING) {
+			if (!$this->scanIdempotency->releaseStalePending($uid, $requestId)
+				|| !$this->scanIdempotency->tryClaim($uid, $requestId, $payloadHash)) {
+				throw new MobileGateException('idempotency_in_flight');
+			}
+		} elseif (!$this->scanIdempotency->tryClaim($uid, $requestId, $payloadHash)) {
+			throw new MobileGateException('idempotency_in_flight');
+		}
+		try {
+			$result = $this->movements->receiveAgainstOrder(
+				$uid,
+				$id,
+				$itemId,
+				$locationId,
+				$qtyStorage,
+				$reason,
+				$lotCode,
+				$expiresAt,
+				$locationCode,
+			);
+		} catch (\Throwable $e) {
+			$this->scanIdempotency->release($uid, $requestId);
+			throw $e;
+		}
+
+		// Ledger committed — format after commit; a format failure still
+		// completes the claim so retries ACK instead of hanging (scan parity).
+		try {
+			$result['movements'] = array_map(
+				fn (array $m) => QtyScale::formatMovement($m, $this->config),
+				$result['movements'],
+			);
+			$result['balances'] = array_map(
+				fn (array $b) => QtyScale::formatBalance($b, $this->config),
+				$result['balances'],
+			);
+			// Post-receive sheet snapshot — the diff screen derives from this.
+			$result['sheet'] = $this->formatMobileOrderSheet(
+				$this->orderSheetSvc()->showForMobile($uid, $id),
+			);
+		} catch (\Throwable $e) {
+			$this->scanIdempotency->complete($uid, $requestId, $result);
+			throw $e;
+		}
+		$this->scanIdempotency->complete($uid, $requestId, $result);
+		return new JSONResponse($result);
+	}
+
+	/**
+	 * scanCode → item resolution for order receives; an explicit itemId wins
+	 * when both are sent (companion sends both for known items).
+	 *
+	 * @param array<string, mixed> $p
+	 */
+	private function resolveOrderReceiveItemId(array $p): int
+	{
+		$rawId = $p['itemId'] ?? ($p['item_id'] ?? null);
+		if ($rawId !== null && $rawId !== '') {
+			$item = $this->itemMapper()->findById((int)$rawId);
+			return (int)$item->getId();
+		}
+		$code = CodeRules::trim((string)($p['scanCode'] ?? ($p['scan_code'] ?? ($p['code'] ?? ''))));
+		if ($code === '') {
+			throw new ValidationException('validation_failed', '', [
+				['field' => 'scanCode', 'code' => 'validation_failed'],
+			]);
+		}
+		$item = $this->itemMapper()->resolveByCode($code);
+		if ($item === null) {
+			throw new NotFoundException('code_not_found');
+		}
+		return (int)$item->getId();
+	}
+
+	/**
+	 * Display-scale the qty fields of a mobile sheet payload. The service
+	 * guarantees the key census (NN-01); formatting changes values only.
+	 *
+	 * @param array<string, mixed> $sheet
+	 * @return array<string, mixed>
+	 */
+	private function formatMobileOrderSheet(array $sheet): array
+	{
+		if (isset($sheet['lines']) && is_array($sheet['lines'])) {
+			$sheet['lines'] = array_map(
+				function (array $line): array {
+					foreach (['qtyOrdered', 'qtyReceived', 'qtyOpen'] as $key) {
+						if (isset($line[$key]) && is_int($line[$key])) {
+							$line[$key] = QtyScale::toDisplay($this->config, $line[$key]);
+						}
+					}
+					return $line;
+				},
+				$sheet['lines'],
+			);
+		}
+		return $sheet;
 	}
 
 	/**

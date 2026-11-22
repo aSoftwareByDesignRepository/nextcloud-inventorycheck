@@ -38,6 +38,8 @@ use OCA\InventoryCheck\Service\LocationService;
 use OCA\InventoryCheck\Service\LowStockService;
 use OCA\InventoryCheck\Service\MobileGateService;
 use OCA\InventoryCheck\Service\MovementService;
+use OCA\InventoryCheck\Service\OrderSheetService;
+use OCA\InventoryCheck\Service\ScanIdempotencyService;
 use OCA\InventoryCheck\Service\SettingsSectionCatalog;
 use OCP\AppFramework\Http\Response;
 use OCP\IConfig;
@@ -385,6 +387,38 @@ final class AtlasControllersInvokeCoverageTest extends TestCase
 			$mock->method('transfer')->willReturn($payload);
 			$mock->method('adjust')->willReturn($payload);
 			$mock->method('scan')->willReturn($payload);
+			$mock->method('receiveAgainstOrder')->willReturn($payload);
+			$this->byType[$key] = $mock;
+			return $mock;
+		}
+
+		if ($typeName === ScanIdempotencyService::class) {
+			$mock = $this->createMock(ScanIdempotencyService::class);
+			$mock->method('normalizeClientRequestId')->willReturnCallback(
+				static fn (mixed $raw): ?string => is_scalar($raw) && (string)$raw !== '' ? (string)$raw : null,
+			);
+			$mock->method('lookup')->willReturn(['status' => 'missing', 'response' => null, 'payloadHash' => null]);
+			$mock->method('payloadMatches')->willReturn(true);
+			$mock->method('tryClaim')->willReturn(true);
+			$mock->method('releaseStalePending')->willReturn(true);
+			$mock->method('complete')->willReturnCallback(static function (): void {});
+			$mock->method('release')->willReturnCallback(static function (): void {});
+			$this->byType[$key] = $mock;
+			return $mock;
+		}
+
+		if ($typeName === OrderSheetService::class) {
+			$sheet = [
+				'id' => 1,
+				'supplierName' => 'Supplier Co',
+				'status' => 'sent',
+				'createdAt' => 0,
+				'sentAt' => 0,
+				'lines' => [],
+			];
+			$mock = $this->createMock(OrderSheetService::class);
+			$mock->method('listForMobile')->willReturn(['data' => [$sheet], 'total' => 1]);
+			$mock->method('showForMobile')->willReturn($sheet);
 			$this->byType[$key] = $mock;
 			return $mock;
 		}
@@ -613,6 +647,7 @@ final class AtlasControllersInvokeCoverageTest extends TestCase
 			'reasonCode' => 'count',
 			'note' => 'n',
 			'clientRequestId' => 'req-1',
+			'ref' => 'req-1',
 			'type' => 'receive',
 			'uid' => 'bob',
 			'userId' => 'bob',

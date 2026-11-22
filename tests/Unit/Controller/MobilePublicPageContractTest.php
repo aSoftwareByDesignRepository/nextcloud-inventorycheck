@@ -18,7 +18,7 @@ final class MobilePublicPageContractTest extends TestCase
 		foreach ([
 			'bootstrap', 'byCode', 'itemPhoto', 'locationByCode', 'locations', 'balances', 'movements', 'scan', 'pairDevice',
 			'favourites', 'addFavourite', 'removeFavourite', 'cycleCounts', 'cycleCountShow', 'cycleCountSetCount',
-			'widgetSnapshot',
+			'orderSheets', 'orderSheetShow', 'orderSheetReceive', 'widgetSnapshot',
 		] as $method) {
 			$this->assertMatchesRegularExpression(
 				'/\#\[PublicPage\]\s*(?:\#\[[^\]]+\]\s*)*public function ' . preg_quote($method, '/') . '\b/s',
@@ -55,7 +55,7 @@ final class MobilePublicPageContractTest extends TestCase
 			$src,
 			'Authorization Basic/Bearer must not short-circuit assertSafeMutationChannel',
 		);
-		foreach (['scan', 'addFavourite', 'removeFavourite', 'cycleCountSetCount'] as $mutating) {
+		foreach (['scan', 'addFavourite', 'removeFavourite', 'cycleCountSetCount', 'orderSheetReceive'] as $mutating) {
 			$this->assertMatchesRegularExpression(
 				'/function ' . preg_quote($mutating, '/') . '\([^\)]*\)\s*:\s*JSONResponse\s*\{[\s\S]{0,500}?assertSafeMutationChannel\(\)/',
 				$src,
