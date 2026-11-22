@@ -190,6 +190,17 @@ final class TransferManifest extends AbstractTransferManifest
 				'fk' => ['sheet_id' => 'iv_order_sheets', 'item_id' => 'iv_items'],
 				'depends_on' => ['iv_order_sheets', 'iv_items']],
 
+			// ══ custom field defs + values ══
+			// Field definitions have no honest natural key: name uniqueness is
+			// enforced only across ACTIVE defs (an inactive def may share a
+			// name), so upsert-by-name could conflate distinct rows. Values are
+			// meaningless without their defs, so both tables take the same
+			// seed-if-empty gate — the movements/balances coupling pattern.
+			'iv_item_fields' => ['class' => 'business', 'strategy' => 'seed-if-empty'],
+			'iv_item_field_values' => ['class' => 'business', 'strategy' => 'seed-if-empty',
+				'fk' => ['item_id' => 'iv_items', 'field_id' => 'iv_item_fields'],
+				'depends_on' => ['iv_items', 'iv_item_fields']],
+
 			// ══ per-user state ══
 			'iv_loc_fav' => ['class' => 'user-data', 'strategy' => 'upsert-natural-key',
 				'natural_key' => ['user_id', 'location_id'],
