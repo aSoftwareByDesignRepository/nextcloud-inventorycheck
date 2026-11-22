@@ -108,8 +108,11 @@ final class FixedEndpointContractTest extends TestCase
 		$src = (string)file_get_contents(self::LOOKUP_DIR . '/UpstreamClient.php');
 		self::assertStringContainsString("'allow_redirects' => false", $src, 'redirects must stay disabled');
 		self::assertStringContainsString("'http_errors' => false", $src, 'providers classify status codes themselves');
-		self::assertMatchesRegularExpression("/'timeout' => [1-9]\d*/", $src, 'a total timeout must be set');
-		self::assertMatchesRegularExpression("/'connect_timeout' => [1-9]\d*/", $src, 'a connect timeout must be set');
+		// GAP-4: the timeout is a variable bounded by the cascade's remaining
+		// budget, never absent and never above 6s.
+		self::assertStringContainsString("'timeout' => \$timeout", $src, 'a total timeout must be set');
+		self::assertStringContainsString('min(6.0, max(0.05, $maxWaitSeconds))', $src, 'timeout must be budget-bounded');
+		self::assertStringContainsString("'connect_timeout' => min(4.0, \$timeout)", $src, 'a connect timeout must be set');
 		self::assertStringContainsString("'Accept' => 'application/json'", $src);
 		self::assertMatchesRegularExpression(
 			"/USER_AGENT = 'InventoryCheck\/[^']*software-by-design\.de[^']*'/",
@@ -145,10 +148,17 @@ final class FixedEndpointContractTest extends TestCase
 			if (!str_contains($src, 'UpstreamClient::get(')) {
 				continue;
 			}
+			// GAP-4: the cap is enforced by the bounded reader — every
+			// provider must route the body through it, never raw getBody().
 			self::assertStringContainsString(
-				'MAX_BODY_BYTES',
+				'UpstreamClient::body(',
 				$src,
-				"{$file} fetches but never enforces the 512 KB body cap",
+				"{$file} fetches but bypasses the bounded body reader",
+			);
+			self::assertStringNotContainsString(
+				'->getBody()',
+				$src,
+				"{$file} reads the body directly — cap would be post-hoc",
 			);
 		}
 	}

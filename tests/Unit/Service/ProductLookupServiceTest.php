@@ -215,6 +215,22 @@ final class ProductLookupServiceTest extends TestCase
 		self::assertSame([], $never->calls, 'providers after a hit must not be called');
 	}
 
+	public function testCascadePassesRemainingBudgetToProviders(): void
+	{
+		// GAP-4 hard ceiling: every provider must receive the remaining
+		// cascade budget as its wait bound — never a fixed 6s.
+		$miss = new StubProvider('openfoodfacts', ProviderResult::miss());
+		$hit = $this->hitProvider('openbeautyfacts');
+		$payload = $this->service([$miss, $hit])->lookup(self::GTIN, 'alice');
+		self::assertTrue($payload['found']);
+		foreach ([...$miss->waits, ...$hit->waits] as $wait) {
+			self::assertGreaterThan(0, $wait);
+			self::assertLessThanOrEqual(15.0, $wait, 'budget must never exceed the documented ceiling');
+		}
+		self::assertCount(1, $miss->waits);
+		self::assertCount(1, $hit->waits);
+	}
+
 	public function testCleanMissPayload(): void
 	{
 		$miss = new StubProvider('openfoodfacts', ProviderResult::miss());
@@ -613,6 +629,9 @@ final class StubProvider implements ProductLookupProvider
 	/** @var list<string> */
 	public array $calls = [];
 
+	/** @var list<float> cascade budget handed to each call (GAP-4 hard ceiling) */
+	public array $waits = [];
+
 	/** @var ProviderResult|callable */
 	private $result;
 
@@ -635,9 +654,10 @@ final class StubProvider implements ProductLookupProvider
 		return $this->label;
 	}
 
-	public function lookup(string $gtin): ProviderResult
+	public function lookup(string $gtin, float $maxWaitSeconds = 6.0): ProviderResult
 	{
 		$this->calls[] = $gtin;
+		$this->waits[] = $maxWaitSeconds;
 		if (is_callable($this->result)) {
 			return ($this->result)($gtin);
 		}

@@ -21,6 +21,10 @@ interface ProductLookupProvider
 	 * Look up a validated GTIN. Never throws for upstream problems —
 	 * transport errors, bad status, malformed JSON map to ProviderResult
 	 * outcomes; the cascade treats them as "try the next one".
+	 *
+	 * $maxWaitSeconds is the cascade's remaining budget — the provider's
+	 * HTTP timeout must not exceed it, so the documented hard ceiling on
+	 * total lookup time is a real bound, not best-effort (GAP-4).
 	 */
-	public function lookup(string $gtin): ProviderResult;
+	public function lookup(string $gtin, float $maxWaitSeconds): ProviderResult;
 }

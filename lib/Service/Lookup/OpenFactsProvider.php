@@ -33,11 +33,11 @@ final class OpenFactsProvider implements ProductLookupProvider
 		return $this->label;
 	}
 
-	public function lookup(string $gtin): ProviderResult
+	public function lookup(string $gtin, float $maxWaitSeconds = 6.0): ProviderResult
 	{
 		try {
 			$response = UpstreamClient::get($this->http, $this->host . '/api/v3/product/' . rawurlencode($gtin)
-				. '?fields=' . self::FIELDS);
+				. '?fields=' . self::FIELDS, $maxWaitSeconds);
 		} catch (ProviderRateLimitedException) {
 			return ProviderResult::rateLimited();
 		}
@@ -51,8 +51,8 @@ final class OpenFactsProvider implements ProductLookupProvider
 		if ($status !== 200) {
 			return ProviderResult::error();
 		}
-		$body = (string)$response->getBody();
-		if (strlen($body) > UpstreamClient::MAX_BODY_BYTES) {
+		$body = UpstreamClient::body($response);
+		if ($body === null) {
 			return ProviderResult::error();
 		}
 		$data = json_decode($body, true);

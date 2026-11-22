@@ -31,10 +31,10 @@ final class UpcItemDbProvider implements ProductLookupProvider
 		return 'UPCitemdb';
 	}
 
-	public function lookup(string $gtin): ProviderResult
+	public function lookup(string $gtin, float $maxWaitSeconds = 6.0): ProviderResult
 	{
 		try {
-			$response = UpstreamClient::get($this->http, self::ENDPOINT . '?upc=' . rawurlencode($gtin));
+			$response = UpstreamClient::get($this->http, self::ENDPOINT . '?upc=' . rawurlencode($gtin), $maxWaitSeconds);
 		} catch (ProviderRateLimitedException) {
 			return ProviderResult::rateLimited();
 		}
@@ -48,8 +48,8 @@ final class UpcItemDbProvider implements ProductLookupProvider
 		if ($status !== 200) {
 			return ProviderResult::error();
 		}
-		$body = (string)$response->getBody();
-		if (strlen($body) > UpstreamClient::MAX_BODY_BYTES) {
+		$body = UpstreamClient::body($response);
+		if ($body === null) {
 			return ProviderResult::error();
 		}
 		$data = json_decode($body, true);

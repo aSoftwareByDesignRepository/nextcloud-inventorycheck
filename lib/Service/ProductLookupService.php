@@ -297,13 +297,16 @@ class ProductLookupService
 				$outcomes[] = ['id' => $id, 'outcome' => 'skipped-' . $blocked];
 				continue;
 			}
-			if (microtime(true) - $start > self::MAX_ELAPSED_SECONDS) {
+			$remaining = self::MAX_ELAPSED_SECONDS - (microtime(true) - $start);
+			if ($remaining <= 0) {
 				$outcomes[] = ['id' => $id, 'outcome' => 'skipped-timeout'];
 				continue;
 			}
 			$this->chargeUpstreamCall($id, $cache);
 			try {
-				$result = $provider->lookup($barcode);
+				// Hard ceiling (GAP-4): the provider's own timeout is the
+				// remaining budget — worst case never exceeds the documented 15s.
+				$result = $provider->lookup($barcode, $remaining);
 			} catch (\Throwable) {
 				// Contract breach by a provider adapter must not kill the cascade.
 				$result = ProviderResult::error();
