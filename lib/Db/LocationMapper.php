@@ -156,4 +156,58 @@ class LocationMapper extends QBMapper
 		$result->closeCursor();
 		return $row !== false;
 	}
+
+	/** IV-SUB-LOCATIONS: true when $locationId has at least one child. */
+	public function hasChildren(int $locationId): bool
+	{
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('id')->from($this->getTableName())
+			->where($qb->expr()->eq('parent_id', $qb->createNamedParameter($locationId, \PDO::PARAM_INT)))
+			->setMaxResults(1);
+		$result = $qb->executeQuery();
+		$row = $result->fetch();
+		$result->closeCursor();
+		return $row !== false;
+	}
+
+	/**
+	 * IV-SUB-LOCATIONS: parent picker data — roots only (parent_id IS NULL),
+	 * plus optional name search for the combobox filter.
+	 *
+	 * @return list<Location>
+	 */
+	public function findRoots(?int $excludeId = null, int $limit = 500): array
+	{
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')->from($this->getTableName())
+			->where($qb->expr()->isNull('parent_id'))
+			->orderBy('name', 'ASC')
+			->setMaxResults($limit);
+		if ($excludeId !== null) {
+			$qb->andWhere($qb->expr()->neq('id', $qb->createNamedParameter($excludeId, \PDO::PARAM_INT)));
+		}
+		return $this->findEntities($qb);
+	}
+
+	/**
+	 * IV-SUB-LOCATIONS: id → Location map for pathLabel computation — one
+	 * IN query for a page of rows (no N+1).
+	 *
+	 * @param list<int> $ids
+	 * @return array<int, Location>
+	 */
+	public function byIds(array $ids): array
+	{
+		if ($ids === []) {
+			return [];
+		}
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')->from($this->getTableName())
+			->where($qb->expr()->in('id', $qb->createNamedParameter(array_values(array_unique($ids)), \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT_ARRAY)));
+		$out = [];
+		foreach ($this->findEntities($qb) as $loc) {
+			$out[(int)$loc->getId()] = $loc;
+		}
+		return $out;
+	}
 }

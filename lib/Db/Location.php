@@ -23,6 +23,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setUpdatedAt(int $v)
  * @method string getCreatedBy()
  * @method void setCreatedBy(string $v)
+ * @method ?int getParentId()
+ * @method void setParentId(?int $v)
  */
 class Location extends Entity
 {
@@ -34,6 +36,7 @@ class Location extends Entity
 	protected int $createdAt = 0;
 	protected int $updatedAt = 0;
 	protected string $createdBy = '';
+	protected ?int $parentId = null;
 
 	public function __construct()
 	{
@@ -45,6 +48,7 @@ class Location extends Entity
 		$this->addType('createdAt', 'integer');
 		$this->addType('updatedAt', 'integer');
 		$this->addType('createdBy', 'string');
+		$this->addType('parentId', 'integer');
 	}
 
 	/** @return array<string, mixed> */
@@ -60,6 +64,7 @@ class Location extends Entity
 			'createdAt' => $this->createdAt,
 			'updatedAt' => $this->updatedAt,
 			'createdBy' => $this->createdBy,
+			'parentId' => $this->parentId,
 		];
 	}
 }

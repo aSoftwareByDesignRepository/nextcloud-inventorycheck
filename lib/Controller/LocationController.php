@@ -37,6 +37,10 @@ class LocationController extends Controller
 	#[NoAdminRequired]
 	public function index(): JSONResponse
 	{
+		if ($this->request->getParam('roots') === '1') {
+			// IV-SUB-LOCATIONS: parent-picker payload — roots only, unpaged.
+			return new JSONResponse(['data' => $this->locations->roots($this->access->currentUserId())]);
+		}
 		$page = Pagination::parse($this->request->getParam('limit'), $this->request->getParam('offset'));
 		$activeRaw = $this->request->getParam('active');
 		$active = $activeRaw === null || $activeRaw === '' ? null : filter_var($activeRaw, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);

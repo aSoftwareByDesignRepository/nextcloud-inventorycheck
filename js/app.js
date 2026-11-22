@@ -2211,7 +2211,8 @@
 	function labelFromMap(map, id, codeKey) {
 		var row = map[String(id)];
 		if (!row) return '#' + id;
-		return row.name + ' (' + row[codeKey] + ')';
+		// IV-SUB-LOCATIONS: server-computed "Parent / Child" wins (AC-8).
+		return (row.pathLabel || row.name) + ' (' + row[codeKey] + ')';
 	}
 
 	function movementApi(ctx, kind) {
@@ -3967,6 +3968,35 @@
 		});
 	}
 
+	/**
+	 * IV-SUB-LOCATIONS: roots in fetch order, each followed by its
+	 * children. Children whose parent is filtered out stay in place and
+	 * keep their pathLabel — context is never lost (AC-8/design law).
+	 */
+	function treeOrderLocations(rows) {
+		var byParent = {};
+		var roots = [];
+		rows.forEach(function (r) {
+			if (r.parentId) {
+				(byParent[r.parentId] = byParent[r.parentId] || []).push(r);
+			} else {
+				roots.push(r);
+			}
+		});
+		var placed = {};
+		var out = [];
+		roots.forEach(function (r) {
+			out.push(r);
+			placed[r.id] = true;
+			(byParent[r.id] || []).forEach(function (c) {
+				out.push(c);
+				placed[c.id] = true;
+			});
+		});
+		rows.forEach(function (r) { if (!placed[r.id]) out.push(r); });
+		return out;
+	}
+
 	function renderLocations(ctx) {
 		var mount = ctx.mount;
 		clear(mount);
@@ -4103,14 +4133,23 @@
 				listHost.appendChild(el('div', { className: 'iv-card__body' }, [
 					tableOrCards([
 						{ label: tr('Name'), render: function (r) {
-							var kids = [el('a', { href: entityUrl(ctx.urls.pages.locations, r.id), text: r.name })];
+							var kids = [];
+							if (r.parentId && r.parentName) {
+								kids.push(el('span', {
+									className: 'iv-loc-parent-label iv-muted',
+									text: r.parentName + ' / ',
+								}));
+							}
+							kids.push(el('a', { href: entityUrl(ctx.urls.pages.locations, r.id), text: r.name }));
 							if (!r.active) {
 								kids.push(el('span', {
 									className: 'iv-badge iv-badge--neutral',
 									text: tr('Inactive'),
 								}));
 							}
-							return el('span', { className: 'iv-name-with-status' }, kids);
+							return el('span', {
+								className: 'iv-name-with-status' + (r.parentId ? ' iv-loc-child' : ''),
+							}, kids);
 						} },
 						{ label: tr('Code'), key: 'code' },
 						{ label: tr('Kind'), render: function (r) { return locationKindLabel(r.kind); } },
@@ -4136,7 +4175,7 @@
 							}
 							return el('div', { className: 'iv-row__actions' }, kids);
 						} },
-					], res.data),
+					], treeOrderLocations(res.data)),
 				]));
 			}).catch(function (err) {
 				if (seq !== loadSeq) return;
@@ -4167,9 +4206,35 @@
 			el('option', { value: 'other', text: tr('Other') }),
 		]);
 		kind.value = existing ? existing.kind : 'warehouse';
+		// IV-SUB-LOCATIONS: parent picker — roots only, defaults to none,
+		// zero added steps for today's flat flow.
+		var parentSel = el('select', {
+			className: 'iv-input',
+			'aria-describedby': 'iv-loc-parent-hint',
+		}, [
+			el('option', { value: '', text: tr('None — top level') }),
+		]);
+		api('GET', ctx.urls.api.locations + '?roots=1').then(function (res) {
+			(res.data || []).forEach(function (r) {
+				if (existing && Number(r.id) === Number(existing.id)) return;
+				parentSel.appendChild(el('option', {
+					value: String(r.id),
+					text: r.name + ' (' + r.code + ')',
+				}));
+			});
+			if (existing && existing.parentId) {
+				parentSel.value = String(existing.parentId);
+			}
+		}).catch(function () { /* picker stays optional-empty; server validates */ });
 		var fields = [
 			field(tr('Code'), code, { name: 'code' }),
 			field(tr('Name'), name, { name: 'name' }),
+			field(tr('Belongs under (optional)'), parentSel, { name: 'parentId' }),
+			el('p', {
+				className: 'iv-field__hint',
+				id: 'iv-loc-parent-hint',
+				text: tr('One level only: a bin can sit inside a warehouse, but cannot have bins of its own.'),
+			}),
 		];
 		if (existing) {
 			fields.push(field(tr('Kind'), kind, { name: 'kind' }));
@@ -4183,6 +4248,7 @@
 				code: code.value.trim(),
 				name: name.value.trim(),
 				kind: kind.value,
+				parentId: parentSel.value ? Number(parentSel.value) : null,
 			};
 			if (existing) {
 				return api('PUT', entityUrl(ctx.urls.api.locations, existing.id), body).then(function () {
@@ -4253,7 +4319,14 @@
 				]));
 			}
 			mount.appendChild(el('h2', { className: 'iv-section__title', text: loc.name }));
-			mount.appendChild(el('p', { className: 'iv-muted', text: loc.code + ' · ' + locationKindLabel(loc.kind) }));
+			mount.appendChild(el('p', { className: 'iv-muted' }, [
+				el('span', { text: loc.code + ' · ' + locationKindLabel(loc.kind) }),
+				loc.parentName ? el('span', {
+					className: 'iv-loc-parent-label',
+					text: ' · ' + tr('inside {parent}', { parent: loc.parentName })
+						+ (loc.parentActive === false ? ' (' + tr('inactive') + ')' : ''),
+				}) : null,
+			]));
 			var locHowTo = pageHowToCard(ctx, 'location-detail');
 			if (locHowTo) {
 				mount.appendChild(locHowTo);

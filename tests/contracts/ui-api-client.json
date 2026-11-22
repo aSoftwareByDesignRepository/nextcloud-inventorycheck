@@ -581,6 +581,76 @@
 					]
 				}
 			]
+		},
+		{
+			"id": "location-hierarchy",
+			"param": "parentId",
+			"description": "IV-SUB-LOCATIONS read+write field: locations carry parentId (nullable root link, depth cap 1) plus server-computed parentName/parentActive/pathLabel; web list shows pathLabel + parent picker (roots=1 endpoint), companion renders pathLabel on scan/confirm/location screens with name fallback. Server enforces validation_failed for non-root parent, self-parent, or reparenting a location that has children; delete returns location_has_children.",
+			"errorCodes": [
+				"validation_failed",
+				"unknown_location",
+				"location_has_children"
+			],
+			"server": [
+				{
+					"file": "lib/Service/LocationService.php",
+					"needles": [
+						"assertValidParent",
+						"pathLabel",
+						"location_has_children",
+						"parseParentId",
+						"parentsOf"
+					]
+				},
+				{
+					"file": "lib/Db/LocationMapper.php",
+					"needles": [
+						"findRoots",
+						"hasChildren",
+						"byIds",
+						"parent_id"
+					]
+				},
+				{
+					"file": "lib/Service/LocationAclService.php",
+					"needles": [
+						"withDescendants"
+					]
+				},
+				{
+					"file": "lib/Db/Location.php",
+					"needles": [
+						"'parentId'"
+					]
+				}
+			],
+			"web": [
+				{
+					"file": "js/app.js",
+					"needles": [
+						"parentId",
+						"pathLabel",
+						"roots=1",
+						"iv-loc-child",
+						"iv-loc-parent-label"
+					]
+				}
+			],
+			"mobile": [
+				{
+					"file": "src/types.ts",
+					"needles": [
+						"parentId",
+						"pathLabel"
+					]
+				},
+				{
+					"file": "src/screens/ConfirmScreen.tsx",
+					"needles": [
+						"pathLabel"
+					]
+				}
+			]
 		}
 	]
 }

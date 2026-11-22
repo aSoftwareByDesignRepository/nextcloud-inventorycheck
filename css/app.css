@@ -3363,3 +3363,12 @@ textarea {
 	min-width: 44px;
 	min-height: 44px;
 }
+
+/* IV-SUB-LOCATIONS — child row indent + muted parent prefix */
+.iv-loc-child {
+	padding-inline-start: var(--iv-space-4);
+}
+
+.iv-loc-parent-label {
+	white-space: nowrap;
+}

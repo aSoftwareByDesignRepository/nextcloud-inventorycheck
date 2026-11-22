@@ -43,8 +43,9 @@ class LocationService
 	{
 		$visible = $this->locationAcl->visibleLocationIds($actorUid);
 		$result = $this->locations->search($active, $limit, $offset, $visible, $q);
+		$parents = $this->parentsOf($result['data']);
 		return [
-			'data' => array_map(static fn (Location $l) => $l->toApi(), $result['data']),
+			'data' => array_map(fn (Location $l) => $this->decorate($l->toApi(), $parents), $result['data']),
 			'total' => $result['total'],
 			'limit' => $limit,
 			'offset' => $offset,
@@ -63,7 +64,8 @@ class LocationService
 		if (!$this->locationAcl->canAccessLocation($actorUid, $id)) {
 			throw new NotFoundException('unknown_location');
 		}
-		return $this->locations->findById($id)->toApi();
+		$loc = $this->locations->findById($id);
+		return $this->decorate($loc->toApi(), $this->parentsOf([$loc]));
 	}
 
 	/**
@@ -81,7 +83,7 @@ class LocationService
 		if (!$this->locationAcl->canAccessLocation($actorUid, (int)$loc->getId())) {
 			throw new NotFoundException('code_not_found');
 		}
-		return $loc->toApi();
+		return $this->decorate($loc->toApi(), $this->parentsOf([$loc]));
 	}
 
 	/**
@@ -102,8 +104,10 @@ class LocationService
 			$notes = null;
 		}
 		$this->validateMaster($code, $name, $kind, $notes);
+		$parentId = $this->parseParentId($input['parentId'] ?? null);
+		$this->assertValidParent($parentId, null);
 
-		return $this->withCodesLock(function () use ($actorUid, $code, $name, $kind, $notes): array {
+		return $this->withCodesLock(function () use ($actorUid, $code, $name, $kind, $notes, $parentId): array {
 			if ($this->locations->findByCode($code) !== null) {
 				throw new ConflictException('code_exists');
 			}
@@ -120,8 +124,10 @@ class LocationService
 			$loc->setCreatedAt($now);
 			$loc->setUpdatedAt($now);
 			$loc->setCreatedBy($actorUid);
+			$loc->setParentId($parentId);
 			try {
-				return $this->locations->insert($loc)->toApi();
+				$created = $this->locations->insert($loc);
+				return $this->decorate($created->toApi(), $this->parentsOf([$created]));
 			} catch (\Throwable $e) {
 				// Unique-index backstop for two concurrent creates of one code.
 				throw UniqueViolation::is($e) ? new ConflictException('code_exists') : $e;
@@ -149,6 +155,16 @@ class LocationService
 			// Exclusive lock: serialises against movements' shared location
 			// lock, so the zero-balance check cannot race a posting (S5).
 			$loc = $this->locations->lockById($id, true);
+			if (array_key_exists('parentId', $input)) {
+				$parentId = $this->parseParentId($input['parentId']);
+				$this->assertValidParent($parentId, $id);
+				if ($parentId !== null && $this->locations->hasChildren($id)) {
+					// Depth cap both ways: a parent cannot become a child —
+					// that would push its children to depth 2 (NN-01).
+					throw new ValidationException('validation_failed', '', [['field' => 'parentId', 'code' => 'validation_failed']]);
+				}
+				$loc->setParentId($parentId);
+			}
 			if (array_key_exists('code', $input)) {
 				$code = CodeRules::trim((string)$input['code']);
 				if (!CodeRules::isValidLocationCode($code)) {
@@ -199,7 +215,8 @@ class LocationService
 				$loc->setActive($active);
 			}
 			$loc->setUpdatedAt($this->clock->now());
-			$api = $this->locations->update($loc)->toApi();
+			$updated = $this->locations->update($loc);
+			$api = $this->decorate($updated->toApi(), $this->parentsOf([$updated]));
 			$this->db->commit();
 			return $api;
 		} catch (\Throwable $e) {
@@ -216,6 +233,9 @@ class LocationService
 			// Exclusive lock conflicts with the shared lock held by any
 			// in-flight movement, so the reference count is authoritative (S6).
 			$loc = $this->locations->lockById($id, true);
+			if ($this->locations->hasChildren($id)) {
+				throw new ConflictException('location_has_children');
+			}
 			if ($this->locations->countMovementsReferencing($id) > 0) {
 				throw new ConflictException('location_has_movements');
 			}
@@ -231,6 +251,100 @@ class LocationService
 		} catch (\Throwable $e) {
 			$this->db->rollBack();
 			throw $e;
+		}
+	}
+
+	/**
+	 * IV-SUB-LOCATIONS: parent picker data — roots only, ACL-scoped like
+	 * list() (a picker must never leak invisible locations).
+	 *
+	 * @return list<array<string, mixed>>
+	 */
+	public function roots(string $actorUid): array
+	{
+		$visible = $this->locationAcl->visibleLocationIds($actorUid);
+		$roots = $this->locations->findRoots();
+		$out = [];
+		foreach ($roots as $loc) {
+			if ($visible !== null && !in_array((int)$loc->getId(), $visible, true)) {
+				continue;
+			}
+			$out[] = $this->decorate($loc->toApi(), []);
+		}
+		return $out;
+	}
+
+	/**
+	 * IV-SUB-LOCATIONS: batch-load parents for a page of locations — one
+	 * IN query, never N+1.
+	 *
+	 * @param list<Location> $locs
+	 * @return array<int, Location>
+	 */
+	private function parentsOf(array $locs): array
+	{
+		$ids = [];
+		foreach ($locs as $loc) {
+			if ($loc->getParentId() !== null) {
+				$ids[] = $loc->getParentId();
+			}
+		}
+		return $this->locations->byIds($ids);
+	}
+
+	/**
+	 * IV-SUB-LOCATIONS (MH-03): server-computed label "Parent / Child" —
+	 * identical on every surface (AC-16). Roots keep their plain name.
+	 *
+	 * @param array<string, mixed> $api
+	 * @param array<int, Location> $parents
+	 * @return array<string, mixed>
+	 */
+	private function decorate(array $api, array $parents): array
+	{
+		$parent = $api['parentId'] !== null ? ($parents[$api['parentId']] ?? null) : null;
+		$api['parentName'] = $parent !== null ? $parent->getName() : null;
+		$api['parentActive'] = $parent !== null ? $parent->getActive() : null;
+		$api['pathLabel'] = $parent !== null
+			? $parent->getName() . ' / ' . $api['name']
+			: $api['name'];
+		return $api;
+	}
+
+	/**
+	 * IV-SUB-LOCATIONS: normalize parentId input — null/''/0 clears,
+	 * positive int accepted, anything else is validation_failed.
+	 */
+	private function parseParentId(mixed $raw): ?int
+	{
+		if ($raw === null || $raw === '' || $raw === 0 || $raw === '0') {
+			return null;
+		}
+		if (!is_int($raw) && !(is_string($raw) && ctype_digit($raw))) {
+			throw new ValidationException('validation_failed', '', [['field' => 'parentId', 'code' => 'validation_failed']]);
+		}
+		$id = (int)$raw;
+		if ($id <= 0) {
+			throw new ValidationException('validation_failed', '', [['field' => 'parentId', 'code' => 'validation_failed']]);
+		}
+		return $id;
+	}
+
+	/**
+	 * IV-SUB-LOCATIONS (MH-02 / NN-01): parent must exist, be a root
+	 * (depth cap 1), and never be the location itself.
+	 */
+	private function assertValidParent(?int $parentId, ?int $forId): void
+	{
+		if ($parentId === null) {
+			return;
+		}
+		if ($forId !== null && $parentId === $forId) {
+			throw new ValidationException('validation_failed', '', [['field' => 'parentId', 'code' => 'validation_failed']]);
+		}
+		$parent = $this->locations->findById($parentId);
+		if ($parent->getParentId() !== null) {
+			throw new ValidationException('validation_failed', '', [['field' => 'parentId', 'code' => 'validation_failed']]);
 		}
 	}
 

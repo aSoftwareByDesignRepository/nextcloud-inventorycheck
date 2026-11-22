@@ -117,6 +117,31 @@ class LocationAclService
 			}
 			$r2->closeCursor();
 		}
+		return $this->withDescendants(array_values(array_unique($ids)));
+	}
+
+	/**
+	 * IV-SUB-LOCATIONS (MH-04 / AC-5): a grant on a parent covers its
+	 * children; a grant on a child stays narrow (never widened to the
+	 * parent or siblings). One extra query, no recursion — depth is
+	 * capped at 1 by the service layer.
+	 *
+	 * @param list<int> $ids
+	 * @return list<int>
+	 */
+	private function withDescendants(array $ids): array
+	{
+		if ($ids === []) {
+			return $ids;
+		}
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('id')->from('iv_locations')
+			->where($qb->expr()->in('parent_id', $qb->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY)));
+		$res = $qb->executeQuery();
+		while (($row = $res->fetch()) !== false) {
+			$ids[] = (int)$row['id'];
+		}
+		$res->closeCursor();
 		return array_values(array_unique($ids));
 	}
 
@@ -147,7 +172,7 @@ class LocationAclService
 		if ($ids === []) {
 			return [];
 		}
-		return array_values(array_unique($ids));
+		return $this->withDescendants(array_values(array_unique($ids)));
 	}
 
 	public function canAccessLocation(string $uid, int $locationId): bool
