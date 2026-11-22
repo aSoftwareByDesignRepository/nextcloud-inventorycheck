@@ -1070,6 +1070,15 @@
 				}
 			}
 		},
+		"/mobile/v1/lots/expiring": {
+			"get": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			}
+		},
 		"/mobile/v1/low-stock": {
 			"get": {
 				"responses": {
@@ -1126,6 +1135,15 @@
 		},
 		"/mobile/v1/product-lookup": {
 			"post": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			}
+		},
+		"/mobile/v1/today": {
+			"get": {
 				"responses": {
 					"200": {
 						"description": "OK"

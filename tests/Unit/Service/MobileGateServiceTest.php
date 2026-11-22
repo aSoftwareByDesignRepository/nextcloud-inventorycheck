@@ -132,6 +132,49 @@ final class MobileGateServiceTest extends TestCase
 		$this->assertFalse($boot['deviceLocationUnbound']);
 		$this->assertTrue($boot['capabilities']['deviceLocationAcl']);
 		$this->assertTrue($boot['capabilities']['deviceLocationStrict']);
+		// C-3 Heute feeds: expiring lots for every gated caller; the mocked
+		// non-office seat must NOT see Chef-Blick money (NN-01, fail-closed).
+		$this->assertTrue($boot['capabilities']['expiringLots']);
+		$this->assertFalse($boot['capabilities']['todayChefView']);
+	}
+
+	public function testBootstrapAdvertisesChefViewOnlyForOfficeSeats(): void
+	{
+		$state = $this->validState(1, 0);
+		$seat = new MobileSeat();
+		$seat->setId(9);
+		$seat->setUid('boss');
+		$seat->setAssignedAt(50);
+		$this->license->method('findSingletonState')->willReturn($state);
+		$this->license->method('findSeatByUid')->with('boss')->willReturn($seat);
+		$this->license->method('allSeats')->willReturn([$seat]);
+		$officeAccess = $this->createMock(AccessControlService::class);
+		$officeAccess->method('isOffice')->with('boss')->willReturn(true);
+		$gate = new MobileGateService(
+			$this->license,
+			$officeAccess,
+			$this->clock,
+			$this->config,
+			$this->locationAcl,
+			$this->productLookup,
+		);
+		$boot = $gate->bootstrap('boss', null);
+		$this->assertTrue($boot['isOffice']);
+		$this->assertTrue($boot['capabilities']['todayChefView']);
+	}
+
+	public function testBootstrapNeverAdvertisesChefViewToDevices(): void
+	{
+		$state = $this->validState(0, 1);
+		$device = new ScanDevice();
+		$device->setId(11);
+		$device->setPairedAt(100);
+		$device->setActive(true);
+		$this->license->method('findSingletonState')->willReturn($state);
+		$boot = $this->gate->bootstrap(null, $device);
+		// Device callers have no uid → isOffice false → flag must be false.
+		$this->assertFalse($boot['isOffice']);
+		$this->assertFalse($boot['capabilities']['todayChefView']);
 	}
 
 	public function testBootstrapReportsDeviceLocationGrants(): void

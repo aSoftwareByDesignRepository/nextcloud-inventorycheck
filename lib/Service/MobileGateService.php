@@ -24,6 +24,8 @@ class MobileGateService
 	private const COMPANION_API_MOBILE_STOCKTAKE = 4;
 	/** Mobile read-only item photo GET. */
 	private const COMPANION_API_ITEM_PHOTO = 5;
+	/** IV-COMPANION-TODAY (C-3): Heute feeds — /mobile/v1/today + /mobile/v1/lots/expiring. */
+	private const COMPANION_API_TODAY = 6;
 	/** IV-RECEIVE-AGAINST-ORDER (C-8): /mobile/v1/order-sheets* receive mirror. */
 	private const COMPANION_API_ORDER_SHEETS = 7;
 
@@ -72,6 +74,7 @@ class MobileGateService
 		// when fractional qty requires a higher floor than the photo endpoint.
 		$companionApi = max(
 			self::COMPANION_API_ORDER_SHEETS,
+			self::COMPANION_API_TODAY,
 			self::COMPANION_API_ITEM_PHOTO,
 			$qtyScale === QtyScale::SCALE_MILLI ? self::COMPANION_API_FRACTIONAL : self::COMPANION_API_BASE,
 		);
@@ -117,6 +120,12 @@ class MobileGateService
 				// GET /mobile/v1/low-stock exists (office seats only).
 				'receiveSpend' => true,
 				'lowStock' => true,
+				// IV-COMPANION-TODAY (C-3): expiring-lots feed is qty-only for
+				// every gated caller; Chef-Blick carries money and is
+				// advertised to office-entitled seats only (NN-01: absent /
+				// false flag = the client never renders the strip).
+				'expiringLots' => true,
+				'todayChefView' => $isOffice,
 				// C-8: order-sheet read + receive-against mirror. Office ACL is
 				// still enforced per request — the flag only tells the client
 				// the routes exist on this server.

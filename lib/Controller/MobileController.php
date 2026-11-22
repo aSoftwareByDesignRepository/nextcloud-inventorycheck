@@ -77,6 +77,9 @@ class MobileController extends Controller
 		private readonly ?\OCA\InventoryCheck\Service\KitService $kits = null,
 		private readonly ?\OCA\InventoryCheck\Service\LowStockService $lowStock = null,
 		private readonly ?\OCP\ICacheFactory $cacheFactory = null,
+		private readonly ?\OCA\InventoryCheck\Service\ReportService $reports = null,
+		private readonly ?\OCA\InventoryCheck\Service\Clock $clock = null,
+		private readonly ?\OCA\InventoryCheck\Service\LotService $lotService = null,
 		private readonly ?\OCA\InventoryCheck\Service\OrderSheetService $orderSheets = null,
 		private readonly ?\OCA\InventoryCheck\Db\ItemMapper $itemMapper = null,
 	) {
@@ -545,6 +548,69 @@ class MobileController extends Controller
 	private function itemMapper(): \OCA\InventoryCheck\Db\ItemMapper
 	{
 		return $this->itemMapper ?? \OCP\Server::get(\OCA\InventoryCheck\Db\ItemMapper::class);
+	}
+
+	/** LotService is optional in unit-test constructions — resolve lazily. */
+	private function lotSvc(): \OCA\InventoryCheck\Service\LotService
+	{
+		return $this->lotService ?? \OCP\Server::get(\OCA\InventoryCheck\Service\LotService::class);
+	}
+
+	/**
+	 * IV-COMPANION-TODAY (C-3) Chef-Blick aggregate — estimated on-hand
+	 * stock value plus receive spend today and over the rolling 30 days.
+	 * Money surface: same session + office gate as lowStock — device tokens
+	 * and field seats are refused (NN-01), bootstrap advertises
+	 * capabilities.todayChefView to exactly the callers that pass here.
+	 * All figures are estimates like the F-12/F4 reports, never a ledger.
+	 */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[NoAdminRequired]
+	public function today(): JSONResponse
+	{
+		[$uid] = $this->requireSessionUser();
+		$this->gate->assertGate($uid, null);
+		$this->access->requireOffice($uid);
+		$reports = $this->reports ?? \OCP\Server::get(\OCA\InventoryCheck\Service\ReportService::class);
+		$clock = $this->clock ?? \OCP\Server::get(\OCA\InventoryCheck\Service\Clock::class);
+		$now = $clock->now();
+		$dayStart = strtotime($clock->todayYmd() . ' 00:00:00 UTC');
+		$valuation = $reports->valuation(QtyScale::factor($this->config));
+		$spendToday = $reports->movementValue($dayStart, $now);
+		$spend30d = $reports->movementValue($now - 30 * 86400, $now);
+		return new JSONResponse([
+			'chefView' => [
+				'isEstimate' => true,
+				'estStockValueMinor' => (int)($valuation['totalMinor'] ?? 0),
+				'unpricedCount' => (int)($valuation['unpricedCount'] ?? 0),
+				'spendTodayMinor' => (int)($spendToday['spendMinor'] ?? 0),
+				'spend30dMinor' => (int)($spend30d['spendMinor'] ?? 0),
+			],
+			'serverNow' => (new \DateTimeImmutable('@' . $now))->format(\DateTimeInterface::ATOM),
+		]);
+	}
+
+	/**
+	 * IV-COMPANION-TODAY / F5 feed: in-stock lots inside the warn window,
+	 * scoped to actor-visible locations (same rules as the web watch card —
+	 * qty data only, no money). `total` is a lower bound from a limit+1
+	 * probe so the Heute card can offer "show all" honestly without a
+	 * second count query.
+	 */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[NoAdminRequired]
+	public function lotsExpiring(): JSONResponse
+	{
+		[$uid, $device] = $this->resolveCaller(true);
+		$this->gate->assertGate($uid, $device);
+		$limit = min(max((int)$this->request->getParam('limit', 20), 1), 100);
+		$rows = $this->lotSvc()->expiringSoon($this->actorUid($uid, $device), $limit + 1);
+		return new JSONResponse([
+			'data' => array_slice($rows, 0, $limit),
+			'total' => count($rows),
+		]);
 	}
 
 	#[PublicPage]

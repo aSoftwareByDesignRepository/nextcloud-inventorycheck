@@ -154,7 +154,8 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 			'balances', 'movements', 'lowStock', 'scan', 'pairDevice', 'favourites',
 			'addFavourite', 'removeFavourite', 'cycleCounts', 'cycleCountShow',
 			'cycleCountSetCount', 'productLookup', 'createItem', 'lotByCode', 'kits', 'kitIssue',
-			'widgetSnapshot', 'orderSheets', 'orderSheetShow', 'orderSheetReceive',
+			'widgetSnapshot', 'today', 'lotsExpiring',
+			'orderSheets', 'orderSheetShow', 'orderSheetReceive',
 		],
 	];
 
