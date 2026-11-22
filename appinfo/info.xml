@@ -358,6 +358,7 @@ Vi forbedrer denne appen med bruk i praksis. Feilrapporter, friksjon og idéer h
 	<background-jobs>
 		<job>OCA\InventoryCheck\BackgroundJob\InvoicePushRetryJob</job>
 		<job>OCA\InventoryCheck\BackgroundJob\RestockDigestJob</job>
+		<job>OCA\InventoryCheck\BackgroundJob\LotExpiryScanJob</job>
 	</background-jobs>
 	<repair-steps>
 		<install>

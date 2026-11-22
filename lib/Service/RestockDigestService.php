@@ -19,7 +19,7 @@ use Psr\Log\LoggerInterface;
  */
 class RestockDigestService
 {
-	private const SUBJECT = 'restock_digest';
+	public const SUBJECT = 'restock_digest';
 	private const KEY_LAST_RUN = 'restock_digest_last_run';
 	private const INTERVAL = 7 * 86400;
 

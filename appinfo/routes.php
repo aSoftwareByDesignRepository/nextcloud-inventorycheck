@@ -51,6 +51,8 @@ return [
 		['name' => 'item#markOnOrderBulk', 'url' => '/api/items/on-order-bulk', 'verb' => 'POST'],
 
 		['name' => 'lot#index', 'url' => '/api/lots', 'verb' => 'GET'],
+		['name' => 'lot#expiring', 'url' => '/api/lots/expiring', 'verb' => 'GET'],
+		['name' => 'lot#itemLots', 'url' => '/api/items/{id}/lots', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
 		['name' => 'lot#byCode', 'url' => '/api/lots/by-code/{code}', 'verb' => 'GET', 'requirements' => ['code' => '[^/]+']],
 		['name' => 'lot#setExpiry', 'url' => '/api/lots/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\\d+']],
 

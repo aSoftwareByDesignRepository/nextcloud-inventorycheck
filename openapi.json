@@ -423,6 +423,15 @@
 				}
 			}
 		},
+		"/api/items/{id}/lots": {
+			"get": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			}
+		},
 		"/api/items/{id}/photo": {
 			"get": {
 				"responses": {
@@ -659,6 +668,15 @@
 			}
 		},
 		"/api/lots": {
+			"get": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			}
+		},
+		"/api/lots/expiring": {
 			"get": {
 				"responses": {
 					"200": {

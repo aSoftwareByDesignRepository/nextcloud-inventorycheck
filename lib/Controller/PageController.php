@@ -281,6 +281,8 @@ class PageController extends Controller
 				'configProductLookup' => $this->urlGenerator->linkToRoute('inventorycheck.config.saveProductLookup'),
 				'configRestock' => $this->urlGenerator->linkToRoute('inventorycheck.config.saveRestock'),
 				'lots' => $this->urlGenerator->linkToRoute('inventorycheck.lot.index'),
+				'itemLots' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.lot.itemLots'),
+				'lotsExpiring' => $this->urlGenerator->linkToRoute('inventorycheck.lot.expiring'),
 				'lotByCode' => $this->urlGenerator->linkToRoute('inventorycheck.lot.byCode', ['code' => '__CODE__']),
 				'valuationReport' => $this->urlGenerator->linkToRoute('inventorycheck.report.valuation'),
 				'orderSheets' => $this->urlGenerator->linkToRoute('inventorycheck.orderSheet.index'),

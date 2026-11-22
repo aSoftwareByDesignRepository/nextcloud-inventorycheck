@@ -170,6 +170,81 @@ class MovementMapper extends QBMapper
 	}
 
 	/**
+	 * IV-LOT-EXPIRY-PACK: remaining qty per lot of one item — the single
+	 * aggregate behind the FEFO picker (one query, never per-lot loops).
+	 *
+	 * @param list<int>|null $locationIds null = all locations; empty = no rows
+	 * @return array<string, int> lot_code → qty
+	 */
+	public function sumQtyDeltaByLotForItem(int $itemId, ?array $locationIds = null): array
+	{
+		if ($locationIds !== null && $locationIds === []) {
+			return [];
+		}
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('lot_code')
+			->selectAlias($qb->func()->sum('qty_delta'), 'total')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('item_id', $qb->createNamedParameter($itemId, \PDO::PARAM_INT)))
+			->andWhere($qb->expr()->isNotNull('lot_code'))
+			->andWhere($qb->expr()->neq('lot_code', $qb->createNamedParameter('')))
+			->groupBy('lot_code');
+		if ($locationIds !== null) {
+			$qb->andWhere($qb->expr()->in(
+				'location_id',
+				$qb->createNamedParameter($locationIds, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT_ARRAY),
+			));
+		}
+		$result = $qb->executeQuery();
+		$out = [];
+		while ($row = $result->fetch()) {
+			$out[(string)$row['lot_code']] = (int)$row['total'];
+		}
+		$result->closeCursor();
+		return $out;
+	}
+
+	/**
+	 * IV-LOT-EXPIRY-PACK watch card + expiry job: remaining qty for every
+	 * (item, lot) pair in one grouped aggregate.
+	 *
+	 * @param list<int> $itemIds
+	 * @param list<int>|null $locationIds null = all locations; empty = no rows
+	 * @return array<int, array<string, int>> item_id → (lot_code → qty)
+	 */
+	public function sumQtyDeltaByItemLotMap(array $itemIds, ?array $locationIds = null): array
+	{
+		if ($itemIds === [] || ($locationIds !== null && $locationIds === [])) {
+			return [];
+		}
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('item_id', 'lot_code')
+			->selectAlias($qb->func()->sum('qty_delta'), 'total')
+			->from($this->getTableName())
+			->where($qb->expr()->in(
+				'item_id',
+				$qb->createNamedParameter(array_map('intval', $itemIds), \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT_ARRAY),
+			))
+			->andWhere($qb->expr()->isNotNull('lot_code'))
+			->andWhere($qb->expr()->neq('lot_code', $qb->createNamedParameter('')))
+			->groupBy('item_id')
+			->addGroupBy('lot_code');
+		if ($locationIds !== null) {
+			$qb->andWhere($qb->expr()->in(
+				'location_id',
+				$qb->createNamedParameter($locationIds, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT_ARRAY),
+			));
+		}
+		$result = $qb->executeQuery();
+		$out = [];
+		while ($row = $result->fetch()) {
+			$out[(int)$row['item_id']][(string)$row['lot_code']] = (int)$row['total'];
+		}
+		$result->closeCursor();
+		return $out;
+	}
+
+	/**
 	 * F-06: spend and unpriced-receive count for a period — plain SUM, no
 	 * qty factor anywhere in the path (NN-12).
 	 *

@@ -10,6 +10,7 @@ use OCA\InventoryCheck\Exception\ValidationException;
 use OCA\InventoryCheck\Service\AccessControlService;
 use OCA\InventoryCheck\Service\CodeRules;
 use OCA\InventoryCheck\Service\LotRecallService;
+use OCA\InventoryCheck\Service\LotService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
@@ -28,6 +29,7 @@ class LotController extends Controller
 		IRequest $request,
 		private readonly LotMapper $lots,
 		private readonly LotRecallService $recall,
+		private readonly LotService $lotService,
 		private readonly AccessControlService $access,
 		private readonly LoggerInterface $logger,
 	) {
@@ -55,6 +57,33 @@ class LotController extends Controller
 			$this->access->currentUserId(),
 			CodeRules::trim(rawurldecode($code)),
 		));
+	}
+
+	/**
+	 * IV-LOT-EXPIRY-PACK: FEFO picker payload — lots with remaining qty +
+	 * state, server-sorted. App-access (field users see expiry info on the
+	 * lots they can access — AC-11); qty scoped to actor-visible locations.
+	 */
+	#[NoAdminRequired]
+	public function itemLots(int $id): JSONResponse
+	{
+		$uid = $this->access->currentUserId();
+		$locRaw = $this->request->getParam('locationId');
+		$locationId = $locRaw !== null && $locRaw !== '' ? (int)$locRaw : null;
+		return new JSONResponse([
+			'data' => $this->lotService->lotsWithStock($uid, $id, $locationId),
+		]);
+	}
+
+	/** Watch card rows — in-stock lots inside the warn window (office scope). */
+	#[NoAdminRequired]
+	public function expiring(): JSONResponse
+	{
+		$uid = $this->access->currentUserId();
+		$limit = min(max((int)$this->request->getParam('limit', 20), 1), 100);
+		return new JSONResponse([
+			'data' => $this->lotService->expiringSoon($uid, $limit),
+		]);
 	}
 
 	/** Office+ expiry correction — the only overwrite path (audit-logged). */

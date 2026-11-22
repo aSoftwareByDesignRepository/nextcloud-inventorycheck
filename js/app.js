@@ -1714,6 +1714,9 @@
 		if (ctx.locationReorderHintEnabled && ctx.urls.api.lowStockPerLocation) {
 			fetches.push(api('GET', ctx.urls.api.lowStockPerLocation + '?limit=20&offset=0'));
 		}
+		if (ctx.urls.api.lotsExpiring) {
+			fetches.push(api('GET', ctx.urls.api.lotsExpiring + '?limit=20'));
+		}
 		Promise.all(fetches).then(function (results) {
 			var low = results[0];
 			var mov = results[1];
@@ -1724,7 +1727,11 @@
 			}
 			var perLoc = { data: [] };
 			if (ctx.locationReorderHintEnabled && ctx.urls.api.lowStockPerLocation) {
-				perLoc = results[idx] || { data: [] };
+				perLoc = results[idx++] || { data: [] };
+			}
+			var expiring = { data: [] };
+			if (ctx.urls.api.lotsExpiring) {
+				expiring = results[idx++] || { data: [] };
 			}
 			clear(mount);
 			setBusy(mount, false);
@@ -1828,6 +1835,55 @@
 							],
 							negatives.data,
 							{ caption: tr('Negative balances') }
+						),
+					]));
+				}
+
+				// IV-LOT-EXPIRY-PACK watch card — hidden entirely when empty.
+				if (expiring.data && expiring.data.length) {
+					mount.appendChild(el('section', {
+						className: 'iv-section',
+						'aria-labelledby': 'iv-expiring-title',
+						'data-iv-expiring-card': '1',
+					}, [
+						el('h2', {
+							id: 'iv-expiring-title',
+							className: 'iv-section__title',
+							text: tr('Expiring lots'),
+						}),
+						tableOrCards(
+							[
+								{ label: tr('Item'), render: function (r) {
+									return r.itemName || r.itemSku || '—';
+								} },
+								{ label: tr('Lot'), render: function (r) { return r.lotCode; } },
+								{ label: tr('On hand'), render: function (r) { return formatQty(r.qty); } },
+								{ label: tr('Expires'), render: function (r) {
+									return new Date(r.expiresAt * 1000).toISOString().slice(0, 10);
+								} },
+								{ label: tr('State'), render: function (r) {
+									if (r.state === 'expired') {
+										return el('span', {
+											className: 'iv-badge iv-badge--overdue',
+											text: tr('expired'),
+										});
+									}
+									return el('span', {
+										className: 'iv-badge iv-badge--warn',
+										text: tr('{n} days left', { n: r.expiresInDays }),
+									});
+								} },
+								{ label: tr('Actions'), render: function (r) {
+									return btn(tr('Use first'), {
+										className: 'iv-btn--touch',
+										onclick: function () {
+											openIssueDialog(ctx, { itemId: r.itemId });
+										},
+									});
+								} },
+							],
+							expiring.data,
+							{ caption: tr('Expiring lots') }
 						),
 					]));
 				}
@@ -2451,11 +2507,92 @@
 				// AF-IV12 honesty: never skip the barcode fields when policy requires a real scan.
 				&& !(ctx.requireLocationScan && (opts.path === 'issue' || opts.transfer));
 
+			var lotPicker = el('select', {
+				className: 'iv-input',
+				'aria-label': tr('Choose a lot'),
+				'data-iv-lot-picker': '1',
+			});
+			var lotPickerWrap = el('div', {
+				hidden: '',
+				'data-iv-lot-picker-wrap': '1',
+			}, [
+				field(tr('Lot (FEFO pick)'), lotPicker),
+				el('p', {
+					className: 'iv-field__hint',
+					id: 'iv-lot-fefo-hint',
+					text: tr('Earliest expiry is pre-selected — picking another lot stays free.'),
+				}),
+			]);
+			lotPicker.setAttribute('aria-describedby', 'iv-lot-fefo-hint');
+			var lotPickerSeq = 0;
+			function refreshLotPicker() {
+				var it = (masters.items || []).find(function (row) { return String(row.id) === String(itemSelect.value); });
+				var wants = !!(it && it.trackMode === 'lot' && opts.path === 'issue' && ctx.urls.api.itemLots);
+				if (!wants) {
+					lotPickerWrap.setAttribute('hidden', '');
+					return;
+				}
+				var seq = ++lotPickerSeq;
+				var locId = locSelect.value;
+				var url = urlWithId(ctx.urls.api.itemLots, it.id)
+					+ (locId ? '?locationId=' + encodeURIComponent(locId) : '');
+				lotPickerWrap.removeAttribute('hidden');
+				clear(lotPicker);
+				lotPicker.appendChild(el('option', { value: '', text: tr('Loading lots…') }));
+				api('GET', url).then(function (res) {
+					if (seq !== lotPickerSeq) return;
+					clear(lotPicker);
+					var rows = res.data || [];
+					if (!rows.length) {
+						lotPicker.appendChild(el('option', { value: '', text: tr('No lots recorded yet') }));
+						return;
+					}
+					var firstGood = '';
+					rows.forEach(function (l) {
+						var opt;
+						if (l.qty <= 0) {
+							opt = el('option', {
+								value: l.lotCode,
+								text: l.lotCode + ' — ' + tr('no stock'),
+								disabled: '',
+							});
+						} else {
+							var expiry = l.expiresAt
+								? new Date(l.expiresAt * 1000).toISOString().slice(0, 10)
+								: tr('no expiry');
+							opt = el('option', {
+								value: l.lotCode,
+								text: l.lotCode + ' — ' + formatQty(l.qty) + ' — ' + expiry,
+							});
+							if (!firstGood && l.qty > 0) {
+								firstGood = l.lotCode;
+								opt.textContent += ' — ' + tr('expires first');
+							}
+						}
+						lotPicker.appendChild(opt);
+					});
+					if (firstGood && !lotCode.value.trim()) {
+						lotPicker.value = firstGood;
+						lotCode.value = firstGood;
+					} else if (lotCode.value.trim()) {
+						lotPicker.value = lotCode.value.trim();
+					}
+				}).catch(function () {
+					if (seq !== lotPickerSeq) return;
+					lotPickerWrap.setAttribute('hidden', '');
+				});
+			}
+			lotPicker.addEventListener('change', function () {
+				if (lotPicker.value) {
+					lotCode.value = lotPicker.value;
+				}
+			});
 			var lotWrap = el('div', {
 				className: 'iv-lot-fields',
 				hidden: '',
 				'data-iv-lot-fields': '1',
 			}, [
+				lotPickerWrap,
 				field(tr('Lot / serial'), lotCode, { name: 'lotCode' }),
 				el('p', {
 					className: 'iv-field__hint',
@@ -2619,8 +2756,11 @@
 					locSelect.value = String(it.defaultLocationId);
 				}
 				syncLotVisibility();
+				refreshLotPicker();
 			});
+			locSelect.addEventListener('change', refreshLotPicker);
 			syncLotVisibility();
+			refreshLotPicker();
 
 			function qtyPayload() {
 				return qty.value.trim();
@@ -3595,14 +3735,20 @@
 		var mount = ctx.mount;
 		var id = Number(ctx.entityId);
 		setBusy(mount, true);
-		Promise.all([
+		var detailFetches = [
 			api('GET', entityUrl(ctx.urls.api.items, id)),
 			api('GET', ctx.urls.api.balances + '?itemId=' + id + '&limit=50&offset=0'),
 			api('GET', ctx.urls.api.locations + '?limit=200&offset=0&active=1'),
-		]).then(function (results) {
+		];
+		if (ctx.urls.api.itemLots) {
+			detailFetches.push(api('GET', urlWithId(ctx.urls.api.itemLots, id))
+				.catch(function () { return { data: [] }; }));
+		}
+		Promise.all(detailFetches).then(function (results) {
 			var item = results[0];
 			var bals = results[1];
 			var locMap = indexById(results[2].data);
+			var itemLots = results[3] || { data: [] };
 			clear(mount);
 			setBusy(mount, false);
 			clear(ctx.actions);
@@ -3751,6 +3897,60 @@
 					el('strong', { text: tr('Total') + ': ' + formatQty(Number(item.totalQty) || 0) }),
 				]),
 			]));
+			// IV-LOT-EXPIRY-PACK: FEFO lot list with expiry state — only for
+			// lot-tracked items; hidden for serial/none.
+			if (item.trackMode === 'lot' && itemLots.data && itemLots.data.length) {
+				var lotRows = itemLots.data;
+				var fefoHint = null;
+				for (var li = 0; li < lotRows.length; li++) {
+					if (lotRows[li].qty > 0) { fefoHint = lotRows[li].lotCode; break; }
+				}
+				mount.appendChild(el('section', {
+					className: 'iv-section',
+					'aria-labelledby': 'iv-lots-title',
+					'data-iv-lot-section': '1',
+				}, [
+					el('h2', { id: 'iv-lots-title', className: 'iv-section__title', text: tr('Lots') }),
+					fefoHint
+						? el('p', {
+							className: 'iv-muted',
+							text: tr('Issue {lot} first — it expires earliest.', { lot: fefoHint }),
+						})
+						: el('p', { className: 'iv-muted', text: tr('No lot stock on hand.') }),
+					tableOrCards([
+						{ label: tr('Lot'), render: function (r) { return r.lotCode; } },
+						{ label: tr('On hand'), render: function (r) { return formatQty(r.qty); } },
+						{ label: tr('Expires'), render: function (r) {
+							return r.expiresAt
+								? new Date(r.expiresAt * 1000).toISOString().slice(0, 10)
+								: tr('no expiry');
+						} },
+						{ label: tr('State'), render: function (r) {
+							var map = {
+								expired: ['iv-badge--overdue', tr('expired')],
+								expiring: ['iv-badge--warn', tr('expiring soon')],
+								ok: ['iv-badge--success', tr('ok')],
+							};
+							if (r.state === 'empty') {
+								return el('span', { className: 'iv-muted', text: tr('no stock') });
+							}
+							var b = map[r.state] || map.ok;
+							return el('span', { className: 'iv-badge ' + b[0], text: b[1] });
+						} },
+						{ label: tr('Actions'), render: function (r) {
+							if (!(ctx.isOffice || ctx.isAppAdmin)) {
+								return el('span', { className: 'iv-muted', text: '—' });
+							}
+							return btn(tr('Issue'), {
+								className: 'iv-btn--touch',
+								onclick: function () {
+									openIssueDialog(ctx, { itemId: id, lotCode: r.lotCode });
+								},
+							});
+						} },
+					], lotRows, { caption: tr('Lots') }),
+				]));
+			}
 		}).catch(function (err) {
 			setBusy(mount, false);
 			clear(mount);
@@ -5985,8 +6185,9 @@
 					disabled: canEditRestock ? null : '',
 				});
 				var expiryDaysInput = el('input', {
-					type: 'number', className: 'iv-input', min: '1', max: '3650', step: '1',
+					type: 'number', className: 'iv-input', min: '0', max: '365', step: '1',
 					value: cfg.expiryWarnDays != null ? String(cfg.expiryWarnDays) : '30',
+					'aria-describedby': 'iv-expiry-days-hint',
 					disabled: canEditRestock ? null : '',
 				});
 				var velocityDaysInput = el('input', {
@@ -6044,6 +6245,11 @@
 						el('summary', { text: tr('Advanced restock settings') }),
 						field(tr('Warn when an order marker is older than (days)'), staleDaysInput, { name: 'onOrderStaleDays' }),
 						field(tr('Warn about expiring lots within (days)'), expiryDaysInput, { name: 'expiryWarnDays' }),
+						el('p', {
+							className: 'iv-field__hint',
+							id: 'iv-expiry-days-hint',
+							text: tr('0 turns the expiry watch and daily reminder off — lots still sort earliest-expiry-first when issuing.'),
+						}),
 						field(tr('Suggestion mode for reorder quantities'), suggestionModeSel, { name: 'suggestionMode' }),
 						field(tr('Consumption window for reorder suggestions (days)'), velocityDaysInput, { name: 'velocityWindowDays' }),
 						el('p', {

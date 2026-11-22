@@ -200,9 +200,19 @@ final class RestockConfig
 		return $this->daysOf(self::KEY_ON_ORDER_STALE_DAYS, 30);
 	}
 
+	/**
+	 * IV-LOT-EXPIRY-PACK: 0 = watch off (explicit opt-out), unset = 30,
+	 * out-of-range stored values fall back to the default rather than
+	 * silently widening the window.
+	 */
 	public function expiryWarnDays(): int
 	{
-		return $this->daysOf(self::KEY_EXPIRY_WARN_DAYS, 30);
+		$raw = $this->config->getAppValue(Application::APP_ID, self::KEY_EXPIRY_WARN_DAYS, '');
+		if ($raw === '') {
+			return 30;
+		}
+		$v = (int)$raw;
+		return $v >= 0 && $v <= 365 ? $v : 30;
 	}
 
 	public function velocityWindowDays(): int
@@ -221,6 +231,23 @@ final class RestockConfig
 		if ($v < 1 || $v > 3650) {
 			throw new ValidationException('validation_failed', '', [
 				['field' => $field, 'code' => 'validation_failed'],
+			]);
+		}
+		return $v;
+	}
+
+	/** Expiry watch window: 0..365, 0 = off (AC-7/AC-14). */
+	public function parseExpiryWarnDays(mixed $raw): int
+	{
+		if (!is_int($raw) && !(is_string($raw) && preg_match('/^\d+$/', $raw) === 1)) {
+			throw new ValidationException('validation_failed', '', [
+				['field' => 'expiryWarnDays', 'code' => 'validation_failed'],
+			]);
+		}
+		$v = (int)$raw;
+		if ($v < 0 || $v > 365) {
+			throw new ValidationException('validation_failed', '', [
+				['field' => 'expiryWarnDays', 'code' => 'validation_failed'],
 			]);
 		}
 		return $v;

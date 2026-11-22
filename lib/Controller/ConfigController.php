@@ -136,7 +136,7 @@ class ConfigController extends Controller
 			? $this->restockCfg()->parseDays($p['onOrderStaleDays'], 'onOrderStaleDays')
 			: null;
 		$expiryDays = array_key_exists('expiryWarnDays', $p)
-			? $this->restockCfg()->parseDays($p['expiryWarnDays'], 'expiryWarnDays')
+			? $this->restockCfg()->parseExpiryWarnDays($p['expiryWarnDays'])
 			: null;
 		$velocityDays = array_key_exists('velocityWindowDays', $p)
 			? $this->restockCfg()->parseDays($p['velocityWindowDays'], 'velocityWindowDays')
