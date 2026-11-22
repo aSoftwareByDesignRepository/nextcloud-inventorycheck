@@ -43,17 +43,25 @@ class ItemService
 	/** @return array{data: list<array<string, mixed>>, total: int, limit: int, offset: int} */
 	public function list(string $actorUid, string $q, ?bool $active, bool $lowStock, int $limit, int $offset): array
 	{
+		$visible = $this->locationAcl->visibleLocationIds($actorUid);
 		$idFilter = null;
 		if ($lowStock) {
-			$idFilter = $this->lowStockItemIds($actorUid);
+			$idFilter = $this->lowStockItemIds($actorUid, $visible);
 			if ($idFilter === []) {
 				return ['data' => [], 'total' => 0, 'limit' => $limit, 'offset' => $offset];
 			}
 		}
 		$result = $this->items->search($q, $active, $limit, $offset, $idFilter);
+		$sums = $this->balances->sumQtyByItem($visible);
 		return [
 			'data' => array_map(
-				fn (Item $i) => $this->stripConfidentialItemFields($i->toApi(), $actorUid),
+				function (Item $i) use ($sums, $actorUid) {
+					$api = $i->toApi();
+					// totalQty = quantity (not money): stays for field users (NN-03),
+					// sums only actor-visible locations (NN-01).
+					$api['totalQty'] = $sums[(int)$i->getId()] ?? 0;
+					return $this->stripConfidentialItemFields($api, $actorUid);
+				},
 				$result['data'],
 			),
 			'total' => $result['total'],
@@ -68,9 +76,12 @@ class ItemService
 	 *
 	 * @return list<int>
 	 */
-	private function lowStockItemIds(string $actorUid): array
+	/**
+	 * @param list<int>|null $visible location ids the actor may see (null = all)
+	 * @return list<int>
+	 */
+	private function lowStockItemIds(string $actorUid, ?array $visible): array
 	{
-		$visible = $this->locationAcl->visibleLocationIds($actorUid);
 		$sums = $this->balances->sumQtyByItem($visible);
 		$ids = [];
 		foreach ($this->items->iterateActive() as $item) {
@@ -99,6 +110,10 @@ class ItemService
 	public function get(string $actorUid, int $id): array
 	{
 		$item = $this->items->findById($id)->toApi();
+		$item['totalQty'] = $this->balances->sumQtyForItem(
+			$id,
+			$this->locationAcl->visibleLocationIds($actorUid),
+		);
 		return $this->stripConfidentialItemFields($item, $actorUid);
 	}
 
@@ -129,6 +144,7 @@ class ItemService
 		}
 		$api = $item->toApi();
 		$visible = $this->locationAcl->visibleLocationIds($actorUid);
+		$api['totalQty'] = $this->balances->sumQtyForItem((int)$item->getId(), $visible);
 		$bal = $this->balances->search((int)$item->getId(), null, false, 200, 0, false, $visible);
 		$api['balances'] = array_map(static fn ($b) => $b->toApi(), $bal['data']);
 		return $api;

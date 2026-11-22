@@ -204,6 +204,33 @@ class BalanceMapper extends QBMapper
 	}
 
 	/**
+	 * Single-item counterpart of {@see sumQtyByItem} — same location-scope
+	 * semantics (null = all locations; empty list = 0).
+	 *
+	 * @param list<int>|null $locationIds
+	 */
+	public function sumQtyForItem(int $itemId, ?array $locationIds = null): int
+	{
+		if ($locationIds !== null && $locationIds === []) {
+			return 0;
+		}
+		$qb = $this->db->getQueryBuilder();
+		$qb->selectAlias($qb->func()->sum('qty'), 'total')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('item_id', $qb->createNamedParameter($itemId, \PDO::PARAM_INT)));
+		if ($locationIds !== null) {
+			$qb->andWhere($qb->expr()->in(
+				'location_id',
+				$qb->createNamedParameter($locationIds, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT_ARRAY),
+			));
+		}
+		$result = $qb->executeQuery();
+		$row = $result->fetch();
+		$result->closeCursor();
+		return $row === false || $row['total'] === null ? 0 : (int)$row['total'];
+	}
+
+	/**
 	 * Wave B3 per-location reorder hints (S10 evaluated per location instead
 	 * of the item-wide sum).
 	 *

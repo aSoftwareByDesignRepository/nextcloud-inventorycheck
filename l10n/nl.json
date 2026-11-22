@@ -79,6 +79,7 @@
 		"3. Review and save": "3. Controleer en sla op",
 		"3. Save": "3. Opslaan",
 		"3. Tighten scanners if needed": "3. Strakke scanners indien nodig",
+		"Total": "Totaal",
 		"_(1 env-bound value emptied)_::_(%n env-bound values emptied)_": [
 			"(1 installatiegebonden waarde geleegd)",
 			"(%n installatiegebonden waarden geleegd)"

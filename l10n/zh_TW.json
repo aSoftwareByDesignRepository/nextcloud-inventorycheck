@@ -77,6 +77,7 @@
 		"3. Review and save": "3. 檢查並儲存",
 		"3. Save": "3. 儲存",
 		"3. Tighten scanners if needed": "3. 需要時收緊掃描裝置授權",
+		"Total": "",
 		"_(1 env-bound value emptied)_::_(%n env-bound values emptied)_": [
 			"（已清空 %n 個實例綁定值）"
 		],

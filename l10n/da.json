@@ -79,6 +79,7 @@
 		"3. Review and save": "3. Gennemse og gem",
 		"3. Save": "3. Gem",
 		"3. Tighten scanners if needed": "3. Strammere scannere om nødvendigt",
+		"Total": "I alt",
 		"_(1 env-bound value emptied)_::_(%n env-bound values emptied)_": [
 			"(1 instansbunden værdi tømt)",
 			"(%n instansbundne værdier tømt)"

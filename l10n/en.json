@@ -79,6 +79,7 @@
 		"3. Review and save": "3. Review and save",
 		"3. Save": "3. Save",
 		"3. Tighten scanners if needed": "3. Tighten scanners if needed",
+		"Total": "Total",
 		"_(1 env-bound value emptied)_::_(%n env-bound values emptied)_": [
 			"(1 env-bound value emptied)",
 			"(%n env-bound values emptied)"

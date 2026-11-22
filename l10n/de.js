@@ -77,6 +77,7 @@ OC.L10N.register(
 	"3. Review and save" : "3. Prüfen und speichern",
 	"3. Save" : "3. Speichern",
 	"3. Tighten scanners if needed" : "3. Verschärfe Scanner bei Bedarf",
+	"Total" : "Gesamt",
 	"_(1 env-bound value emptied)_::_(%n env-bound values emptied)_" : ["(1 instanzgebundener Wert geleert)","(%n instanzgebundene Werte geleert)"],
 	"_(1 filtered)_::_(%n filtered)_" : ["(1 gefiltert)","(%n gefiltert)"],
 	"_(1 secret redacted)_::_(%n secrets redacted)_" : ["(1 Geheimnis geschwärzt)","(%n Geheimnisse geschwärzt)"],

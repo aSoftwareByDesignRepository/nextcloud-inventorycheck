@@ -77,6 +77,7 @@ OC.L10N.register(
 	"3. Review and save" : "3. Review and save",
 	"3. Save" : "3. Save",
 	"3. Tighten scanners if needed" : "3. Tighten scanners if needed",
+	"Total" : "Total",
 	"_(1 env-bound value emptied)_::_(%n env-bound values emptied)_" : ["(1 env-bound value emptied)","(%n env-bound values emptied)"],
 	"_(1 filtered)_::_(%n filtered)_" : ["(1 filtered)","(%n filtered)"],
 	"_(1 secret redacted)_::_(%n secrets redacted)_" : ["(1 secret redacted)","(%n secrets redacted)"],

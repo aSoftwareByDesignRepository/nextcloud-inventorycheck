@@ -80,6 +80,7 @@
 		"3. Review and save": "3. Sprawdź i zapisz",
 		"3. Save": "3. Zapisz",
 		"3. Tighten scanners if needed": "3. Zaciśnięte skanery w razie potrzeby",
+		"Total": "Razem",
 		"_(1 env-bound value emptied)_::_(%n env-bound values emptied)_": [
 			"(1 opróżniona wartość związana z instancją)",
 			"(%n opróżnione wartości związane z instancją)",

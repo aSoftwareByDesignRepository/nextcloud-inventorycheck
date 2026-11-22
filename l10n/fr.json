@@ -79,6 +79,7 @@
 		"3. Review and save": "3. Vérifier et enregistrer",
 		"3. Save": "3. Enregistrer",
 		"3. Tighten scanners if needed": "3. Serrer les scanners si nécessaire",
+		"Total": "Total",
 		"_(1 env-bound value emptied)_::_(%n env-bound values emptied)_": [
 			"(1 valeur liée à l’instance vidée)",
 			"(%n valeurs liées à l’instance vidées)"

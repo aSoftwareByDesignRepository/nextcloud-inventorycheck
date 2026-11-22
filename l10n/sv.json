@@ -79,6 +79,7 @@
 		"3. Review and save": "3. Granska och spara",
 		"3. Save": "3. Spara",
 		"3. Tighten scanners if needed": "3. Begränsa skannrar vid behov",
+		"Total": "Totalt",
 		"_(1 env-bound value emptied)_::_(%n env-bound values emptied)_": [
 			"(1 instansbundet värde tömt)",
 			"(%n instansbundna värden tömda)"

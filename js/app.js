@@ -3288,6 +3288,16 @@
 					{ label: tr('SKU'), key: 'sku' },
 					{ label: tr('Scan code'), key: 'scanCode' },
 					{ label: tr('UoM'), key: 'uom' },
+					{ label: tr('On hand'), render: function (r) {
+						var n = Number(r.totalQty);
+						if (n < 0) {
+							return el('span', {
+								className: 'iv-badge iv-badge--overdue',
+								text: formatQty(n) + ' — ' + tr('negative stock'),
+							});
+						}
+						return el('span', { text: formatQty(n) });
+					} },
 					{ label: tr('Reorder'), key: 'reorderLevel' },
 					{ label: tr('Actions'), render: function (r) {
 						if (!(ctx.isOffice || ctx.isAppAdmin)) {
@@ -3737,6 +3747,9 @@
 							return el('div', { className: 'iv-row__actions', 'data-iv-balance-actions': '1' }, kids);
 						} },
 					], bals.data, { caption: tr('Balances by location') }),
+				el('p', { className: 'iv-muted iv-balance-total' }, [
+					el('strong', { text: tr('Total') + ': ' + formatQty(Number(item.totalQty) || 0) }),
+				]),
 			]));
 		}).catch(function (err) {
 			setBusy(mount, false);

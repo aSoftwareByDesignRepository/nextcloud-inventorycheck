@@ -2796,6 +2796,12 @@ button.iv-hint-dismiss:focus-visible {
 	font-weight: 700;
 	word-break: break-all;
 }
+
+/* Item detail — "Total" sum line under the per-location balances (F1). */
+#app-content.iv-app .iv-balance-total {
+	margin: var(--iv-space-3, 12px) 0 0;
+	font-size: var(--iv-fs-sm, 0.875rem);
+}
 .iv-actions--inline {
 	display: flex;
 	flex-wrap: wrap;

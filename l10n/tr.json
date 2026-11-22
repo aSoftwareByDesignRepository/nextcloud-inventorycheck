@@ -78,6 +78,7 @@
 		"3. Review and save": "3. İnceleyin ve kaydedin",
 		"3. Save": "3. Kaydedin",
 		"3. Tighten scanners if needed": "3. Gerekirse tarayıcıları sıkılaştırın",
+		"Total": "Toplam",
 		"_(1 env-bound value emptied)_::_(%n env-bound values emptied)_": [
 			"(%n örneğe bağlı değer boşaltıldı)"
 		],

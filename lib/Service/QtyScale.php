@@ -138,6 +138,9 @@ final class QtyScale
 		if (array_key_exists('onOrderQty', $item) && is_int($item['onOrderQty'])) {
 			$item['onOrderQty'] = self::toDisplay($config, $item['onOrderQty']);
 		}
+		if (array_key_exists('totalQty', $item) && is_int($item['totalQty'])) {
+			$item['totalQty'] = self::toDisplay($config, $item['totalQty']);
+		}
 		return $item;
 	}
 

@@ -247,6 +247,38 @@
           "needles": ["blind"]
         }
       ]
+    },
+    {
+      "id": "item-total-qty",
+      "param": "totalQty",
+      "description": "Read-side response field: items list/detail/by-code carry totalQty = SUM(balances.qty) over actor-visible locations, display-scaled via QtyScale::formatItem. Never stripped by MoneyVisibility (quantity, not money); never client-summed from capped balance rows. Web renders it as the On hand column + item-detail Total line; mobile by-code inherits it automatically.",
+      "errorCodes": [],
+      "server": [
+        {
+          "file": "lib/Service/ItemService.php",
+          "needles": ["'totalQty'", "sumQtyForItem", "sumQtyByItem"]
+        },
+        {
+          "file": "lib/Db/BalanceMapper.php",
+          "needles": ["sumQtyForItem", "sumQtyByItem"]
+        },
+        {
+          "file": "lib/Service/QtyScale.php",
+          "needles": ["'totalQty'"]
+        }
+      ],
+      "web": [
+        {
+          "file": "js/app.js",
+          "needles": ["totalQty", "iv-balance-total", "tr('On hand')"]
+        }
+      ],
+      "mobile": [
+        {
+          "file": "src/types.ts",
+          "needles": ["totalQty"]
+        }
+      ]
     }
   ]
 }

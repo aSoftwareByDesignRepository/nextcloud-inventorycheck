@@ -79,6 +79,7 @@
 		"3. Review and save": "3. Revisa y guarda",
 		"3. Save": "3. Guardar",
 		"3. Tighten scanners if needed": "3. Escáneres Tighten si es necesario",
+		"Total": "Total",
 		"_(1 env-bound value emptied)_::_(%n env-bound values emptied)_": [
 			"(1 valor ligado a la instancia vaciado)",
 			"(%n valores ligados a la instancia vaciados)"

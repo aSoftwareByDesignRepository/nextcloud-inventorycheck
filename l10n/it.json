@@ -79,6 +79,7 @@
 		"3. Review and save": "3. Controlla e salva",
 		"3. Save": "3. Salvare",
 		"3. Tighten scanners if needed": "3. Limitare gli scanner se necessario",
+		"Total": "Totale",
 		"_(1 env-bound value emptied)_::_(%n env-bound values emptied)_": [
 			"(1 valore legato all’istanza svuotato)",
 			"(%n valori legati all’istanza svuotati)"

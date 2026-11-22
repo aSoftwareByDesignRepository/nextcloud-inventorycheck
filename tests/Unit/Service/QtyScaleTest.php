@@ -89,8 +89,9 @@ final class QtyScaleTest extends TestCase
 	public function testFormattersOnlyTouchQtyFields(): void
 	{
 		$c = $this->config('3');
-		$item = QtyScale::formatItem(['id' => 1, 'reorderLevel' => 2500, 'name' => 'x'], $c);
+		$item = QtyScale::formatItem(['id' => 1, 'reorderLevel' => 2500, 'totalQty' => 12345, 'name' => 'x'], $c);
 		self::assertSame('2.5', $item['reorderLevel']);
+		self::assertSame('12.345', $item['totalQty'], 'NN-04: totalQty display-scaled, never raw storage ints');
 		self::assertSame('x', $item['name']);
 
 		$bal = QtyScale::formatBalance(['qty' => 1000, 'itemId' => 9], $c);
