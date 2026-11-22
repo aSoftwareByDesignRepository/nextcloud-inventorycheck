@@ -5,7 +5,7 @@
 		"%1$d of %2$d device slots in use.": "%1$d de %2$d espacios para dispositivos en uso.",
 		"%1$d of %2$d seats assigned": "%1$d de %2$d plazas asignadas",
 		"%1$s (%2$s) is below reorder level: %3$s on hand, reorder at %4$s.": "%1$s (%2$s) está por debajo del nivel de reposición: %3$s en stock, reponer en %4$s.",
-		"%1$s items below reorder, %2$s on order, %3$s lots expiring soon.": "%1$s artículos bajo el punto de pedido, %2$s pedidos, %3$s lotes caducan pronto.",
+		"%1$s items below reorder, %2$s on order, %3$s lots expiring soon.": "%1$s artículos por reponer, %2$s pedidos, %3$s lotes caducan pronto.",
 		"%n label": [
 			"%n etiqueta",
 			"%n etiquetas"
@@ -1283,7 +1283,7 @@
 		"unpriced": "sin precio",
 		"usage spike": "pico de uso",
 		"will be skipped": "se omitirá",
-		"{left} left of {total} this month": "{left} restante de {total} este mes",
+		"{left} left of {total} this month": "Quedan {left} de {total} este mes",
 		"{n} d": "{n} d",
 		"{n} days": "{n} días",
 		"{n} days left": "quedan {n} días",
