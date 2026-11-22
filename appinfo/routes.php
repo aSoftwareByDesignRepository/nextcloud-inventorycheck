@@ -179,6 +179,7 @@ return [
 		['name' => 'mobile#kitIssue', 'url' => '/mobile/v1/kits/{id}/issue', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
 		['name' => 'mobile#lotByCode', 'url' => '/mobile/v1/lots/by-code/{code}', 'verb' => 'GET', 'requirements' => ['code' => '[^/]+']],
 		['name' => 'mobile#lotsExpiring', 'url' => '/mobile/v1/lots/expiring', 'verb' => 'GET'],
+		['name' => 'mobile#itemLots', 'url' => '/mobile/v1/items/{id}/lots', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
 		['name' => 'mobile#today', 'url' => '/mobile/v1/today', 'verb' => 'GET'],
 		['name' => 'mobile#orderSheets', 'url' => '/mobile/v1/order-sheets', 'verb' => 'GET'],
 		['name' => 'mobile#orderSheetShow', 'url' => '/mobile/v1/order-sheets/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],

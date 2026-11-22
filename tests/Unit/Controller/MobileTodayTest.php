@@ -275,4 +275,81 @@ final class MobileTodayTest extends TestCase
 		self::assertSame([], $data['data']);
 		self::assertSame(0, $data['total']);
 	}
+
+	public function testItemLotsUnauthenticatedGetsAuthRequired(): void
+	{
+		$this->request->method('getHeader')->willReturn('');
+		$this->userSession->method('getUser')->willReturn(null);
+		$this->gate->expects(self::never())->method('assertGate');
+		$this->itemMapper->expects(self::never())->method('findById');
+		$this->expectException(MobileGateException::class);
+		$this->controller->itemLots(1);
+	}
+
+	public function testItemLotsReturnsFefoRowsForSessionUser(): void
+	{
+		$this->asSessionUser('alice');
+		$this->gate->expects(self::once())->method('assertGate')->with('alice', null);
+		$this->request->method('getParam')->willReturnCallback(
+			static fn ($k, $d = null) => $d,
+		);
+		$item = new Item();
+		$item->setId(5);
+		$this->itemMapper->expects(self::once())->method('findById')->with(5)->willReturn($item);
+		$this->locationAcl->expects(self::once())->method('visibleLocationIds')
+			->with('alice')->willReturn(null);
+		$this->movementMapper->expects(self::once())->method('sumQtyDeltaByLotForItem')
+			->with(5, null)->willReturn(['LA' => 2, 'LB' => 4]);
+		$this->lotMapper->expects(self::once())->method('findByItem')->with(5)
+			->willReturn([
+				$this->lot(1, 5, 'LA', self::NOW + 10 * 86400),
+				$this->lot(2, 5, 'LB', self::NOW + 2 * 86400),
+			]);
+		$data = $this->controller->itemLots(5)->getData();
+		self::assertCount(2, $data['data']);
+		// FEFO: the earlier-expiry lot leads; qty data only (NN-01 parity).
+		self::assertSame('LB', $data['data'][0]['lotCode']);
+		self::assertSame(4, $data['data'][0]['qty']);
+		foreach ($data['data'] as $row) {
+			foreach (array_keys($row) as $key) {
+				self::assertStringNotContainsStringIgnoringCase('price', (string)$key);
+				self::assertStringNotContainsStringIgnoringCase('cost', (string)$key);
+			}
+		}
+	}
+
+	public function testItemLotsDeviceLocationFilterCollapsesToUniform404(): void
+	{
+		$this->asDevice(9);
+		$this->gate->expects(self::once())->method('assertGate')->with(null, self::isInstanceOf(ScanDevice::class));
+		$this->request->method('getParam')->willReturnCallback(
+			static fn ($k, $d = null) => $k === 'locationId' ? '8' : $d,
+		);
+		$item = new Item();
+		$item->setId(5);
+		$this->itemMapper->method('findById')->willReturn($item);
+		// device:9 cannot see location 8 — the service collapses to uniform
+		// NotFound rather than leaking the location's existence.
+		$this->locationAcl->expects(self::once())->method('visibleLocationIds')
+			->with('device:9')->willReturn([3]);
+		$this->lotMapper->expects(self::never())->method('findByItem');
+		$this->expectException(\OCA\InventoryCheck\Exception\NotFoundException::class);
+		$this->expectExceptionMessage('unknown_location');
+		$this->controller->itemLots(5);
+	}
+
+	public function testItemLotsUnknownItemUniform404(): void
+	{
+		$this->asSessionUser('alice');
+		$this->gate->expects(self::once())->method('assertGate');
+		$this->request->method('getParam')->willReturnCallback(
+			static fn ($k, $d = null) => $d,
+		);
+		$this->itemMapper->expects(self::once())->method('findById')->with(999)
+			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('none'));
+		$this->locationAcl->expects(self::never())->method('visibleLocationIds');
+		$this->expectException(\OCA\InventoryCheck\Exception\NotFoundException::class);
+		$this->expectExceptionMessage('unknown_item');
+		$this->controller->itemLots(999);
+	}
 }

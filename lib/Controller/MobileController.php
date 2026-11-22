@@ -613,6 +613,26 @@ class MobileController extends Controller
 		]);
 	}
 
+	/**
+	 * IV-LOT-EXPIRY-PACK mirror of lot#itemLots: FEFO lot list for one item
+	 * (qty + expiry state, server-sorted). Same actor-visible location
+	 * scope as the web picker — an inaccessible ?locationId collapses to
+	 * the uniform 404 inside lotsWithStock, never an oracle. Qty only.
+	 */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[NoAdminRequired]
+	public function itemLots(int $id): JSONResponse
+	{
+		[$uid, $device] = $this->resolveCaller(true);
+		$this->gate->assertGate($uid, $device);
+		$locRaw = $this->request->getParam('locationId');
+		$locationId = $locRaw !== null && $locRaw !== '' ? (int)$locRaw : null;
+		return new JSONResponse([
+			'data' => $this->lotSvc()->lotsWithStock($this->actorUid($uid, $device), $id, $locationId),
+		]);
+	}
+
 	#[PublicPage]
 	#[NoCSRFRequired]
 	#[NoAdminRequired]
