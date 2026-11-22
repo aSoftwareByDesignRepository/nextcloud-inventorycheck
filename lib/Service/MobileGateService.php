@@ -15,18 +15,27 @@ use OCP\IConfig;
  */
 class MobileGateService
 {
-	/** Wave C1: companion API bumps to 2 once fractional (qty_scale=3) is enabled. */
+	/**
+	 * Companion API milestone ladder (feature-level documentation).
+	 *
+	 * bootstrap() advertises ONLY the breaking-change floor: BASE, or
+	 * FRACTIONAL while qty_scale=3. Every milestone from WAVE_D up is an
+	 * additive wave the client discovers through capabilities.* — a shipped
+	 * companion must never floor-out on additive endpoints. Bump the floor
+	 * only when a change breaks old binaries' wire parsing.
+	 */
 	private const COMPANION_API_BASE = 1;
+	/** Breaking while qty_scale=3: qty fields move to milli-units on the wire. */
 	private const COMPANION_API_FRACTIONAL = 2;
-	/** Wave D: location by-code, reason codes, location-scan policy. */
+	/** Additive (capabilities.*): location by-code, reason codes, location-scan policy. */
 	private const COMPANION_API_WAVE_D = 3;
-	/** Mobile favourites + cycle-count endpoints for companion P1/P2. */
+	/** Additive (capabilities.*): mobile favourites + cycle-count endpoints for companion P1/P2. */
 	private const COMPANION_API_MOBILE_STOCKTAKE = 4;
-	/** Mobile read-only item photo GET. */
+	/** Additive (capabilities.*): mobile read-only item photo GET. */
 	private const COMPANION_API_ITEM_PHOTO = 5;
-	/** IV-COMPANION-TODAY (C-3): Heute feeds — /mobile/v1/today + /mobile/v1/lots/expiring. */
+	/** Additive (capabilities.*): IV-COMPANION-TODAY (C-3) — /mobile/v1/today + /mobile/v1/lots/expiring. */
 	private const COMPANION_API_TODAY = 6;
-	/** IV-RECEIVE-AGAINST-ORDER (C-8): /mobile/v1/order-sheets* receive mirror. */
+	/** Additive (capabilities.*): IV-RECEIVE-AGAINST-ORDER (C-8) — /mobile/v1/order-sheets* receive mirror. */
 	private const COMPANION_API_ORDER_SHEETS = 7;
 
 	public function __construct(
@@ -70,14 +79,14 @@ class MobileGateService
 			}
 		}
 		$qtyScale = QtyScale::current($this->config);
-		// Always advertise the highest shipped companion API; bump further only
-		// when fractional qty requires a higher floor than the photo endpoint.
-		$companionApi = max(
-			self::COMPANION_API_ORDER_SHEETS,
-			self::COMPANION_API_TODAY,
-			self::COMPANION_API_ITEM_PHOTO,
-			$qtyScale === QtyScale::SCALE_MILLI ? self::COMPANION_API_FRACTIONAL : self::COMPANION_API_BASE,
-		);
+		// Breaking-change floor only — additive waves (itemPhoto, today,
+		// orderSheets, …) are advertised via capabilities.* below. The floor
+		// rises solely when the wire contract breaks old binaries (fractional
+		// qty), so an already-installed companion keeps working on every
+		// additive wave.
+		$companionApi = $qtyScale === QtyScale::SCALE_MILLI
+			? self::COMPANION_API_FRACTIONAL
+			: self::COMPANION_API_BASE;
 		$isOffice = $userId !== null && $userId !== '' && $this->access->isOffice($userId);
 		$deviceLocationIds = null;
 		$deviceLocationUnbound = false;

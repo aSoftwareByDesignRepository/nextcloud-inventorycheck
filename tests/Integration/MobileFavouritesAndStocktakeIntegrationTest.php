@@ -130,11 +130,15 @@ final class MobileFavouritesAndStocktakeIntegrationTest extends TestCase
 	public function testBootstrapAdvertisesFavouritesAndCompanionApi(): void
 	{
 		$data = $this->controller()->bootstrap()->getData();
-		// Highest shipped companion API: C-8 order-sheets (7) > C-3 today (6).
-		self::assertSame(7, $data['companionApi']);
+		// companionApi is the breaking-change floor only (BASE=1 under integer
+		// qty_scale): additive waves — itemPhoto, today, order-sheets — travel
+		// via capabilities.* so installed companions never floor-out on them.
+		self::assertSame(1, $data['companionApi']);
 		self::assertTrue($data['capabilities']['favourites']);
 		self::assertTrue($data['capabilities']['cycleCount']);
 		self::assertTrue($data['capabilities']['itemPhoto']);
+		self::assertTrue($data['capabilities']['expiringLots']);
+		self::assertTrue($data['capabilities']['orderSheets']);
 		self::assertArrayHasKey('isOffice', $data);
 		self::assertSame(self::USER, $data['user']);
 	}

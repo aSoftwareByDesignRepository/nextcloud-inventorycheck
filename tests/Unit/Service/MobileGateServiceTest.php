@@ -15,6 +15,7 @@ use OCA\InventoryCheck\Service\LicenseService;
 use OCA\InventoryCheck\Service\LocationAclService;
 use OCA\InventoryCheck\Service\MobileGateService;
 use OCA\InventoryCheck\Service\ProductLookupService;
+use OCA\InventoryCheck\Service\QtyScale;
 use OCP\IConfig;
 use PHPUnit\Framework\TestCase;
 
@@ -117,7 +118,10 @@ final class MobileGateServiceTest extends TestCase
 		$this->assertTrue($boot['seatWithinLimit']);
 		$this->assertFalse($boot['devicePaired']);
 		$this->assertSame(LicenseService::MOBILE_APP_STATUS, $boot['mobileAppStatus']);
-		$this->assertSame(7, $boot['companionApi']);
+		// Breaking-change floor: integer qty_scale → BASE (1). Additive waves
+		// (itemPhoto/today/orderSheets) must NOT raise it — shipped companions
+		// discover them via capabilities.* and never floor-out on them.
+		$this->assertSame(1, $boot['companionApi']);
 		$this->assertTrue($boot['capabilities']['locationByCode']);
 		$this->assertTrue($boot['capabilities']['reasonCodes']);
 		$this->assertArrayHasKey('reasonCodes', $boot);
@@ -136,6 +140,37 @@ final class MobileGateServiceTest extends TestCase
 		// non-office seat must NOT see Chef-Blick money (NN-01, fail-closed).
 		$this->assertTrue($boot['capabilities']['expiringLots']);
 		$this->assertFalse($boot['capabilities']['todayChefView']);
+	}
+
+	public function testBootstrapCompanionApiFloorRisesOnlyOnFractionalQty(): void
+	{
+		// Default (integer) scale → floor BASE=1; additive milestones stay on
+		// capabilities only, so a released companion never gates out.
+		$boot = $this->gate->bootstrap('alice', null);
+		$this->assertSame(1, $boot['companionApi']);
+		$this->assertTrue($boot['capabilities']['itemPhoto']);
+		$this->assertTrue($boot['capabilities']['expiringLots']);
+		$this->assertTrue($boot['capabilities']['orderSheets']);
+		$this->assertSame(0, $boot['capabilities']['qtyScale']);
+
+		// qty_scale=3 is the one breaking wire change: qty fields move to
+		// milli-units, so the floor must rise to FRACTIONAL=2 for binaries
+		// that cannot parse them.
+		$config = $this->createMock(IConfig::class);
+		$config->method('getAppValue')->willReturnCallback(
+			static fn (string $app, string $key, string $default = '') => $key === QtyScale::KEY ? '3' : $default,
+		);
+		$gate = new MobileGateService(
+			$this->license,
+			$this->access,
+			$this->clock,
+			$config,
+			$this->locationAcl,
+			$this->productLookup,
+		);
+		$fractionalBoot = $gate->bootstrap('alice', null);
+		$this->assertSame(2, $fractionalBoot['companionApi']);
+		$this->assertSame(3, $fractionalBoot['capabilities']['qtyScale']);
 	}
 
 	public function testBootstrapAdvertisesChefViewOnlyForOfficeSeats(): void

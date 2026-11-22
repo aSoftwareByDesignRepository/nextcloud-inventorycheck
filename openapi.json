@@ -1100,6 +1100,15 @@
 				}
 			}
 		},
+		"/mobile/v1/items/{id}/lots": {
+			"get": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			}
+		},
 		"/mobile/v1/items/{id}/photo": {
 			"get": {
 				"responses": {
