@@ -210,6 +210,11 @@ final class TransferManifest extends AbstractTransferManifest
 			'iv_mobile_seats' => ['class' => 'internal'],
 			'iv_scan_devices' => ['class' => 'internal'],
 			'iv_scan_idem' => ['class' => 'internal'],
+			// Hash-chained tamper evidence over THIS instance's movements —
+			// rows are only meaningful in seq order chained to the movements
+			// they hash; importing them elsewhere fabricates an unverifiable
+			// chain. The target rebuilds its journal from its own movements.
+			'iv_journal' => ['class' => 'internal'],
 			// Outbound push ledger to InvoiceCheck — issue_ref + payload are
 			// bound to the source instance's integration state.
 			'iv_inv_push' => ['class' => 'internal'],
