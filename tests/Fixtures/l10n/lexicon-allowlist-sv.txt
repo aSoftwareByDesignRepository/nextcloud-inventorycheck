@@ -7,3 +7,10 @@ batchspårning # loanword — sv compound of the loanword batch + spårning
 sku # abbrev — SKU (stock-keeping unit), standard retail abbreviation used verbatim in sv
 inventorychecks # proper — sv genitive compound of the app name InventoryCheck
 fjärronboarding # loanword — sv compound fjärr + onboarding (accepted loanword)
+parti # sv — canonical sv inventory term for lot/batch ("partispårning"); resolves the da/nb "batcher" bleed
+artikelnr # abbrev — standard sv retail abbreviation for article number ("art.nr."); field label term
+varenr # shared — same form as nb/da article-number abbreviation; sv "varunummer" also exists but artikelnr/varenr are both in sv retail use
+garantiutlopp # compound — sv garanti + utlopp (warranty end)
+uppsk # abbrev — sv abbreviation of "uppskattat/uppskattad" (estimated)
+oprisade # compound — sv o- + prisade (unpriced)
+beställningsvy # compound — sv beställnings + vy (reorder view)

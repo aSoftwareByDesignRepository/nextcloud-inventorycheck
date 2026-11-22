@@ -97,6 +97,10 @@ final class TransferManifest extends AbstractTransferManifest
 			'restock_webhook_disabled' => ['class' => 'env', 'section' => 'restock'],
 			'restock_webhook_secret' => ['class' => 'secret', 'section' => 'restock'],
 			'restock_digest_last_run' => 'internal', // runtime state
+			// journal verify-run cache — per-instance integrity state, the
+			// target runs its own /journal/verify
+			'journal_last_verify' => 'internal',
+			'journal_last_verify_intact' => 'internal',
 
 			// ── internal bookkeeping — never transferred ──
 			'demo_seeded' => 'internal',

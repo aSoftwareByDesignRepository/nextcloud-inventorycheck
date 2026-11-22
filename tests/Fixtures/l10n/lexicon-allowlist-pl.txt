@@ -3,3 +3,4 @@
 # shares an identical spelling with a donor language (de/nl).
 # Markers certify reviewed exceptions, not donor-laundering.
 sku # abbrev — SKU (jednostka magazynowa), standard retail abbreviation used verbatim in pl
+szac # abbrev — standard pl abbreviation of "szacunkowy/szacowana" (estimated)

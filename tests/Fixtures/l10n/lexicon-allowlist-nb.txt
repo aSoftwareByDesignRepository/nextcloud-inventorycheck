@@ -8,3 +8,10 @@ deaktivert # shared — nb past participle of "deaktivere"; flat nb wordlist mis
 autentisering # shared — nb noun "autentisering"; same spelling in sv
 dashboardet # loanword — nb definite singular of the accepted loanword "dashboard"
 utelte # nb past participle of "telle" (uncounted); flat wordlist misses it — da "utalte" is the distinct donor spelling
+varenr # abbrev — standard nb retail abbreviation for article number ("varenr."); field label term
+leverandørsignernøkkelen # compound — nb leverandør + signer + nøkkelen (vendor signing key)
+gjenbestillings # compound — nb gjen- + bestilling (reorder)
+lagertellings # compound — nb lager + telling (stocktake)
+étt # nb numeral — "one"; flat wordlist misses the numeral form
+tokenen # loanword — nb definite singular of the accepted loanword "token"
+ukategorisert # compound — nb u- + kategorisert (uncategorized)
