@@ -75,6 +75,7 @@ class CsvImportService
 		private readonly ILockingProvider $locking,
 		private readonly IConfig $config,
 		private readonly CycleLineMapper $cycleLines,
+		private readonly ?CustomFieldService $customFields = null,
 	) {
 	}
 
@@ -85,8 +86,10 @@ class CsvImportService
 	{
 		$this->access->requireOffice($actorUid);
 		$report = $this->validateAll($csvText, false);
+		$customCols = $this->customFields?->columnMap() ?? [];
 		$headers = array_map(
-			static fn (array $h): array => $h + ['ignored' => !in_array($h['field'], self::CONSUMED_COLUMNS, true)],
+			static fn (array $h): array => $h + ['ignored' => !in_array($h['field'], self::CONSUMED_COLUMNS, true)
+				&& !isset($customCols[$h['field']])],
 			Csv::headerMap($csvText),
 		);
 		return [
@@ -157,6 +160,9 @@ class CsvImportService
 					$item->setCriticality($row['criticality'] ?? 'none');
 					try {
 						$item = $this->items->insert($item);
+					if ($this->customFields !== null && $row['custom_values'] !== []) {
+						$this->customFields->persistValues((int)$item->getId(), $row['custom_values']);
+					}
 					} catch (\Throwable $e) {
 						throw UniqueViolation::is($e) ? new ConflictException('code_exists') : $e;
 					}
@@ -230,6 +236,9 @@ class CsvImportService
 		}
 		$cols['updated_at'] = $now;
 		$this->items->updateColumns($itemId, $cols);
+		if ($this->customFields !== null && ($row['custom_values'] ?? []) !== []) {
+			$this->customFields->persistValues($itemId, $row['custom_values']);
+		}
 	}
 
 	/**
@@ -281,6 +290,7 @@ class CsvImportService
 		}
 
 		$existing = $this->items->allCodePairs();
+		$customCols = $this->customFields?->columnMap() ?? [];
 		$seenSku = [];
 		$seenScan = [];
 		$seenIds = [];
@@ -518,6 +528,29 @@ class CsvImportService
 				$seenIds[$updateItemId] = true;
 				$updates++;
 			}
+			// IV-CUSTOM-FIELDS: columns whose header matches an active def
+			// name import as values; unknown columns stay ignored (AC-10).
+			$customValues = [];
+			$customNormalized = [];
+			if ($this->customFields !== null && $customCols !== []) {
+				foreach ($customCols as $col => $field) {
+					if (array_key_exists($col, $raw) && trim((string)$raw[$col]) !== '') {
+						$customValues[(int)$field->getId()] = trim((string)$raw[$col]);
+					}
+				}
+				try {
+					$customNormalized = $this->customFields->validateValues($customValues);
+					$existingVals = $updateItemId !== null
+						? ($this->customFields->valuesForItems([$updateItemId])[$updateItemId] ?? [])
+						: [];
+					$this->customFields->assertRequiredSatisfied($customNormalized, $existingVals);
+				} catch (ValidationException $e) {
+					$errors[] = ['line' => $line, 'code' => $e->getMessage() === 'required' ? 'required' : 'invalid_custom_value',
+						'message' => 'custom field value invalid or required field missing'];
+					continue;
+				}
+			}
+
 			$existing[] = ['id' => 0, 'sku' => $sku, 'scanCode' => $scan];
 			$rows[] = [
 				'sku' => $sku,
@@ -541,6 +574,7 @@ class CsvImportService
 				'criticality' => $criticality,
 				'update_item_id' => $updateItemId,
 				'update_input' => $updateInput,
+				'custom_values' => $customNormalized,
 			];
 		}
 

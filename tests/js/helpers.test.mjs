@@ -65,3 +65,17 @@ test('dateInputToUnix start and end of day', () => {
 	assert.ok(end > start);
 	assert.equal(end - start, 23 * 3600 + 59 * 60 + 59);
 });
+
+test('localDayKey round-trips the picked civil day in any timezone', () => {
+	// The day the user picked must be the day that renders back — this is
+	// the west-of-UTC boundary class (toISOString().slice shifts one day).
+	for (const day of ['2026-01-01', '2026-07-24', '2026-12-31']) {
+		const end = IvApp.dateInputToUnix(day, true);
+		const start = IvApp.dateInputToUnix(day, false);
+		assert.equal(IvApp.localDayKey(new Date(end * 1000)), day);
+		assert.equal(IvApp.localDayKey(new Date(start * 1000)), day);
+	}
+	// An instant just after local midnight still keys to that local day.
+	const justAfter = IvApp.dateInputToUnix('2026-07-24', false) + 3600;
+	assert.equal(IvApp.localDayKey(new Date(justAfter * 1000)), '2026-07-24');
+});

@@ -260,6 +260,47 @@
 				}
 			}
 		},
+		"/api/fields": {
+			"get": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			},
+			"post": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			}
+		},
+		"/api/fields/{id}": {
+			"put": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			},
+			"delete": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			}
+		},
+		"/api/fields/{id}/value-count": {
+			"get": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			}
+		},
 		"/api/flange": {
 			"get": {
 				"responses": {
@@ -407,6 +448,15 @@
 				}
 			}
 		},
+		"/api/items/{id}/lots": {
+			"get": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			}
+		},
 		"/api/items/{id}/on-order": {
 			"put": {
 				"responses": {
@@ -416,15 +466,6 @@
 				}
 			},
 			"delete": {
-				"responses": {
-					"200": {
-						"description": "OK"
-					}
-				}
-			}
-		},
-		"/api/items/{id}/lots": {
-			"get": {
 				"responses": {
 					"200": {
 						"description": "OK"
@@ -528,8 +569,8 @@
 				}
 			}
 		},
-		"/api/license/devices/{id}": {
-			"delete": {
+		"/api/license/devices/remove": {
+			"post": {
 				"responses": {
 					"200": {
 						"description": "OK"
@@ -537,8 +578,8 @@
 				}
 			}
 		},
-		"/api/license/devices/remove": {
-			"post": {
+		"/api/license/devices/{id}": {
+			"delete": {
 				"responses": {
 					"200": {
 						"description": "OK"
@@ -676,7 +717,7 @@
 				}
 			}
 		},
-		"/api/lots/expiring": {
+		"/api/lots/by-code/{code}": {
 			"get": {
 				"responses": {
 					"200": {
@@ -685,7 +726,7 @@
 				}
 			}
 		},
-		"/api/lots/by-code/{code}": {
+		"/api/lots/expiring": {
 			"get": {
 				"responses": {
 					"200": {

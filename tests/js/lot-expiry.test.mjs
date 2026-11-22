@@ -48,3 +48,14 @@ test('item detail shows the lots section only for lot-tracked items', () => {
 	assert.match(appJs, /data-iv-lot-section/);
 	assert.match(appJs, /item\.trackMode === 'lot'/);
 });
+
+test('expiry day keys render via localDayKey — never UTC toISOString slices', () => {
+	// tz_monoculture_dates: toISOString().slice(0,10) is the UTC day and
+	// shifts one day west of UTC. All civil-day surfaces use localDayKey.
+	assert.doesNotMatch(appJs, /\.toISOString\(\)\.slice\(/);
+	assert.match(appJs, /localDayKey\(new Date\(r\.expiresAt \* 1000\)\)/);
+	assert.match(appJs, /localDayKey\(new Date\(l\.expiresAt \* 1000\)\)/);
+	// The receive form stamps end of the *local* day, not T23:59:59Z.
+	assert.doesNotMatch(appJs, /T23:59:59Z/);
+	assert.match(appJs, /body\.expiresAt = dateInputToUnix\(expVal, true\)/);
+});

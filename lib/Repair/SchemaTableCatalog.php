@@ -25,6 +25,8 @@ final class SchemaTableCatalog
 		'iv_cc_camp',
 		'iv_cc_line',
 		'iv_inv_push',
+		'iv_item_field_values',
+		'iv_item_fields',
 		'iv_item_suppliers',
 		'iv_items',
 		'iv_kit_lines',

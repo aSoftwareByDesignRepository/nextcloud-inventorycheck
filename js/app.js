@@ -161,6 +161,14 @@
 		return Math.floor(dt.getTime() / 1000);
 	}
 
+	// Civil-day key from a Date in *local* time — never toISOString().slice,
+	// which is the UTC day and shifts one day west of UTC.
+	function localDayKey(d) {
+		return d.getFullYear() + '-'
+			+ String(d.getMonth() + 1).padStart(2, '0') + '-'
+			+ String(d.getDate()).padStart(2, '0');
+	}
+
 	function masterLabel(row, codeKey) {
 		if (!row) return '';
 		return row.name + ' (' + row[codeKey] + ')';
@@ -206,6 +214,7 @@
 		canReverseMovement: canReverseMovement,
 		movementListQuery: movementListQuery,
 		dateInputToUnix: dateInputToUnix,
+		localDayKey: localDayKey,
 		masterLabel: masterLabel,
 		resolveMasterId: resolveMasterId,
 		isValidCode: function (value, max) {
@@ -1859,7 +1868,7 @@
 								{ label: tr('Lot'), render: function (r) { return r.lotCode; } },
 								{ label: tr('On hand'), render: function (r) { return formatQty(r.qty); } },
 								{ label: tr('Expires'), render: function (r) {
-									return new Date(r.expiresAt * 1000).toISOString().slice(0, 10);
+									return localDayKey(new Date(r.expiresAt * 1000));
 								} },
 								{ label: tr('State'), render: function (r) {
 									if (r.state === 'expired') {
@@ -2567,7 +2576,7 @@
 							});
 						} else {
 							var expiry = l.expiresAt
-								? new Date(l.expiresAt * 1000).toISOString().slice(0, 10)
+								? localDayKey(new Date(l.expiresAt * 1000))
 								: tr('no expiry');
 							opt = el('option', {
 								value: l.lotCode,
@@ -2893,8 +2902,9 @@
 					body.spendMinor = spendVal === '' ? null : spendVal;
 					var expVal = expiryInput.value;
 					if (expVal) {
-						// Send end-of-day UTC epoch seconds — lot expiry is a date.
-						body.expiresAt = Math.floor(new Date(expVal + 'T23:59:59Z').getTime() / 1000);
+						// Lot expiry is a civil date — stamp end of the *local*
+						// day so the picked day survives any timezone.
+						body.expiresAt = dateInputToUnix(expVal, true);
 					}
 				}
 				// AF-IV12: issue must send a typed/scanned locationCode (not picker auto-fill).
@@ -3576,7 +3586,17 @@
 		]);
 		criticalitySel.value = existing && existing.criticality === 'critical' ? 'critical' : 'none';
 		var itemTrigger = document.activeElement;
-		var itemDialogReady = loadMasters(ctx).then(function (masters) {
+		var itemDialogReady = Promise.all([
+			loadMasters(ctx),
+			// IV-CUSTOM-FIELDS: defs for the dialog; non-admins get active
+			// defs only (same defs every item payload already carries).
+			api('GET', ctx.urls.api.fields).catch(function () { return []; }),
+		]).then(function (pair) {
+		var masters = pair[0];
+		var cfRes = pair[1];
+		var cfDefs = (Array.isArray(cfRes) ? cfRes : (cfRes && cfRes.data) || [])
+			.filter(function (d) { return d && d.active; })
+			.sort(function (a, b) { return (a.position || 0) - (b.position || 0); });
 		categoryList = masters.categoryList || [];
 		clear(defaultLocation);
 		defaultLocation.appendChild(el('option', { value: '', text: tr('No default location') }));
@@ -3636,7 +3656,74 @@
 				text: tr('Changing SKU or scan code does not update already printed labels.'),
 			}) : null,
 		].filter(Boolean));
+		// IV-CUSTOM-FIELDS: typed controls under a disclosure, ordered by
+		// position. Error cells are data-iv-field="cf_<id>" so server-side
+		// failures render inline (AC-16).
+		var cfControls = [];
+		if (cfDefs.length) {
+			var existingCf = existing && Array.isArray(existing.customFields) ? existing.customFields : [];
+			var cfById = {};
+			existingCf.forEach(function (c) { if (c && c.id != null) cfById[c.id] = c; });
+			cfControls = cfDefs.map(function (d) {
+				var stored = cfById[d.id];
+				var val = stored && stored.value != null ? stored.value : null;
+				var input;
+				var labelText = d.required ? d.name + ' *' : d.name;
+				if (d.type === 'select') {
+					input = el('select', { className: 'iv-input' });
+					input.appendChild(el('option', { value: '', text: tr('— choose —') }));
+					(d.options || []).forEach(function (o) {
+						input.appendChild(el('option', { value: o, text: o }));
+					});
+					if (val != null && String(val) !== '') {
+						if ((d.options || []).indexOf(String(val)) === -1) {
+							// Stale option stays selectable-read (AC-6): re-saving
+							// must pick a current option — the stale entry is shown
+							// but flagged, not silently kept.
+							input.appendChild(el('option', {
+								value: String(val),
+								text: String(val) + ' ' + tr('(obsolete)'),
+							}));
+						}
+						input.value = String(val);
+					}
+				} else if (d.type === 'number') {
+					input = el('input', { type: 'number', className: 'iv-input', step: 'any' });
+					if (val != null) input.value = String(val);
+				} else if (d.type === 'date') {
+					input = el('input', { type: 'date', className: 'iv-input' });
+					if (val != null && String(val) !== '') {
+						var dv = new Date(Number(val) * 1000);
+						if (!isNaN(dv.getTime())) input.value = localDayKey(dv);
+					}
+				} else {
+					input = el('input', { type: 'text', className: 'iv-input', maxlength: '1000' });
+					if (val != null) input.value = String(val);
+				}
+				if (d.required) input.setAttribute('required', '');
+				return {
+					def: d,
+					input: input,
+					wrap: field(labelText, input, { name: 'cf_' + d.id }),
+				};
+			});
+			fields.push(disclosureSection(tr('Custom fields'), cfControls.map(function (c) { return c.wrap; }), {
+				className: 'iv-item-cf',
+				open: !!existing || cfDefs.some(function (d) { return d.required; }),
+			}));
+		}
 		dialog(existing ? tr('Edit item') : tr('New item'), fields, function () {
+			// Client-side required precheck mirrors assertRequiredSatisfied —
+			// server stays authoritative (NN-03 write-time only).
+			var cfMissing = [];
+			cfControls.forEach(function (c) {
+				if (c.def.required && c.input.value.trim() === '') {
+					cfMissing.push({ field: 'cf_' + c.def.id, code: 'required', message: tr('Required') });
+				}
+			});
+			if (cfMissing.length) {
+				return Promise.reject(new ApiError('required', tr('Fill the required fields.'), cfMissing));
+			}
 			var lastPriceMinor = parseMoneyInput(lastPrice.value);
 			var orderPackPriceMinor = parseMoneyInput(orderPackPrice.value);
 			if (lastPriceMinor === null || orderPackPriceMinor === null) {
@@ -3665,6 +3752,19 @@
 				criticality: criticalitySel.value,
 				description: description.value.trim() || null,
 			};
+			if (cfControls.length) {
+				var customValues = {};
+				cfControls.forEach(function (c) {
+					var v = c.input.value;
+					if (c.def.type === 'date') {
+						// Epoch semantics (AC): send the local-day stamp, '' clears.
+						customValues[c.def.id] = v === '' ? '' : dateInputToUnix(v);
+					} else {
+						customValues[c.def.id] = v.trim();
+					}
+				});
+				body.customValues = customValues;
+			}
 			if (existing) {
 				return api('PUT', entityUrl(ctx.urls.api.items, existing.id), body).then(function () {
 					toast(tr('Item saved.'));
@@ -3931,7 +4031,7 @@
 						{ label: tr('On hand'), render: function (r) { return formatQty(r.qty); } },
 						{ label: tr('Expires'), render: function (r) {
 							return r.expiresAt
-								? new Date(r.expiresAt * 1000).toISOString().slice(0, 10)
+								? localDayKey(new Date(r.expiresAt * 1000))
 								: tr('no expiry');
 						} },
 						{ label: tr('State'), render: function (r) {
@@ -3959,6 +4059,36 @@
 						} },
 					], lotRows, { caption: tr('Lots') }),
 				]));
+			}
+			// IV-CUSTOM-FIELDS: read surface for every app user (MH-04).
+			if (Array.isArray(item.customFields) && item.customFields.length) {
+				var cfRows = item.customFields.filter(function (c) {
+					return c.value != null && String(c.value) !== '';
+				});
+				if (cfRows.length) {
+					mount.appendChild(el('section', {
+						className: 'iv-section',
+						'aria-labelledby': 'iv-cf-title',
+						'data-iv-custom-fields': '1',
+					}, [
+						el('h2', { id: 'iv-cf-title', className: 'iv-section__title', text: tr('Custom fields') }),
+						el('dl', { className: 'iv-detail__grid' }, cfRows.map(function (c) {
+							var rendered = c.type === 'date'
+								? localDayKey(new Date(Number(c.value) * 1000))
+								: String(c.value);
+							return el('div', null, [
+								el('dt', { text: c.name }),
+								el('dd', null, [
+									document.createTextNode(rendered),
+									c.stale ? el('span', {
+										className: 'iv-badge iv-badge--warn',
+										text: tr('obsolete'),
+									}) : null,
+								].filter(Boolean)),
+							]);
+						})),
+					]));
+				}
 			}
 		}).catch(function (err) {
 			setBusy(mount, false);
@@ -5432,6 +5562,211 @@
 		return wrap;
 	}
 
+	/** IV-CUSTOM-FIELDS: admin def CRUD — name/type/options/required/active. */
+	function fieldTypeLabel(type) {
+		switch (type) {
+			case 'text': return tr('Text');
+			case 'number': return tr('Number');
+			case 'date': return tr('Date');
+			case 'select': return tr('Pick list');
+			default: return type;
+		}
+	}
+
+	function openFieldDialog(ctx, existing, onSaved) {
+		var nameInput = el('input', {
+			type: 'text', className: 'iv-input', maxlength: '64', required: '',
+			value: existing ? existing.name : '',
+		});
+		var typeSel = el('select', { className: 'iv-input', 'aria-label': tr('Type') }, [
+			el('option', { value: 'text', text: tr('Text') }),
+			el('option', { value: 'number', text: tr('Number') }),
+			el('option', { value: 'date', text: tr('Date') }),
+			el('option', { value: 'select', text: tr('Pick list') }),
+		]);
+		typeSel.value = existing ? existing.type : 'text';
+		if (existing) {
+			// Type is immutable (NN-01: stored values would be invalidated).
+			typeSel.disabled = true;
+		}
+		var optionsInput = el('textarea', {
+			className: 'iv-input', rows: '3', maxlength: '4000',
+			value: existing && Array.isArray(existing.options) ? existing.options.join('\n') : '',
+		});
+		var optionsField = field(tr('Options — one choice per line'), optionsInput, { name: 'options' });
+		var requiredBox = el('input', {
+			type: 'checkbox', className: 'iv-checkbox__input',
+			checked: existing && existing.required ? '' : null,
+		});
+		var activeBox = el('input', {
+			type: 'checkbox', className: 'iv-checkbox__input',
+			checked: !existing || existing.active ? '' : null,
+		});
+		function syncOptionsVisibility() {
+			optionsField.hidden = typeSel.value !== 'select';
+		}
+		typeSel.addEventListener('change', syncOptionsVisibility);
+		syncOptionsVisibility();
+		// Bachus: create is two decisions (name, type); required/active
+		// live behind More options on create (defaults: optional + on).
+		var flagKids = [
+			el('label', { className: 'iv-checkbox iv-field' }, [
+				requiredBox,
+				el('span', { className: 'iv-checkbox__label', text: tr('Required — item writes fail without a value') }),
+			]),
+			el('label', { className: 'iv-checkbox iv-field' }, [
+				activeBox,
+				el('span', { className: 'iv-checkbox__label', text: tr('Active — hidden fields keep their stored values') }),
+			]),
+		];
+		var kids = [
+			field(tr('Name'), nameInput, { name: 'name' }),
+			field(tr('Type'), typeSel, { name: 'type' }),
+			existing ? el('p', {
+				className: 'iv-field__hint',
+				text: tr('Type cannot be changed. To use another type, delete this field and create a new one.'),
+			}) : null,
+			optionsField,
+			existing
+				? flagKids
+				: disclosureSection(tr('More options'), flagKids, { className: 'iv-field-more' }),
+		].filter(Boolean).flat();
+		dialog(existing ? tr('Edit field') : tr('New field'), kids, function () {
+			var body = {
+				name: nameInput.value.trim(),
+				required: requiredBox.checked,
+				active: activeBox.checked,
+			};
+			if (!existing) {
+				body.type = typeSel.value;
+			}
+			if (typeSel.value === 'select') {
+				body.options = optionsInput.value.split('\n')
+					.map(function (o) { return o.trim(); })
+					.filter(function (o) { return o !== ''; });
+			}
+			var url = existing ? urlWithId(ctx.urls.api.fieldById, existing.id) : ctx.urls.api.fields;
+			return api(existing ? 'PUT' : 'POST', url, body).then(function () {
+				toast(existing ? tr('Field saved.') : tr('Field created.'));
+				onSaved();
+			});
+		});
+	}
+
+	function renderFieldsSettings(ctx, mount) {
+		var tableHost = el('div', { className: 'iv-section__body' });
+		var addBtn = btn(tr('New field'), {
+			primary: true,
+			className: 'iv-btn--touch',
+			onclick: function () {
+				openFieldDialog(ctx, null, function () { renderFieldsSettings(ctx, mount); });
+			},
+		});
+		mount.appendChild(settingsPageSection('fields', 'iv-fields-title', withSettingsHowTo(ctx, 'fields', [
+			settingsSrTitle('iv-fields-title', tr('Custom fields')),
+			el('p', {
+				className: 'iv-field__hint',
+				text: tr('Extra item attributes: text, number, date or a pick list. Active fields appear in the item dialog, in search, and as CSV columns.'),
+			}),
+			el('div', { className: 'iv-section__actions' }, [addBtn]),
+			tableHost,
+		])));
+		tableHost.appendChild(el('p', { className: 'iv-muted', text: tr('Loading…') }));
+		api('GET', ctx.urls.api.fields).then(function (defs) {
+			clear(tableHost);
+			var list = Array.isArray(defs) ? defs : (defs && defs.data) || [];
+			if (list.length === 0) {
+				tableHost.appendChild(emptyState(
+					tr('No custom fields yet'),
+					tr('Define a field to add attributes like “Warranty end” or “Serial class” to every item.'),
+					null,
+				));
+				return;
+			}
+			tableHost.appendChild(tableOrCards(
+				[
+					{ label: tr('Name'), render: function (r) { return r.name; } },
+					{ label: tr('Type'), render: function (r) { return fieldTypeLabel(r.type); } },
+					{ label: tr('Options'), render: function (r) {
+						return r.type === 'select' ? (r.options || []).join(', ') : '—';
+					} },
+					{ label: tr('Required'), render: function (r) {
+						return r.required ? tr('Yes') : tr('No');
+					} },
+					{ label: tr('State'), render: function (r) {
+						return r.active
+							? el('span', { className: 'iv-badge iv-badge--done', text: tr('Active') })
+							: el('span', { className: 'iv-badge iv-badge--neutral', text: tr('Inactive') });
+					} },
+					{ label: tr('Order'), render: function (r) {
+						var idx = list.indexOf(r);
+						function move(dir) {
+							var other = list[idx + dir];
+							if (!other) return;
+							var posA = r.position || 0;
+							var posB = other.position || 0;
+							if (posA === posB) posB = posA + dir;
+							api('PUT', urlWithId(ctx.urls.api.fieldById, r.id), { position: posB })
+								.then(function () {
+									return api('PUT', urlWithId(ctx.urls.api.fieldById, other.id), { position: posA });
+								})
+								.then(function () { renderFieldsSettings(ctx, mount); })
+								.catch(function (err) { toast(err.message, true); });
+						}
+						return el('div', { className: 'iv-table__actions' }, [
+							btn('↑', {
+								'aria-label': tr('Move up'),
+								className: 'iv-btn--touch',
+								disabled: idx === 0 ? '' : null,
+								onclick: function () { move(-1); },
+							}),
+							btn('↓', {
+								'aria-label': tr('Move down'),
+								className: 'iv-btn--touch',
+								disabled: idx === list.length - 1 ? '' : null,
+								onclick: function () { move(1); },
+							}),
+						]);
+					} },
+					{ label: tr('Actions'), render: function (r) {
+						return el('div', { className: 'iv-table__actions' }, [
+							btn(tr('Edit'), {
+								onclick: function () {
+									openFieldDialog(ctx, r, function () { renderFieldsSettings(ctx, mount); });
+								},
+							}),
+							btn(tr('Delete'), {
+								className: 'iv-btn--danger',
+								onclick: function () {
+									var countUrl = urlWithId(ctx.urls.api.fieldValueCount, r.id);
+									api('GET', countUrl).then(function (res) {
+										var n = res && typeof res.count === 'number' ? res.count : 0;
+										dialog(
+											tr('Delete field “{name}”?', { name: r.name }),
+											[el('p', { text: tr('This permanently removes the field and its values on {count} item(s).', { count: n }) })],
+											function () {
+												return api('DELETE', urlWithId(ctx.urls.api.fieldById, r.id)).then(function () {
+													toast(tr('Field deleted.'));
+													renderFieldsSettings(ctx, mount);
+												});
+											},
+											tr('Delete'),
+										);
+									}).catch(function (err) { toast(err.message, true); });
+								},
+							}),
+						]);
+					} },
+				],
+				list,
+				{ caption: tr('Custom field definitions') },
+			));
+		}).catch(function (err) {
+			clear(tableHost);
+			tableHost.appendChild(loadErrorPanel(err.message, function () { renderFieldsSettings(ctx, mount); }));
+		});
+	}
+
 	function renderSettings(ctx) {
 		var mount = ctx.mount;
 		if (!ctx.isAppAdmin) {
@@ -5491,6 +5826,12 @@
 			var licenseSection = settingsPageSection('license', 'iv-license-title', licenseKids);
 			licenseSection.id = 'iv-license';
 			mount.appendChild(licenseSection);
+			return;
+		}
+		if (section === 'fields') {
+			clear(mount);
+			setBusy(mount, false);
+			renderFieldsSettings(ctx, mount);
 			return;
 		}
 		Promise.all([
@@ -7440,7 +7781,7 @@
 		}
 
 		function dateLabel(ts) {
-			return ts ? new Date(ts * 1000).toISOString().slice(0, 10) : '—';
+			return ts ? localDayKey(new Date(ts * 1000)) : '—';
 		}
 
 		var fetches = [
@@ -7522,8 +7863,8 @@
 			function epoch(d) { return Math.floor(d.getTime() / 1000); }
 			function applyRange(fromDate, toDate) {
 				rangeErr.setAttribute('hidden', '');
-				fromInput.value = fromDate.toISOString().slice(0, 10);
-				toInput.value = toDate.toISOString().slice(0, 10);
+				fromInput.value = localDayKey(fromDate);
+				toInput.value = localDayKey(toDate);
 				clear(rangeBody);
 				rangeBody.appendChild(el('p', { className: 'iv-muted', text: tr('Loading…') }));
 				var qs = '?from=' + epoch(fromDate) + '&to=' + (epoch(toDate) + 86399);

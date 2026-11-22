@@ -37,6 +37,7 @@ class ItemService
 		private readonly ?RestockConfig $restock = null,
 		private readonly ?LotMapper $lots = null,
 		private readonly ?SupplierMapper $suppliers = null,
+		private readonly ?CustomFieldService $customFields = null,
 	) {
 	}
 
@@ -51,15 +52,25 @@ class ItemService
 				return ['data' => [], 'total' => 0, 'limit' => $limit, 'offset' => $offset];
 			}
 		}
-		$result = $this->items->search($q, $active, $limit, $offset, $idFilter);
+		// AC-9: q also matches text/select custom-field values via EXISTS.
+		$qExt = $this->customFields !== null && $q !== ''
+			? fn ($qb) => $this->customFields->searchExistsSql($qb, '*PREFIX*iv_items.id', $q)
+			: null;
+		$result = $this->items->search($q, $active, $limit, $offset, $idFilter, $qExt);
 		$sums = $this->balances->sumQtyByItem($visible);
+		// IV-CUSTOM-FIELDS: batched defs+values (2 queries per page, no N+1).
+		$cfDefs = $this->customFields?->activeDefs() ?? [];
+		$cfValues = $cfDefs !== []
+			? $this->customFields->valuesForItems(array_map(static fn (Item $i) => (int)$i->getId(), $result['data']))
+			: [];
 		return [
 			'data' => array_map(
-				function (Item $i) use ($sums, $actorUid) {
+				function (Item $i) use ($sums, $actorUid, $cfDefs, $cfValues) {
 					$api = $i->toApi();
 					// totalQty = quantity (not money): stays for field users (NN-03),
 					// sums only actor-visible locations (NN-01).
 					$api['totalQty'] = $sums[(int)$i->getId()] ?? 0;
+					$api['customFields'] = $this->customFields?->payloadForItems($cfDefs, $cfValues, (int)$i->getId()) ?? [];
 					return $this->stripConfidentialItemFields($api, $actorUid);
 				},
 				$result['data'],
@@ -114,6 +125,9 @@ class ItemService
 			$id,
 			$this->locationAcl->visibleLocationIds($actorUid),
 		);
+		// IV-CUSTOM-FIELDS: defs + values on the detail payload (read for
+		// every app user — MH-04; defs are not money-relevant).
+		$item['customFields'] = $this->customFields?->payloadForItem($id) ?? [];
 		return $this->stripConfidentialItemFields($item, $actorUid);
 	}
 
@@ -147,6 +161,8 @@ class ItemService
 		$api['totalQty'] = $this->balances->sumQtyForItem((int)$item->getId(), $visible);
 		$bal = $this->balances->search((int)$item->getId(), null, false, 200, 0, false, $visible);
 		$api['balances'] = array_map(static fn ($b) => $b->toApi(), $bal['data']);
+		// IV-CUSTOM-FIELDS: companion scan path inherits attrs for free.
+		$api['customFields'] = $this->customFields?->payloadForItem((int)$item->getId()) ?? [];
 		return $api;
 	}
 
@@ -179,8 +195,17 @@ class ItemService
 		$targetStock = $this->parseTargetStock($input, $reorder);
 		$defaultLocationId = $this->parseDefaultLocationId($input);
 		$restock = $this->parseRestockFields($input, null);
+		// IV-CUSTOM-FIELDS: validate before the lock so the fields map is
+		// thrown before any write; required applies to creates too (NN-03:
+		// enforced on write only, never blocking reads/legacy items).
+		$customValues = null;
+		if ($this->customFields !== null) {
+			$submitted = is_array($input['customValues'] ?? null) ? $input['customValues'] : [];
+			$customValues = $this->customFields->validateValues($submitted);
+			$this->customFields->assertRequiredSatisfied($customValues, []);
+		}
 
-		return $this->withCodesLock(function () use ($actorUid, $sku, $scan, $name, $uom, $desc, $reorder, $trackMode, $supplierNote, $lastPriceMinor, $targetStock, $defaultLocationId, $restock): array {
+		return $this->withCodesLock(function () use ($actorUid, $sku, $scan, $name, $uom, $desc, $reorder, $trackMode, $supplierNote, $lastPriceMinor, $targetStock, $defaultLocationId, $restock, $customValues): array {
 			if (CodeRules::conflictsWithOthers(null, $sku, $scan, $this->items->allCodePairs())) {
 				throw new ConflictException('code_exists');
 			}
@@ -205,9 +230,16 @@ class ItemService
 			$item->setSupplierNote($supplierNote);
 			$item->setLastPriceMinor($lastPriceMinor);
 			$this->applyRestockFields($item, $restock);
+			$this->db->beginTransaction();
 			try {
-				return $this->items->insert($item)->toApi();
+				$created = $this->items->insert($item);
+				if ($customValues !== null) {
+					$this->customFields?->persistValues((int)$created->getId(), $customValues);
+				}
+				$this->db->commit();
+				return $created->toApi();
 			} catch (\Throwable $e) {
+				$this->db->rollBack();
 				throw UniqueViolation::is($e) ? new ConflictException('code_exists') : $e;
 			}
 		});
@@ -244,6 +276,8 @@ class ItemService
 				throw new ConflictException('item_in_open_stocktake');
 			}
 			$photoName = $item->getPhotoName();
+			// IV-CUSTOM-FIELDS: values must not orphan the item row.
+			$this->customFields?->deleteForItem($id);
 			$this->items->delete($item);
 			$this->db->commit();
 		} catch (\Throwable $e) {
@@ -351,6 +385,24 @@ class ItemService
 				$item->setLastPriceMinor($this->parseLastPriceMinor($input));
 			}
 			$this->applyRestockUpdate($item, $input);
+			$customValues = null;
+			if ($this->customFields !== null && array_key_exists('customValues', $input)) {
+				// IV-CUSTOM-FIELDS: invalid values roll back the whole
+				// update — fields map keyed cf_<id> renders inline (AC-16).
+				$submitted = is_array($input['customValues']) ? $input['customValues'] : [];
+				$customValues = $this->customFields->validateValues($submitted);
+			}
+			if ($this->customFields !== null) {
+				// NN-03: required is enforced on every write that carries
+				// customValues — and on any write at all once a required
+				// field exists without a value (legacy items must not be
+				// lockout-editable but also must not save around it).
+				$existing = $this->customFields->valuesForItems([(int)$item->getId()])[(int)$item->getId()] ?? [];
+				$this->customFields->assertRequiredSatisfied($customValues ?? [], $existing);
+			}
+			if ($customValues !== null) {
+				$this->customFields?->persistValues((int)$item->getId(), $customValues);
+			}
 			$item->setUpdatedAt($this->clock->now());
 			$api = $this->items->update($item)->toApi();
 			$this->db->commit();

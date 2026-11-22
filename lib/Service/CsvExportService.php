@@ -29,6 +29,7 @@ class CsvExportService
 		private readonly AccessControlService $access,
 		private readonly IConfig $config,
 		private readonly ReportService $reports,
+		private readonly ?CustomFieldService $customFields = null,
 	) {
 	}
 
@@ -250,10 +251,18 @@ class CsvExportService
 			['sku', 'scan_code', 'name', 'description', 'uom', 'reorder_level', 'active', 'supplier_note', 'last_price_minor', 'supplier_name', 'supplier_sku', 'order_pack_qty', 'order_pack_price_minor', 'supplier_lead_days', 'category', 'criticality'],
 			$lang,
 		);
+		// AC-10: one column per active field — header is the field name
+		// (user data, never l10n), reimport maps it back by name.
+		$defs = $this->customFields?->activeDefs() ?? [];
+		foreach ($defs as $def) {
+			$headers[] = $def->getName();
+		}
+		$itemIds = array_map(static fn ($i) => (int)$i->getId(), $result['data']);
+		$valuesByItem = $this->customFields?->valuesForItems($itemIds) ?? [];
 		$body = Csv::line($headers);
 		foreach ($result['data'] as $item) {
 			$api = QtyScale::formatItem($item->toApi(), $this->config);
-			$body .= Csv::line([
+			$row = [
 				$api['sku'],
 				$api['scanCode'],
 				$api['name'],
@@ -270,7 +279,12 @@ class CsvExportService
 				$api['supplierLeadDays'] ?? '',
 				$api['category'] ?? '',
 				$api['criticality'] ?? 'none',
-			]);
+			];
+			$values = $valuesByItem[(int)$item->getId()] ?? [];
+			foreach ($defs as $def) {
+				$row[] = $values[(int)$def->getId()] ?? '';
+			}
+			$body .= Csv::line($row);
 		}
 		return $this->pack('inventorycheck-items.csv', $body);
 	}

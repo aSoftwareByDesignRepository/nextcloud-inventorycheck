@@ -17,7 +17,7 @@ return [
 		['name' => 'page#settings', 'url' => '/settings', 'verb' => 'GET'],
 		// {section} allowlist pinned to SettingsSectionCatalog::routeRequirement() by SettingsPagesContractTest.
 		['name' => 'page#settingsSection', 'url' => '/settings/{section}', 'verb' => 'GET',
-			'requirements' => ['section' => 'access|office|notifications|quantities|location-access|connections|product-lookup|policies|restock|license|transfer|support']],
+			'requirements' => ['section' => 'access|office|fields|notifications|quantities|location-access|connections|product-lookup|policies|restock|license|transfer|support']],
 
 		// ── Config & data transfer (test → production) ──────────────────
 		['name' => 'transfer_api#status', 'url' => '/api/admin/transfer/status', 'verb' => 'GET'],
@@ -25,6 +25,12 @@ return [
 		['name' => 'transfer_api#preview', 'url' => '/api/admin/transfer/preview', 'verb' => 'POST'],
 		['name' => 'transfer_api#apply', 'url' => '/api/admin/transfer/apply', 'verb' => 'POST'],
 		['name' => 'transfer_api#reconcile', 'url' => '/api/admin/transfer/reconcile', 'verb' => 'POST'],
+
+		['name' => 'field#index', 'url' => '/api/fields', 'verb' => 'GET'],
+		['name' => 'field#create', 'url' => '/api/fields', 'verb' => 'POST'],
+		['name' => 'field#update', 'url' => '/api/fields/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\\d+']],
+		['name' => 'field#destroy', 'url' => '/api/fields/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\\d+']],
+		['name' => 'field#valueCount', 'url' => '/api/fields/{id}/value-count', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
 
 		['name' => 'location#index', 'url' => '/api/locations', 'verb' => 'GET'],
 		['name' => 'location#byCode', 'url' => '/api/locations/by-code/{code}', 'verb' => 'GET', 'requirements' => ['code' => '[^/]+']],

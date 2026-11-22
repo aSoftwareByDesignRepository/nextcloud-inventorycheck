@@ -28,6 +28,7 @@ final class SettingsSectionCatalog
 	public const SECTIONS = [
 		'access',
 		'office',
+		'fields',
 		'notifications',
 		'quantities',
 		'location-access',
@@ -85,6 +86,7 @@ final class SettingsSectionCatalog
 		return match ($section) {
 			'access' => $l->t('Access control'),
 			'office' => $l->t('Office / storekeeper'),
+			'fields' => $l->t('Custom fields'),
 			'notifications' => $l->t('Low stock notifications'),
 			'quantities' => $l->t('Fractional quantities'),
 			'location-access' => $l->t('Location access'),
@@ -104,6 +106,7 @@ final class SettingsSectionCatalog
 		return match ($section) {
 			'access' => $l->t('Access'),
 			'office' => $l->t('Office'),
+			'fields' => $l->t('Fields'),
 			'notifications' => $l->t('Notifications'),
 			'quantities' => $l->t('Quantities'),
 			'location-access' => $l->t('Locations'),
@@ -123,6 +126,7 @@ final class SettingsSectionCatalog
 		return match ($section) {
 			'access' => $l->t('Decide who may open InventoryCheck. Restriction takes effect immediately for non-administrators.'),
 			'office' => $l->t('Who may receive, adjust, and run stocktakes — and whether negative stock is allowed.'),
+			'fields' => $l->t('Define extra item attributes: text, number, date or a pick list. Active fields appear in the item dialog and in CSV exports.'),
 			'notifications' => $l->t('Who gets a notice the first time an item drops below its reorder level.'),
 			'quantities' => $l->t('Optional milli-unit storage for cable metres and similar. Enabling cannot be undone.'),
 			'location-access' => $l->t('Optional. Limit field users to granted locations. Office and admins still see everything.'),

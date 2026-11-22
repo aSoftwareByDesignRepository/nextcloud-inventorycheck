@@ -10,6 +10,7 @@ use OCA\InventoryCheck\Controller\CycleCountController;
 use OCA\InventoryCheck\Controller\DirectoryController;
 use OCA\InventoryCheck\Controller\ExportController;
 use OCA\InventoryCheck\Controller\FavouriteController;
+use OCA\InventoryCheck\Controller\FieldController;
 use OCA\InventoryCheck\Controller\FlangeController;
 use OCA\InventoryCheck\Controller\ImportController;
 use OCA\InventoryCheck\Controller\ItemController;
@@ -102,6 +103,7 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 		ReportController::class,
 		SupplierController::class,
 		MobileController::class,
+		FieldController::class,
 	];
 
 	/**
@@ -125,6 +127,7 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 			'markOnOrder', 'clearOnOrder', 'markOnOrderBulk', 'setPreferredSupplier',
 		],
 		LotController::class => ['index', 'byCode', 'setExpiry', 'itemLots', 'expiring'],
+		FieldController::class => ['index', 'create', 'update', 'destroy', 'valueCount'],
 		ReportController::class => ['valuation', 'movementValue', 'locationValue', 'deadStock'],
 		OrderSheetController::class => ['index', 'show', 'create', 'updateLines', 'send', 'cancel', 'print'],
 		SupplierController::class => ['index', 'create'],

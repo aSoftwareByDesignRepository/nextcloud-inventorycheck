@@ -39,6 +39,7 @@ use OCA\InventoryCheck\Service\FlangeService;
 use OCA\InventoryCheck\Service\ItemPhotoService;
 use OCA\InventoryCheck\Service\ItemService;
 use OCA\InventoryCheck\Service\LicenseService;
+use OCA\InventoryCheck\Service\CustomFieldService;
 use OCA\InventoryCheck\Service\LocationAclService;
 use OCA\InventoryCheck\Service\LocationFavouriteService;
 use OCA\InventoryCheck\Service\LocationService;
@@ -129,6 +130,8 @@ class Application extends App implements IBootstrap
 		$context->registerService(CycleCampaignMapper::class, static fn ($c) => new CycleCampaignMapper($c->get(IDBConnection::class)));
 		$context->registerService(CycleLineMapper::class, static fn ($c) => new CycleLineMapper($c->get(IDBConnection::class)));
 		$context->registerService(LocationFavouriteMapper::class, static fn ($c) => new LocationFavouriteMapper($c->get(IDBConnection::class)));
+		$context->registerService(\OCA\InventoryCheck\Db\ItemFieldMapper::class, static fn ($c) => new \OCA\InventoryCheck\Db\ItemFieldMapper($c->get(IDBConnection::class)));
+		$context->registerService(\OCA\InventoryCheck\Db\ItemFieldValueMapper::class, static fn ($c) => new \OCA\InventoryCheck\Db\ItemFieldValueMapper($c->get(IDBConnection::class)));
 
 		$context->registerService(Clock::class, static fn () => new Clock());
 
@@ -193,6 +196,15 @@ class Application extends App implements IBootstrap
 				$c->get(\OCA\InventoryCheck\Service\RestockConfig::class),
 				$c->get(\OCA\InventoryCheck\Db\LotMapper::class),
 				$c->get(\OCA\InventoryCheck\Db\SupplierMapper::class),
+				$c->get(CustomFieldService::class),
+			);
+		});
+		$context->registerService(CustomFieldService::class, static function ($c): CustomFieldService {
+			return new CustomFieldService(
+				$c->get(AccessControlService::class),
+				$c->get(\OCA\InventoryCheck\Db\ItemFieldMapper::class),
+				$c->get(\OCA\InventoryCheck\Db\ItemFieldValueMapper::class),
+				$c->get(Clock::class),
 			);
 		});
 		$context->registerService(BalanceService::class, static function ($c): BalanceService {
@@ -391,6 +403,7 @@ class Application extends App implements IBootstrap
 				$c->get(AccessControlService::class),
 				$c->get(IConfig::class),
 				$c->get(\OCA\InventoryCheck\Service\ReportService::class),
+				$c->get(CustomFieldService::class),
 			);
 		});
 		$context->registerService(CsvImportService::class, static function ($c): CsvImportService {
@@ -404,6 +417,7 @@ class Application extends App implements IBootstrap
 				$c->get(ILockingProvider::class),
 				$c->get(IConfig::class),
 				$c->get(CycleLineMapper::class),
+				$c->get(CustomFieldService::class),
 			);
 		});
 		$context->registerService(ItemPhotoService::class, static function ($c): ItemPhotoService {

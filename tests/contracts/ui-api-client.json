@@ -716,6 +716,83 @@
 					]
 				}
 			]
+		},
+		{
+			"id": "custom-fields",
+			"param": "customValues",
+			"description": "IV-CUSTOM-FIELDS: admin-defined item attributes (text/number/date/select). GET /api/items* payloads carry `customFields` (merged def+value, stale flag on obsolete select values); POST/PUT accept `customValues` keyed by field id with errors rendered inline as cf_<id>. Required is enforced on writes only. Field defs CRUD lives at /api/fields (admin writes; readers get active defs). CSV export adds one column per active field; import maps headers matching field names.",
+			"errorCodes": [
+				"validation_failed",
+				"required",
+				"field_name_exists",
+				"field_type_immutable"
+			],
+			"server": [
+				{
+					"file": "lib/Service/CustomFieldService.php",
+					"needles": [
+						"validateValues",
+						"assertRequiredSatisfied",
+						"persistValues",
+						"columnMap"
+					]
+				},
+				{
+					"file": "lib/Controller/FieldController.php",
+					"needles": [
+						"index",
+						"create",
+						"update",
+						"destroy"
+					]
+				},
+				{
+					"file": "lib/Service/ItemService.php",
+					"needles": [
+						"customValues",
+						"customFields",
+						"payloadForItems"
+					]
+				},
+				{
+					"file": "lib/Service/CsvImportService.php",
+					"needles": [
+						"customCols",
+						"custom_values"
+					]
+				},
+				{
+					"file": "lib/Service/CsvExportService.php",
+					"needles": [
+						"customFields",
+						"activeDefs",
+						"valuesForItems"
+					]
+				}
+			],
+			"web": [
+				{
+					"file": "js/app.js",
+					"needles": [
+						"customValues",
+						"cf_",
+						"ctx.urls.api.fields",
+						"data-iv-custom-fields",
+						"renderFieldsSettings",
+						"openFieldDialog"
+					]
+				}
+			],
+			"mobile": [
+				{
+					"file": "src/types.ts",
+					"needles": [
+						"customFields",
+						"ItemCustomField",
+						"stale"
+					]
+				}
+			]
 		}
 	]
 }

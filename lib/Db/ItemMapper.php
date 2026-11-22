@@ -207,12 +207,17 @@ class ItemMapper extends QBMapper
 	 * @param list<int>|null $idFilter restrict to these ids (null = no filter)
 	 * @return array{data: list<Item>, total: int}
 	 */
-	public function search(string $q, ?bool $active, int $limit, int $offset, ?array $idFilter = null): array
+	/**
+	 * @param callable(IQueryBuilder): ?string|null $qExt
+	 *        IV-CUSTOM-FIELDS (AC-9): optional extra OR operand for the q
+	 *        clause (EXISTS fragment built with this qb's named params).
+	 */
+	public function search(string $q, ?bool $active, int $limit, int $offset, ?array $idFilter = null, ?callable $qExt = null): array
 	{
 		if ($idFilter === []) {
 			return ['data' => [], 'total' => 0];
 		}
-		$apply = function ($qb) use ($q, $active, $idFilter): void {
+		$apply = function ($qb) use ($q, $active, $idFilter, $qExt): void {
 			$qb->from($this->getTableName());
 			$conds = [];
 			if ($idFilter !== null) {
@@ -227,10 +232,15 @@ class ItemMapper extends QBMapper
 			if ($q !== '') {
 				$lower = '%' . $this->db->escapeLikeParameter(mb_strtolower($q)) . '%';
 				$prefix = $this->db->escapeLikeParameter($q) . '%';
-				$conds[] = $qb->expr()->orX(
+				$or = [
 					$qb->expr()->like($qb->func()->lower('name'), $qb->createNamedParameter($lower)),
 					$qb->expr()->like('sku', $qb->createNamedParameter($prefix)),
-				);
+				];
+				$extra = $qExt !== null ? $qExt($qb) : null;
+				if (is_string($extra) && $extra !== '') {
+					$or[] = $extra;
+				}
+				$conds[] = $qb->expr()->orX(...$or);
 			}
 			if ($conds !== []) {
 				$qb->where(...$conds);
