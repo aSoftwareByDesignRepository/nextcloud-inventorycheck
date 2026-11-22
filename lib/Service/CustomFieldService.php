@@ -121,6 +121,9 @@ class CustomFieldService
 
 	public function valueCount(int $fieldId): int
 	{
+		// Uniform-404 contract like update/destroy — unknown id must not
+		// answer a shaped 200 to a stale confirm dialog.
+		$this->fields->findById($fieldId);
 		return $this->values->countForField($fieldId);
 	}
 

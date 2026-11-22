@@ -8,6 +8,7 @@ use OCA\InventoryCheck\Db\ItemField;
 use OCA\InventoryCheck\Db\ItemFieldMapper;
 use OCA\InventoryCheck\Db\ItemFieldValueMapper;
 use OCA\InventoryCheck\Exception\ConflictException;
+use OCA\InventoryCheck\Exception\NotFoundException;
 use OCA\InventoryCheck\Exception\ValidationException;
 use OCA\InventoryCheck\Service\AccessControlService;
 use OCA\InventoryCheck\Service\Clock;
@@ -267,6 +268,32 @@ final class CustomFieldServiceTest extends TestCase
 		$this->expectException(ConflictException::class);
 		$this->expectExceptionMessage('field_name_exists');
 		$svc->createDef('admin', ['name' => 'Dup', 'type' => 'text']);
+	}
+
+	/* ── valueCount (uniform 404) ──────────────────────────────────── */
+
+	public function testValueCountUnknownFieldThrowsNotFound(): void
+	{
+		$fields = $this->createMock(ItemFieldMapper::class);
+		$fields->method('findById')->willThrowException(new NotFoundException('unknown_field'));
+		$values = $this->createMock(ItemFieldValueMapper::class);
+		$values->expects($this->never())->method('countForField');
+		$access = $this->createMock(AccessControlService::class);
+		$svc = new CustomFieldService($access, $fields, $values, $this->createMock(Clock::class));
+		$this->expectException(NotFoundException::class);
+		$this->expectExceptionMessage('unknown_field');
+		$svc->valueCount(99999);
+	}
+
+	public function testValueCountResolvesDefThenCounts(): void
+	{
+		$fields = $this->createMock(ItemFieldMapper::class);
+		$fields->expects($this->once())->method('findById')->with(7)->willReturn($this->def(7, 'N', 'text'));
+		$values = $this->createMock(ItemFieldValueMapper::class);
+		$values->method('countForField')->with(7)->willReturn(3);
+		$access = $this->createMock(AccessControlService::class);
+		$svc = new CustomFieldService($access, $fields, $values, $this->createMock(Clock::class));
+		$this->assertSame(3, $svc->valueCount(7));
 	}
 
 	/* ── Search + CSV plumbing ─────────────────────────────────────── */
