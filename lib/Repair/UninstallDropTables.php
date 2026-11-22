@@ -53,6 +53,7 @@ final class UninstallDropTables implements IRepairStep
 		'iv_item_fields',
 		'iv_item_suppliers',
 		'iv_items',
+		'iv_journal',
 		'iv_kit_lines',
 		'iv_kits',
 		'iv_license_state',

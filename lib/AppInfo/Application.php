@@ -247,6 +247,17 @@ class Application extends App implements IBootstrap
 				$c->get(\OCA\InventoryCheck\Db\LotMapper::class),
 				$c->get(\OCA\InventoryCheck\Service\OrderSheetService::class),
 				$c->get(\OCA\InventoryCheck\Service\WebhookService::class),
+				$c->get(\OCA\InventoryCheck\Service\JournalService::class),
+			);
+		});
+		$context->registerService(\OCA\InventoryCheck\Db\JournalEntryMapper::class, static fn ($c) => new \OCA\InventoryCheck\Db\JournalEntryMapper($c->get(IDBConnection::class)));
+		$context->registerService(\OCA\InventoryCheck\Service\JournalService::class, static function ($c): \OCA\InventoryCheck\Service\JournalService {
+			return new \OCA\InventoryCheck\Service\JournalService(
+				$c->get(\OCA\InventoryCheck\Db\JournalEntryMapper::class),
+				$c->get(\OCA\InventoryCheck\Db\MovementMapper::class),
+				$c->get(ILockingProvider::class),
+				$c->get(Clock::class),
+				$c->get(\Psr\Log\LoggerInterface::class),
 			);
 		});
 		$context->registerService(ScanIdempotencyService::class, static function ($c): ScanIdempotencyService {

@@ -15,11 +15,13 @@ use OCA\InventoryCheck\Controller\FlangeController;
 use OCA\InventoryCheck\Controller\ImportController;
 use OCA\InventoryCheck\Controller\ItemController;
 use OCA\InventoryCheck\Controller\ItemPhotoController;
+use OCA\InventoryCheck\Controller\JournalController;
 use OCA\InventoryCheck\Controller\LicenseController;
 use OCA\InventoryCheck\Controller\LocationController;
 use OCA\InventoryCheck\Controller\LotController;
 use OCA\InventoryCheck\Controller\OrderSheetController;
 use OCA\InventoryCheck\Controller\KitController;
+use OCA\InventoryCheck\Controller\StockListController;
 use OCA\InventoryCheck\Controller\SupplierController;
 use OCA\InventoryCheck\Controller\ReportController;
 use OCA\InventoryCheck\Controller\LowStockController;
@@ -32,6 +34,8 @@ use OCA\InventoryCheck\Exception\MobileGateException;
 use OCA\InventoryCheck\Exception\PermissionDeniedException;
 use OCA\InventoryCheck\Middleware\AppAccessMiddleware;
 use OCA\InventoryCheck\Service\AccessControlService;
+use OCA\InventoryCheck\Service\JournalService;
+use OCA\InventoryCheck\Service\StockListService;
 use OCA\InventoryCheck\Service\BalanceService;
 use OCA\InventoryCheck\Service\CsvExportService;
 use OCA\InventoryCheck\Service\CsvImportService;
@@ -104,6 +108,8 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 		SupplierController::class,
 		MobileController::class,
 		FieldController::class,
+		JournalController::class,
+		StockListController::class,
 	];
 
 	/**
@@ -128,6 +134,8 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 		],
 		LotController::class => ['index', 'byCode', 'setExpiry', 'itemLots', 'expiring'],
 		FieldController::class => ['index', 'create', 'update', 'destroy', 'valueCount'],
+		JournalController::class => ['status', 'verify', 'verifyPost'],
+		StockListController::class => ['ods', 'pdf'],
 		ReportController::class => ['valuation', 'movementValue', 'locationValue', 'deadStock'],
 		OrderSheetController::class => ['index', 'show', 'create', 'updateLines', 'send', 'cancel', 'print'],
 		SupplierController::class => ['index', 'create'],
@@ -789,6 +797,30 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 			$mock = $this->createMock(IGroupManager::class);
 			$mock->method('groupExists')->willReturn(true);
 			$mock->method('get')->willReturn(null);
+			$this->byType[$key] = $mock;
+			return $mock;
+		}
+
+		if ($typeName === JournalService::class) {
+			$mock = $this->createMock(JournalService::class);
+			$mock->method('entryCount')->willReturn(0);
+			$mock->method('verify')->willReturn([
+				'intact' => true, 'checked' => 0, 'firstBadSeq' => null,
+				'reason' => null, 'head' => null,
+			]);
+			$this->byType[$key] = $mock;
+			return $mock;
+		}
+
+		if ($typeName === StockListService::class) {
+			$mock = $this->createMock(StockListService::class);
+			$mock->method('snapshot')->willReturn([
+				'columns' => ['SKU'], 'rows' => [], 'locationNames' => [],
+				'totalQty' => 0.0, 'totalValueMinor' => 0, 'unpriced' => 0,
+				'generatedAt' => 0, 'instanceId' => '', 'factor' => 1,
+			]);
+			$mock->method('buildOds')->willReturn('ods');
+			$mock->method('buildPdf')->willReturn('pdf');
 			$this->byType[$key] = $mock;
 			return $mock;
 		}

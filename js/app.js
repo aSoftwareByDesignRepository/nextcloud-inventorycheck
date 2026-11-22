@@ -5653,6 +5653,88 @@
 		});
 	}
 
+	// IV-COMPLIANCE-PACK: journal verify card + stock-list downloads.
+	// Copy is deliberately "tamper-evident" honest — a clean walk proves
+	// the stored chain was not edited since append; it never claims the
+	// ledger is "audit-proof" (NN-02).
+	function renderJournalSettings(ctx, mount) {
+		var resultLive = el('p', { className: 'iv-muted', 'aria-live': 'polite', role: 'status' });
+		var statusLine = el('p', { className: 'iv-muted' });
+		var verifyBtn = btn(tr('Verify integrity'), {
+			className: 'iv-btn--secondary',
+			onclick: function () {
+				verifyBtn.disabled = true;
+				resultLive.textContent = tr('Verifying…');
+				api('POST', ctx.urls.api.journalVerify).then(function (res) {
+					verifyBtn.disabled = false;
+					renderJournalResult(resultLive, res);
+					loadJournalStatus();
+				}).catch(function (err) {
+					verifyBtn.disabled = false;
+					resultLive.textContent = err.message || tr('The check could not be completed. Try again.');
+				});
+			},
+		});
+		var downloads = el('div', { className: 'iv-section__actions' }, [
+			el('a', {
+				className: 'iv-btn iv-btn--secondary', href: ctx.urls.api.stockListOds,
+				download: 'inventorycheck-bestandsliste.ods', text: tr('Stock list (ODS)'),
+			}),
+			el('a', {
+				className: 'iv-btn iv-btn--secondary', href: ctx.urls.api.stockListPdf,
+				download: 'inventorycheck-bestandsliste.pdf', text: tr('Stock list (PDF)'),
+			}),
+		]);
+		mount.appendChild(settingsPageSection('journal', 'iv-journal-title', withSettingsHowTo(ctx, 'journal', [
+			settingsSrTitle('iv-journal-title', tr('Journal & integrity')),
+			el('p', {
+				className: 'iv-muted',
+				text: tr('Every stock movement is recorded in a tamper-evident chain. The check re-computes the chain and flags the first edited or missing entry.'),
+			}),
+			statusLine,
+			el('div', { className: 'iv-section__actions' }, [verifyBtn]),
+			resultLive,
+			downloads,
+		])));
+		function loadJournalStatus() {
+			api('GET', ctx.urls.api.journalStatus).then(function (st) {
+				var parts = [tr('{count} journal entries', { count: st.entries || 0 })];
+				if (st.lastVerifyTs) {
+					parts.push(tr('Last checked {when}', { when: localDayKey(new Date(st.lastVerifyTs * 1000)) + ' ' + new Date(st.lastVerifyTs * 1000).toLocaleTimeString() }));
+				} else {
+					parts.push(tr('Never checked'));
+				}
+				statusLine.textContent = parts.join(' · ');
+			}).catch(function () {
+				statusLine.textContent = tr('Journal status unavailable.');
+			});
+		}
+		loadJournalStatus();
+	}
+
+	function renderJournalResult(live, res) {
+		clear(live);
+		live.classList.remove('iv-muted');
+		if (res.intact) {
+			live.appendChild(el('span', {
+				className: 'iv-badge iv-badge--success',
+				text: res.checked === 0
+					? tr('No entries yet — the chain starts with the next stock movement.')
+					: tr('Chain verified: {count} entries intact', { count: res.checked }),
+			}));
+			return;
+		}
+		var msg;
+		if (res.reason === 'tail_missing') {
+			msg = tr('Tamper suspected — journal entries are missing at the end of the chain.');
+		} else if (res.reason === 'seq_gap') {
+			msg = tr('Tamper suspected — an entry is missing before #{seq}.', { seq: res.firstBadSeq });
+		} else {
+			msg = tr('Tamper suspected — first flagged entry: #{seq}.', { seq: res.firstBadSeq });
+		}
+		live.appendChild(el('span', { className: 'iv-badge iv-badge--critical', text: msg }));
+	}
+
 	function renderFieldsSettings(ctx, mount) {
 		var tableHost = el('div', { className: 'iv-section__body' });
 		var addBtn = btn(tr('New field'), {
@@ -5832,6 +5914,12 @@
 			clear(mount);
 			setBusy(mount, false);
 			renderFieldsSettings(ctx, mount);
+			return;
+		}
+		if (section === 'journal') {
+			clear(mount);
+			setBusy(mount, false);
+			renderJournalSettings(ctx, mount);
 			return;
 		}
 		Promise.all([

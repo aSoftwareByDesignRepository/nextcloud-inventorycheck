@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OCA\InventoryCheck\Tests\Unit\Repair;
 
+use OCA\InventoryCheck\Repair\SchemaTableCatalog;
 use OCA\InventoryCheck\Repair\UninstallDropTables;
 use OCA\InventoryCheck\Service\UpgradeBackupCatalog;
 use PHPUnit\Framework\TestCase;
@@ -28,7 +29,8 @@ final class UninstallDropTablesTest extends TestCase
 
 	public function testUninstallListsAllTables(): void
 	{
-		self::assertCount(23, UninstallDropTables::TABLES);
+		// Count derives from the schema catalog so new tables can't drift the gate.
+		self::assertCount(count(SchemaTableCatalog::EXPECTED_TABLES), UninstallDropTables::TABLES);
 		self::assertContains('iv_inv_push', UninstallDropTables::TABLES);
 		self::assertContains('iv_movements', UninstallDropTables::TABLES);
 		self::assertContains('iv_scan_devices', UninstallDropTables::TABLES);

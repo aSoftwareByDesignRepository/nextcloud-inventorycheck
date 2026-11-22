@@ -64,6 +64,7 @@ class MovementService
 		private readonly ?LotMapper $lots = null,
 		private readonly ?OrderSheetService $orderSheets = null,
 		private readonly ?WebhookService $webhook = null,
+		private readonly ?JournalService $journal = null,
 	) {
 	}
 
@@ -791,7 +792,38 @@ class MovementService
 		$m->setSpendMinor($spendMinor);
 		$m->setCreatedAt($now);
 		$m->setCreatedBy($actorUid);
-		return $this->movements->insert($m);
+		$inserted = $this->movements->insert($m);
+		// IV-COMPLIANCE-PACK (AC-1/NN-03): chain append inside the same txn —
+		// a journal failure rolls the movement back with it; a movement
+		// without a journal entry cannot commit.
+		if ($this->journal !== null) {
+			$fromLoc = null;
+			$toLoc = null;
+			if ($kind === 'transfer_out') {
+				$fromLoc = $locationId;
+				$toLoc = $counterpartyLocId;
+			} elseif ($kind === 'transfer_in') {
+				$fromLoc = $counterpartyLocId;
+				$toLoc = $locationId;
+			} elseif ($qtyDelta < 0) {
+				$fromLoc = $locationId;
+			} else {
+				$toLoc = $locationId;
+			}
+			$this->journal->append([
+				'kind' => $kind,
+				'actor' => $actorUid,
+				'itemId' => $itemId,
+				'fromLoc' => $fromLoc,
+				'toLoc' => $toLoc,
+				'qty' => $qtyDelta,
+				'lotCode' => $lotCode,
+				'refType' => $refType,
+				'refId' => $refId,
+				'movementId' => $inserted->getId(),
+			]);
+		}
+		return $inserted;
 	}
 
 	/**

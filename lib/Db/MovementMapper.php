@@ -372,4 +372,12 @@ class MovementMapper extends QBMapper
 		$result->closeCursor();
 		return $out;
 	}
+
+	/** Highest committed movement id — the journal tail-truncation probe. */
+	public function maxId(): int
+	{
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->func()->max('id'))->from($this->getTableName());
+		return (int)$qb->executeQuery()->fetchOne();
+	}
 }

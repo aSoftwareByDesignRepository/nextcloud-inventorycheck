@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\InventoryCheck\Tests\Integration;
 
 use OCA\InventoryCheck\AppInfo\Application;
+use OCA\InventoryCheck\Repair\SchemaTableCatalog;
 use OCA\InventoryCheck\Repair\UninstallDropTables;
 use OCA\InventoryCheck\Service\AccessControlService;
 use OCA\InventoryCheck\Service\MovementService;
@@ -23,7 +24,7 @@ final class SchemaAndContainerIntegrationTest extends TestCase
 		foreach (UninstallDropTables::TABLES as $table) {
 			$this->assertTrue($db->tableExists($table), "missing table $table");
 		}
-		$this->assertCount(23, UninstallDropTables::TABLES);
+		$this->assertCount(count(SchemaTableCatalog::EXPECTED_TABLES), UninstallDropTables::TABLES);
 	}
 
 	public function testCoreServicesResolve(): void
