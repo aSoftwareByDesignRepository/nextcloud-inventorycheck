@@ -111,6 +111,7 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 		PageController::class => [
 			'dashboard', 'items', 'item', 'locations', 'location', 'movements',
 			'stocktake', 'stocktakeNew', 'stocktakeCampaign', 'settings', 'settingsSection',
+			'reports',
 		],
 		LocationController::class => [
 			'index', 'byCode', 'show', 'create', 'update', 'destroy',
@@ -122,7 +123,7 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 			'markOnOrder', 'clearOnOrder', 'markOnOrderBulk', 'setPreferredSupplier',
 		],
 		LotController::class => ['index', 'byCode', 'setExpiry', 'itemLots', 'expiring'],
-		ReportController::class => ['valuation', 'movementValue'],
+		ReportController::class => ['valuation', 'movementValue', 'locationValue', 'deadStock'],
 		OrderSheetController::class => ['index', 'show', 'create', 'updateLines', 'send', 'cancel', 'print'],
 		SupplierController::class => ['index', 'create'],
 		KitController::class => ['index', 'create', 'issue'],
@@ -163,7 +164,7 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 	private const MIDDLEWARE_AUTHZ = [
 		PageController::class => [
 			'dashboard', 'items', 'item', 'locations', 'location', 'movements',
-			'stocktake', 'stocktakeNew', 'stocktakeCampaign', 'settings',
+			'stocktake', 'stocktakeNew', 'stocktakeCampaign', 'settings', 'reports',
 		],
 		ItemPhotoController::class => ['show'],
 		ConfigController::class => ['reasonCodes'],

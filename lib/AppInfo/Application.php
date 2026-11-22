@@ -390,6 +390,7 @@ class Application extends App implements IBootstrap
 				$c->get(MovementMapper::class),
 				$c->get(AccessControlService::class),
 				$c->get(IConfig::class),
+				$c->get(\OCA\InventoryCheck\Service\ReportService::class),
 			);
 		});
 		$context->registerService(CsvImportService::class, static function ($c): CsvImportService {

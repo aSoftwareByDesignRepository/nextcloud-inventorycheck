@@ -10,6 +10,7 @@ return [
 		['name' => 'page#locations', 'url' => '/locations', 'verb' => 'GET'],
 		['name' => 'page#location', 'url' => '/locations/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
 		['name' => 'page#movements', 'url' => '/movements', 'verb' => 'GET'],
+		['name' => 'page#reports', 'url' => '/reports', 'verb' => 'GET'],
 		['name' => 'page#stocktake', 'url' => '/stocktake', 'verb' => 'GET'],
 		['name' => 'page#stocktakeNew', 'url' => '/stocktake/create', 'verb' => 'GET'],
 		['name' => 'page#stocktakeCampaign', 'url' => '/stocktake/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
@@ -58,6 +59,8 @@ return [
 
 		['name' => 'report#valuation', 'url' => '/api/reports/valuation', 'verb' => 'GET'],
 		['name' => 'report#movementValue', 'url' => '/api/reports/movement-value', 'verb' => 'GET'],
+		['name' => 'report#locationValue', 'url' => '/api/reports/location-value', 'verb' => 'GET'],
+		['name' => 'report#deadStock', 'url' => '/api/reports/dead-stock', 'verb' => 'GET'],
 
 		['name' => 'orderSheet#index', 'url' => '/api/order-sheets', 'verb' => 'GET'],
 		['name' => 'orderSheet#create', 'url' => '/api/order-sheets', 'verb' => 'POST'],

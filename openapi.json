@@ -854,6 +854,37 @@
 				}
 			}
 		},
+		"/api/reports/dead-stock": {
+			"get": {
+				"parameters": [
+					{
+						"name": "days",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "integer",
+							"minimum": 1,
+							"maximum": 3650,
+							"default": 90
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			}
+		},
+		"/api/reports/location-value": {
+			"get": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			}
+		},
 		"/api/reports/movement-value": {
 			"get": {
 				"responses": {

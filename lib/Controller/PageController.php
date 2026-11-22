@@ -116,6 +116,20 @@ class PageController extends Controller
 
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
+	/** IV-REPORTS-SURFACE: office-only money surface (NN-01). */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function reports(): TemplateResponse
+	{
+		$uid = $this->access->currentUserId();
+		$this->access->requireOffice($uid);
+		return $this->page(
+			'reports',
+			'Reports',
+			'Estimated stock value, movement value, and untouched stock — estimates, not accounting'
+		);
+	}
+
 	public function stocktake(): TemplateResponse
 	{
 		return $this->page(
@@ -234,6 +248,7 @@ class PageController extends Controller
 				'items' => $this->urlGenerator->linkToRoute('inventorycheck.page.items'),
 				'locations' => $this->urlGenerator->linkToRoute('inventorycheck.page.locations'),
 				'movements' => $this->urlGenerator->linkToRoute('inventorycheck.page.movements'),
+				'reports' => $this->urlGenerator->linkToRoute('inventorycheck.page.reports'),
 				'stocktake' => $this->urlGenerator->linkToRoute('inventorycheck.page.stocktake'),
 				'stocktakeNew' => $this->urlGenerator->linkToRoute('inventorycheck.page.stocktakeNew'),
 				'stocktakeCampaign' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.page.stocktakeCampaign'),
@@ -285,6 +300,9 @@ class PageController extends Controller
 				'lotsExpiring' => $this->urlGenerator->linkToRoute('inventorycheck.lot.expiring'),
 				'lotByCode' => $this->urlGenerator->linkToRoute('inventorycheck.lot.byCode', ['code' => '__CODE__']),
 				'valuationReport' => $this->urlGenerator->linkToRoute('inventorycheck.report.valuation'),
+				'movementValueReport' => $this->urlGenerator->linkToRoute('inventorycheck.report.movementValue'),
+				'locationValueReport' => $this->urlGenerator->linkToRoute('inventorycheck.report.locationValue'),
+				'deadStockReport' => $this->urlGenerator->linkToRoute('inventorycheck.report.deadStock'),
 				'orderSheets' => $this->urlGenerator->linkToRoute('inventorycheck.orderSheet.index'),
 				'orderSheetById' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.orderSheet.show'),
 				'suppliers' => $this->urlGenerator->linkToRoute('inventorycheck.supplier.index'),

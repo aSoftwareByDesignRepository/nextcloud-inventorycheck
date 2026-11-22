@@ -2224,11 +2224,18 @@
 		return map[kind] || ctx.urls.api.movements;
 	}
 
-	function exportCsvHref(ctx, kind) {
+	function exportCsvHref(ctx, kind, extra) {
 		var lang = (document.documentElement.getAttribute('lang') || 'en').toLowerCase().slice(0, 2);
 		var href = ctx.urls.api.export + '?kind=' + encodeURIComponent(kind);
 		if (lang === 'de') {
 			href += '&lang=de';
+		}
+		if (extra) {
+			Object.keys(extra).forEach(function (k) {
+				if (extra[k] != null && extra[k] !== '') {
+					href += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(String(extra[k]));
+				}
+			});
 		}
 		return href;
 	}
@@ -2359,6 +2366,7 @@
 			case 'location-detail': renderLocationDetail(ctx); break;
 			case 'items': renderItems(ctx); break;
 			case 'locations': renderLocations(ctx); break;
+			case 'reports': renderReports(ctx); break;
 			default: renderDashboard(ctx); break;
 		}
 	}
@@ -7311,6 +7319,270 @@
 		}
 	}
 
+	/**
+	 * IV-REPORTS-SURFACE — four read-only estimate cards. Office-only page
+	 * (server gate); every card renders the isEstimate banner and the
+	 * unpriced count — never dropped (NN-03).
+	 */
+	function renderReports(ctx) {
+		var mount = ctx.mount;
+		setBusy(mount, true);
+		clear(mount);
+		clear(ctx.actions);
+
+		function estimateBanner(unpriced) {
+			var kids = [el('span', {
+				className: 'iv-badge iv-badge--warn',
+				text: tr('Estimate — not accounting'),
+			})];
+			if (unpriced > 0) {
+				kids.push(el('span', {
+					className: 'iv-muted',
+					text: tr('{n} unpriced', { n: unpriced }),
+				}));
+			}
+			return el('p', { className: 'iv-meta', 'data-iv-estimate-banner': '1' }, kids);
+		}
+
+		function reportCard(id, title, intro, csvRef, bodyKids) {
+			var csvLink = typeof csvRef === 'string'
+				? el('a', {
+					className: 'button',
+					href: csvRef,
+					text: tr('Export CSV'),
+					download: '',
+				})
+				: csvRef;
+			return el('section', {
+				className: 'iv-section',
+				'aria-labelledby': 'iv-rep-' + id + '-title',
+				'data-iv-report': id,
+			}, [
+				el('div', { className: 'iv-section__head' }, [
+					el('h2', { id: 'iv-rep-' + id + '-title', className: 'iv-section__title', text: title }),
+					csvLink,
+				]),
+				el('p', { className: 'iv-muted', text: intro }),
+			].concat(bodyKids));
+		}
+
+		function dateLabel(ts) {
+			return ts ? new Date(ts * 1000).toISOString().slice(0, 10) : '—';
+		}
+
+		var fetches = [
+			api('GET', ctx.urls.api.valuationReport),
+			ctx.urls.api.locationValueReport
+				? api('GET', ctx.urls.api.locationValueReport)
+				: Promise.resolve({ rows: [], totalMinor: 0, unpricedCount: 0 }),
+		];
+		Promise.all(fetches).then(function (res) {
+			var valuation = res[0];
+			var locValue = res[1];
+			clear(mount);
+			setBusy(mount, false);
+
+			// Card 1: stock value per item (existing endpoint — the dead
+			// wire finally consumed).
+			var valCols = [
+				{ label: tr('SKU'), render: function (r) { return r.sku; } },
+				{ label: tr('Name'), render: function (r) { return r.name; } },
+				{ label: tr('On hand'), render: function (r) { return formatQty(r.qty); } },
+				{ label: tr('Unit price'), render: function (r) {
+					return r.unitPriceMinor != null ? formatMinor(r.unitPriceMinor) : '—';
+				} },
+				{ label: tr('Line value'), render: function (r) {
+					return r.valueMinor != null ? formatMinor(r.valueMinor) : '—';
+				} },
+			];
+			mount.appendChild(reportCard('valuation',
+				tr('Stock value'),
+				tr('Estimated value of everything on hand, per item.'),
+				exportCsvHref(ctx, 'valuation'),
+				[
+					estimateBanner(valuation.unpricedCount),
+					(valuation.rows || []).length === 0
+						? el('p', { className: 'iv-muted', text: tr('No items yet.') })
+						: tableOrCards(valCols, valuation.rows, { caption: tr('Stock value') }),
+					el('p', { className: 'iv-muted iv-balance-total' }, [
+						el('strong', { text: tr('Total') + ': ' + formatMinor(valuation.totalMinor) }),
+					]),
+				]));
+
+			// Card 2: value per location.
+			var locCols = [
+				{ label: tr('Location'), render: function (r) { return r.name || r.code; } },
+				{ label: tr('Items'), render: function (r) { return String(r.itemCount); } },
+				{ label: tr('Value'), render: function (r) { return formatMinor(r.valueMinor); } },
+			];
+			mount.appendChild(reportCard('location-value',
+				tr('Value per location'),
+				tr('Estimated stock value grouped by warehouse, van, or site.'),
+				exportCsvHref(ctx, 'location_value'),
+				[
+					estimateBanner(locValue.unpricedCount),
+					(locValue.rows || []).length === 0
+						? el('p', { className: 'iv-muted', text: tr('No stock at any location.') })
+						: tableOrCards(locCols, locValue.rows, { caption: tr('Value per location') }),
+					el('p', { className: 'iv-muted iv-balance-total' }, [
+						el('strong', { text: tr('Total') + ': ' + formatMinor(locValue.totalMinor) }),
+					]),
+				]));
+
+			// Card 3: movement value over a period — date range + pills.
+			var fromInput = el('input', {
+				type: 'date',
+				className: 'iv-input',
+				'aria-label': tr('From date'),
+			});
+			var toInput = el('input', {
+				type: 'date',
+				className: 'iv-input',
+				'aria-label': tr('To date'),
+			});
+			var rangeErr = el('p', {
+				className: 'iv-field__error',
+				role: 'alert',
+				hidden: '',
+			});
+			var rangeBody = el('div', { 'aria-live': 'polite' });
+			function epoch(d) { return Math.floor(d.getTime() / 1000); }
+			function applyRange(fromDate, toDate) {
+				rangeErr.setAttribute('hidden', '');
+				fromInput.value = fromDate.toISOString().slice(0, 10);
+				toInput.value = toDate.toISOString().slice(0, 10);
+				clear(rangeBody);
+				rangeBody.appendChild(el('p', { className: 'iv-muted', text: tr('Loading…') }));
+				var qs = '?from=' + epoch(fromDate) + '&to=' + (epoch(toDate) + 86399);
+				api('GET', ctx.urls.api.movementValueReport + qs).then(function (mv) {
+					clear(rangeBody);
+					rangeBody.appendChild(estimateBanner(mv.unpricedReceiveCount));
+					rangeBody.appendChild(tableOrCards([
+						{ label: tr('Metric'), render: function (r) { return r.label; } },
+						{ label: tr('Value'), render: function (r) { return r.value; } },
+					], [
+						{ label: tr('Spend in period'), value: formatMinor(mv.spendMinor) },
+						{ label: tr('Unpriced receives'), value: String(mv.unpricedReceiveCount) },
+					], { caption: tr('Movement value') }));
+					announce(tr('Report updated.'));
+				}).catch(function (err) {
+					clear(rangeBody);
+					rangeBody.appendChild(loadErrorPanel(err.message, function () {
+						applyRange(fromDate, toDate);
+					}));
+				});
+			}
+			function readRange() {
+				var f = fromInput.value ? new Date(fromInput.value + 'T00:00:00') : null;
+				var t = toInput.value ? new Date(toInput.value + 'T00:00:00') : null;
+				if (!f || !t || isNaN(f) || isNaN(t) || t < f) {
+					rangeErr.textContent = tr('Choose a valid date range — the end must not be before the start.');
+					rangeErr.removeAttribute('hidden');
+					return;
+				}
+				applyRange(f, t);
+			}
+			fromInput.addEventListener('change', readRange);
+			toInput.addEventListener('change', readRange);
+			var pills = el('div', { className: 'iv-form-actions' }, [7, 30, 90].map(function (d) {
+				return btn(tr('{n} days', { n: d }), {
+					onclick: function () {
+						var now = new Date();
+						applyRange(new Date(now.getTime() - d * 86400000), now);
+					},
+				});
+			}));
+			var defaultEnd = new Date();
+			applyRange(new Date(defaultEnd.getTime() - 30 * 86400000), defaultEnd);
+			mount.appendChild(reportCard('movement-value',
+				tr('Movement value'),
+				tr('Spend and unpriced receives in the chosen period.'),
+				null,
+				[
+					el('div', { className: 'iv-filter-grid iv-filter-grid--simple' }, [
+						field(tr('From'), fromInput),
+						field(tr('To'), toInput),
+					]),
+					pills,
+					rangeErr,
+					rangeBody,
+				]));
+
+			// Card 4: dead stock — untouched for N days.
+			var daysInput = el('input', {
+				type: 'number',
+				className: 'iv-input',
+				min: '1',
+				max: '3650',
+				step: '1',
+				value: '90',
+				'aria-label': tr('Days without movement'),
+				'aria-describedby': 'iv-dead-days-hint',
+			});
+			var deadErr = el('p', { className: 'iv-field__error', role: 'alert', hidden: '' });
+			var deadBody = el('div', { 'aria-live': 'polite' });
+			var deadCsv = el('a', {
+				className: 'button',
+				href: exportCsvHref(ctx, 'dead_stock', { days: 90 }),
+				text: tr('Export CSV'),
+				download: '',
+			});
+			function loadDead() {
+				var d = parseInt(daysInput.value, 10);
+				if (!d || d < 1 || d > 3650) {
+					deadErr.textContent = tr('Days must be between 1 and 3650.');
+					deadErr.removeAttribute('hidden');
+					return;
+				}
+				deadErr.setAttribute('hidden', '');
+				deadCsv.href = exportCsvHref(ctx, 'dead_stock', { days: d });
+				clear(deadBody);
+				deadBody.appendChild(el('p', { className: 'iv-muted', text: tr('Loading…') }));
+				api('GET', ctx.urls.api.deadStockReport + '?days=' + d).then(function (ds) {
+					clear(deadBody);
+					deadBody.appendChild(estimateBanner(ds.unpricedCount));
+					deadBody.appendChild(
+						(ds.rows || []).length === 0
+							? el('p', { className: 'iv-muted', text: tr('Nothing untouched that long — good.') })
+							: tableOrCards([
+								{ label: tr('SKU'), render: function (r) { return r.sku; } },
+								{ label: tr('Name'), render: function (r) { return r.name; } },
+								{ label: tr('On hand'), render: function (r) { return formatQty(r.totalQty); } },
+								{ label: tr('Last activity'), render: function (r) { return dateLabel(r.lastActivityAt); } },
+								{ label: tr('Est. value'), render: function (r) {
+									return r.valueMinor != null ? formatMinor(r.valueMinor) : '—';
+								} },
+							], ds.rows, { caption: tr('Dead stock') }));
+					announce(tr('Report updated.'));
+				}).catch(function (err) {
+					clear(deadBody);
+					deadBody.appendChild(loadErrorPanel(err.message, loadDead));
+				});
+			}
+			daysInput.addEventListener('change', loadDead);
+			loadDead();
+			mount.appendChild(reportCard('dead-stock',
+				tr('Dead stock'),
+				tr('Items with stock on hand but no movement in the window.'),
+				deadCsv,
+				[
+					field(tr('Untouched for at least (days)'), daysInput),
+					el('p', {
+						className: 'iv-field__hint',
+						id: 'iv-dead-days-hint',
+						text: tr('Any movement resets the clock; items younger than the window never appear.'),
+					}),
+					deadErr,
+					deadBody,
+				]));
+		}).catch(function (err) {
+			setBusy(mount, false);
+			clear(mount);
+			mount.appendChild(loadErrorPanel(err.message, function () { renderReports(ctx); }));
+			toast(err.message, true);
+		});
+	}
+
 	function boot() {
 		var ctx = readShell();
 		if (!ctx || !ctx.mount) return;
@@ -7321,6 +7593,7 @@
 			case 'locations': renderLocations(ctx); break;
 			case 'location-detail': renderLocationDetail(ctx); break;
 			case 'movements': renderMovements(ctx); break;
+			case 'reports': renderReports(ctx); break;
 			case 'stocktake': renderStocktake(ctx); break;
 			case 'stocktake-new': renderStocktakeNewPage(ctx); break;
 			case 'settings': renderSettings(ctx); break;

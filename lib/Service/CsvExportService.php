@@ -28,6 +28,7 @@ class CsvExportService
 		private readonly MovementMapper $movements,
 		private readonly AccessControlService $access,
 		private readonly IConfig $config,
+		private readonly ReportService $reports,
 	) {
 	}
 
@@ -43,6 +44,7 @@ class CsvExportService
 		?int $to,
 		string $lang = 'en',
 		?string $reasonCode = null,
+		?int $days = null,
 	): array {
 		$kind = strtolower(trim($kind));
 		return match ($kind) {
@@ -53,10 +55,75 @@ class CsvExportService
 			'movements_datev' => $this->exportMovements($actorUid, $itemId, $locationId, $from, $to, true, $lang),
 			'reorder' => $this->exportReorder($actorUid, $lang),
 			'variance' => $this->exportVariance($actorUid, $itemId, $locationId, $from, $to, $lang, $reasonCode),
+			'valuation' => $this->exportValuation($actorUid, $lang),
+			'location_value' => $this->exportLocationValue($actorUid, $lang),
+			'dead_stock' => $this->exportDeadStock($actorUid, $days ?? 90, $lang),
 			default => throw new ValidationException('validation_failed', '', [
 				['field' => 'kind', 'code' => 'validation_failed'],
 			]),
 		};
+	}
+
+	/** IV-REPORTS-SURFACE — estimated stock value per item (office+). */
+	private function exportValuation(string $actorUid, string $lang): array
+	{
+		$this->access->requireOffice($actorUid);
+		$report = $this->reports->valuation(QtyScale::factor($this->config));
+		$body = Csv::line(Csv::localizeHeaders(
+			['sku', 'name', 'on_hand', 'unit_price_minor', 'est_line_minor', 'category'], $lang));
+		foreach ($report['rows'] as $r) {
+			$body .= Csv::line([
+				$r['sku'], $r['name'], QtyScale::toDisplay($this->config, $r['qty']),
+				$r['unitPriceMinor'] ?? '', $r['valueMinor'] ?? '', $r['category'] ?? '',
+			]);
+		}
+		$body .= Csv::line([
+			'total', '', '', '', $report['totalMinor'],
+			$report['unpricedCount'] > 0 ? 'unpriced:' . $report['unpricedCount'] : '',
+		]);
+		return $this->pack('inventorycheck-valuation.csv', $body);
+	}
+
+	/** IV-REPORTS-SURFACE — estimated value grouped by location (office+). */
+	private function exportLocationValue(string $actorUid, string $lang): array
+	{
+		$this->access->requireOffice($actorUid);
+		$report = $this->reports->locationValue(QtyScale::factor($this->config));
+		$body = Csv::line(Csv::localizeHeaders(
+			['location_id', 'code', 'name', 'item_count', 'est_value_minor'], $lang));
+		foreach ($report['rows'] as $r) {
+			$body .= Csv::line([$r['locationId'], $r['code'], $r['name'], $r['itemCount'], $r['valueMinor']]);
+		}
+		$body .= Csv::line([
+			'total', '', '', '', $report['totalMinor'],
+		]);
+		if ($report['unpricedCount'] > 0) {
+			$body .= Csv::line(['unpriced', '', '', $report['unpricedCount'], '']);
+		}
+		return $this->pack('inventorycheck-location-value.csv', $body);
+	}
+
+	/** IV-REPORTS-SURFACE — untouched stock (office+). */
+	private function exportDeadStock(string $actorUid, int $days, string $lang): array
+	{
+		$this->access->requireOffice($actorUid);
+		if ($days < 1 || $days > 3650) {
+			throw new ValidationException('validation_failed', '', [['field' => 'days', 'code' => 'validation_failed']]);
+		}
+		$report = $this->reports->deadStock($days, QtyScale::factor($this->config));
+		$body = Csv::line(Csv::localizeHeaders(
+			['item_id', 'sku', 'name', 'on_hand', 'last_activity_at', 'est_value_minor'], $lang));
+		foreach ($report['rows'] as $r) {
+			$body .= Csv::line([
+				$r['itemId'], $r['sku'], $r['name'],
+				QtyScale::toDisplay($this->config, $r['totalQty']),
+				$r['lastActivityAt'], $r['valueMinor'] ?? '',
+			]);
+		}
+		if ($report['unpricedCount'] > 0) {
+			$body .= Csv::line(['unpriced', '', '', $report['unpricedCount'], '', '']);
+		}
+		return $this->pack('inventorycheck-dead-stock-' . $days . 'd.csv', $body);
 	}
 
 	/** Wave D5 — office+ */

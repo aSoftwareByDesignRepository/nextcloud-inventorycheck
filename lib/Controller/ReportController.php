@@ -54,4 +54,30 @@ class ReportController extends Controller
 		}
 		return new JSONResponse($this->reports->movementValue($from, $to));
 	}
+
+	/** IV-REPORTS-SURFACE: per-location estimated value — office+. */
+	#[NoAdminRequired]
+	public function locationValue(): JSONResponse
+	{
+		$uid = $this->access->currentUserId();
+		$this->access->requireOffice($uid);
+		return new JSONResponse($this->reports->locationValue(QtyScale::factor($this->config)));
+	}
+
+	/** IV-REPORTS-SURFACE: untouched stock — office+; days 1..3650 (NN-02). */
+	#[NoAdminRequired]
+	public function deadStock(): JSONResponse
+	{
+		$uid = $this->access->currentUserId();
+		$this->access->requireOffice($uid);
+		$raw = $this->request->getParam('days', 90);
+		if (!is_int($raw) && !(is_string($raw) && preg_match('/^-?\d+$/', $raw) === 1)) {
+			throw new \OCA\InventoryCheck\Exception\ValidationException('validation_failed', '', [['field' => 'days', 'code' => 'validation_failed']]);
+		}
+		$days = (int)$raw;
+		if ($days < 1 || $days > 3650) {
+			throw new \OCA\InventoryCheck\Exception\ValidationException('validation_failed', '', [['field' => 'days', 'code' => 'validation_failed']]);
+		}
+		return new JSONResponse($this->reports->deadStock($days, QtyScale::factor($this->config)));
+	}
 }

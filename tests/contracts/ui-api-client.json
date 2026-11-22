@@ -503,6 +503,84 @@
 				}
 			],
 			"mobile": null
+		},
+		{
+			"id": "reports-dead-stock-days",
+			"param": "days",
+			"description": "Dead-stock window (1..3650, default 90). GET /api/reports/dead-stock?days=N validates range and rejects with 422 validation_failed; the same param drives the dead_stock CSV export kind; /reports page exposes the number input with inline validation.",
+			"errorCodes": [
+				"validation_failed"
+			],
+			"server": [
+				{
+					"file": "lib/Controller/ReportController.php",
+					"needles": [
+						"deadStock",
+						"'days'",
+						"3650"
+					]
+				},
+				{
+					"file": "lib/Service/CsvExportService.php",
+					"needles": [
+						"exportDeadStock",
+						"$days < 1 || $days > 3650"
+					]
+				}
+			],
+			"web": [
+				{
+					"file": "js/app.js",
+					"needles": [
+						"deadStockReport",
+						"Untouched for at least (days)",
+						"d < 1 || d > 3650"
+					]
+				}
+			],
+			"mobile": null
+		},
+		{
+			"id": "product-lookup-barcode",
+			"param": "barcode",
+			"description": "GTIN product lookup (opt-in, office). POST /api/product-lookup validates the barcode and returns invalid_barcode/feature_disabled/rate_limited/unavailable; mobile POST /mobile/v1/product-lookup mirrors it.",
+			"errorCodes": [
+				"invalid_barcode",
+				"feature_disabled",
+				"rate_limited",
+				"unavailable"
+			],
+			"server": [
+				{
+					"file": "lib/Controller/ProductLookupController.php",
+					"needles": [
+						"getParam('barcode'"
+					]
+				},
+				{
+					"file": "lib/Service/ProductLookupService.php",
+					"needles": [
+						"invalid_barcode"
+					]
+				}
+			],
+			"web": [
+				{
+					"file": "js/common/product-lookup.js",
+					"needles": [
+						"barcode"
+					]
+				}
+			],
+			"mobile": [
+				{
+					"file": "src/api/client.ts",
+					"needles": [
+						"postProductLookup",
+						"barcode"
+					]
+				}
+			]
 		}
 	]
 }

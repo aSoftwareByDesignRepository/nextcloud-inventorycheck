@@ -41,6 +41,7 @@ $pageIcons = [
 	'locations' => 'map-pin',
 	'location-detail' => 'map-pin',
 	'movements' => 'history',
+	'reports' => 'clipboard-list',
 	'stocktake' => 'clipboard-list',
 	'stocktake-new' => 'clipboard-list',
 	'settings' => 'settings',

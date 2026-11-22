@@ -245,6 +245,29 @@ class MovementMapper extends QBMapper
 	}
 
 	/**
+	 * IV-REPORTS-SURFACE dead-stock: latest movement per item in one
+	 * GROUP BY — "any movement resets the clock" (AS-01). Items with no
+	 * movement at all are simply absent (their item.created_at decides).
+	 *
+	 * @return array<int, int> item_id → max(created_at)
+	 */
+	public function lastMovementByItem(): array
+	{
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('item_id')
+			->selectAlias($qb->func()->max('created_at'), 'last_at')
+			->from($this->getTableName())
+			->groupBy('item_id');
+		$result = $qb->executeQuery();
+		$out = [];
+		while ($row = $result->fetch()) {
+			$out[(int)$row['item_id']] = (int)$row['last_at'];
+		}
+		$result->closeCursor();
+		return $out;
+	}
+
+	/**
 	 * F-06: spend and unpriced-receive count for a period — plain SUM, no
 	 * qty factor anywhere in the path (NN-12).
 	 *

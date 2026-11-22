@@ -56,6 +56,7 @@ $isDashboard = $activeNavId === 'dashboard';
 $isItems = $activeNavId === 'items';
 $isLocations = $activeNavId === 'locations';
 $isMovements = $activeNavId === 'movements';
+$isReports = $activeNavId === 'reports';
 $isStocktake = $activeNavId === 'stocktake';
 $isSettings = $activeNavId === 'settings';
 ?>
@@ -110,6 +111,14 @@ $isSettings = $activeNavId === 'settings';
 				</a>
 			</li>
 			<?php if ($isOffice): ?>
+				<li class="<?php p($isReports ? 'active' : ''); ?>">
+					<a <?php if ($isReports): ?>aria-current="page"<?php endif; ?> href="<?php p((string)($navUrls['reports'] ?? '#')); ?>"
+						title="<?php p($l->t('Reports: value and untouched stock')); ?>"
+						aria-label="<?php p($l->t('Go to reports')); ?>">
+						<span class="iv-nav__icon" aria-hidden="true"><?php print_unescaped($ivNavIcon('clipboard-list')); ?></span>
+						<?php $ivNavLabel($l->t('Reports'), $l->t('Value and untouched stock')); ?>
+					</a>
+				</li>
 				<li class="<?php p($isStocktake ? 'active' : ''); ?>">
 					<a <?php if ($isStocktake): ?>aria-current="page"<?php endif; ?> href="<?php p((string)($navUrls['stocktake'] ?? '#')); ?>"
 						title="<?php p($l->t('Stocktake: Cycle counts and Inventur campaigns')); ?>"
