@@ -11,7 +11,6 @@ use OCP\IDBConnection;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use ReflectionClass;
 
 final class UninstallDropTablesBehaviorTest extends TestCase
 {
@@ -95,8 +94,14 @@ final class UninstallDropTablesBehaviorTest extends TestCase
 		$this->rootFolder->expects(self::never())->method('get');
 
 		$step = new UninstallDropTables($this->connection, $this->config, $this->rootFolder);
-		$method = (new ReflectionClass(UninstallDropTables::class))->getMethod('dropAllTablesAndMetadata');
-		$method->setAccessible(true);
-		$method->invoke($step, $this->output);
+		// Access the private test-only path without ReflectionMethod::setAccessible()
+		// (PHP 8.5 deprecates setAccessible()).
+		\Closure::bind(
+			function (IOutput $output): void {
+				$this->dropAllTablesAndMetadata($output);
+			},
+			$step,
+			UninstallDropTables::class,
+		)($this->output);
 	}
 }
