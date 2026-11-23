@@ -789,7 +789,9 @@ test.describe('SCREENSHOT_MATRIX capture — F2 custody delta', () => {
 		const prevAllowed = occ('config:app:get inventorycheck access_allowed_user_ids')
 		let ctx2 = null
 		try {
-			// Recreate the harness denied probe if a prior lane removed it.
+			// Recreate the harness denied probe if a prior lane removed it,
+			// then pin its password — sibling lanes may have rotated it
+			// (admin_password_rotation class).
 			if (!occ('user:info iv_ds_denied').includes('user_id')) {
 				execFileSync('docker', [
 					'compose', 'exec', '-T', '-u', 'www-data',
@@ -797,9 +799,17 @@ test.describe('SCREENSHOT_MATRIX capture — F2 custody delta', () => {
 					'nextcloud', 'php', 'occ', 'user:add', '--password-from-env', 'iv_ds_denied',
 				], { cwd: COMPOSE_CWD, stdio: ['ignore', 'pipe', 'pipe'] })
 			}
+			execFileSync('docker', [
+				'compose', 'exec', '-T', '-u', 'www-data',
+				'-e', 'OC_PASS=DsProbe!2026',
+				'nextcloud', 'php', 'occ', 'user:resetpassword', '--password-from-env', 'iv_ds_denied',
+			], { cwd: COMPOSE_CWD, stdio: ['ignore', 'pipe', 'pipe'] })
 			occ('config:app:set inventorycheck access_restriction_enabled --value=1')
 			occ(`config:app:set inventorycheck access_allowed_user_ids --value='["admin","iv_atlas"]'`)
-			ctx2 = await browser.newContext({ viewport: { width: 1280, height: 800 } })
+			// Empty storageState: browser.newContext inside a test inherits
+			// use.storageState (iv_atlas) — without this the "denied" context
+			// stays authenticated as an allowed user.
+			ctx2 = await browser.newContext({ viewport: { width: 1280, height: 800 }, storageState: { cookies: [], origins: [] } })
 			const dp = await ctx2.newPage()
 			await login(dp, { username: 'iv_ds_denied', password: 'DsProbe!2026' })
 			const resp = await dp.goto(`${APP}/people`, { waitUntil: 'domcontentloaded' })
@@ -1057,7 +1067,9 @@ test.describe('SCREENSHOT_MATRIX capture — F2 custody delta', () => {
 		// anon /people → login redirect.
 		{
 			const cell = { id: 'anon-people-redirect', checks: {}, status: 'ok', fails: [] }
-			const anon = await browser.newContext({ viewport: { width: 1280, height: 800 } })
+			// Empty storageState — see the denied leg: inherited use.storageState
+			// would keep this context authenticated as iv_atlas.
+			const anon = await browser.newContext({ viewport: { width: 1280, height: 800 }, storageState: { cookies: [], origins: [] } })
 			const ap = await anon.newPage()
 			const resp = await ap.goto(`${APP}/people`, { waitUntil: 'domcontentloaded' })
 			await settle(ap)
@@ -1078,7 +1090,14 @@ test.describe('SCREENSHOT_MATRIX capture — F2 custody delta', () => {
 			await input.fill(`zz-nomatch-${MARKER}`)
 			await waitPeopleListSettled(page)
 			const empty = page.locator('#iv-page-root .iv-empty, #iv-page-root .iv-empty-state').first()
-			cell.checks.emptyVisible = await empty.isVisible().catch(() => false)
+			// Auto-wait for the debounced (300ms) search load to land the empty
+			// state — a one-shot isVisible() races the debounce + fetch.
+			try {
+				await expect(empty).toBeVisible({ timeout: 15_000 })
+				cell.checks.emptyVisible = true
+			} catch {
+				cell.checks.emptyVisible = false
+			}
 			cell.checks.emptyCopy = ((await empty.textContent().catch(() => '')) || '').replace(/\s+/g, ' ').trim().slice(0, 200)
 			cell.checks.cta = await page.locator('#iv-page-actions button.iv-btn--primary, #iv-page-actions button.primary').first().isVisible().catch(() => false)
 			if (!cell.checks.emptyVisible || !cell.checks.emptyCopy) cell.fails.push('no empty-state copy on empty list')
@@ -1116,6 +1135,7 @@ test.describe('SCREENSHOT_MATRIX capture — F2 custody delta', () => {
 				for (const el of root.querySelectorAll('*')) {
 					const cs = getComputedStyle(el)
 					if (cs.display === 'none' || cs.visibility === 'hidden') continue
+					if (el.closest('.iv-label-preview, .iv-label-print__sheet')) continue // documented --iv-qr-canvas exception
 					const r = el.getBoundingClientRect()
 					if (r.width < 40 || r.height < 24) continue
 					const L = lum(cs.backgroundColor)
