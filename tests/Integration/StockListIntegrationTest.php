@@ -66,8 +66,10 @@ final class StockListIntegrationTest extends TestCase
 		$this->assertIsString($content);
 		$this->assertStringContainsString($this->sku, $content, 'item row must appear in the sheet');
 		$this->assertStringContainsString('SL-LOC-', $content, 'location column header must appear');
-		// Footer: unpriced count + signature line.
-		$this->assertStringContainsString('signature', $content);
+		// Footer: unpriced count + signature line. The label is localized
+		// (instance default_language need not be 'en') — the durable needle
+		// is the underscore signature run itself.
+		$this->assertStringContainsString('________________', $content, 'signature line must be present');
 		$zip->close();
 		unlink($tmp);
 	}
@@ -81,7 +83,7 @@ final class StockListIntegrationTest extends TestCase
 		// column and the SKU prefix rather than the full clipped cell.
 		$this->assertStringContainsString('Stock list widget', $body, 'item row must appear in the PDF stream');
 		$this->assertStringContainsString('SL-SKU', $body);
-		$this->assertStringContainsString('signature', $body, 'signature line must be present');
+		$this->assertStringContainsString('________________', $body, 'signature line must be present');
 		$this->assertStringContainsString('%%EOF', $body);
 	}
 
