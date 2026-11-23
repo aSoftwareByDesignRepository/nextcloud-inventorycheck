@@ -49,6 +49,7 @@ use OCA\InventoryCheck\Service\LowStockNotifyService;
 use OCA\InventoryCheck\Service\LowStockService;
 use OCA\InventoryCheck\Service\MobileGateService;
 use OCA\InventoryCheck\Service\ProductLookupService;
+use OCA\InventoryCheck\Service\MovementEvidenceService;
 use OCA\InventoryCheck\Service\MovementService;
 use OCA\InventoryCheck\Service\ScanIdempotencyService;
 use OCA\InventoryCheck\Service\QtyScaleService;
@@ -479,6 +480,16 @@ class Application extends App implements IBootstrap
 				$c->get(ItemMapper::class),
 				$c->get(AccessControlService::class),
 				$c->get(Clock::class),
+				$c->get(\Psr\Log\LoggerInterface::class),
+			);
+		});
+		$context->registerService(MovementEvidenceService::class, static function ($c): MovementEvidenceService {
+			return new MovementEvidenceService(
+				$c->get(IDBConnection::class),
+				$c->get(IAppDataFactory::class)->get(Application::APP_ID),
+				$c->get(MovementMapper::class),
+				$c->get(AccessControlService::class),
+				$c->get(LocationAclService::class),
 				$c->get(\Psr\Log\LoggerInterface::class),
 			);
 		});

@@ -1006,6 +1006,56 @@
 			],
 			"mobile": null,
 			"mobileReason": "Wave A is web-only per spec; mobile loans endpoints (/mobile/v1/loans + checkin + signature) land in Wave B."
+		},
+		{
+			"id": "delivery-note-upload",
+			"param": "file",
+			"description": "Receive movements accept an optional Lieferschein photo as multipart `file` (POST /api/movements/{id}/delivery-note office+; POST /mobile/v1/movements/{id}/delivery-note seat/device). Movement DTOs expose hasDeliveryNote only — the AppData path never serializes (NN-01). Upload is post-commit and must never block the booking (NN-02).",
+			"errorCodes": [
+				"upload_failed",
+				"photo_too_large",
+				"photo_type_invalid",
+				"invalid_kind"
+			],
+			"server": [
+				{
+					"file": "lib/Service/MovementEvidenceService.php",
+					"needles": [
+						"upload_failed",
+						"photo_too_large",
+						"photo_type_invalid",
+						"invalid_kind",
+						"getDeliveryNotePath"
+					]
+				}
+			],
+			"web": [
+				{
+					"file": "js/app.js",
+					"needles": [
+						"deliveryNoteUpload",
+						"deliveryNoteCell",
+						"fd.append('file'",
+						"hasDeliveryNote"
+					]
+				}
+			],
+			"mobile": [
+				{
+					"file": "src/api/client.ts",
+					"needles": [
+						"uploadDeliveryNote",
+						"delivery-note"
+					]
+				},
+				{
+					"file": "src/screens/ConfirmScreen.tsx",
+					"needles": [
+						"deliveryNote",
+						"uploadDeliveryNote"
+					]
+				}
+			]
 		}
 	]
 }

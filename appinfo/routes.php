@@ -109,6 +109,10 @@ return [
 		['name' => 'itemPhoto#upload', 'url' => '/api/items/{id}/photo', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
 		['name' => 'itemPhoto#destroy', 'url' => '/api/items/{id}/photo', 'verb' => 'DELETE', 'requirements' => ['id' => '\\d+']],
 
+		['name' => 'movementEvidence#show', 'url' => '/api/movements/{id}/delivery-note', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+		['name' => 'movementEvidence#upload', 'url' => '/api/movements/{id}/delivery-note', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
+		['name' => 'movementEvidence#destroy', 'url' => '/api/movements/{id}/delivery-note', 'verb' => 'DELETE', 'requirements' => ['id' => '\\d+']],
+
 		['name' => 'balance#index', 'url' => '/api/balances', 'verb' => 'GET'],
 
 		['name' => 'movement#index', 'url' => '/api/movements', 'verb' => 'GET'],
@@ -175,6 +179,8 @@ return [
 		['name' => 'mobile#bootstrap', 'url' => '/mobile/v1/bootstrap', 'verb' => 'GET'],
 		['name' => 'mobile#byCode', 'url' => '/mobile/v1/items/by-code/{code}', 'verb' => 'GET', 'requirements' => ['code' => '[^/]+']],
 		['name' => 'mobile#itemPhoto', 'url' => '/mobile/v1/items/{id}/photo', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+		['name' => 'mobile#deliveryNote', 'url' => '/mobile/v1/movements/{id}/delivery-note', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+		['name' => 'mobile#deliveryNoteUpload', 'url' => '/mobile/v1/movements/{id}/delivery-note', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
 		['name' => 'mobile#locationByCode', 'url' => '/mobile/v1/locations/by-code/{code}', 'verb' => 'GET', 'requirements' => ['code' => '[^/]+']],
 		['name' => 'mobile#locations', 'url' => '/mobile/v1/locations', 'verb' => 'GET'],
 		['name' => 'mobile#balances', 'url' => '/mobile/v1/balances', 'verb' => 'GET'],

@@ -39,6 +39,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setReasonCode(?string $v)
  * @method int|null getSpendMinor()
  * @method void setSpendMinor(?int $v)
+ * @method string|null getDeliveryNotePath()
+ * @method void setDeliveryNotePath(?string $v)
  */
 class Movement extends Entity
 {
@@ -63,6 +65,11 @@ class Movement extends Entity
 	protected ?string $reasonCode = null;
 	/** Restock F-06: total paid for the received qty (invoice line), receive only, immutable. */
 	protected ?int $spendMinor = null;
+	/**
+	 * C-2: AppData file name of the Lieferschein photo (receive only).
+	 * Internal-only — the API exposes hasDeliveryNote, never the path (NN-01).
+	 */
+	protected ?string $deliveryNotePath = null;
 
 	public function __construct()
 	{
@@ -82,6 +89,7 @@ class Movement extends Entity
 		$this->addType('lotCode', 'string');
 		$this->addType('reasonCode', 'string');
 		$this->addType('spendMinor', 'integer');
+		$this->addType('deliveryNotePath', 'string');
 	}
 
 	/** @return array<string, mixed> */
@@ -105,6 +113,7 @@ class Movement extends Entity
 			'spendMinor' => $this->spendMinor,
 			'createdAt' => $this->createdAt,
 			'createdBy' => $this->createdBy,
+			'hasDeliveryNote' => $this->deliveryNotePath !== null && $this->deliveryNotePath !== '',
 		];
 	}
 }

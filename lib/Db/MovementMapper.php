@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace OCA\InventoryCheck\Db;
 
+use OCA\InventoryCheck\Exception\NotFoundException;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -13,11 +15,36 @@ use OCP\IDBConnection;
  */
 class MovementMapper extends QBMapper
 {
+	use RowLocking;
+
 	public const TABLE = 'iv_movements';
 
 	public function __construct(IDBConnection $db)
 	{
 		parent::__construct($db, self::TABLE, Movement::class);
+	}
+
+	public function findById(int $id): Movement
+	{
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')->from($this->getTableName())
+			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, \PDO::PARAM_INT)));
+		try {
+			return $this->findEntity($qb);
+		} catch (DoesNotExistException) {
+			throw new NotFoundException('unknown_movement');
+		}
+	}
+
+	/** Locking read — must run inside a transaction (C-2 evidence writes). */
+	public function lockById(int $id, bool $exclusive): Movement
+	{
+		$row = $this->selectRowByIdLocked($id, $exclusive);
+		if ($row === null) {
+			throw new NotFoundException('unknown_movement');
+		}
+		/** @var Movement */
+		return $this->mapRowToEntity($row);
 	}
 
 	/**

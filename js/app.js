@@ -2236,6 +2236,9 @@
 									}
 									return formatQty(n);
 								} },
+								{ label: tr('Delivery note'), render: function (r) {
+									return deliveryNoteCell(ctx, r, function () { renderDashboard(ctx); });
+								} },
 							],
 							mov.data,
 							{ caption: tr('Recent movements') }
@@ -4782,6 +4785,11 @@
 						return btn(tr('Reverse'), {
 							'data-iv-action': 'reverse',
 							onclick: function () { openReverseFromMovement(ctx, r); },
+						});
+					} },
+					{ label: tr('Delivery note'), render: function (r) {
+						return deliveryNoteCell(ctx, r, function () {
+							renderMovements(ctx, Object.assign(readFiltersFn({}), { _reuseShell: true }));
 						});
 					} },
 				], res.data));
@@ -8628,6 +8636,126 @@
 			setBusy(mount, false);
 			clear(mount);
 			mount.appendChild(loadErrorPanel(err.message, function () { renderPersonDetail(ctx); }));
+		});
+	}
+
+	/* C-2 IV-RECEIVING-EVIDENCE — one Lieferschein photo per receive movement.
+	   The file path never leaves the server (NN-01): rows expose only
+	   hasDeliveryNote; the image streams via the authenticated GET. */
+	function deliveryNoteCell(ctx, mov, refresh) {
+		if (mov.kind !== 'receive') {
+			return el('span', { className: 'iv-muted', text: '—' });
+		}
+		if (mov.hasDeliveryNote) {
+			return btn(tr('Delivery note'), {
+				'data-iv-action': 'delivery-note',
+				title: tr('View the delivery note'),
+				onclick: function (e) { openDeliveryNoteDialog(ctx, mov, refresh, e.currentTarget); },
+			});
+		}
+		if (ctx.isOffice || ctx.isAppAdmin) {
+			return btn(tr('Attach delivery note'), {
+				'data-iv-action': 'delivery-note-add',
+				title: tr('Attach a delivery note photo'),
+				onclick: function (e) { openDeliveryNoteDialog(ctx, mov, refresh, e.currentTarget); },
+			});
+		}
+		return el('span', { className: 'iv-muted', text: '—' });
+	}
+
+	function openDeliveryNoteDialog(ctx, mov, refresh, triggerEl) {
+		var canWrite = !!(ctx.isOffice || ctx.isAppAdmin);
+		var bodyNodes = [];
+		var bodyWrap = null;
+		var dlg = null;
+
+		var fileInput = el('input', {
+			type: 'file',
+			accept: 'image/jpeg,image/png,image/webp',
+			name: 'file',
+		});
+		fileInput.addEventListener('change', function () {
+			if (!fileInput.files || !fileInput.files[0]) {
+				return;
+			}
+			var file = fileInput.files[0];
+			if (file.size > 10485760) {
+				applyFieldErrors(bodyWrap, [{ field: 'file', code: 'photo_too_large' }],
+					tr('The delivery note must be an image up to 10 MB.'));
+				return;
+			}
+			uploadDeliveryNote(ctx, mov.id, file, bodyWrap, dlg, refresh);
+		});
+
+		if (mov.hasDeliveryNote) {
+			bodyNodes.push(el('img', {
+				className: 'iv-delivery-note__img',
+				src: urlWithId(ctx.urls.api.deliveryNote, mov.id),
+				alt: tr('Delivery note for movement {id}', { id: String(mov.id) }),
+			}));
+			if (canWrite) {
+				bodyNodes.push(field(tr('Replace the delivery note'), fileInput, { name: 'file' }));
+			}
+		} else {
+			bodyNodes.push(el('p', {
+				className: 'iv-muted',
+				text: tr('No delivery note is attached to this receipt.'),
+			}));
+			if (canWrite) {
+				bodyNodes.push(field(tr('Delivery note photo'), fileInput, { name: 'file' }));
+			}
+		}
+
+		var footer = [];
+		if (mov.hasDeliveryNote && canWrite) {
+			footer.push(btn(tr('Remove note'), {
+				'data-iv-action': 'delivery-note-remove',
+				onclick: function () {
+					removeDeliveryNote(ctx, mov.id, dlg, refresh);
+				},
+			}));
+		}
+		bodyNodes.push(el('div', { className: 'iv-delivery-note__actions' }, footer));
+
+		bodyWrap = el('div', { className: 'iv-delivery-note' }, bodyNodes);
+		dlg = dialog(tr('Delivery note'), [bodyWrap], null, null, {
+			hideConfirm: true,
+			restoreFocusTo: triggerEl,
+		});
+	}
+
+	function uploadDeliveryNote(ctx, movId, file, errRoot, dlg, refresh) {
+		var fd = new FormData();
+		fd.append('file', file);
+		fetch(urlWithId(ctx.urls.api.deliveryNoteUpload, movId), {
+			method: 'POST',
+			credentials: 'same-origin',
+			headers: { requesttoken: requestToken() },
+			body: fd,
+		}).then(function (res) {
+			return res.json().catch(function () { return {}; }).then(function (data) {
+				if (!res.ok) {
+					var err = (data && data.error) || {};
+					throw new ApiError(err.code, err.message, err.details, res.status);
+				}
+				return data;
+			});
+		}).then(function () {
+			toast(tr('Delivery note saved.'));
+			if (dlg) { dlg.close(); }
+			if (typeof refresh === 'function') { refresh(); }
+		}).catch(function (err) {
+			applyFieldErrors(errRoot, err && err.details, err && err.message);
+		});
+	}
+
+	function removeDeliveryNote(ctx, movId, dlg, refresh) {
+		api('DELETE', urlWithId(ctx.urls.api.deliveryNoteDelete, movId)).then(function () {
+			toast(tr('Delivery note removed.'));
+			if (dlg) { dlg.close(); }
+			if (typeof refresh === 'function') { refresh(); }
+		}).catch(function (err) {
+			applyFieldErrors(errRoot, err && err.details, err && err.message);
 		});
 	}
 

@@ -82,6 +82,7 @@ class MobileController extends Controller
 		private readonly ?\OCA\InventoryCheck\Service\LotService $lotService = null,
 		private readonly ?\OCA\InventoryCheck\Service\OrderSheetService $orderSheets = null,
 		private readonly ?\OCA\InventoryCheck\Db\ItemMapper $itemMapper = null,
+		private readonly ?\OCA\InventoryCheck\Service\MovementEvidenceService $evidence = null,
 	) {
 		parent::__construct(Application::APP_ID, $request);
 	}
@@ -155,6 +156,48 @@ class MobileController extends Controller
 		// Release the PHP session lock before streaming — auth already ran.
 		$this->session->close();
 		$photo = $this->photos->read($id);
+		$response = new DataDisplayResponse($photo['content'], 200, ['Content-Type' => $photo['mime']]);
+		$response->cacheFor(3600, false, true);
+		return $response;
+	}
+
+	/**
+	 * C-2: seat/device attach of the Lieferschein photo to a receive movement.
+	 * Post-commit step — the booking is never blocked by this call (NN-02).
+	 * Multipart `file` upload; same server-side validation as the web route.
+	 */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[NoAdminRequired]
+	public function deliveryNoteUpload(int $id): JSONResponse
+	{
+		$this->assertSafeMutationChannel();
+		[$uid, $device] = $this->resolveCaller(true);
+		$this->gate->assertGate($uid, $device);
+		if ($this->evidence === null) {
+			throw new MobileGateException('service_unavailable');
+		}
+		$file = $this->request->getUploadedFile('file');
+		if (!is_array($file)) {
+			throw new ValidationException('upload_failed', '', [['field' => 'file', 'code' => 'upload_failed']]);
+		}
+		$mov = $this->evidence->upload($this->actorUid($uid, $device), $id, $file);
+		return new JSONResponse(['movement' => $mov->toApi()]);
+	}
+
+	/** C-2: companion read of the delivery-note image (auth'd, never public URL). */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[NoAdminRequired]
+	public function deliveryNote(int $id): DataDisplayResponse
+	{
+		[$uid, $device] = $this->resolveCaller(true);
+		$this->gate->assertGate($uid, $device);
+		if ($this->evidence === null) {
+			throw new MobileGateException('service_unavailable');
+		}
+		$this->session->close();
+		$photo = $this->evidence->read($this->actorUid($uid, $device), $id);
 		$response = new DataDisplayResponse($photo['content'], 200, ['Content-Type' => $photo['mime']]);
 		$response->cacheFor(3600, false, true);
 		return $response;

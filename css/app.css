@@ -3372,3 +3372,19 @@ textarea {
 .iv-loc-parent-label {
 	white-space: nowrap;
 }
+
+/* C-2 delivery-note viewer — image fits the dialog, never overflows */
+.iv-delivery-note__img {
+	max-width: 100%;
+	max-height: 70vh;
+	object-fit: contain;
+	display: block;
+	margin-inline: auto;
+	border-radius: var(--border-radius-large, var(--border-radius));
+}
+.iv-delivery-note__actions {
+	display: flex;
+	gap: var(--iv-space-2, 8px);
+	justify-content: flex-end;
+	margin-top: var(--iv-space-3, 12px);
+}

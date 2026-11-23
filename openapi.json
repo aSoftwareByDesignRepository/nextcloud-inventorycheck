@@ -1372,6 +1372,45 @@
 					}
 				}
 			}
+		},
+		"/api/movements/{id}/delivery-note": {
+			"get": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			},
+			"post": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			},
+			"delete": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			}
+		},
+		"/mobile/v1/movements/{id}/delivery-note": {
+			"get": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			},
+			"post": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			}
 		}
 	},
 	"components": {

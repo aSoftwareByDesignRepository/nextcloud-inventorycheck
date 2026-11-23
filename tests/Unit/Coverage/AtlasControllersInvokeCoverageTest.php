@@ -533,6 +533,22 @@ final class AtlasControllersInvokeCoverageTest extends TestCase
 			return $mock;
 		}
 
+		if ($typeName === \OCA\InventoryCheck\Service\MovementEvidenceService::class) {
+			$mov = new \OCA\InventoryCheck\Db\Movement();
+			$mov->setItemId(1);
+			$mov->setLocationId(1);
+			$mov->setKind('receive');
+			$mov->setQtyDelta(1);
+			$mov->setQtyAfter(1);
+			$mov->setCreatedBy('office');
+			$mock = $this->createMock(\OCA\InventoryCheck\Service\MovementEvidenceService::class);
+			$mock->method('read')->willReturn(['mime' => 'image/png', 'content' => 'x']);
+			$mock->method('upload')->willReturn($mov);
+			$mock->method('delete')->willReturn($mov);
+			$this->byType[$key] = $mock;
+			return $mock;
+		}
+
 		if ($typeName === DirectoryOptionsService::class) {
 			$mock = $this->createMock(DirectoryOptionsService::class);
 			$mock->method('searchUsers')->willReturn([['id' => 'bob', 'displayName' => 'Bob']]);

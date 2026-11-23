@@ -15,6 +15,7 @@ use OCA\InventoryCheck\Controller\FlangeController;
 use OCA\InventoryCheck\Controller\ImportController;
 use OCA\InventoryCheck\Controller\ItemController;
 use OCA\InventoryCheck\Controller\ItemPhotoController;
+use OCA\InventoryCheck\Controller\MovementEvidenceController;
 use OCA\InventoryCheck\Controller\JournalController;
 use OCA\InventoryCheck\Controller\LicenseController;
 use OCA\InventoryCheck\Controller\LoanController;
@@ -46,6 +47,7 @@ use OCA\InventoryCheck\Service\DevicePairingService;
 use OCA\InventoryCheck\Service\DirectoryOptionsService;
 use OCA\InventoryCheck\Service\FlangeService;
 use OCA\InventoryCheck\Service\ItemPhotoService;
+use OCA\InventoryCheck\Service\MovementEvidenceService;
 use OCA\InventoryCheck\Service\ItemService;
 use OCA\InventoryCheck\Service\LicenseService;
 use OCA\InventoryCheck\Service\LocationAclService;
@@ -95,6 +97,7 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 		ItemController::class,
 		ProductLookupController::class,
 		ItemPhotoController::class,
+		MovementEvidenceController::class,
 		BalanceController::class,
 		MovementController::class,
 		LowStockController::class,
@@ -151,6 +154,7 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 		KitController::class => ['index', 'create', 'issue'],
 		ProductLookupController::class => ['lookup'],
 		ItemPhotoController::class => ['show', 'upload', 'destroy'],
+		MovementEvidenceController::class => ['show', 'upload', 'destroy'],
 		BalanceController::class => ['index'],
 		MovementController::class => ['index', 'receive', 'issue', 'transfer', 'adjust', 'scan'],
 		LowStockController::class => ['index', 'perLocation'],
@@ -176,6 +180,7 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 			'cycleCountSetCount', 'productLookup', 'createItem', 'lotByCode', 'kits', 'kitIssue',
 			'widgetSnapshot', 'today', 'lotsExpiring', 'itemLots',
 			'orderSheets', 'orderSheetShow', 'orderSheetReceive',
+			'deliveryNote', 'deliveryNoteUpload',
 		],
 	];
 
@@ -773,6 +778,22 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 			$mock->method('read')->willReturn(['mime' => 'image/png', 'content' => 'x']);
 			$mock->method('upload')->willReturn(['ok' => true]);
 			$mock->method('delete')->willReturn(['deleted' => true]);
+			$this->byType[$key] = $mock;
+			return $mock;
+		}
+
+		if ($typeName === MovementEvidenceService::class) {
+			$mov = new Movement();
+			$mov->setItemId(1);
+			$mov->setLocationId(1);
+			$mov->setKind('receive');
+			$mov->setQtyDelta(1);
+			$mov->setQtyAfter(1);
+			$mov->setCreatedBy('office');
+			$mock = $this->createMock(MovementEvidenceService::class);
+			$mock->method('read')->willReturn(['mime' => 'image/png', 'content' => 'x']);
+			$mock->method('upload')->willReturn($mov);
+			$mock->method('delete')->willReturn($mov);
 			$this->byType[$key] = $mock;
 			return $mock;
 		}
