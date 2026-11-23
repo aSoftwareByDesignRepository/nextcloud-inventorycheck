@@ -64,9 +64,11 @@ function dbSql(sql) {
 test.afterAll(() => {
 	for (const tag of createdTags) {
 		const like = `%${tag}%`
+		// NOTE: oc_iv_journal rows are never deleted — the hash chain is
+		// append-only; any mid-chain delete permanently flags verify() as
+		// seq_gap on this shared instance (audit residue is by design).
 		dbSql(
-			`DELETE j FROM oc_iv_journal j JOIN oc_iv_movements m ON j.movement_id = m.id JOIN oc_iv_items i ON m.item_id = i.id WHERE i.sku LIKE '${like}';`
-			+ `DELETE l FROM oc_iv_loans l JOIN oc_iv_items i ON l.item_id = i.id WHERE i.sku LIKE '${like}';`
+			`DELETE l FROM oc_iv_loans l JOIN oc_iv_items i ON l.item_id = i.id WHERE i.sku LIKE '${like}';`
 			+ `DELETE l FROM oc_iv_loans l JOIN oc_iv_persons p ON l.person_id = p.id WHERE p.display_name LIKE '${like}';`
 			+ `DELETE m FROM oc_iv_movements m JOIN oc_iv_items i ON m.item_id = i.id WHERE i.sku LIKE '${like}';`
 			+ `DELETE b FROM oc_iv_balances b JOIN oc_iv_items i ON b.item_id = i.id WHERE i.sku LIKE '${like}';`
@@ -90,12 +92,16 @@ test('F2: person → checkout → checkin lifecycle + UI surfaces', async ({ pag
 		code: `CL-LOC-${tag}`.slice(0, 32), name: `CL Loc ${tag}`,
 	})
 	expectOk(loc, 'create location')
+	// Fail at the real step when a 2xx lacks the id (shared-instance transient
+	// once surfaced as a misleading downstream `unknown_location` 404).
+	expect(loc.data?.id, `create location id: ${JSON.stringify(loc.data)}`).toBeGreaterThan(0)
 
 	const sku = `CL-I-${tag}`.slice(0, 64)
 	const item = await api(page, 'POST', '/index.php/apps/inventorycheck/api/items', {
 		sku, name: `CL Item ${tag}`,
 	})
 	expectOk(item, 'create item')
+	expect(item.data?.id, `create item id: ${JSON.stringify(item.data)}`).toBeGreaterThan(0)
 	const itemId = item.data.id
 
 	const recv = await api(page, 'POST', '/index.php/apps/inventorycheck/api/movements/receive', {
@@ -108,6 +114,7 @@ test('F2: person → checkout → checkin lifecycle + UI surfaces', async ({ pag
 		displayName: `CL Person ${tag}`, memberNo: `M-${tag}`.slice(0, 32),
 	})
 	expectOk(person, 'create person')
+	expect(person.data?.person?.id, `create person id: ${JSON.stringify(person.data)}`).toBeGreaterThan(0)
 	const personId = person.data.person.id
 
 	const found = await api(page, 'GET', `/index.php/apps/inventorycheck/api/persons/search?search=${encodeURIComponent(tag)}`)
@@ -154,12 +161,17 @@ test('F2: person → checkout → checkin lifecycle + UI surfaces', async ({ pag
 	const blocked = await api(page, 'POST', `/index.php/apps/inventorycheck/api/persons/${p2.data.person.id}/anonymize`)
 	expect(blocked.status, `anonymize-with-open-loan → ${blocked.status}`).toBe(409)
 
-	// --- UI: people page lists the register ---
+	// --- UI: people page lists the register (locale-safe: structural ready
+	// marker + fixture name — never an EN visible-text needle; the fixture
+	// user's language is shared state other lanes may switch) ---
 	await openInventory(page, '/apps/inventorycheck/people')
-	await expect(page.locator('body')).toContainText('People', { timeout: 15_000 })
+	await expect(page.locator('#iv-page-title, .iv-section, .iv-empty, .iv-table').first()).toBeVisible({ timeout: 15_000 })
 	await expect(page.locator('body')).toContainText(`CL P2 ${tag}`)
 
-	// --- UI: item detail shows the lent-out section ---
+	// --- UI: item detail shows the lent-out section — the still-open loan2
+	// renders the person name inside the loans table ---
 	await openInventory(page, `/apps/inventorycheck/items/${itemId}`)
-	await expect(page.locator('body')).toContainText('Lent out', { timeout: 15_000 })
+	await expect(
+		page.locator('table, .iv-table').filter({ hasText: `CL P2 ${tag}` }).first(),
+	).toBeVisible({ timeout: 15_000 })
 })

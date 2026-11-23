@@ -69,9 +69,11 @@ function dbSql(sql) {
 test.afterAll(() => {
 	for (const tag of createdTags) {
 		const like = `%${tag}%`
+		// NOTE: oc_iv_journal rows are never deleted — the hash chain is
+		// append-only; any mid-chain delete permanently flags verify() as
+		// seq_gap on this shared instance (audit residue is by design).
 		dbSql(
-			`DELETE j FROM oc_iv_journal j JOIN oc_iv_movements m ON j.movement_id = m.id JOIN oc_iv_items i ON m.item_id = i.id WHERE i.sku LIKE '${like}';`
-			+ `DELETE l FROM oc_iv_loans l JOIN oc_iv_items i ON l.item_id = i.id WHERE i.sku LIKE '${like}';`
+			`DELETE l FROM oc_iv_loans l JOIN oc_iv_items i ON l.item_id = i.id WHERE i.sku LIKE '${like}';`
 			+ `DELETE l FROM oc_iv_loans l JOIN oc_iv_persons p ON l.person_id = p.id WHERE p.display_name LIKE '${like}';`
 			+ `DELETE r FROM oc_iv_loan_requests r JOIN oc_iv_persons p ON r.person_id = p.id WHERE p.display_name LIKE '${like}';`
 			+ `DELETE r FROM oc_iv_reservations r JOIN oc_iv_items i ON r.item_id = i.id WHERE i.sku LIKE '${like}';`
@@ -148,6 +150,10 @@ test('Wave C: member portal — token, badges, request → approve, damage, revo
 		.replace(/data-requesttoken="[^"]*"/g, 'data-requesttoken="__R__"')
 		.replace(/nonce="[^"]*"/g, 'nonce="__N__"')
 		.replace(/data-csrf="[^"]*"/g, 'data-csrf="__C__"')
+		// Core volatile vars differ between any two requests (page-load clock,
+		// last-login stamp) — they are not token-derived, so strip them too.
+		.replace(/var nc_pageLoad=\d+;/g, 'var nc_pageLoad=__P__;')
+		.replace(/var nc_lastLogin=\d+;/g, 'var nc_lastLogin=__L__;')
 	expect(normalize(bodyOk, rawToken)).toBe(normalize(bodyBad, 'ivm_bogus000000000000000000'))
 
 	// --- JSON API: valid token → own scope, badge-only items ---

@@ -93,9 +93,11 @@ function dbSql(sql) {
 test.afterAll(() => {
 	for (const tag of createdTags) {
 		const like = `%${tag}%`
+		// NOTE: oc_iv_journal rows are never deleted — the hash chain is
+		// append-only; any mid-chain delete permanently flags verify() as
+		// seq_gap on this shared instance (audit residue is by design).
 		dbSql(
-			`DELETE j FROM oc_iv_journal j JOIN oc_iv_movements m ON j.movement_id = m.id JOIN oc_iv_items i ON m.item_id = i.id WHERE i.sku LIKE '${like}';`
-			+ `DELETE m FROM oc_iv_movements m JOIN oc_iv_items i ON m.item_id = i.id WHERE i.sku LIKE '${like}';`
+			`DELETE m FROM oc_iv_movements m JOIN oc_iv_items i ON m.item_id = i.id WHERE i.sku LIKE '${like}';`
 			+ `DELETE b FROM oc_iv_balances b JOIN oc_iv_items i ON b.item_id = i.id WHERE i.sku LIKE '${like}';`
 			+ `DELETE FROM oc_iv_items WHERE sku LIKE '${like}';`
 			+ `DELETE FROM oc_iv_locations WHERE code LIKE '${like}';`,
