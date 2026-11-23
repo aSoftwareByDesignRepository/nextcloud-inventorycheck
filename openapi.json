@@ -430,6 +430,34 @@
         }
       }
     },
+    "/api/items/{id}/availability": {
+      "get": {
+        "summary": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "locationId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ]
+      }
+    },
     "/api/items/{id}/label": {
       "get": {
         "responses": {
@@ -498,6 +526,16 @@
     },
     "/api/items/{id}/preferred-supplier": {
       "put": {
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/items/{id}/reservations": {
+      "get": {
+        "summary": "",
         "responses": {
           "200": {
             "description": "OK"
@@ -660,6 +698,36 @@
     },
     "/api/license/seats/{uid}": {
       "delete": {
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/loan-requests": {
+      "get": {
+        "summary": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/loan-requests/{id}/approve": {
+      "post": {
+        "summary": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/loan-requests/{id}/decline": {
+      "post": {
+        "summary": "",
         "responses": {
           "200": {
             "description": "OK"
@@ -1037,6 +1105,32 @@
         }
       }
     },
+    "/api/persons/{id}/member-token": {
+      "get": {
+        "summary": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "summary": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "summary": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/product-lookup": {
       "post": {
         "responses": {
@@ -1097,6 +1191,36 @@
     },
     "/api/reports/valuation": {
       "get": {
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/reservations": {
+      "post": {
+        "summary": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/reservations/{id}/cancel": {
+      "post": {
+        "summary": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/reservations/{id}/convert": {
+      "post": {
+        "summary": "",
         "responses": {
           "200": {
             "description": "OK"
@@ -1457,95 +1581,9 @@
         }
       }
     },
-    "/api/loan-requests": {
+    "/portal/{token}": {
       "get": {
-        "summary": "",
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/loan-requests/{id}/approve": {
-      "post": {
-        "summary": "",
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/loan-requests/{id}/decline": {
-      "post": {
-        "summary": "",
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/reservations": {
-      "post": {
-        "summary": "",
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/items/{id}/reservations": {
-      "get": {
-        "summary": "",
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/reservations/{id}/cancel": {
-      "post": {
-        "summary": "",
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/reservations/{id}/convert": {
-      "post": {
-        "summary": "",
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/persons/{id}/member-token": {
-      "get": {
-        "summary": "",
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      },
-      "post": {
-        "summary": "",
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      },
-      "delete": {
-        "summary": "",
+        "summary": "Public member-portal shell (token-credentialed, throttled); identical shell for live and bogus tokens — no existence oracle.",
         "responses": {
           "200": {
             "description": "OK"
@@ -1555,6 +1593,16 @@
     },
     "/portal/{token}/api": {
       "get": {
+        "summary": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/portal/{token}/loans/{id}/damage": {
+      "post": {
         "summary": "",
         "responses": {
           "200": {
@@ -1581,44 +1629,6 @@
             "description": "OK"
           }
         }
-      }
-    },
-    "/portal/{token}/loans/{id}/damage": {
-      "post": {
-        "summary": "",
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/items/{id}/availability": {
-      "get": {
-        "summary": "",
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          },
-          {
-            "name": "locationId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ]
       }
     }
   },
