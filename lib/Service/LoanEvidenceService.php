@@ -103,7 +103,11 @@ class LoanEvidenceService
 		$folder = $this->folder();
 		$this->db->beginTransaction();
 		try {
-			$loan = $this->loans->findByIdForUpdate($loanId);
+			try {
+				$loan = $this->loans->findByIdForUpdate($loanId);
+			} catch (\OCP\AppFramework\Db\DoesNotExistException) {
+				throw new NotFoundException('unknown_loan');
+			}
 			$this->assertVisible($actorUid, $loan);
 			$old = $prop === 'signature' ? $loan->getSignaturePath() : $loan->getDamagePhotoPath();
 			$folder->newFile($fileName)->putContent($raw);

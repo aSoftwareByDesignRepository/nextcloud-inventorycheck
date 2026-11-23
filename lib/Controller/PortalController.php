@@ -149,7 +149,11 @@ class PortalController extends Controller
 		if ($note === '' || mb_strlen($note) > 2000) {
 			throw new \OCA\InventoryCheck\Exception\ValidationException('validation_failed', '', [['field' => 'note', 'code' => 'validation_failed']]);
 		}
-		$loan = $this->loans->findById($id);
+		try {
+			$loan = $this->loans->findById($id);
+		} catch (\OCP\AppFramework\Db\DoesNotExistException) {
+			throw new NotFoundException('unknown_loan');
+		}
 		if ($loan->getPersonId() !== $person->getId()) {
 			throw new NotFoundException('unknown_loan');
 		}

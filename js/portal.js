@@ -173,8 +173,8 @@
 						itemId: parseInt(itemSel.value, 10),
 						qty: parseInt(qtyIn.value, 10) || 0,
 						purpose: purp.value.trim() || null,
-						wantedFrom: fromIn.value ? Math.floor(new Date(fromIn.value + 'T00:00:00Z').getTime() / 1000) : null,
-						wantedTo: toIn.value ? Math.floor(new Date(toIn.value + 'T23:59:59Z').getTime() / 1000) : null,
+						wantedFrom: fromIn.value ? Math.floor(new Date(fromIn.value + 'T00:00:00').getTime() / 1000) : null,
+						wantedTo: toIn.value ? Math.floor(new Date(toIn.value + 'T23:59:59').getTime() / 1000) : null,
 					}).then(function () {
 						status.textContent = tr('Request sent — the office will take a look.');
 						return refresh();

@@ -118,6 +118,9 @@ final class PersonService
 		$seen = $linked;
 		foreach ([$this->userManager->search($term, self::SEARCH_LIMIT),
 			$this->userManager->searchDisplayName($term, self::SEARCH_LIMIT)] as $users) {
+			if (!is_iterable($users)) {
+				continue;
+			}
 			foreach ($users as $user) {
 				assert($user instanceof IUser);
 				$uid = $user->getUID();

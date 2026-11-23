@@ -238,9 +238,11 @@ final class TransferManifest extends AbstractTransferManifest
 					'item_id' => 'iv_items',
 					'location_id' => 'iv_locations',
 					'person_id' => 'iv_persons',
-					'loan_id' => 'iv_loans',
 				],
-				'depends_on' => ['iv_items', 'iv_locations', 'iv_persons', 'iv_loans'],
+				// loan_id back-references the loan created on approval —
+				// requests insert first (NULL), the link is post-load.
+				'fk_late' => ['loan_id' => 'iv_loans'],
+				'depends_on' => ['iv_items', 'iv_locations', 'iv_persons'],
 				'env_columns' => ['requester_uid', 'decided_by']],
 			'iv_reservations' => ['class' => 'business', 'strategy' => 'seed-if-empty',
 				'fk' => [
