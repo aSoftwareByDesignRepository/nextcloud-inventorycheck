@@ -226,7 +226,7 @@
 			document.body.style.overflow = '';
 			if (prev && prev.isConnected && typeof prev.focus === 'function') { try { prev.focus(); } catch (e) {} }
 		};
-		var err = el('p', { className: 'iv-field-error', role: 'alert', hidden: true });
+		var err = el('p', { className: 'iv-field__error', role: 'alert', hidden: true });
 		var cancel = el('button', { className: 'iv-btn', type: 'button', text: tr('Cancel'), onclick: close });
 		var ok = el('button', {
 			className: 'iv-btn iv-btn--primary', type: 'button', text: confirmLabel || tr('OK'),

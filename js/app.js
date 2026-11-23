@@ -8454,14 +8454,14 @@
 				var kids = [];
 				if (l.hasSignature && ctx.urls.api.loanSignature) {
 					kids.push(btn(tr('Signature'), {
-						className: 'iv-btn iv-btn--small iv-btn--ghost',
+						className: 'iv-btn iv-btn--compact iv-btn--ghost',
 						onclick: function () { openLoanEvidence(ctx, ctx.urls.api.loanSignature, l, tr('Signature'), tr('Signature for loan {id}')); },
 					}));
 				}
 				if (l.hasDamagePhoto && ctx.urls.api.loanDamagePhoto) {
 					if (kids.length) kids.push(' ');
 					kids.push(btn(tr('Damage photo'), {
-						className: 'iv-btn iv-btn--small iv-btn--ghost',
+						className: 'iv-btn iv-btn--compact iv-btn--ghost',
 						onclick: function () { openLoanEvidence(ctx, ctx.urls.api.loanDamagePhoto, l, tr('Damage photo'), tr('Damage photo for loan {id}')); },
 					}));
 				}
@@ -8470,12 +8470,12 @@
 			{ key: 'actions', label: tr('Actions'), actionsCell: true, render: function (l) {
 				if (!l.outstanding) return '';
 				var kids = [btn(tr('Check in'), {
-					className: 'iv-btn iv-btn--small',
+					className: 'iv-btn iv-btn--compact',
 					onclick: function () { openCheckinDialog(ctx, l, onChanged); },
 				})];
 				kids.push(' ');
 				kids.push(btn(tr('Lost'), {
-					className: 'iv-btn iv-btn--small iv-btn--ghost',
+					className: 'iv-btn iv-btn--compact iv-btn--ghost',
 					onclick: function () {
 						openMarkLostDialog(ctx, l, onChanged);
 					},
