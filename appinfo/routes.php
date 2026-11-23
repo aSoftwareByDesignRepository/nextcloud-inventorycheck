@@ -50,6 +50,8 @@ return [
 		['name' => 'loan#checkin', 'url' => '/api/loans/{id}/checkin', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
 		['name' => 'loan#lost', 'url' => '/api/loans/{id}/lost', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
 		['name' => 'loan#forItem', 'url' => '/api/items/{itemId}/loans', 'verb' => 'GET', 'requirements' => ['itemId' => '\\d+']],
+		['name' => 'loan#evidenceSignature', 'url' => '/api/loans/{id}/evidence/signature', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+		['name' => 'loan#evidenceDamagePhoto', 'url' => '/api/loans/{id}/evidence/damage-photo', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
 		['name' => 'stockList#ods', 'url' => '/api/stock-list.ods', 'verb' => 'GET'],
 		['name' => 'stockList#pdf', 'url' => '/api/stock-list.pdf', 'verb' => 'GET'],
 
@@ -206,5 +208,12 @@ return [
 		['name' => 'mobile#orderSheetShow', 'url' => '/mobile/v1/order-sheets/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
 		['name' => 'mobile#orderSheetReceive', 'url' => '/mobile/v1/order-sheets/{id}/receive', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
 		['name' => 'mobile#widgetSnapshot', 'url' => '/mobile/v1/widget-snapshot', 'verb' => 'GET'],
+		['name' => 'mobile#personSearch', 'url' => '/mobile/v1/persons/search', 'verb' => 'GET'],
+		['name' => 'mobile#itemLoans', 'url' => '/mobile/v1/items/{id}/loans', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+		['name' => 'mobile#loansCheckout', 'url' => '/mobile/v1/loans', 'verb' => 'POST'],
+		['name' => 'mobile#loanCheckin', 'url' => '/mobile/v1/loans/{id}/checkin', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
+		['name' => 'mobile#loanDamagePhoto', 'url' => '/mobile/v1/loans/{id}/damage-photo', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
+		['name' => 'mobile#loanSignature', 'url' => '/mobile/v1/loans/{id}/signature', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
+		['name' => 'mobile#loanEvidence', 'url' => '/mobile/v1/loans/{id}/evidence/{kind}', 'verb' => 'GET', 'requirements' => ['id' => '\\d+', 'kind' => '[a-z-]+']],
 	],
 ];

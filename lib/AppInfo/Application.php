@@ -493,6 +493,16 @@ class Application extends App implements IBootstrap
 				$c->get(\Psr\Log\LoggerInterface::class),
 			);
 		});
+		$context->registerService(\OCA\InventoryCheck\Service\LoanEvidenceService::class, static function ($c): \OCA\InventoryCheck\Service\LoanEvidenceService {
+			return new \OCA\InventoryCheck\Service\LoanEvidenceService(
+				$c->get(IDBConnection::class),
+				$c->get(IAppDataFactory::class)->get(Application::APP_ID),
+				$c->get(\OCA\InventoryCheck\Db\LoanMapper::class),
+				$c->get(AccessControlService::class),
+				$c->get(LocationAclService::class),
+				$c->get(\Psr\Log\LoggerInterface::class),
+			);
+		});
 		$context->registerService(CycleCountService::class, static function ($c): CycleCountService {
 			return new CycleCountService(
 				$c->get(IDBConnection::class),

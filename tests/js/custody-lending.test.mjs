@@ -53,3 +53,22 @@ test('F2: anonymize guarded against open loans in UI copy', () => {
 	// person_has_open_loans for the race.
 	assert.match(appJs, /personAnonymize/);
 });
+
+test('F2-B: loan rows link private evidence via generated URL templates', () => {
+	// Evidence icons render only from the hasX flags — never a raw path.
+	assert.match(appJs, /l\.hasSignature && ctx\.urls\.api\.loanSignature/);
+	assert.match(appJs, /l\.hasDamagePhoto && ctx\.urls\.api\.loanDamagePhoto/);
+	assert.doesNotMatch(appJs, /signaturePath|damagePhotoPath/);
+});
+
+test('F2-B: web evidence routes are single-param template-pinned', () => {
+	assert.match(routesPhp, /loan#evidenceSignature/);
+	assert.match(routesPhp, /loan#evidenceDamagePhoto/);
+	// Mobile evidence route exists for the companion.
+	assert.match(routesPhp, /mobile#loanEvidence/);
+	assert.match(routesPhp, /mobile#loansCheckout/);
+	assert.match(routesPhp, /mobile#loanCheckin/);
+	assert.match(routesPhp, /mobile#loanDamagePhoto/);
+	assert.match(routesPhp, /mobile#loanSignature/);
+	assert.match(routesPhp, /mobile#itemLoans/);
+});

@@ -139,6 +139,9 @@ class MobileGateService
 				// still enforced per request — the flag only tells the client
 				// the routes exist on this server.
 				'orderSheets' => true,
+				// F2 Wave B: custody checkout/checkin + person picker mirror
+				// (seat/device — location ACL still scopes every request).
+				'loans' => true,
 				'qtyScale' => $qtyScale,
 			],
 			'reasonCodes' => ReasonCodes::catalog(),

@@ -60,6 +60,36 @@ final class PersonService
 	public function search(string $actorUid, string $term): array
 	{
 		$this->access->requireOffice($actorUid);
+		return $this->searchCore($term);
+	}
+
+	/**
+	 * Mobile Wave B: seat/device person picker — person rows only, never
+	 * the NC user directory (a device must not enumerate NC accounts).
+	 * @return array{results:list<array>, truncated:bool}
+	 */
+	public function searchForSeat(string $actorUid, string $term): array
+	{
+		$term = trim($term);
+		if (mb_strlen($term) > 128) {
+			$term = mb_substr($term, 0, 128);
+		}
+		if ($term === '') {
+			return ['results' => [], 'truncated' => false];
+		}
+		$persons = $this->persons->search($term, self::SEARCH_LIMIT + 1);
+		$truncated = count($persons) > self::SEARCH_LIMIT;
+		return [
+			'results' => array_map(static fn (Person $p): array => [
+				'type' => 'person',
+				'person' => $p->toApi(),
+			], array_slice($persons, 0, self::SEARCH_LIMIT)),
+			'truncated' => $truncated,
+		];
+	}
+
+	private function searchCore(string $term): array
+	{
 		$term = trim($term);
 		if (mb_strlen($term) > 128) {
 			$term = mb_substr($term, 0, 128);

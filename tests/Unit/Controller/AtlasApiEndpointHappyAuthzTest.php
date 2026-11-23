@@ -146,7 +146,7 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 		FieldController::class => ['index', 'create', 'update', 'destroy', 'valueCount'],
 		JournalController::class => ['status', 'verify', 'verifyPost'],
 		PersonController::class => ['index', 'search', 'create', 'show', 'update', 'anonymize', 'loans'],
-		LoanController::class => ['index', 'create', 'checkin', 'lost', 'forItem'],
+		LoanController::class => ['index', 'create', 'checkin', 'lost', 'forItem', 'evidenceSignature', 'evidenceDamagePhoto'],
 		StockListController::class => ['ods', 'pdf'],
 		ReportController::class => ['valuation', 'movementValue', 'locationValue', 'deadStock'],
 		OrderSheetController::class => ['index', 'show', 'create', 'updateLines', 'send', 'cancel', 'print'],
@@ -181,6 +181,8 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 			'widgetSnapshot', 'today', 'lotsExpiring', 'itemLots',
 			'orderSheets', 'orderSheetShow', 'orderSheetReceive',
 			'deliveryNote', 'deliveryNoteUpload',
+			'personSearch', 'itemLoans', 'loansCheckout', 'loanCheckin',
+			'loanDamagePhoto', 'loanSignature', 'loanEvidence',
 		],
 	];
 
@@ -798,6 +800,20 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 			return $mock;
 		}
 
+		if ($typeName === \OCA\InventoryCheck\Service\LoanEvidenceService::class) {
+			$loan = new \OCA\InventoryCheck\Db\Loan();
+			$loan->setItemId(1);
+			$loan->setPersonId(1);
+			$loan->setLocationId(1);
+			$loan->setQty(1);
+			$mock = $this->createMock(\OCA\InventoryCheck\Service\LoanEvidenceService::class);
+			$mock->method('read')->willReturn(['mime' => 'image/png', 'content' => 'x']);
+			$mock->method('storeSignature')->willReturn($loan);
+			$mock->method('storeDamagePhoto')->willReturn($loan);
+			$this->byType[$key] = $mock;
+			return $mock;
+		}
+
 		if ($typeName === DirectoryOptionsService::class) {
 			$mock = $this->createMock(DirectoryOptionsService::class);
 			$mock->method('searchUsers')->willReturn([['id' => 'bob', 'displayName' => 'Bob']]);
@@ -1015,6 +1031,8 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 			'lines' => [['itemId' => 1, 'qty' => 1]],
 			'woId' => 1,
 			'kind' => 'receive',
+			// F2 Wave B: signaturePng rides the loans POST body (base64).
+			'signaturePng' => 'U0lHTkVE',
 		];
 		$req->method('getParam')->willReturnCallback(static function (string $k, $default = null) use ($params) {
 			return $params[$k] ?? $default;
@@ -1049,7 +1067,7 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 				}
 				$args[] = match ($name) {
 					'int' => 1,
-					'string' => $param->getName() === 'section' ? 'access' : 'IVI1',
+					'string' => $param->getName() === 'section' ? 'access' : ($param->getName() === 'kind' ? 'signature' : 'IVI1'),
 					'bool' => true,
 					'float' => 1.0,
 					'array' => [],

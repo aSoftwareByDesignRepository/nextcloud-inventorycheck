@@ -83,6 +83,9 @@ class MobileController extends Controller
 		private readonly ?\OCA\InventoryCheck\Service\OrderSheetService $orderSheets = null,
 		private readonly ?\OCA\InventoryCheck\Db\ItemMapper $itemMapper = null,
 		private readonly ?\OCA\InventoryCheck\Service\MovementEvidenceService $evidence = null,
+		private readonly ?\OCA\InventoryCheck\Service\LoanService $loanService = null,
+		private readonly ?\OCA\InventoryCheck\Service\PersonService $personService = null,
+		private readonly ?\OCA\InventoryCheck\Service\LoanEvidenceService $loanEvidence = null,
 	) {
 		parent::__construct(Application::APP_ID, $request);
 	}
@@ -201,6 +204,267 @@ class MobileController extends Controller
 		$response = new DataDisplayResponse($photo['content'], 200, ['Content-Type' => $photo['mime']]);
 		$response->cacheFor(3600, false, true);
 		return $response;
+	}
+
+	/**
+	 * F2 Wave B: seat/device person picker — person rows only, never the
+	 * NC user directory (a device must not enumerate NC accounts).
+	 */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[NoAdminRequired]
+	public function personSearch(): JSONResponse
+	{
+		[$uid, $device] = $this->resolveCaller(true);
+		$this->gate->assertGate($uid, $device);
+		if ($this->personService === null) {
+			throw new MobileGateException('service_unavailable');
+		}
+		return new JSONResponse($this->personService->searchForSeat(
+			$this->actorUid($uid, $device),
+			(string)$this->request->getParam('q', ''),
+		));
+	}
+
+	/** F2 Wave B: open loans on an item, scoped to the caller's locations. */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[NoAdminRequired]
+	public function itemLoans(int $id): JSONResponse
+	{
+		[$uid, $device] = $this->resolveCaller(true);
+		$this->gate->assertGate($uid, $device);
+		if ($this->loanService === null) {
+			throw new MobileGateException('service_unavailable');
+		}
+		return new JSONResponse(['data' => array_map(
+			fn (array $l) => QtyScale::formatLoan($l, $this->config),
+			$this->loanService->openForItemForSeat($this->actorUid($uid, $device), $id),
+		)]);
+	}
+
+	/**
+	 * F2 Wave B: custody checkout — scan → person → due → optional
+	 * signature. `signaturePng` is base64 inside the JSON body (tourcheck
+	 * precedent) and is stored post-commit best-effort: a signature write
+	 * failure never rolls back the loan. request_key idempotent (AC-19).
+	 */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[NoAdminRequired]
+	public function loansCheckout(): JSONResponse
+	{
+		$this->assertSafeMutationChannel();
+		[$uid, $device] = $this->resolveCaller(true);
+		$this->gate->assertGate($uid, $device);
+		if ($this->loanService === null) {
+			throw new MobileGateException('service_unavailable');
+		}
+		$p = $this->request->getParams();
+		$actor = $this->actorUid($uid, $device);
+		$clientRequestId = $this->scanIdempotency->normalizeClientRequestId(
+			$p['clientRequestId'] ?? ($p['client_request_id'] ?? null),
+		);
+		$claimId = $clientRequestId !== null ? 'loan:' . $clientRequestId : null;
+		$payloadHash = $this->scanIdempotency->fingerprintFromParams($p);
+		if ($claimId !== null) {
+			$replay = $this->idemClaimOrReplay($actor, $claimId, $payloadHash);
+			if ($replay instanceof JSONResponse) {
+				return $replay;
+			}
+		}
+		$itemId = isset($p['itemId']) ? (int)$p['itemId'] : 0;
+		if ($itemId <= 0 && isset($p['code']) && trim((string)$p['code']) !== '') {
+			$item = $this->items->byCodeRaw($actor, (string)$p['code']);
+			$itemId = (int)($item['id'] ?? 0);
+		}
+		try {
+			$result = $this->loanService->checkoutForSeat(
+				$actor,
+				$itemId,
+				(int)($p['locationId'] ?? 0),
+				(int)($p['personId'] ?? 0),
+				isset($p['qty']) ? QtyScale::toStorage($this->config, $p['qty']) : 0,
+				isset($p['dueAt']) && $p['dueAt'] !== '' ? (int)$p['dueAt'] : null,
+				isset($p['lotCode']) && $p['lotCode'] !== '' ? (string)$p['lotCode'] : null,
+				isset($p['conditionOut']) ? (string)$p['conditionOut'] : null,
+				isset($p['note']) ? (string)$p['note'] : null,
+			);
+		} catch (\Throwable $e) {
+			if ($claimId !== null) {
+				$this->scanIdempotency->release($actor, $claimId);
+			}
+			throw $e;
+		}
+		$loan = $result['loan'];
+		$sig = $p['signaturePng'] ?? null;
+		if (is_string($sig) && trim($sig) !== '' && $this->loanEvidence !== null) {
+			try {
+				$loan = $this->loanEvidence->storeSignature($actor, (int)$loan->getId(), $sig);
+			} catch (\Throwable $e) {
+				// Artifact only — booking stays committed (NN-02 twin).
+				$loan = $result['loan'];
+			}
+		}
+		$response = [
+			'loan' => QtyScale::formatLoan($loan->toApi(), $this->config),
+			'movement' => QtyScale::formatMovement($result['movement']->toApi(), $this->config),
+		];
+		if ($claimId !== null) {
+			$this->scanIdempotency->complete($actor, $claimId, $response);
+		}
+		return new JSONResponse($response);
+	}
+
+	/** F2 Wave B: custody checkin — qty defaults to full outstanding. */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[NoAdminRequired]
+	public function loanCheckin(int $id): JSONResponse
+	{
+		$this->assertSafeMutationChannel();
+		[$uid, $device] = $this->resolveCaller(true);
+		$this->gate->assertGate($uid, $device);
+		if ($this->loanService === null) {
+			throw new MobileGateException('service_unavailable');
+		}
+		$p = $this->request->getParams();
+		$actor = $this->actorUid($uid, $device);
+		$clientRequestId = $this->scanIdempotency->normalizeClientRequestId(
+			$p['clientRequestId'] ?? ($p['client_request_id'] ?? null),
+		);
+		$claimId = $clientRequestId !== null ? 'lci:' . $id . ':' . $clientRequestId : null;
+		$payloadHash = $this->scanIdempotency->fingerprintFromParams($p);
+		if ($claimId !== null) {
+			$replay = $this->idemClaimOrReplay($actor, $claimId, $payloadHash);
+			if ($replay instanceof JSONResponse) {
+				return $replay;
+			}
+		}
+		try {
+			// qty omitted → return the full outstanding amount.
+			$qty = isset($p['qty']) && $p['qty'] !== '' ? QtyScale::toStorage($this->config, $p['qty']) : 0;
+			if ($qty <= 0) {
+				$peek = $this->loanService->findOr404($id);
+				$qty = $peek->outstanding();
+			}
+			$result = $this->loanService->checkinForSeat(
+				$actor,
+				$id,
+				$qty,
+				isset($p['conditionIn']) ? (string)$p['conditionIn'] : null,
+				isset($p['note']) ? (string)$p['note'] : null,
+			);
+		} catch (\Throwable $e) {
+			if ($claimId !== null) {
+				$this->scanIdempotency->release($actor, $claimId);
+			}
+			throw $e;
+		}
+		$response = [
+			'loan' => QtyScale::formatLoan($result['loan']->toApi(), $this->config),
+			'movement' => QtyScale::formatMovement($result['movement']->toApi(), $this->config),
+		];
+		if ($claimId !== null) {
+			$this->scanIdempotency->complete($actor, $claimId, $response);
+		}
+		return new JSONResponse($response);
+	}
+
+	/** F2 Wave B: post-checkin damage-photo attach (multipart `file`). */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[NoAdminRequired]
+	public function loanDamagePhoto(int $id): JSONResponse
+	{
+		$this->assertSafeMutationChannel();
+		[$uid, $device] = $this->resolveCaller(true);
+		$this->gate->assertGate($uid, $device);
+		if ($this->loanEvidence === null) {
+			throw new MobileGateException('service_unavailable');
+		}
+		$file = $this->request->getUploadedFile('file');
+		if (!is_array($file)) {
+			throw new ValidationException('upload_failed', '', [['field' => 'file', 'code' => 'upload_failed']]);
+		}
+		$loan = $this->loanEvidence->storeDamagePhoto($this->actorUid($uid, $device), $id, $file);
+		return new JSONResponse(['loan' => QtyScale::formatLoan($loan->toApi(), $this->config)]);
+	}
+
+	/** F2 Wave B: retry attach when the in-body signature write failed. */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[NoAdminRequired]
+	public function loanSignature(int $id): JSONResponse
+	{
+		$this->assertSafeMutationChannel();
+		[$uid, $device] = $this->resolveCaller(true);
+		$this->gate->assertGate($uid, $device);
+		if ($this->loanEvidence === null) {
+			throw new MobileGateException('service_unavailable');
+		}
+		$sig = $this->request->getParam('signaturePng');
+		if (!is_string($sig) || trim($sig) === '') {
+			throw new ValidationException('signature_invalid', '', [['field' => 'signaturePng', 'code' => 'signature_invalid']]);
+		}
+		$loan = $this->loanEvidence->storeSignature($this->actorUid($uid, $device), $id, $sig);
+		return new JSONResponse(['loan' => QtyScale::formatLoan($loan->toApi(), $this->config)]);
+	}
+
+	/** F2 Wave B: companion read of signature/damage-photo (auth'd). */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[NoAdminRequired]
+	public function loanEvidence(int $id, string $kind): DataDisplayResponse
+	{
+		[$uid, $device] = $this->resolveCaller(true);
+		$this->gate->assertGate($uid, $device);
+		if ($this->loanEvidence === null) {
+			throw new MobileGateException('service_unavailable');
+		}
+		if (!in_array($kind, ['signature', 'damage-photo'], true)) {
+			throw new NotFoundException('unknown_loan');
+		}
+		$this->session->close();
+		$blob = $this->loanEvidence->read($this->actorUid($uid, $device), $id, $kind);
+		$response = new DataDisplayResponse($blob['content'], 200, ['Content-Type' => $blob['mime']]);
+		$response->cacheFor(3600, false, true);
+		return $response;
+	}
+
+	/**
+	 * Wave B idempotency: claim (actor, requestId) or replay the stored
+	 * DONE response; mirrors the scan() claim block semantics.
+	 * @return JSONResponse|null replay response, or null when claimed/absent
+	 */
+	private function idemClaimOrReplay(string $actor, string $claimId, string $payloadHash): ?JSONResponse
+	{
+		$prior = $this->scanIdempotency->lookup($actor, $claimId);
+		if ($prior['status'] === ScanIdempotencyService::STATUS_DONE && is_array($prior['response'])) {
+			if (!$this->scanIdempotency->payloadMatches($prior['payloadHash'], $payloadHash)) {
+				throw new MobileGateException('idempotency_payload_mismatch');
+			}
+			return new JSONResponse($prior['response']);
+		}
+		if ($prior['status'] === ScanIdempotencyService::STATUS_PENDING
+			&& !$this->scanIdempotency->releaseStalePending($actor, $claimId)) {
+			throw new MobileGateException('idempotency_in_flight');
+		}
+		if (!$this->scanIdempotency->tryClaim($actor, $claimId, $payloadHash)) {
+			$again = $this->scanIdempotency->lookup($actor, $claimId);
+			if ($again['status'] === ScanIdempotencyService::STATUS_DONE && is_array($again['response'])) {
+				if (!$this->scanIdempotency->payloadMatches($again['payloadHash'], $payloadHash)) {
+					throw new MobileGateException('idempotency_payload_mismatch');
+				}
+				return new JSONResponse($again['response']);
+			}
+			if (!($again['status'] === ScanIdempotencyService::STATUS_PENDING
+				&& $this->scanIdempotency->releaseStalePending($actor, $claimId)
+				&& $this->scanIdempotency->tryClaim($actor, $claimId, $payloadHash))) {
+				throw new MobileGateException('idempotency_in_flight');
+			}
+		}
+		return null;
 	}
 
 	/** Wave D2 */

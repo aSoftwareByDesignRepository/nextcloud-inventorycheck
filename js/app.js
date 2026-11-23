@@ -8418,6 +8418,16 @@
 		}, tr('Check in'));
 	}
 
+	/** Wave B: authenticated view of a loan's signature / damage photo. */
+	function openLoanEvidence(ctx, urlTemplate, loan, title, altTemplate) {
+		var url = urlTemplate.replace('__ID__', String(loan.id));
+		var img = el('img', {
+			src: url, className: 'iv-delivery-note__img',
+			alt: altTemplate.replace('{id}', String(loan.id)),
+		});
+		dialog(title, [img], null);
+	}
+
 	function loanColumns(ctx, onChanged) {
 		return [
 			{ key: 'itemName', label: tr('Item'), render: function (l) { return l.itemName || ('#' + l.itemId); } },
@@ -8427,6 +8437,24 @@
 			} },
 			{ key: 'dueAt', label: tr('Due'), render: fmtDue },
 			{ key: 'status', label: tr('Status'), render: function (l) { return loanStatusBadge(l); } },
+			{ key: 'evidence', label: tr('Evidence'), render: function (l) {
+				if (!ctx.urls.api.loanSignature && !ctx.urls.api.loanDamagePhoto) return '';
+				var kids = [];
+				if (l.hasSignature && ctx.urls.api.loanSignature) {
+					kids.push(btn(tr('Signature'), {
+						className: 'iv-btn iv-btn--small iv-btn--ghost',
+						onclick: function () { openLoanEvidence(ctx, ctx.urls.api.loanSignature, l, tr('Signature'), tr('Signature for loan {id}')); },
+					}));
+				}
+				if (l.hasDamagePhoto && ctx.urls.api.loanDamagePhoto) {
+					if (kids.length) kids.push(' ');
+					kids.push(btn(tr('Damage photo'), {
+						className: 'iv-btn iv-btn--small iv-btn--ghost',
+						onclick: function () { openLoanEvidence(ctx, ctx.urls.api.loanDamagePhoto, l, tr('Damage photo'), tr('Damage photo for loan {id}')); },
+					}));
+				}
+				return kids.length ? kids : '—';
+			} },
 			{ key: 'actions', label: tr('Actions'), actionsCell: true, render: function (l) {
 				if (!l.outstanding) return '';
 				var kids = [btn(tr('Check in'), {

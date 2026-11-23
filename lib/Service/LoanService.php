@@ -50,6 +50,39 @@ final class LoanService
 		?string $note,
 	): array {
 		$this->access->requireOffice($actorUid);
+		return $this->checkoutCore($actorUid, $itemId, $locationId, $personId, $qty, $dueAt, $lotCode, $conditionOut, $note);
+	}
+
+	/**
+	 * Mobile Wave B: seat/device checkout. The route already asserted
+	 * MobileGateService; location ACL is enforced inside
+	 * MovementService::checkout (devices resolve via their grants).
+	 */
+	public function checkoutForSeat(
+		string $actorUid,
+		int $itemId,
+		int $locationId,
+		int $personId,
+		int $qty,
+		?int $dueAt,
+		?string $lotCode,
+		?string $conditionOut,
+		?string $note,
+	): array {
+		return $this->checkoutCore($actorUid, $itemId, $locationId, $personId, $qty, $dueAt, $lotCode, $conditionOut, $note);
+	}
+
+	private function checkoutCore(
+		string $actorUid,
+		int $itemId,
+		int $locationId,
+		int $personId,
+		int $qty,
+		?int $dueAt,
+		?string $lotCode,
+		?string $conditionOut,
+		?string $note,
+	): array {
 		$person = $this->findPersonOr404($personId);
 		if (!$person->getActive() || $person->getAnonymized()) {
 			throw new ValidationException('person_not_loanable', '', [
@@ -106,6 +139,27 @@ final class LoanService
 		?string $note,
 	): array {
 		$this->access->requireOffice($actorUid);
+		return $this->checkinCore($actorUid, $loanId, $qty, $conditionIn, $note);
+	}
+
+	/** Mobile Wave B: seat/device checkin — gate asserted by the route. */
+	public function checkinForSeat(
+		string $actorUid,
+		int $loanId,
+		int $qty,
+		?string $conditionIn,
+		?string $note,
+	): array {
+		return $this->checkinCore($actorUid, $loanId, $qty, $conditionIn, $note);
+	}
+
+	private function checkinCore(
+		string $actorUid,
+		int $loanId,
+		int $qty,
+		?string $conditionIn,
+		?string $note,
+	): array {
 		$cond = $conditionIn !== null ? strtolower(trim($conditionIn)) : 'ok';
 		if (!in_array($cond, self::CONDITIONS_IN, true)) {
 			throw new ValidationException('validation_failed', '', [
@@ -200,6 +254,29 @@ final class LoanService
 		}
 		$now = $this->clock->now();
 		return array_map(fn (Loan $l): array => $this->decorate($l, $now), $this->loans->openForItem($itemId));
+	}
+
+	/**
+	 * Mobile Wave B: open loans on an item, location-ACL scoped — devices
+	 * only see loans whose location is covered by their grants.
+	 * @return list<array>
+	 */
+	public function openForItemForSeat(string $actorUid, int $itemId): array
+	{
+		try {
+			$this->items->findById($itemId);
+		} catch (\Throwable) {
+			throw new NotFoundException('unknown_item');
+		}
+		$visible = $this->locationAcl->visibleLocationIds($actorUid);
+		$now = $this->clock->now();
+		return array_map(
+			fn (Loan $l): array => $this->decorate($l, $now),
+			array_values(array_filter(
+				$this->loans->openForItem($itemId),
+				fn (Loan $l): bool => $visible === null || in_array($l->getLocationId(), $visible, true),
+			)),
+		);
 	}
 
 	/** @return array{open:list<array>, history:list<array>} loans for a person detail page */

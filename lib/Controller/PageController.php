@@ -365,6 +365,8 @@ class PageController extends Controller
 				'loanCheckin' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.loan.checkin'),
 				'loanLost' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.loan.lost'),
 				'itemLoans' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.loan.forItem', 'itemId'),
+				'loanSignature' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.loan.evidenceSignature'),
+				'loanDamagePhoto' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.loan.evidenceDamagePhoto'),
 			],
 		];
 

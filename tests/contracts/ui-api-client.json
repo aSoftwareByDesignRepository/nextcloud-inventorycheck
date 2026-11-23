@@ -1056,6 +1056,101 @@
 					]
 				}
 			]
+		},
+		{
+			"id": "custody-mobile",
+			"param": "personId",
+			"description": "IV-CUSTODY Wave B: mobile checkout/checkin. POST /mobile/v1/loans {itemId|code, locationId, personId, qty, dueAt?, lotCode?, conditionOut?, note?, signaturePng? (base64 PNG, post-commit best-effort), clientRequestId}; POST /mobile/v1/loans/{id}/checkin {qty?, conditionIn?, note?, clientRequestId} (qty omitted = full outstanding); POST .../damage-photo multipart + .../signature base64 retry; GET /mobile/v1/items/{id}/loans + /mobile/v1/persons/search (persons only, never NC user directory); GET evidence blobs auth'd. Loan DTOs expose hasSignature/hasDamagePhoto only (NN-07).",
+			"errorCodes": [
+				"unknown_loan",
+				"unknown_person",
+				"person_not_loanable",
+				"loan_not_open",
+				"qty_exceeds_outstanding",
+				"insufficient_stock",
+				"invalid_qty",
+				"invalid_lot_code",
+				"serial_qty_must_be_one",
+				"validation_failed",
+				"signature_invalid",
+				"upload_failed",
+				"photo_too_large",
+				"photo_type_invalid",
+				"idempotency_in_flight",
+				"idempotency_payload_mismatch"
+			],
+			"server": [
+				{
+					"file": "lib/Service/LoanService.php",
+					"needles": [
+						"checkoutForSeat",
+						"checkinForSeat",
+						"openForItemForSeat"
+					]
+				},
+				{
+					"file": "lib/Service/LoanEvidenceService.php",
+					"needles": [
+						"storeSignature",
+						"storeDamagePhoto",
+						"signature_invalid",
+						"SIG_MAX_BYTES"
+					]
+				},
+				{
+					"file": "lib/Service/PersonService.php",
+					"needles": [
+						"searchForSeat"
+					]
+				},
+				{
+					"file": "lib/Controller/MobileController.php",
+					"needles": [
+						"loansCheckout",
+						"loanCheckin",
+						"loanDamagePhoto",
+						"loanSignature",
+						"itemLoans",
+						"personSearch",
+						"signaturePng",
+						"lci:"
+					]
+				}
+			],
+			"web": [
+				{
+					"file": "js/app.js",
+					"needles": [
+						"loanSignature",
+						"loanDamagePhoto",
+						"hasSignature",
+						"hasDamagePhoto",
+						"openLoanEvidence"
+					]
+				}
+			],
+			"mobile": [
+				{
+					"file": "src/api/client.ts",
+					"needles": [
+						"postLoanCheckout",
+						"postLoanCheckin",
+						"uploadLoanDamagePhoto",
+						"postLoanSignature",
+						"searchPersons",
+						"getItemLoans",
+						"signaturePng",
+						"damage-photo"
+					]
+				},
+				{
+					"file": "src/offline/outbox.ts",
+					"needles": [
+						"loanCheckout",
+						"loanCheckin"
+					]
+				}
+			]
 		}
 	]
 }

@@ -387,6 +387,13 @@ final class AtlasControllersInvokeCoverageTest extends TestCase
 			$mock->method('transfer')->willReturn($payload);
 			$mock->method('adjust')->willReturn($payload);
 			$mock->method('scan')->willReturn($payload);
+			$loanMv = new \OCA\InventoryCheck\Db\Movement();
+			$loanMv->setId(1);
+			$loanMv->setItemId(1);
+			$loanMv->setLocationId(1);
+			$loanMv->setKind('checkout');
+			$mock->method('checkout')->willReturn(['loanId' => 1, 'movement' => $loanMv]);
+			$mock->method('checkin')->willReturn(['loanId' => 1, 'movement' => $loanMv]);
 			$mock->method('receiveAgainstOrder')->willReturn($payload);
 			$this->byType[$key] = $mock;
 			return $mock;
@@ -549,6 +556,63 @@ final class AtlasControllersInvokeCoverageTest extends TestCase
 			return $mock;
 		}
 
+		if ($typeName === \OCA\InventoryCheck\Db\PersonMapper::class) {
+			$person = new \OCA\InventoryCheck\Db\Person();
+			$person->setId(1);
+			$person->setDisplayName('Atlas Person');
+			$person->setActive(1);
+			$person->setAnonymized(0);
+			$mock = $this->createMock(\OCA\InventoryCheck\Db\PersonMapper::class);
+			$mock->method('findById')->willReturn($person);
+			$mock->method('findByNcUserId')->willReturn(null);
+			$mock->method('insert')->willReturnArgument(0);
+			$mock->method('update')->willReturnArgument(0);
+			$mock->method('search')->willReturn([]);
+			$mock->method('list')->willReturn([]);
+			$this->byType[$key] = $mock;
+			return $mock;
+		}
+
+		if ($typeName === \OCA\InventoryCheck\Db\LoanMapper::class) {
+			$loan = new \OCA\InventoryCheck\Db\Loan();
+			$loan->setId(1);
+			$loan->setItemId(1);
+			$loan->setPersonId(1);
+			$loan->setLocationId(1);
+			$loan->setQty(1);
+			$loan->setQtyReturned(0);
+			$loan->setStatus(\OCA\InventoryCheck\Db\Loan::STATUS_OPEN);
+			$mock = $this->createMock(\OCA\InventoryCheck\Db\LoanMapper::class);
+			$mock->method('findById')->willReturn($loan);
+			$mock->method('findByIdForUpdate')->willReturn($loan);
+			$mock->method('insert')->willReturnArgument(0);
+			$mock->method('update')->willReturnArgument(0);
+			$mock->method('tryApplyReturn')->willReturn(1);
+			$mock->method('countOpenForPerson')->willReturn(0);
+			$mock->method('openScoped')->willReturn([]);
+			$mock->method('overviewCounts')->willReturn(['open' => 0, 'overdue' => 0, 'dueToday' => 0]);
+			$mock->method('openForItem')->willReturn([]);
+			$mock->method('openForPerson')->willReturn([]);
+			$mock->method('historyForPerson')->willReturn([]);
+			$mock->method('dueBetween')->willReturn([]);
+			$this->byType[$key] = $mock;
+			return $mock;
+		}
+
+		if ($typeName === \OCA\InventoryCheck\Service\LoanEvidenceService::class) {
+			$loan = new \OCA\InventoryCheck\Db\Loan();
+			$loan->setItemId(1);
+			$loan->setPersonId(1);
+			$loan->setLocationId(1);
+			$loan->setQty(1);
+			$mock = $this->createMock(\OCA\InventoryCheck\Service\LoanEvidenceService::class);
+			$mock->method('read')->willReturn(['mime' => 'image/png', 'content' => 'x']);
+			$mock->method('storeSignature')->willReturn($loan);
+			$mock->method('storeDamagePhoto')->willReturn($loan);
+			$this->byType[$key] = $mock;
+			return $mock;
+		}
+
 		if ($typeName === DirectoryOptionsService::class) {
 			$mock = $this->createMock(DirectoryOptionsService::class);
 			$mock->method('searchUsers')->willReturn([['id' => 'bob', 'displayName' => 'Bob']]);
@@ -563,6 +627,8 @@ final class AtlasControllersInvokeCoverageTest extends TestCase
 			$mock->method('replaceAll')->willReturn(['ok' => true]);
 			$mock->method('isEnabled')->willReturn(false);
 			$mock->method('isDevicesStrict')->willReturn(false);
+			$mock->method('canAccessLocation')->willReturn(true);
+			$mock->method('visibleLocationIds')->willReturn(null);
 			$mock->method('setEnabled')->willReturnCallback(static function (): void {});
 			$mock->method('setDevicesStrict')->willReturnCallback(static function (): void {});
 			$mock->method('purgeUser')->willReturnCallback(static function (): void {});
@@ -692,6 +758,8 @@ final class AtlasControllersInvokeCoverageTest extends TestCase
 			'ids' => [1],
 			'lines' => [['itemId' => 1, 'qty' => 1]],
 			'woId' => 1,
+			// F2 Wave B: signaturePng rides the loans POST body (base64).
+			'signaturePng' => 'U0lHTkVE',
 		];
 		$req->method('getParam')->willReturnCallback(static function (string $k, $default = null) use ($params) {
 			return $params[$k] ?? $default;
@@ -726,7 +794,7 @@ final class AtlasControllersInvokeCoverageTest extends TestCase
 				}
 				$args[] = match ($name) {
 					'int' => 1,
-					'string' => $param->getName() === 'section' ? 'access' : 'IVI1',
+					'string' => $param->getName() === 'section' ? 'access' : ($param->getName() === 'kind' ? 'signature' : 'IVI1'),
 					'bool' => true,
 					'float' => 1.0,
 					'array' => [],

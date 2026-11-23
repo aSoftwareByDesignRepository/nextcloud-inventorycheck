@@ -42,6 +42,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setDamageNote(?string $v)
  * @method ?string getSignaturePath()
  * @method void setSignaturePath(?string $v)
+ * @method ?string getDamagePhotoPath()
+ * @method void setDamagePhotoPath(?string $v)
  * @method ?int getRequestId()
  * @method void setRequestId(?int $v)
  */
@@ -69,6 +71,7 @@ class Loan extends Entity
 	protected ?string $note = null;
 	protected ?string $damageNote = null;
 	protected ?string $signaturePath = null;
+	protected ?string $damagePhotoPath = null;
 	protected ?int $requestId = null;
 
 	public function outstanding(): int
@@ -108,6 +111,9 @@ class Loan extends Entity
 			'conditionIn' => $this->getConditionIn(),
 			'note' => $this->getNote(),
 			'damageNote' => $this->getDamageNote(),
+			// NN-07: private blob names never leave the API — flags only.
+			'hasSignature' => $this->getSignaturePath() !== null && $this->getSignaturePath() !== '',
+			'hasDamagePhoto' => $this->getDamagePhotoPath() !== null && $this->getDamagePhotoPath() !== '',
 			'personName' => $person?->getDisplayName(),
 			'personMemberNo' => $person?->getMemberNo(),
 			'itemName' => $itemName,

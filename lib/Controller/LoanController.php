@@ -6,6 +6,7 @@ namespace OCA\InventoryCheck\Controller;
 
 use OCA\InventoryCheck\AppInfo\Application;
 use OCA\InventoryCheck\Service\AccessControlService;
+use OCA\InventoryCheck\Service\LoanEvidenceService;
 use OCA\InventoryCheck\Service\LoanService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -23,6 +24,7 @@ class LoanController extends Controller
 		IRequest $request,
 		private readonly LoanService $loans,
 		private readonly AccessControlService $access,
+		private readonly ?LoanEvidenceService $evidence = null,
 	) {
 		parent::__construct(Application::APP_ID, $request);
 	}
@@ -74,6 +76,33 @@ class LoanController extends Controller
 	{
 		$uid = $this->access->currentUserId();
 		return new JSONResponse(['loan' => $this->loans->markLost($uid, $id, $this->request->getParam('note'))->toApi()]);
+	}
+
+	/** Wave B: office read of the loan signature blob (audit trail). */
+	#[NoAdminRequired]
+	public function evidenceSignature(int $id): \OCP\AppFramework\Http\DataDisplayResponse
+	{
+		return $this->evidenceBlob($id, 'signature');
+	}
+
+	/** Wave B: office read of the damage-photo blob (audit trail). */
+	#[NoAdminRequired]
+	public function evidenceDamagePhoto(int $id): \OCP\AppFramework\Http\DataDisplayResponse
+	{
+		return $this->evidenceBlob($id, 'damage-photo');
+	}
+
+	private function evidenceBlob(int $id, string $kind): \OCP\AppFramework\Http\DataDisplayResponse
+	{
+		$uid = $this->access->currentUserId();
+		$this->access->requireOffice($uid);
+		if ($this->evidence === null) {
+			throw new \OCA\InventoryCheck\Exception\NotFoundException('unknown_loan');
+		}
+		$blob = $this->evidence->read($uid, $id, $kind);
+		$response = new \OCP\AppFramework\Http\DataDisplayResponse($blob['content'], 200, ['Content-Type' => $blob['mime']]);
+		$response->cacheFor(3600, false, true);
+		return $response;
 	}
 
 	/** Overview list + counts for the start-page card. */

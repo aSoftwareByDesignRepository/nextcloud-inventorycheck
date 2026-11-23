@@ -8,17 +8,23 @@ use OCA\InventoryCheck\AppInfo\Application;
 use OCA\InventoryCheck\Db\Loan;
 use OCA\InventoryCheck\Db\LoanMapper;
 use OCA\InventoryCheck\Db\PersonMapper;
+use OCA\InventoryCheck\Db\ScanDevice;
+use OCA\InventoryCheck\Db\ScanDeviceMapper;
 use OCA\InventoryCheck\Exception\ConflictException;
 use OCA\InventoryCheck\Exception\InsufficientStockException;
+use OCA\InventoryCheck\Exception\NotFoundException;
 use OCA\InventoryCheck\Exception\PermissionDeniedException;
 use OCA\InventoryCheck\Exception\ValidationException;
 use OCA\InventoryCheck\Service\AccessControlService;
 use OCA\InventoryCheck\Service\ItemService;
 use OCA\InventoryCheck\Service\LoanDueNotifyService;
+use OCA\InventoryCheck\Service\LoanEvidenceService;
 use OCA\InventoryCheck\Service\LoanService;
+use OCA\InventoryCheck\Service\LocationAclService;
 use OCA\InventoryCheck\Service\LocationService;
 use OCA\InventoryCheck\Service\MovementService;
 use OCA\InventoryCheck\Service\PersonService;
+use OCP\IConfig;
 use OCP\IDBConnection;
 use OCP\IUserManager;
 use OCP\Server;
@@ -245,5 +251,132 @@ final class CustodyLendingIntegrationTest extends TestCase
 		$ncHit = $this->persons->search($this->uid, 'Ncu Probe ' . $suffix);
 		$nc = array_filter($ncHit['results'], static fn (array $r): bool => $r['type'] === 'ncUser' && $r['ncUser']['uid'] === $uid);
 		$this->assertNotEmpty($nc);
+	}
+
+	// ---- Wave B: seat-gated mobile loans + evidence ----
+
+	private function freshUser(): string
+	{
+		$users = Server::get(IUserManager::class);
+		$uid = 'iv-cl-seat' . bin2hex(random_bytes(4));
+		return $users->get($uid) === null ? ($users->createUser($uid, bin2hex(random_bytes(8)))?->getUID() ?? $uid) : $uid;
+	}
+
+	private function makeDevice(string $suffix): int
+	{
+		$devices = (new Application())->getContainer()->get(ScanDeviceMapper::class);
+		$now = time();
+		$d = new ScanDevice();
+		$d->setLabel('CL scanner ' . $suffix);
+		$d->setPairCodeHash(null);
+		$d->setPairCodeExpires(null);
+		$d->setTokenHash(hash('sha256', 'iv-cl-token-' . $suffix));
+		$d->setPairedAt($now);
+		$d->setLastSeenAt($now);
+		$d->setActive(true);
+		$d->setCreatedAt($now);
+		$d->setCreatedBy($this->uid);
+		return (int)$devices->insert($d)->getId();
+	}
+
+	public function testSeatCheckoutCheckinBypassOfficeButKeepRules(): void
+	{
+		$uid = $this->freshUser();
+		$suffix = bin2hex(random_bytes(3));
+		[$loc, $item, $person] = $this->fixture($suffix);
+		// Non-office actor: checkout() would 403; the seat variant must not.
+		$out = $this->loans->checkoutForSeat($uid, (int)$item['id'], (int)$loc['id'], (int)$person->getId(), 2, time() + 86400, null, 'ok', 'seat');
+		$loanId = (int)$out['loan']->getId();
+		$this->assertGreaterThan(0, $loanId);
+		// Business rules still apply on the seat path.
+		try {
+			$this->loans->checkinForSeat($uid, $loanId, 9, 'ok', null);
+			$this->fail('over-return must fail');
+		} catch (ValidationException $e) {
+			$this->assertNotEmpty($e->getDetails());
+		}
+		$this->loans->checkinForSeat($uid, $loanId, 2, 'damaged', 'back');
+		$this->assertSame('returned', $this->loanMapper->findById($loanId)->getStatus());
+	}
+
+	public function testSeatCheckoutDeviceHonorsLocationGrants(): void
+	{
+		$config = Server::get(IConfig::class);
+		$acl = (new Application())->getContainer()->get(LocationAclService::class);
+		$config->setAppValue(Application::APP_ID, LocationAclService::KEY_ENABLED, '1');
+		$suffix = bin2hex(random_bytes(3));
+		[$loc, $item, $person] = $this->fixture($suffix);
+		[$loc2] = [$this->locations->create($this->uid, ['code' => 'CL-L2-' . $suffix, 'name' => 'Other', 'kind' => 'site'])];
+		$idA = $this->makeDevice($suffix . 'a');
+		$idB = $this->makeDevice($suffix . 'b');
+		$granted = 'device:' . $idA;
+		$denied = 'device:' . $idB;
+		$acl->setForSubject(LocationAclService::TYPE_DEVICE, (string)$idA, [(int)$loc['id']]);
+		$acl->setForSubject(LocationAclService::TYPE_DEVICE, (string)$idB, [(int)$loc2['id']]);
+		try {
+			$this->loans->checkoutForSeat($granted, (int)$item['id'], (int)$loc['id'], (int)$person->getId(), 1, null, null, 'ok', null);
+			// Uniform 404 — a denied device must not learn the location exists.
+			$this->expectException(NotFoundException::class);
+			$this->loans->checkoutForSeat($denied, (int)$item['id'], (int)$loc['id'], (int)$person->getId(), 1, null, null, 'ok', null);
+		} finally {
+			$config->setAppValue(Application::APP_ID, LocationAclService::KEY_ENABLED, '0');
+			$acl->purgeDevice($idA);
+			$acl->purgeDevice($idB);
+		}
+	}
+
+	public function testSearchForSeatNeverReturnsNcUsers(): void
+	{
+		$suffix = bin2hex(random_bytes(3));
+		$this->persons->create($this->uid, 'Seat Hit ' . $suffix, 'SH-' . $suffix, null, null);
+		$users = Server::get(IUserManager::class);
+		$uid = 'iv-cl-ncs' . $suffix;
+		$u = $users->get($uid) ?? $users->createUser($uid, bin2hex(random_bytes(8)));
+		$u->setDisplayName('Seat Hit ' . $suffix);
+		$hit = $this->persons->searchForSeat('device:5', 'Seat Hit ' . $suffix);
+		$this->assertNotEmpty(array_filter($hit['results'], static fn (array $r): bool => $r['type'] === 'person'));
+		$this->assertEmpty(array_filter($hit['results'], static fn (array $r): bool => $r['type'] === 'ncUser'), 'devices must not enumerate NC accounts');
+	}
+
+	public function testOpenForItemForSeatScopesByDeviceGrants(): void
+	{
+		$config = Server::get(IConfig::class);
+		$acl = (new Application())->getContainer()->get(LocationAclService::class);
+		$config->setAppValue(Application::APP_ID, LocationAclService::KEY_ENABLED, '1');
+		$suffix = bin2hex(random_bytes(3));
+		[$loc, $item, $person] = $this->fixture($suffix);
+		$this->loans->checkoutForSeat($this->uid, (int)$item['id'], (int)$loc['id'], (int)$person->getId(), 1, null, null, 'ok', null);
+		$idC = $this->makeDevice($suffix . 'c');
+		$idD = $this->makeDevice($suffix . 'd');
+		$acl->setForSubject(LocationAclService::TYPE_DEVICE, (string)$idC, [(int)$loc['id']]);
+		$acl->setForSubject(LocationAclService::TYPE_DEVICE, (string)$idD, []);
+		try {
+			$this->assertCount(1, $this->loans->openForItemForSeat('device:' . $idC, (int)$item['id']));
+			$this->assertSame([], $this->loans->openForItemForSeat('device:' . $idD, (int)$item['id']), 'no grants → no visibility');
+		} finally {
+			$config->setAppValue(Application::APP_ID, LocationAclService::KEY_ENABLED, '0');
+			$acl->purgeDevice($idC);
+			$acl->purgeDevice($idD);
+		}
+	}
+
+	public function testSignatureStoreReadAndDtoFlags(): void
+	{
+		$evidence = (new Application())->getContainer()->get(LoanEvidenceService::class);
+		$suffix = bin2hex(random_bytes(3));
+		[$loc, $item, $person] = $this->fixture($suffix);
+		$out = $this->loans->checkout($this->uid, (int)$item['id'], (int)$loc['id'], (int)$person->getId(), 1, null, null, 'ok', null);
+		$loanId = (int)$out['loan']->getId();
+		$png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAIklEQVR4nGP4T2PAMGrBqAWjFoxaMGrBqAWjFoxaMDQsAACAo/d5ePaf+gAAAABJRU5ErkJggg==');
+		$loan = $evidence->storeSignature($this->uid, $loanId, base64_encode($png));
+		$this->assertNotNull($loan->getSignaturePath());
+		$read = $evidence->read($this->uid, $loanId, 'signature');
+		$this->assertSame($png, $read['content']);
+		$this->assertSame('image/png', $read['mime']);
+		$api = $loan->toApi();
+		$this->assertTrue($api['hasSignature']);
+		$this->assertArrayNotHasKey('signaturePath', $api, 'raw path must never leak');
+		$fresh = $this->loanMapper->findById($loanId);
+		$this->assertNotNull($fresh->getSignaturePath());
 	}
 }

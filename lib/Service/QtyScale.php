@@ -164,6 +164,17 @@ final class QtyScale
 		return $movement;
 	}
 
+	/** @param array<string, mixed> $loan */
+	public static function formatLoan(array $loan, IConfig $config): array
+	{
+		foreach (['qty', 'qtyReturned', 'outstanding'] as $key) {
+			if (array_key_exists($key, $loan) && is_int($loan[$key])) {
+				$loan[$key] = self::toDisplay($config, $loan[$key]);
+			}
+		}
+		return $loan;
+	}
+
 	/** @param array<string, mixed> $row */
 	public static function formatLowStock(array $row, IConfig $config): array
 	{
