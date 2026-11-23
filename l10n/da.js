@@ -320,6 +320,7 @@ OC.L10N.register(
 	"Create an item with a SKU and reorder level." : "Opret en vare med varenr. og genbestillingsniveau.",
 	"Create device slot" : "Opret enhedsplads",
 	"Create draft order sheet" : "Opret bestillingskladde",
+	"Create link" : "Opret link",
 	"Create person “{name}”" : "Opret person \"{name}\"",
 	"Create the first person to lend stock to." : "Opret den første person at udlåne lager til.",
 	"Created" : "Oprettet",

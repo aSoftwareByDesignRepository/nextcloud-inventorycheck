@@ -320,6 +320,7 @@ OC.L10N.register(
 	"Create an item with a SKU and reorder level." : "创建带 SKU 和补货点的物品。",
 	"Create device slot" : "创建设备槽位",
 	"Create draft order sheet" : "创建订单草稿",
+	"Create link" : "创建链接",
 	"Create person “{name}”" : "新建人员“{name}”",
 	"Create the first person to lend stock to." : "创建第一个可借出库存的人员。",
 	"Created" : "创建时间",

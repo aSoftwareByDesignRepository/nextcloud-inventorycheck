@@ -320,6 +320,7 @@ OC.L10N.register(
 	"Create an item with a SKU and reorder level." : "Create an item with a SKU and reorder level.",
 	"Create device slot" : "Create device slot",
 	"Create draft order sheet" : "Create draft order sheet",
+	"Create link" : "Create link",
 	"Create person “{name}”" : "Create person “{name}”",
 	"Create the first person to lend stock to." : "Create the first person to lend stock to.",
 	"Created" : "Created",

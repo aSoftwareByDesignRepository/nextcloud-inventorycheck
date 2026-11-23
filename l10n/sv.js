@@ -320,6 +320,7 @@ OC.L10N.register(
 	"Create an item with a SKU and reorder level." : "Skapa en artikel med artikelnr. och beställningspunkt.",
 	"Create device slot" : "Skapa enhetsplats",
 	"Create draft order sheet" : "Skapa utkast till beställningslista",
+	"Create link" : "Skapa länk",
 	"Create person “{name}”" : "Skapa person \"{name}\"",
 	"Create the first person to lend stock to." : "Skapa den första personen att låna ut lager till.",
 	"Created" : "Skapad",
