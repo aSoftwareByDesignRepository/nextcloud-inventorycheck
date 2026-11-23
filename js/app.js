@@ -1726,6 +1726,9 @@
 		if (ctx.urls.api.lotsExpiring) {
 			fetches.push(api('GET', ctx.urls.api.lotsExpiring + '?limit=20'));
 		}
+		if ((ctx.isOffice || ctx.isAppAdmin) && ctx.urls.api.loans) {
+			fetches.push(api('GET', ctx.urls.api.loans + '?limit=10').catch(function () { return null; }));
+		}
 		Promise.all(fetches).then(function (results) {
 			var low = results[0];
 			var mov = results[1];
@@ -1741,6 +1744,10 @@
 			var expiring = { data: [] };
 			if (ctx.urls.api.lotsExpiring) {
 				expiring = results[idx++] || { data: [] };
+			}
+			var loansData = null;
+			if ((ctx.isOffice || ctx.isAppAdmin) && ctx.urls.api.loans) {
+				loansData = results[idx++] || null;
 			}
 			clear(mount);
 			setBusy(mount, false);
@@ -1894,6 +1901,39 @@
 							expiring.data,
 							{ caption: tr('Expiring lots') }
 						),
+					]));
+				}
+
+				if (loansData && loansData.counts) {
+					var c = loansData.counts;
+					mount.appendChild(el('section', {
+						className: 'iv-section',
+						'aria-labelledby': 'iv-loans-title',
+						'data-iv-loans-card': '1',
+					}, [
+						el('h2', { id: 'iv-loans-title', className: 'iv-section__title', text: tr('Lent out') }),
+						el('dl', { className: 'iv-detail__grid' }, [
+							el('div', null, [
+								el('dt', { text: tr('Open') }),
+								el('dd', { text: String(c.open) }),
+							]),
+							el('div', null, [
+								el('dt', { text: tr('Overdue') }),
+								el('dd', null, [
+									document.createTextNode(String(c.overdue)),
+									c.overdue > 0 ? el('span', { className: 'iv-badge iv-badge--warn', text: tr('overdue') }) : null,
+								].filter(Boolean)),
+							]),
+							el('div', null, [
+								el('dt', { text: tr('Due today') }),
+								el('dd', { text: String(c.dueToday) }),
+							]),
+						]),
+						el('p', null, [el('a', {
+							href: ctx.urls.pages.people || '#',
+							className: 'iv-btn iv-btn--secondary',
+							text: tr('Open lending register'),
+						})]),
 					]));
 				}
 
@@ -4090,6 +4130,16 @@
 					]));
 				}
 			}
+			// F2: open custody loans + checkout action (office-only mutation).
+			var loanBalances = (bals.data || []).map(function (b) {
+				var loc = locMap[b.locationId];
+				return {
+					locationId: b.locationId,
+					locationName: loc ? (loc.pathLabel || loc.name) : null,
+					locationCode: loc ? loc.code : null,
+				};
+			});
+			mountItemLoans(ctx, mount, item, loanBalances);
 		}).catch(function (err) {
 			setBusy(mount, false);
 			clear(mount);
@@ -8085,6 +8135,502 @@
 		});
 	}
 
+	/* ── F2 custody / lending (Wave A) ───────────────────────── */
+
+	function loanStatusBadge(loan) {
+		var variant = 'iv-badge--neutral';
+		var text = tr('open');
+		if (loan.status === 'returned') { variant = 'iv-badge--ok'; text = tr('returned'); }
+		else if (loan.status === 'partial') { variant = 'iv-badge--info'; text = tr('partially returned'); }
+		else if (loan.status === 'lost') { variant = 'iv-badge--critical'; text = tr('lost'); }
+		else if (loan.overdue) { variant = 'iv-badge--warn'; text = tr('overdue'); }
+		return el('span', { className: 'iv-badge ' + variant, text: text });
+	}
+
+	function fmtDue(loan) {
+		if (!loan.dueAt) return tr('No due date');
+		return formatMovementWhen(loan.dueAt);
+	}
+
+	/** Single-select person combobox fed by /api/persons/search. */
+	function personPicker(ctx, opts) {
+		opts = opts || {};
+		var picked = null;
+		var searchId = nextPickerId('iv-pp-search');
+		var resultsId = nextPickerId('iv-pp-results');
+		var timer = null;
+		var seq = 0;
+		var input = el('input', {
+			type: 'search', className: 'iv-input', id: searchId,
+			autocomplete: 'off', spellcheck: 'false', role: 'combobox',
+			'aria-expanded': 'false', 'aria-controls': resultsId,
+			'aria-autocomplete': 'list',
+			placeholder: tr('Search people…'),
+		});
+		var list = el('ul', { className: 'iv-picker__results', id: resultsId, role: 'listbox', hidden: '' });
+		var chosen = el('div', { className: 'iv-picker__chosen', hidden: '' });
+		var root = el('div', { className: 'iv-picker' }, [input, list, chosen]);
+
+		function close() {
+			clear(list);
+			list.hidden = true;
+			input.setAttribute('aria-expanded', 'false');
+		}
+		function select(person, label) {
+			picked = person;
+			input.value = label;
+			close();
+			announce(tr('Selected {name}.', { name: label }));
+		}
+		function option(liLabel, sub, onPick) {
+			var li = el('li', { role: 'option', tabindex: '0', 'aria-selected': 'false' });
+			li.appendChild(el('span', { text: liLabel }));
+			if (sub) li.appendChild(el('span', { className: 'iv-muted', text: ' — ' + sub }));
+			li.addEventListener('click', onPick);
+			li.addEventListener('keydown', function (e) {
+				if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPick(); }
+			});
+			return li;
+		}
+		function renderResults(data, term) {
+			clear(list);
+			list.hidden = false;
+			input.setAttribute('aria-expanded', 'true');
+			if (!data.results.length) {
+				list.appendChild(el('li', {
+					className: 'iv-picker__empty', 'aria-disabled': 'true',
+					text: tr('No matches. Keep typing or create the person below.'),
+				}));
+			}
+			data.results.forEach(function (r) {
+				if (r.type === 'person') {
+					var p = r.person;
+					list.appendChild(option(p.displayName, p.memberNo, function () { select(p, p.displayName); }));
+				} else {
+					var u = r.ncUser;
+					list.appendChild(option(u.displayName, tr('Nextcloud user — create person'), function () {
+						api('POST', ctx.urls.api.persons, {
+							displayName: u.displayName, ncUserId: u.uid,
+						}).then(function (res) {
+							select(res.person, res.person.displayName);
+						}).catch(function (err) { toast(err.message, true); });
+					}));
+				}
+			});
+			if (data.truncated) {
+				list.appendChild(el('li', {
+					className: 'iv-picker__empty', 'aria-disabled': 'true',
+					text: tr('More matches exist — refine your search.'),
+				}));
+			}
+			if (term) {
+				list.appendChild(option(tr('Create person “{name}”', { name: term }), null, function () {
+					openPersonDialog(ctx, { displayName: term }, function (person) {
+						select(person, person.displayName);
+					});
+				}));
+			}
+		}
+		input.addEventListener('input', function () {
+			var term = input.value.trim();
+			if (timer) window.clearTimeout(timer);
+			if (term.length < 2) { close(); return; }
+			var mySeq = ++seq;
+			timer = window.setTimeout(function () {
+				api('GET', ctx.urls.api.personsSearch + '?search=' + encodeURIComponent(term))
+					.then(function (data) { if (mySeq === seq) renderResults(data, term); })
+					.catch(function () {
+						if (mySeq !== seq) return;
+						clear(list);
+						list.hidden = false;
+						list.appendChild(el('li', {
+							className: 'iv-picker__empty', 'aria-disabled': 'true',
+							text: tr('Search failed — try again.'),
+						}));
+					});
+			}, 250);
+		});
+		input.addEventListener('keydown', function (e) {
+			if (e.key === 'Escape') close();
+			if (e.key === 'ArrowDown' && !list.hidden) {
+				var first = list.querySelector('[role="option"]');
+				if (first) { e.preventDefault(); first.focus(); }
+			}
+		});
+		return {
+			root: root,
+			searchInput: input,
+			getPerson: function () { return picked; },
+			setPerson: function (p) { select(p, p.displayName); },
+		};
+	}
+
+	function openPersonDialog(ctx, prefill, onCreated) {
+		var nameInput = el('input', { type: 'text', className: 'iv-input', required: '', maxlength: '128' });
+		if (prefill && prefill.displayName) nameInput.value = prefill.displayName;
+		var memberInput = el('input', { type: 'text', className: 'iv-input', maxlength: '64' });
+		var noteInput = el('textarea', { className: 'iv-input', rows: '2', maxlength: '512' });
+		var more = el('details', { className: 'iv-disclosure' }, [
+			el('summary', { className: 'iv-disclosure__summary', text: tr('More options') }),
+			field(tr('Note'), noteInput, { name: 'note' }),
+		]);
+		var body = el('div', null, [
+			field(tr('Name'), nameInput, { name: 'displayName' }),
+			field(tr('Member number'), memberInput, { name: 'memberNo' }),
+			more,
+		]);
+		dialog(tr('New person'), [body], function () {
+			var name = nameInput.value.trim();
+			if (!name) { toast(tr('Name is required.'), true); return false; }
+			api('POST', ctx.urls.api.persons, {
+				displayName: name,
+				memberNo: memberInput.value.trim() || null,
+				note: noteInput.value.trim() || null,
+			}).then(function (res) {
+				toast(tr('Person created.'));
+				if (onCreated) onCreated(res.person);
+			}).catch(function (err) {
+				if (!applyFieldErrors(body, err.details, err.message)) toast(err.message, true);
+			});
+			return true;
+		}, tr('Create'));
+	}
+
+	/** Checkout from an item — office only, hard stock floor server-side. */
+	function openCheckoutDialog(ctx, item, locationId, balances) {
+		var picker = personPicker(ctx);
+		var locSelect = null;
+		if (!locationId && Array.isArray(balances) && balances.length > 1) {
+			locSelect = el('select', { className: 'iv-input', required: '' },
+				balances.map(function (b) {
+					return el('option', {
+						value: String(b.locationId),
+						text: b.locationName || b.locationCode || ('#' + b.locationId),
+					});
+				}));
+		} else if (!locationId && Array.isArray(balances) && balances.length === 1) {
+			locationId = balances[0].locationId;
+		}
+		var qtyInput = el('input', {
+			type: 'number', className: 'iv-input', min: '1', step: '1', required: '', value: '1',
+		});
+		var dueInput = el('input', { type: 'date', className: 'iv-input' });
+		var plus14 = new Date(Date.now() + 14 * 86400000);
+		dueInput.value = plus14.toISOString().slice(0, 10);
+		var dueClear = btn(tr('No due date'), {
+			onclick: function () { dueInput.value = ''; },
+		});
+		var lotInput = el('input', { type: 'text', className: 'iv-input', maxlength: '64' });
+		var condSelect = el('select', { className: 'iv-input' }, [
+			el('option', { value: 'ok', text: tr('OK') }),
+			el('option', { value: 'used', text: tr('Used') }),
+			el('option', { value: 'defect', text: tr('Defect') }),
+		]);
+		var noteInput = el('textarea', { className: 'iv-input', rows: '2', maxlength: '512' });
+		var moreKids = [];
+		if (item.trackMode && item.trackMode !== 'none') {
+			moreKids.push(field(item.trackMode === 'serial' ? tr('Serial number') : tr('Lot / batch'), lotInput, { name: 'lotCode' }));
+		}
+		moreKids.push(field(tr('Condition'), condSelect, { name: 'conditionOut' }));
+		moreKids.push(field(tr('Note'), noteInput, { name: 'note' }));
+		var more = el('details', { className: 'iv-disclosure' }, [
+			el('summary', { className: 'iv-disclosure__summary', text: tr('More options') }),
+		].concat(moreKids));
+		var personWrap = pickerField(tr('Person'), picker, { name: 'personId' });
+		var body = el('div', null, [
+			personWrap,
+			locSelect ? field(tr('Location'), locSelect, { name: 'locationId' }) : null,
+			field(tr('Quantity'), qtyInput, { name: 'qty' }),
+			field(tr('Due back'), dueInput, { name: 'dueAt' }),
+			dueClear,
+			more,
+		]);
+		dialog(tr('Check out “{name}”', { name: item.name }), [body], function () {
+			var person = picker.getPerson();
+			var qty = parseInt(qtyInput.value, 10);
+			if (!person) { toast(tr('Pick a person first.'), true); return false; }
+			if (!qty || qty < 1) { toast(tr('Enter a valid quantity.'), true); return false; }
+			var dueAt = null;
+			if (dueInput.value) {
+				dueAt = Math.floor(new Date(dueInput.value + 'T23:59:59').getTime() / 1000);
+			}
+			var locId = locSelect ? parseInt(locSelect.value, 10) : locationId;
+			if (!locId) { toast(tr('Pick a location first.'), true); return false; }
+			api('POST', ctx.urls.api.loans, {
+				itemId: item.id,
+				locationId: locId,
+				personId: person.id,
+				qty: qty,
+				dueAt: dueAt,
+				lotCode: lotInput.value.trim() || null,
+				conditionOut: condSelect.value,
+				note: noteInput.value.trim() || null,
+			}).then(function () {
+				toast(tr('Checked out.'));
+				refreshAfterMutation(ctx, { balances: [] });
+			}).catch(function (err) {
+				if (!applyFieldErrors(body, err.details, err.message)) toast(err.message, true);
+			});
+			return true;
+		}, tr('Check out'));
+	}
+
+	function openCheckinDialog(ctx, loan, onDone) {
+		var qtyInput = el('input', {
+			type: 'number', className: 'iv-input', min: '1',
+			max: String(loan.outstanding), step: '1', required: '',
+			value: String(loan.outstanding),
+		});
+		var condSelect = el('select', { className: 'iv-input' }, [
+			el('option', { value: 'ok', text: tr('OK') }),
+			el('option', { value: 'damaged', text: tr('Damaged') }),
+			el('option', { value: 'defect', text: tr('Defect') }),
+		]);
+		var noteInput = el('textarea', { className: 'iv-input', rows: '2', maxlength: '512' });
+		var body = el('div', null, [
+			el('p', { className: 'iv-muted', text: tr('Outstanding: {qty}', { qty: formatQty(loan.outstanding) }) }),
+			field(tr('Quantity'), qtyInput, { name: 'qty' }),
+			field(tr('Condition'), condSelect, { name: 'conditionIn' }),
+			field(tr('Damage note'), noteInput, { name: 'note' }),
+		]);
+		dialog(tr('Check in'), [body], function () {
+			var qty = parseInt(qtyInput.value, 10);
+			if (!qty || qty < 1) { toast(tr('Enter a valid quantity.'), true); return false; }
+			api('POST', urlWithId(ctx.urls.api.loanCheckin, loan.id), {
+				qty: qty,
+				conditionIn: condSelect.value,
+				note: noteInput.value.trim() || null,
+			}).then(function () {
+				toast(tr('Checked in.'));
+				if (onDone) onDone();
+			}).catch(function (err) {
+				if (!applyFieldErrors(body, err.details, err.message)) toast(err.message, true);
+			});
+			return true;
+		}, tr('Check in'));
+	}
+
+	function loanColumns(ctx, onChanged) {
+		return [
+			{ key: 'itemName', label: tr('Item'), render: function (l) { return l.itemName || ('#' + l.itemId); } },
+			{ key: 'personName', label: tr('Person'), render: function (l) { return l.personName || ('#' + l.personId); } },
+			{ key: 'outstanding', label: tr('Outstanding'), render: function (l) {
+				return formatQty(l.outstanding) + ' / ' + formatQty(l.qty);
+			} },
+			{ key: 'dueAt', label: tr('Due'), render: fmtDue },
+			{ key: 'status', label: tr('Status'), render: function (l) { return loanStatusBadge(l); } },
+			{ key: 'actions', label: tr('Actions'), actionsCell: true, render: function (l) {
+				if (!l.outstanding) return '';
+				var kids = [btn(tr('Check in'), {
+					className: 'iv-btn iv-btn--small',
+					onclick: function () { openCheckinDialog(ctx, l, onChanged); },
+				})];
+				kids.push(' ');
+				kids.push(btn(tr('Lost'), {
+					className: 'iv-btn iv-btn--small iv-btn--ghost',
+					onclick: function () {
+						openMarkLostDialog(ctx, l, onChanged);
+					},
+				}));
+				return kids;
+			} },
+		];
+	}
+
+	function openMarkLostDialog(ctx, loan, onDone) {
+		var noteInput = el('textarea', { className: 'iv-input', rows: '2', maxlength: '512' });
+		var body = el('div', null, [
+			el('p', { text: tr('Mark this loan as lost? The outstanding quantity stays out of stock.') }),
+			field(tr('Note'), noteInput, { name: 'damageNote' }),
+		]);
+		dialog(tr('Mark as lost'), [body], function () {
+			api('POST', urlWithId(ctx.urls.api.loanLost, loan.id), {
+				note: noteInput.value.trim() || null,
+			}).then(function () {
+				toast(tr('Loan marked as lost.'));
+				if (onDone) onDone();
+			}).catch(function (err) { toast(err.message, true); });
+			return true;
+		}, tr('Mark as lost'));
+	}
+
+	/** Item detail "Ausgeliehen" section — open loans + checkout action. */
+	function mountItemLoans(ctx, mount, item, balances) {
+		if (!ctx.urls.api.itemLoans) return;
+		var host = el('section', { className: 'iv-section', 'aria-busy': 'true' }, [
+			el('h2', { className: 'iv-section__title', text: tr('Lent out') }),
+			el('p', { className: 'iv-muted', text: tr('Loading…') }),
+		]);
+		mount.appendChild(host);
+		api('GET', urlWithId(ctx.urls.api.itemLoans, item.id)).then(function (data) {
+			host.removeAttribute('aria-busy');
+			clear(host);
+			host.appendChild(el('h2', { className: 'iv-section__title', text: tr('Lent out') }));
+			var loans = data.loans || [];
+			if (!loans.length) {
+				host.appendChild(el('p', { className: 'iv-muted', text: tr('Nothing lent out.') }));
+			} else {
+				host.appendChild(tableOrCards(loanColumns(ctx, function () {
+					mountItemLoansRefresh(ctx, host, item);
+				}), loans, { caption: tr('Open loans for this item') }));
+			}
+			if (ctx.isOffice || ctx.isAppAdmin) {
+				host.appendChild(btn(tr('Check out'), {
+					className: 'iv-btn iv-btn--secondary',
+					onclick: function () { openCheckoutDialog(ctx, item, null, balances); },
+				}));
+			}
+		}).catch(function () {
+			host.removeAttribute('aria-busy');
+		});
+	}
+
+	function mountItemLoansRefresh(ctx, host, item) {
+		var parent = host.parentNode;
+		clear(host);
+		host.appendChild(el('p', { className: 'iv-muted', text: tr('Loading…') }));
+		mountItemLoans(ctx, parent, item, host._balances || null);
+		host.remove();
+	}
+
+	function renderPeople(ctx) {
+		var mount = ctx.mount;
+		setBusy(mount, true);
+		clear(mount);
+		var listHost = el('div');
+		var searchInput = el('input', {
+			type: 'search', className: 'iv-input', role: 'searchbox',
+			placeholder: tr('Search people…'), 'aria-label': tr('Search people'),
+		});
+		var newBtn = ctx.isOffice || ctx.isAppAdmin
+			? btn(tr('New person'), {
+				className: 'iv-btn iv-btn--primary',
+				onclick: function () { openPersonDialog(ctx, null, function () { renderPeople(ctx); }); },
+			})
+			: null;
+		ctx.actions.appendChild(newBtn || el('span'));
+		mount.appendChild(el('section', { className: 'iv-section' }, [
+			field(tr('Search'), searchInput, { name: 'search' }),
+			listHost,
+		]));
+
+		function load(term) {
+			setBusy(listHost, true);
+			clear(listHost);
+			var url = term
+				? ctx.urls.api.personsSearch + '?search=' + encodeURIComponent(term)
+				: ctx.urls.api.persons + '?limit=50';
+			api('GET', url)
+				.then(function (data) {
+					setBusy(listHost, false);
+					var persons = term
+						? (data.results || [])
+							.filter(function (r) { return r.type === 'person'; })
+							.map(function (r) { return r.person; })
+						: (data.persons || []);
+					if (!persons.length) {
+						listHost.appendChild(emptyState(
+							tr('No people yet'),
+							tr('Create the first person to lend stock to.'),
+							null
+						));
+						return;
+					}
+					listHost.appendChild(tableOrCards([
+						{ key: 'displayName', label: tr('Name'), render: function (p) {
+							return el('a', {
+								href: urlWithId(ctx.urls.pages.personDetail || '', p.id) || '#',
+								text: p.displayName,
+							});
+						} },
+						{ key: 'memberNo', label: tr('Member number'), render: function (p) { return p.memberNo || '—'; } },
+						{ key: 'active', label: tr('Status'), render: function (p) {
+							if (p.anonymized) return el('span', { className: 'iv-badge iv-badge--neutral', text: tr('anonymized') });
+							return p.active
+								? el('span', { className: 'iv-badge iv-badge--ok', text: tr('active') })
+								: el('span', { className: 'iv-badge iv-badge--neutral', text: tr('inactive') });
+						} },
+					], persons, { caption: tr('People register') }));
+					if (data.truncated) {
+						listHost.appendChild(el('p', { className: 'iv-muted', text: tr('More matches exist — refine your search.') }));
+					}
+				}).catch(function (err) {
+					setBusy(listHost, false);
+					listHost.appendChild(loadErrorPanel(err.message, function () { load(term); }));
+				});
+		}
+		var timer = null;
+		searchInput.addEventListener('input', function () {
+			if (timer) window.clearTimeout(timer);
+			timer = window.setTimeout(function () { load(searchInput.value.trim()); }, 300);
+		});
+		load('');
+		setBusy(mount, false);
+	}
+
+	function renderPersonDetail(ctx) {
+		var mount = ctx.mount;
+		var id = Number(ctx.entityId);
+		setBusy(mount, true);
+		Promise.all([
+			api('GET', urlWithId(ctx.urls.api.personById, id)),
+			api('GET', urlWithId(ctx.urls.api.personLoans, id)),
+		]).then(function (results) {
+			setBusy(mount, false);
+			clear(mount);
+			clear(ctx.actions);
+			var person = results[0].person;
+			var loans = results[1];
+			if (ctx.isOffice || ctx.isAppAdmin) {
+				ctx.actions.appendChild(btn(tr('Anonymize'), {
+					className: 'iv-btn iv-btn--ghost',
+					onclick: function () {
+						var body = el('p', {
+							text: tr('Anonymize {name}? Open loans must be returned first. Loan history is kept without personal data.', { name: person.displayName }),
+						});
+						dialog(tr('Anonymize person'), [body], function () {
+							api('POST', urlWithId(ctx.urls.api.personAnonymize, id), {}).then(function () {
+								toast(tr('Person anonymized.'));
+								renderPersonDetail(ctx);
+							}).catch(function (err) { toast(err.message, true); });
+							return true;
+						}, tr('Anonymize'));
+					},
+				}));
+			}
+			mount.appendChild(el('section', { className: 'iv-section' }, [
+				el('h2', { className: 'iv-section__title', text: person.displayName }),
+				person.memberNo
+					? el('p', { className: 'iv-muted', text: tr('Member number') + ': ' + person.memberNo })
+					: null,
+				person.note ? el('p', { className: 'iv-muted', text: person.note }) : null,
+				person.anonymized
+					? el('p', null, [el('span', { className: 'iv-badge iv-badge--neutral', text: tr('anonymized') })])
+					: null,
+			].filter(Boolean)));
+			mount.appendChild(el('section', { className: 'iv-section' }, [
+				el('h2', { className: 'iv-section__title', text: tr('Open loans') }),
+				loans.open && loans.open.length
+					? tableOrCards(loanColumns(ctx, function () { renderPersonDetail(ctx); }), loans.open, { caption: tr('Open loans') })
+					: el('p', { className: 'iv-muted', text: tr('No open loans.') }),
+			]));
+			mount.appendChild(disclosureSection(tr('History'), [
+				loans.history && loans.history.length
+					? tableOrCards([
+						{ key: 'itemName', label: tr('Item'), render: function (l) { return l.itemName || ('#' + l.itemId); } },
+						{ key: 'qty', label: tr('Quantity'), render: function (l) { return formatQty(l.qty); } },
+						{ key: 'checkedOutAt', label: tr('Checked out'), render: function (l) { return formatMovementWhen(l.checkedOutAt); } },
+						{ key: 'status', label: tr('Status'), render: function (l) { return loanStatusBadge(l); } },
+					], loans.history, { caption: tr('Loan history') })
+					: el('p', { className: 'iv-muted', text: tr('No history yet.') }),
+			]));
+		}).catch(function (err) {
+			setBusy(mount, false);
+			clear(mount);
+			mount.appendChild(loadErrorPanel(err.message, function () { renderPersonDetail(ctx); }));
+		});
+	}
+
 	function boot() {
 		var ctx = readShell();
 		if (!ctx || !ctx.mount) return;
@@ -8096,6 +8642,8 @@
 			case 'location-detail': renderLocationDetail(ctx); break;
 			case 'movements': renderMovements(ctx); break;
 			case 'reports': renderReports(ctx); break;
+			case 'people': renderPeople(ctx); break;
+			case 'person-detail': renderPersonDetail(ctx); break;
 			case 'stocktake': renderStocktake(ctx); break;
 			case 'stocktake-new': renderStocktakeNewPage(ctx); break;
 			case 'settings': renderSettings(ctx); break;

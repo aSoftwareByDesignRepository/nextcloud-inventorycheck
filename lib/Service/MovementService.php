@@ -8,6 +8,7 @@ use OCA\InventoryCheck\Db\Balance;
 use OCA\InventoryCheck\Db\BalanceMapper;
 use OCA\InventoryCheck\Db\Item;
 use OCA\InventoryCheck\Db\ItemMapper;
+use OCA\InventoryCheck\Db\Loan;
 use OCA\InventoryCheck\Db\LocationMapper;
 use OCA\InventoryCheck\Db\LotMapper;
 use OCA\InventoryCheck\Db\Movement;
@@ -47,6 +48,8 @@ use OCP\IDBConnection;
  */
 class MovementService
 {
+	/** F2: custody movements reference their loan row. */
+	public const REF_TYPE_LOAN = 'loan';
 	/** C-8: receive-against-order movements carry this ref_type + ref_id=sheetId. */
 	public const REF_TYPE_ORDER_RECEIVE = 'order_receive';
 
@@ -155,6 +158,148 @@ class MovementService
 		// Wave D8 / AF-IV12: web issue must honour require_location_scan (not only /scan).
 		LocationScanPolicy::assertMatches($this->config, $this->locations, $locationId, $locationCode);
 		return $this->postSingle($actorUid, 'issue', $itemId, $locationId, $qty, $reason, $lotCode, true);
+	}
+
+	/**
+	 * F2 custody hand-out (office+). Hard non-negative invariant: checkout
+	 * never dips below zero even when allowNegativeStock is enabled —
+	 * lending phantom stock is explicitly forbidden (SPEC §4 NN-01).
+	 * One txn: balance update + loan row + chained movement
+	 * (ref_type='loan', ref_id=loanId). The caller passes the loan
+	 * persistence closure so the loan insert commits atomically.
+	 *
+	 * @param callable():int $insertLoan returns the new loan id; runs in-txn
+	 * @return array{movement: Movement, loanId: int}
+	 */
+	public function checkout(
+		string $actorUid,
+		int $itemId,
+		int $locationId,
+		int $qty,
+		?string $reason,
+		?string $lotCode,
+		callable $insertLoan,
+	): array {
+		$this->assertLocationAccess($actorUid, $locationId);
+		if (!MovementMath::isValidMovementQty($qty, QtyScale::maxStorage($this->config))) {
+			throw new ValidationException('invalid_qty');
+		}
+		$reason = $this->normalizeReason($reason);
+		$delta = MovementMath::deltaForKind('checkout', $qty);
+		$now = $this->clock->now();
+
+		return $this->runInTransaction(function () use (
+			$actorUid, $itemId, $locationId, $qty, $reason, $delta, $now, $lotCode, $insertLoan,
+		): array {
+			$item = $this->lockActiveItemForMovement($itemId);
+			$lockedLot = $this->enforceTrackMode($item, $lotCode, 'checkout', $qty);
+			$loc = $this->lockActiveLocations([$locationId])[$locationId];
+			$this->balances->ensureZeroRow($itemId, $locationId, $now);
+			$locked = $this->balances->lockPairs([
+				['itemId' => $itemId, 'locationId' => $locationId],
+			]);
+			$bal = $locked[$itemId . ':' . $locationId];
+			$qtyAfter = MovementMath::applyDelta($bal->getQty(), $delta);
+
+			// SPEC NN-01: force allowNeg=false — custody can never create
+			// phantom stock even when the site allows negative issue balances.
+			if (MovementMath::isInsufficientStock($bal->getQty(), $qtyAfter, false)) {
+				throw new InsufficientStockException($bal->getQty(), $loc->getCode());
+			}
+			if (!MovementMath::isValidBalance($qtyAfter)) {
+				throw new ValidationException('qty_out_of_range');
+			}
+
+			$this->updateBalance($bal, $qtyAfter, $now);
+			$loanId = $insertLoan();
+			// ref_leg keeps every loan leg unique under iv_mov_ref_uq2 —
+			// checkout is always leg 1 for a fresh loan.
+			$leg = $this->movements->maxRefLeg(self::REF_TYPE_LOAN, $loanId, $itemId) + 1;
+			$mov = $this->insertMovement(
+				$itemId, $locationId, 'checkout', $delta, $qtyAfter,
+				null, null, $reason, $actorUid, $now,
+				self::REF_TYPE_LOAN, $loanId, $lockedLot, null, null, $leg,
+			);
+			$this->notifyLowStock($itemId);
+			return ['movement' => $mov, 'loanId' => $loanId];
+		});
+	}
+
+	/**
+	 * F2 return leg: adds qty back at the loan's own location and advances
+	 * qty_returned under a FOR UPDATE row lock + CAS update so exactly one
+	 * of two concurrent check-ins wins (SPEC AC-7). Deliberately does NOT
+	 * require the item/location/person to still be active — returns must
+	 * always succeed on historical loans (SPEC NN-05).
+	 *
+	 * @param callable(int):int $applyReturn in-txn CAS hook: receives $qty,
+	 *        returns rows-affected (0 = race loser / over-return)
+	 * @return array{movement: Movement}
+	 */
+	public function checkin(
+		string $actorUid,
+		Loan $loan,
+		int $qty,
+		?string $reason,
+		callable $applyReturn,
+	): array {
+		if (!MovementMath::isValidMovementQty($qty, QtyScale::maxStorage($this->config))) {
+			throw new ValidationException('invalid_qty');
+		}
+		$reason = $this->normalizeReason($reason);
+		$delta = MovementMath::deltaForKind('checkin', $qty);
+		$now = $this->clock->now();
+		$itemId = $loan->getItemId();
+		$locationId = $loan->getLocationId();
+
+		return $this->runInTransaction(function () use (
+			$actorUid, $loan, $itemId, $locationId, $qty, $reason, $delta, $now, $applyReturn,
+		): array {
+			$applied = $applyReturn($qty);
+			if ($applied !== 1) {
+				throw new ConflictException('loan_checkin_conflict');
+			}
+
+			// Item may be inactive — lock the row but never reject on active
+			// (NN-05). Serial items still take the exclusive lock.
+			$peek = $this->items->findById($itemId);
+			$item = $this->items->lockById($itemId, $peek->getTrackMode() === 'serial');
+			$trackMode = $item->getTrackMode();
+			$lockedLot = $loan->getLotCode();
+			if ($trackMode !== 'none') {
+				if ($lockedLot === null || $lockedLot === '') {
+					throw new ValidationException('invalid_lot_code', '', [
+						['field' => 'lotCode', 'code' => 'invalid_lot_code'],
+					]);
+				}
+			}
+			if ($trackMode === 'serial') {
+				$this->checkSerialCapacity($itemId, $lockedLot, $delta);
+			}
+
+			$this->locations->lockById($locationId, false);
+			$this->balances->ensureZeroRow($itemId, $locationId, $now);
+			$locked = $this->balances->lockPairs([
+				['itemId' => $itemId, 'locationId' => $locationId],
+			]);
+			$bal = $locked[$itemId . ':' . $locationId];
+			$qtyAfter = MovementMath::applyDelta($bal->getQty(), $delta);
+			if (!MovementMath::isValidBalance($qtyAfter)) {
+				throw new ValidationException('qty_out_of_range');
+			}
+
+			$this->updateBalance($bal, $qtyAfter, $now);
+			// Next leg under the CAS-serialized lock — the unique index's
+			// discriminator column is what makes multi-leg returns legal.
+			$leg = $this->movements->maxRefLeg(self::REF_TYPE_LOAN, $loan->getId(), $itemId) + 1;
+			$mov = $this->insertMovement(
+				$itemId, $locationId, 'checkin', $delta, $qtyAfter,
+				null, null, $reason, $actorUid, $now,
+				self::REF_TYPE_LOAN, $loan->getId(), $trackMode === 'none' ? null : $lockedLot,
+				null, null, $leg,
+			);
+			return ['movement' => $mov];
+		});
 	}
 
 	/**
@@ -775,6 +920,7 @@ class MovementService
 		?string $lotCode = null,
 		?string $reasonCode = null,
 		?int $spendMinor = null,
+		int $refLeg = 0,
 	): Movement {
 		$m = new Movement();
 		$m->setItemId($itemId);
@@ -788,6 +934,7 @@ class MovementService
 		$m->setReasonCode($reasonCode);
 		$m->setRefType($refType);
 		$m->setRefId($refId);
+		$m->setRefLeg($refLeg);
 		$m->setLotCode($lotCode);
 		$m->setSpendMinor($spendMinor);
 		$m->setCreatedAt($now);
@@ -892,7 +1039,7 @@ class MovementService
 			]);
 		}
 		$unit = QtyScale::serialUnit($this->config);
-		if ($trackMode === 'serial' && in_array($kind, ['issue', 'transfer'], true) && $qty !== $unit) {
+		if ($trackMode === 'serial' && in_array($kind, ['issue', 'transfer', 'checkout', 'checkin'], true) && $qty !== $unit) {
 			throw new ValidationException('serial_qty_must_be_one', '', [
 				['field' => 'qty', 'code' => 'serial_qty_must_be_one'],
 			]);

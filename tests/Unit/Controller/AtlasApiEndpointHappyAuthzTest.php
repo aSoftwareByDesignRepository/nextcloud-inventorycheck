@@ -17,6 +17,7 @@ use OCA\InventoryCheck\Controller\ItemController;
 use OCA\InventoryCheck\Controller\ItemPhotoController;
 use OCA\InventoryCheck\Controller\JournalController;
 use OCA\InventoryCheck\Controller\LicenseController;
+use OCA\InventoryCheck\Controller\LoanController;
 use OCA\InventoryCheck\Controller\LocationController;
 use OCA\InventoryCheck\Controller\LotController;
 use OCA\InventoryCheck\Controller\OrderSheetController;
@@ -28,6 +29,7 @@ use OCA\InventoryCheck\Controller\LowStockController;
 use OCA\InventoryCheck\Controller\MobileController;
 use OCA\InventoryCheck\Controller\MovementController;
 use OCA\InventoryCheck\Controller\PageController;
+use OCA\InventoryCheck\Controller\PersonController;
 use OCA\InventoryCheck\Controller\ProductLookupController;
 use OCA\InventoryCheck\Exception\AppAccessDeniedException;
 use OCA\InventoryCheck\Exception\MobileGateException;
@@ -55,6 +57,9 @@ use OCA\InventoryCheck\Service\MovementService;
 use OCA\InventoryCheck\Service\OrderSheetService;
 use OCA\InventoryCheck\Service\ScanIdempotencyService;
 use OCA\InventoryCheck\Service\SettingsSectionCatalog;
+use OCA\InventoryCheck\Db\Loan;
+use OCA\InventoryCheck\Db\Movement;
+use OCA\InventoryCheck\Db\Person;
 use OCP\AppFramework\Http\DataResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Response;
@@ -110,6 +115,8 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 		FieldController::class,
 		JournalController::class,
 		StockListController::class,
+		PersonController::class,
+		LoanController::class,
 	];
 
 	/**
@@ -121,7 +128,7 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 		PageController::class => [
 			'dashboard', 'items', 'item', 'locations', 'location', 'movements',
 			'stocktake', 'stocktakeNew', 'stocktakeCampaign', 'settings', 'settingsSection',
-			'reports',
+			'reports', 'people', 'person',
 		],
 		LocationController::class => [
 			'index', 'byCode', 'show', 'create', 'update', 'destroy',
@@ -135,6 +142,8 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 		LotController::class => ['index', 'byCode', 'setExpiry', 'itemLots', 'expiring'],
 		FieldController::class => ['index', 'create', 'update', 'destroy', 'valueCount'],
 		JournalController::class => ['status', 'verify', 'verifyPost'],
+		PersonController::class => ['index', 'search', 'create', 'show', 'update', 'anonymize', 'loans'],
+		LoanController::class => ['index', 'create', 'checkin', 'lost', 'forItem'],
 		StockListController::class => ['ods', 'pdf'],
 		ReportController::class => ['valuation', 'movementValue', 'locationValue', 'deadStock'],
 		OrderSheetController::class => ['index', 'show', 'create', 'updateLines', 'send', 'cancel', 'print'],
@@ -627,6 +636,13 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 			$mock->method('transfer')->willReturn($payload);
 			$mock->method('adjust')->willReturn($payload);
 			$mock->method('scan')->willReturn($payload);
+			$loanMv = new Movement();
+			$loanMv->setId(1);
+			$loanMv->setItemId(1);
+			$loanMv->setLocationId(1);
+			$loanMv->setKind('checkout');
+			$mock->method('checkout')->willReturn(['loanId' => 1, 'movement' => $loanMv]);
+			$mock->method('checkin')->willReturn(['loanId' => 1, 'movement' => $loanMv]);
 			$mock->method('receiveAgainstOrder')->willReturn($payload);
 			$this->byType[$key] = $mock;
 			return $mock;
@@ -778,6 +794,8 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 			$mock->method('setEnabled')->willReturnCallback(static function (): void {});
 			$mock->method('setDevicesStrict')->willReturnCallback(static function (): void {});
 			$mock->method('purgeUser')->willReturnCallback(static function (): void {});
+			$mock->method('canAccessLocation')->willReturn(true);
+			$mock->method('visibleLocationIds')->willReturn(null);
 			$this->byType[$key] = $mock;
 			return $mock;
 		}
@@ -788,6 +806,7 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 			$user->method('getDisplayName')->willReturn('Alice');
 			$mock = $this->createMock(IUserManager::class);
 			$mock->method('get')->willReturn($user);
+			$mock->method('search')->willReturn([$user]);
 			$mock->method('userExists')->willReturn(true);
 			$this->byType[$key] = $mock;
 			return $mock;
@@ -821,6 +840,49 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 			]);
 			$mock->method('buildOds')->willReturn('ods');
 			$mock->method('buildPdf')->willReturn('pdf');
+			$this->byType[$key] = $mock;
+			return $mock;
+		}
+
+		if ($typeName === \OCA\InventoryCheck\Db\PersonMapper::class) {
+			$person = new Person();
+			$person->setId(1);
+			$person->setDisplayName('Atlas Person');
+			$person->setActive(1);
+			$person->setAnonymized(0);
+			$mock = $this->createMock(\OCA\InventoryCheck\Db\PersonMapper::class);
+			$mock->method('findById')->willReturn($person);
+			$mock->method('findByNcUserId')->willReturn(null);
+			$mock->method('insert')->willReturnArgument(0);
+			$mock->method('update')->willReturnArgument(0);
+			$mock->method('search')->willReturn([]);
+			$mock->method('list')->willReturn([]);
+			$this->byType[$key] = $mock;
+			return $mock;
+		}
+
+		if ($typeName === \OCA\InventoryCheck\Db\LoanMapper::class) {
+			$loan = new Loan();
+			$loan->setId(1);
+			$loan->setItemId(1);
+			$loan->setPersonId(1);
+			$loan->setLocationId(1);
+			$loan->setQty(1);
+			$loan->setQtyReturned(0);
+			$loan->setStatus(Loan::STATUS_OPEN);
+			$mock = $this->createMock(\OCA\InventoryCheck\Db\LoanMapper::class);
+			$mock->method('findById')->willReturn($loan);
+			$mock->method('findByIdForUpdate')->willReturn($loan);
+			$mock->method('insert')->willReturnArgument(0);
+			$mock->method('update')->willReturnArgument(0);
+			$mock->method('tryApplyReturn')->willReturn(1);
+			$mock->method('countOpenForPerson')->willReturn(0);
+			$mock->method('openScoped')->willReturn([]);
+			$mock->method('overviewCounts')->willReturn(['open' => 0, 'overdue' => 0, 'dueToday' => 0]);
+			$mock->method('openForItem')->willReturn([]);
+			$mock->method('openForPerson')->willReturn([]);
+			$mock->method('historyForPerson')->willReturn([]);
+			$mock->method('dueBetween')->willReturn([]);
 			$this->byType[$key] = $mock;
 			return $mock;
 		}

@@ -301,49 +301,6 @@
 				}
 			}
 		},
-		"/api/journal": {
-			"get": {
-				"responses": {
-					"200": {
-						"description": "OK"
-					}
-				}
-			}
-		},
-		"/api/journal/verify": {
-			"get": {
-				"responses": {
-					"200": {
-						"description": "OK"
-					}
-				}
-			},
-			"post": {
-				"responses": {
-					"200": {
-						"description": "OK"
-					}
-				}
-			}
-		},
-		"/api/stock-list.ods": {
-			"get": {
-				"responses": {
-					"200": {
-						"description": "OK"
-					}
-				}
-			}
-		},
-		"/api/stock-list.pdf": {
-			"get": {
-				"responses": {
-					"200": {
-						"description": "OK"
-					}
-				}
-			}
-		},
 		"/api/flange": {
 			"get": {
 				"responses": {
@@ -548,6 +505,40 @@
 				}
 			}
 		},
+		"/api/items/{itemId}/loans": {
+			"get": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			}
+		},
+		"/api/journal": {
+			"get": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			}
+		},
+		"/api/journal/verify": {
+			"get": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			},
+			"post": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			}
+		},
 		"/api/kits": {
 			"get": {
 				"responses": {
@@ -669,6 +660,40 @@
 		},
 		"/api/license/seats/{uid}": {
 			"delete": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			}
+		},
+		"/api/loans": {
+			"get": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			},
+			"post": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			}
+		},
+		"/api/loans/{id}/checkin": {
+			"post": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			}
+		},
+		"/api/loans/{id}/lost": {
+			"post": {
 				"responses": {
 					"200": {
 						"description": "OK"
@@ -920,6 +945,65 @@
 				}
 			}
 		},
+		"/api/persons": {
+			"post": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			},
+			"get": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			}
+		},
+		"/api/persons/search": {
+			"get": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			}
+		},
+		"/api/persons/{id}": {
+			"get": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			},
+			"put": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			}
+		},
+		"/api/persons/{id}/anonymize": {
+			"post": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			}
+		},
+		"/api/persons/{id}/loans": {
+			"get": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			}
+		},
 		"/api/product-lookup": {
 			"post": {
 				"responses": {
@@ -979,6 +1063,24 @@
 			}
 		},
 		"/api/reports/valuation": {
+			"get": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			}
+		},
+		"/api/stock-list.ods": {
+			"get": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			}
+		},
+		"/api/stock-list.pdf": {
 			"get": {
 				"responses": {
 					"200": {
@@ -1245,6 +1347,24 @@
 			}
 		},
 		"/mobile/v1/widget-snapshot": {
+			"get": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			}
+		},
+		"/people": {
+			"get": {
+				"responses": {
+					"200": {
+						"description": "OK"
+					}
+				}
+			}
+		},
+		"/people/{id}": {
 			"get": {
 				"responses": {
 					"200": {

@@ -39,8 +39,8 @@ final class MovementMath
 	public static function deltaForKind(string $kind, int $qty): int
 	{
 		return match ($kind) {
-			'receive', 'transfer_in' => $qty,
-			'issue', 'transfer_out' => -$qty,
+			'receive', 'transfer_in', 'checkin' => $qty,
+			'issue', 'transfer_out', 'checkout' => -$qty,
 			default => throw new \InvalidArgumentException('unknown_kind'),
 		};
 	}

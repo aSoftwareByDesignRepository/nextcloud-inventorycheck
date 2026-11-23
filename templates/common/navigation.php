@@ -48,6 +48,7 @@ $ivNavLabel = static function (string $name, string $hint): void {
 $activeNavId = match ($pageId) {
 	'item-detail' => 'items',
 	'location-detail' => 'locations',
+	'person-detail' => 'people',
 	'stocktake-new' => 'stocktake',
 	default => $pageId,
 };
@@ -57,6 +58,7 @@ $isItems = $activeNavId === 'items';
 $isLocations = $activeNavId === 'locations';
 $isMovements = $activeNavId === 'movements';
 $isReports = $activeNavId === 'reports';
+$isPeople = $activeNavId === 'people';
 $isStocktake = $activeNavId === 'stocktake';
 $isSettings = $activeNavId === 'settings';
 ?>
@@ -117,6 +119,14 @@ $isSettings = $activeNavId === 'settings';
 						aria-label="<?php p($l->t('Go to reports')); ?>">
 						<span class="iv-nav__icon" aria-hidden="true"><?php print_unescaped($ivNavIcon('clipboard-list')); ?></span>
 						<?php $ivNavLabel($l->t('Reports'), $l->t('Value and untouched stock')); ?>
+					</a>
+				</li>
+				<li class="<?php p($isPeople ? 'active' : ''); ?>">
+					<a <?php if ($isPeople): ?>aria-current="page"<?php endif; ?> href="<?php p((string)($navUrls['people'] ?? '#')); ?>"
+						title="<?php p($l->t('People: lending register and due dates')); ?>"
+						aria-label="<?php p($l->t('Go to people')); ?>">
+						<span class="iv-nav__icon" aria-hidden="true"><?php print_unescaped($ivNavIcon('users')); ?></span>
+						<?php $ivNavLabel($l->t('People'), $l->t('Who has what')); ?>
 					</a>
 				</li>
 				<li class="<?php p($isStocktake ? 'active' : ''); ?>">

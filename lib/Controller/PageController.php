@@ -114,6 +114,35 @@ class PageController extends Controller
 		);
 	}
 
+	/** F2: person registry — office+ only (custody is never a field surface). */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function people(): TemplateResponse
+	{
+		$uid = $this->access->currentUserId();
+		$this->access->requireOffice($uid);
+		return $this->page(
+			'people',
+			'People',
+			'Lending register — who has what, and when it is due back'
+		);
+	}
+
+	/** F2: person detail — open loans, history, erasure. */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function person(int $id): TemplateResponse
+	{
+		$uid = $this->access->currentUserId();
+		$this->access->requireOffice($uid);
+		return $this->page(
+			'person-detail',
+			'Person',
+			'Open loans and lending history',
+			$id
+		);
+	}
+
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	/** IV-REPORTS-SURFACE: office-only money surface (NN-01). */
@@ -249,6 +278,8 @@ class PageController extends Controller
 				'locations' => $this->urlGenerator->linkToRoute('inventorycheck.page.locations'),
 				'movements' => $this->urlGenerator->linkToRoute('inventorycheck.page.movements'),
 				'reports' => $this->urlGenerator->linkToRoute('inventorycheck.page.reports'),
+				'people' => $this->urlGenerator->linkToRoute('inventorycheck.page.people'),
+				'personDetail' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.page.person'),
 				'stocktake' => $this->urlGenerator->linkToRoute('inventorycheck.page.stocktake'),
 				'stocktakeNew' => $this->urlGenerator->linkToRoute('inventorycheck.page.stocktakeNew'),
 				'stocktakeCampaign' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.page.stocktakeCampaign'),
@@ -322,6 +353,15 @@ class PageController extends Controller
 				'license' => $this->urlGenerator->linkToRoute('inventorycheck.license.show'),
 				'licenseSeats' => $this->urlGenerator->linkToRoute('inventorycheck.license.seats'),
 				'licenseDevices' => $this->urlGenerator->linkToRoute('inventorycheck.license.devices'),
+				'personsSearch' => $this->urlGenerator->linkToRoute('inventorycheck.person.search'),
+				'persons' => $this->urlGenerator->linkToRoute('inventorycheck.person.create'),
+				'personById' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.person.show'),
+				'personLoans' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.person.loans'),
+				'personAnonymize' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.person.anonymize'),
+				'loans' => $this->urlGenerator->linkToRoute('inventorycheck.loan.index'),
+				'loanCheckin' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.loan.checkin'),
+				'loanLost' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.loan.lost'),
+				'itemLoans' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.loan.forItem', 'itemId'),
 			],
 		];
 
@@ -402,6 +442,7 @@ class PageController extends Controller
 		$template = match ($pageId) {
 			'item-detail' => 'item-detail',
 			'location-detail' => 'location-detail',
+			'person-detail' => 'person-detail',
 			'stocktake-new' => 'stocktake',
 			default => $pageId,
 		};

@@ -866,6 +866,146 @@
 			],
 			"mobile": null,
 			"mobileReason": "office-only audit surface; the companion never verifies chains or downloads print artifacts"
+		},
+		{
+			"id": "custody-lending",
+			"param": "personId",
+			"description": "IV-CUSTODY-LENDING Wave A: person registry + loan lifecycle. POST /api/loans checks out stock to a person (office+, hard non-negative floor); POST /api/loans/{id}/checkin returns qty under CAS (open→partial→returned, lost terminal); POST /api/loans/{id}/lost. GET /api/persons/search merges app persons + NC users (search= canonical, q= alias, truncated flag). POST /api/persons/{id}/anonymize is the GDPR erasure path — blocked while open loans exist. No DELETE anywhere — rows are never hard-deleted.",
+			"errorCodes": [
+				"person_has_open_loans",
+				"person_not_loanable",
+				"person_anonymized",
+				"qty_exceeds_outstanding",
+				"loan_not_open",
+				"loan_checkin_conflict",
+				"unknown_person",
+				"unknown_loan",
+				"unknown_item",
+				"unknown_location",
+				"insufficient_stock",
+				"invalid_qty",
+				"inactive_item",
+				"inactive_location",
+				"invalid_lot_code",
+				"serial_qty_must_be_one",
+				"serial_exists",
+				"validation_failed"
+			],
+			"server": [
+				{
+					"file": "lib/Service/LoanService.php",
+					"needles": [
+						"checkout",
+						"checkin",
+						"markLost",
+						"person_not_loanable",
+						"qty_exceeds_outstanding",
+						"loan_not_open",
+						"tryApplyReturn"
+					]
+				},
+				{
+					"file": "lib/Service/PersonService.php",
+					"needles": [
+						"search",
+						"create",
+						"anonymize",
+						"person_has_open_loans",
+						"deleted person #",
+						"ncUserId"
+					]
+				},
+				{
+					"file": "lib/Service/MovementService.php",
+					"needles": [
+						"checkout",
+						"checkin",
+						"REF_TYPE_LOAN",
+						"maxRefLeg"
+					]
+				},
+				{
+					"file": "lib/Db/LoanMapper.php",
+					"needles": [
+						"tryApplyReturn",
+						"findByIdForUpdate",
+						"openScoped",
+						"dueBetween"
+					]
+				},
+				{
+					"file": "lib/Service/LoanDueNotifyService.php",
+					"needles": [
+						"loandue:",
+						"dueBetween",
+						"notify"
+					]
+				},
+				{
+					"file": "lib/Controller/PersonController.php",
+					"needles": [
+						"index",
+						"search",
+						"create",
+						"show",
+						"update",
+						"anonymize",
+						"loans"
+					]
+				},
+				{
+					"file": "lib/Controller/LoanController.php",
+					"needles": [
+						"index",
+						"create",
+						"checkin",
+						"lost",
+						"forItem"
+					]
+				}
+			],
+			"web": [
+				{
+					"file": "js/app.js",
+					"needles": [
+						"personPicker",
+						"openCheckoutDialog",
+						"openCheckinDialog",
+						"openMarkLostDialog",
+						"renderPeople",
+						"renderPersonDetail",
+						"mountItemLoans",
+						"loanStatusBadge",
+						"personsSearch",
+						"loanCheckin",
+						"personAnonymize",
+						"itemLoans",
+						"Create person",
+						"More options",
+						"data-iv-loans-card"
+					]
+				},
+				{
+					"file": "templates/common/navigation.php",
+					"needles": [
+						"isPeople",
+						"navUrls['people']"
+					]
+				},
+				{
+					"file": "lib/Controller/PageController.php",
+					"needles": [
+						"people",
+						"person",
+						"personsSearch",
+						"personLoans",
+						"loanCheckin",
+						"itemLoans"
+					]
+				}
+			],
+			"mobile": null,
+			"mobileReason": "Wave A is web-only per spec; mobile loans endpoints (/mobile/v1/loans + checkin + signature) land in Wave B."
 		}
 	]
 }

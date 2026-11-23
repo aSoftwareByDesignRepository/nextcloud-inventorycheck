@@ -33,6 +33,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setCreatedBy(string $v)
  * @method string|null getLotCode()
  * @method void setLotCode(?string $v)
+ * @method int getRefLeg()
+ * @method void setRefLeg(int $v)
  * @method string|null getReasonCode()
  * @method void setReasonCode(?string $v)
  * @method int|null getSpendMinor()
@@ -51,6 +53,8 @@ class Movement extends Entity
 	protected ?string $reason = null;
 	protected ?string $refType = null;
 	protected ?int $refId = null;
+	/** F2: leg discriminator for multi-movement refs (loans); flange posts stay 0. */
+	protected int $refLeg = 0;
 	protected int $createdAt = 0;
 	protected string $createdBy = '';
 	/** Wave C2: lot/serial code, only set when the item's track_mode requires one. */
@@ -72,6 +76,7 @@ class Movement extends Entity
 		$this->addType('reason', 'string');
 		$this->addType('refType', 'string');
 		$this->addType('refId', 'integer');
+		$this->addType('refLeg', 'integer');
 		$this->addType('createdAt', 'integer');
 		$this->addType('createdBy', 'string');
 		$this->addType('lotCode', 'string');
@@ -95,6 +100,7 @@ class Movement extends Entity
 			'reasonCode' => $this->reasonCode,
 			'refType' => $this->refType,
 			'refId' => $this->refId,
+			'refLeg' => $this->refLeg,
 			'lotCode' => $this->lotCode,
 			'spendMinor' => $this->spendMinor,
 			'createdAt' => $this->createdAt,

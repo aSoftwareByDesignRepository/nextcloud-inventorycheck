@@ -13,6 +13,7 @@ const routes = [
 	{ path: '/apps/inventorycheck/locations', ready: '#iv-page-title, .iv-howto, #iv-loc-filter-panel, .iv-filter-panel, .iv-empty', creds: 'E2E' },
 	{ path: '/apps/inventorycheck/movements', ready: '#iv-page-title, .iv-howto, .iv-filter-panel, .iv-filterbar, .iv-empty', creds: 'E2E' },
 	{ path: '/apps/inventorycheck/stocktake', ready: '#iv-page-title, .iv-howto, .iv-stocktake-howto, .iv-section, .iv-empty, .iv-row', creds: 'E2E' },
+	{ path: '/apps/inventorycheck/people', ready: '#iv-page-title, .iv-section, .iv-empty, .iv-table', creds: 'ADMIN' },
 	{ path: '/apps/inventorycheck/stocktake/create', ready: '#iv-page-title, .iv-howto, .iv-stocktake-howto, .iv-stocktake-new, [data-iv-loc-chooser="1"], .iv-empty', creds: 'E2E' },
 	{ path: '/apps/inventorycheck/settings/access', ready: '#iv-page-title, #iv-access-title, .iv-settings-page', creds: 'ADMIN' },
 	{ path: '/apps/inventorycheck/settings/office', ready: '#iv-page-title, .iv-howto, #iv-office-title, .iv-settings-page', creds: 'ADMIN' },

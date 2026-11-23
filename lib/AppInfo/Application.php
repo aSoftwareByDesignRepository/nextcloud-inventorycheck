@@ -132,6 +132,8 @@ class Application extends App implements IBootstrap
 		$context->registerService(LocationFavouriteMapper::class, static fn ($c) => new LocationFavouriteMapper($c->get(IDBConnection::class)));
 		$context->registerService(\OCA\InventoryCheck\Db\ItemFieldMapper::class, static fn ($c) => new \OCA\InventoryCheck\Db\ItemFieldMapper($c->get(IDBConnection::class)));
 		$context->registerService(\OCA\InventoryCheck\Db\ItemFieldValueMapper::class, static fn ($c) => new \OCA\InventoryCheck\Db\ItemFieldValueMapper($c->get(IDBConnection::class)));
+		$context->registerService(\OCA\InventoryCheck\Db\PersonMapper::class, static fn ($c) => new \OCA\InventoryCheck\Db\PersonMapper($c->get(IDBConnection::class)));
+		$context->registerService(\OCA\InventoryCheck\Db\LoanMapper::class, static fn ($c) => new \OCA\InventoryCheck\Db\LoanMapper($c->get(IDBConnection::class)));
 
 		$context->registerService(Clock::class, static fn () => new Clock());
 
@@ -211,6 +213,44 @@ class Application extends App implements IBootstrap
 			return new BalanceService(
 				$c->get(BalanceMapper::class),
 				$c->get(LocationAclService::class),
+			);
+		});
+		// F2 Wave A: custody/lending. LoanService borrows MovementService's
+		// txn — the loan insert/CAS runs inside the same commit as the
+		// balance + movement + journal row.
+		$context->registerService(\OCA\InventoryCheck\Service\PersonService::class, static function ($c): \OCA\InventoryCheck\Service\PersonService {
+			return new \OCA\InventoryCheck\Service\PersonService(
+				$c->get(\OCA\InventoryCheck\Db\PersonMapper::class),
+				$c->get(\OCA\InventoryCheck\Db\LoanMapper::class),
+				$c->get(IUserManager::class),
+				$c->get(AccessControlService::class),
+				$c->get(Clock::class),
+			);
+		});
+		$context->registerService(\OCA\InventoryCheck\Service\LoanService::class, static function ($c): \OCA\InventoryCheck\Service\LoanService {
+			return new \OCA\InventoryCheck\Service\LoanService(
+				$c->get(\OCA\InventoryCheck\Db\LoanMapper::class),
+				$c->get(\OCA\InventoryCheck\Db\PersonMapper::class),
+				$c->get(ItemMapper::class),
+				$c->get(LocationMapper::class),
+				$c->get(LocationAclService::class),
+				$c->get(MovementService::class),
+				$c->get(AccessControlService::class),
+				$c->get(Clock::class),
+				$c->get(\Psr\Log\LoggerInterface::class),
+			);
+		});
+		$context->registerService(\OCA\InventoryCheck\Service\LoanDueNotifyService::class, static function ($c): \OCA\InventoryCheck\Service\LoanDueNotifyService {
+			return new \OCA\InventoryCheck\Service\LoanDueNotifyService(
+				$c->get(\OCA\InventoryCheck\Db\LoanMapper::class),
+				$c->get(\OCA\InventoryCheck\Db\PersonMapper::class),
+				$c->get(ItemMapper::class),
+				$c->get(NotifyLogMapper::class),
+				$c->get(AccessControlService::class),
+				$c->get(INotificationManager::class),
+				$c->get(IURLGenerator::class),
+				$c->get(Clock::class),
+				$c->get(\Psr\Log\LoggerInterface::class),
 			);
 		});
 		// LowStockNotifyService never depends on MovementService — resolving it
@@ -363,6 +403,7 @@ class Application extends App implements IBootstrap
 				$c->get(LicenseService::class),
 				$c->get(LocationFavouriteMapper::class),
 				$c->get(LocationAclService::class),
+				$c->get(\OCA\InventoryCheck\Db\PersonMapper::class),
 			);
 		});
 		$context->registerService(GroupDeletedListener::class, static function ($c): GroupDeletedListener {

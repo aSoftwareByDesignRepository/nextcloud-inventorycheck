@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\InventoryCheck\Listener;
 
 use OCA\InventoryCheck\Db\LocationFavouriteMapper;
+use OCA\InventoryCheck\Db\PersonMapper;
 use OCA\InventoryCheck\Service\AccessControlService;
 use OCA\InventoryCheck\Service\LicenseService;
 use OCA\InventoryCheck\Service\LocationAclService;
@@ -25,6 +26,7 @@ class UserDeletedListener implements IEventListener
 		private LicenseService $license,
 		private LocationFavouriteMapper $favourites,
 		private LocationAclService $locationAcl,
+		private PersonMapper $persons,
 	) {
 	}
 
@@ -38,5 +40,7 @@ class UserDeletedListener implements IEventListener
 		$this->license->removeSeat($uid);
 		$this->favourites->deleteAllForUser($uid);
 		$this->locationAcl->purgeUser($uid);
+		// F2: person rows keep loan history — only the NC-user link goes.
+		$this->persons->unlinkNcUser($uid);
 	}
 }

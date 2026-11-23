@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\InventoryCheck\Db;
 
 use OCP\AppFramework\Db\QBMapper;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
@@ -378,6 +379,17 @@ class MovementMapper extends QBMapper
 	{
 		$qb = $this->db->getQueryBuilder();
 		$qb->select($qb->func()->max('id'))->from($this->getTableName());
+		return (int)$qb->executeQuery()->fetchOne();
+	}
+
+	/** F2: highest ref_leg used for a ref tuple — next leg = max+1 (in-txn). */
+	public function maxRefLeg(string $refType, int $refId, int $itemId): int
+	{
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->func()->max('ref_leg'))->from($this->getTableName())
+			->where($qb->expr()->eq('ref_type', $qb->createNamedParameter($refType)))
+			->andWhere($qb->expr()->eq('ref_id', $qb->createNamedParameter($refId)))
+			->andWhere($qb->expr()->eq('item_id', $qb->createNamedParameter($itemId, IQueryBuilder::PARAM_INT)));
 		return (int)$qb->executeQuery()->fetchOne();
 	}
 }

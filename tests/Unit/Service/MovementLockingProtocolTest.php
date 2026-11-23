@@ -110,8 +110,8 @@ final class MovementLockingProtocolTest extends TestCase
 		self::assertNotFalse($src);
 		// Active checks must be locking reads inside the open transaction,
 		// not unlocked pre-checks (S5/S6 TOCTOU).
-		self::assertSame(4, substr_count($src, '$this->lockActiveItemForMovement('), 'receive/issue, transfer, adjust, issueWithRef');
-		self::assertSame(4, substr_count($src, '$this->lockActiveLocations('), 'receive/issue, transfer, adjust, issueWithRef');
+		self::assertSame(5, substr_count($src, '$this->lockActiveItemForMovement('), 'receive/issue, transfer, adjust, issueWithRef, custody checkout/checkin');
+		self::assertSame(5, substr_count($src, '$this->lockActiveLocations('), 'receive/issue, transfer, adjust, issueWithRef, custody checkout/checkin');
 		self::assertStringContainsString('lockById($id, false)', $src);
 		self::assertStringContainsString('sort($ids)', $src);
 		self::assertStringNotContainsString('requireActiveItem', $src);
