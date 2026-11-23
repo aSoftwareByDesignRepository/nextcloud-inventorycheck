@@ -7,6 +7,8 @@ import test from 'node:test';
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const appJs = readFileSync(join(root, 'js/app.js'), 'utf8');
 const appCss = readFileSync(join(root, 'css/app.css'), 'utf8');
+const licensePhp = readFileSync(join(root, 'templates/parts/settings/license.php'), 'utf8');
+const licensePageJs = readFileSync(join(root, 'js/common/license-page.js'), 'utf8');
 
 test('Bachus: loadErrorPanel + Try again on blank-page failures', () => {
 	assert.match(appJs, /function loadErrorPanel/);
@@ -91,7 +93,8 @@ test('Bachus: item create progressive + ACL chips + inline pairing + CSV auto-ch
 	assert.match(appJs, /function createLocalOptionPicker/);
 	assert.match(appJs, /Add locations as chips/);
 	assert.doesNotMatch(appJs, /Hold Ctrl \(or Cmd on Mac\)/);
-	assert.match(appJs, /iv-pair-code-panel/);
+	// Pair-code chrome lives on the shared license page (token shown once).
+	assert.match(licensePageJs, /-license-token-modal/);
 	assert.match(appJs, /We check your file automatically/);
 	assert.match(appJs, /iv-import-columns/);
 	assert.match(appJs, /scheduleDryRun/);
@@ -129,8 +132,11 @@ test('Bachus pass 5: auto-start open stocktake + confirm-is-consent + less chrom
 	assert.match(appJs, /Export DATEV-style CSV/);
 	assert.match(appJs, /iv-actions-more/);
 	assert.match(appJs, /perLoc\.data && perLoc\.data\.length > 0/);
-	assert.match(appJs, /disclosureSection\(tr\('Mobile seats'/);
-	assert.match(appJs, /disclosureSection\(tr\('Scanner device slots'/);
+	// Seats + device slots moved to the server-rendered shared license page,
+	// relocated into the settings shell by app.js (section === 'license').
+	assert.match(licensePhp, /iv-license-server-part|license/);
+	assert.match(appJs, /section === 'license'/);
+	assert.match(appJs, /iv-license-server-part/);
 });
 
 test('Bachus pass 6: transfer confirm-only + stocktake location-first + import skip consent', () => {
@@ -305,7 +311,7 @@ test('Bachus pass 11: ACL revoke 1-click + no coming-soon scanner chrome', () =>
 	assert.match(appJs, /data-iv-acl-clear/);
 	assert.match(appJs, /Clear grants/);
 	assert.match(appJs, /Location grants cleared\./);
-	assert.match(appJs, /Pair shared scanners in the InventoryCheck mobile app/);
-	assert.doesNotMatch(appJs, /Native scanner app: coming soon/);
+	assert.match(licensePhp, /Pair shared scanners in the InventoryCheck mobile app/);
+	assert.doesNotMatch(appJs + licensePhp, /Native scanner app: coming soon/);
 	assert.match(appJs, /Add locations as chips\. Use Clear grants below/);
 });

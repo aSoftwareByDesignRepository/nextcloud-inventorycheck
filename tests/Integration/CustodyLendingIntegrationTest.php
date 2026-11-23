@@ -212,10 +212,19 @@ final class CustodyLendingIntegrationTest extends TestCase
 		$past = time() - 86400;
 		$this->loans->checkout($this->uid, (int)$item['id'], (int)$loc['id'], (int)$person->getId(), 1, $past, null, null, null);
 
-		$first = $this->due->run();
-		$this->assertGreaterThanOrEqual(1, $first);
-		// Second run same day: every recipient deduped → zero new sends.
-		$this->assertSame(0, $this->due->run());
+		// Recipients come from the configured office/admin lists — pin one so
+		// the scan is independent of whatever access config the dev DB has.
+		$access = (new Application())->getContainer()->get(AccessControlService::class);
+		$before = $access->getJsonIdList(AccessControlService::KEY_APP_ADMINS);
+		$access->setJsonIdList(AccessControlService::KEY_APP_ADMINS, [$this->uid]);
+		try {
+			$first = $this->due->run();
+			$this->assertGreaterThanOrEqual(1, $first);
+			// Second run same day: every recipient deduped → zero new sends.
+			$this->assertSame(0, $this->due->run());
+		} finally {
+			$access->setJsonIdList(AccessControlService::KEY_APP_ADMINS, $before);
+		}
 	}
 
 	public function testOverviewCountsAndItemLoans(): void

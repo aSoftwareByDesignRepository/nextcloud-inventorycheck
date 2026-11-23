@@ -360,6 +360,7 @@ Vi forbedrer denne appen med bruk i praksis. Feilrapporter, friksjon og idéer h
 		<job>OCA\InventoryCheck\BackgroundJob\RestockDigestJob</job>
 		<job>OCA\InventoryCheck\BackgroundJob\LotExpiryScanJob</job>
 		<job>OCA\InventoryCheck\BackgroundJob\LoanDueScanJob</job>
+		<job>OCA\InventoryCheck\BackgroundJob\ReservationExpiryJob</job>
 	</background-jobs>
 	<repair-steps>
 		<install>

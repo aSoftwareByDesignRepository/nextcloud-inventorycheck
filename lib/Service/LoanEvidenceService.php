@@ -159,6 +159,9 @@ class LoanEvidenceService
 		try {
 			$this->folder()->getFile($fileName)->delete();
 		} catch (\Throwable $e) {
+			// best-effort: secondary cleanup of an already-unreferenced blob —
+			// the owning row is committed; a failed delete only leaks an
+			// orphan blob in appdata, never corrupts state.
 			$this->logger->warning('loan evidence cleanup failed', ['file' => $fileName, 'error' => $e->getMessage()]);
 		}
 	}

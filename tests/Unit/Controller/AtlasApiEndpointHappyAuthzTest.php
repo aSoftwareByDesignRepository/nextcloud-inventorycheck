@@ -31,6 +31,10 @@ use OCA\InventoryCheck\Controller\MobileController;
 use OCA\InventoryCheck\Controller\MovementController;
 use OCA\InventoryCheck\Controller\PageController;
 use OCA\InventoryCheck\Controller\PersonController;
+use OCA\InventoryCheck\Controller\LoanRequestController;
+use OCA\InventoryCheck\Controller\ReservationController;
+use OCA\InventoryCheck\Controller\MemberTokenController;
+use OCA\InventoryCheck\Controller\PortalController;
 use OCA\InventoryCheck\Controller\ProductLookupController;
 use OCA\InventoryCheck\Exception\AppAccessDeniedException;
 use OCA\InventoryCheck\Exception\MobileGateException;
@@ -120,6 +124,10 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 		StockListController::class,
 		PersonController::class,
 		LoanController::class,
+		LoanRequestController::class,
+		ReservationController::class,
+		MemberTokenController::class,
+		PortalController::class,
 	];
 
 	/**
@@ -147,6 +155,11 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 		JournalController::class => ['status', 'verify', 'verifyPost'],
 		PersonController::class => ['index', 'search', 'create', 'show', 'update', 'anonymize', 'loans'],
 		LoanController::class => ['index', 'create', 'checkin', 'lost', 'forItem', 'evidenceSignature', 'evidenceDamagePhoto'],
+		LoanRequestController::class => ['index', 'approve', 'decline'],
+		ReservationController::class => ['create', 'forItem', 'availability', 'cancel', 'convert'],
+		MemberTokenController::class => ['issue', 'revoke', 'state'],
+		// Token-auth surface: deny proof = uniform NotFoundException(404).
+		PortalController::class => ['show', 'state', 'request', 'cancelRequest', 'damageReport'],
 		StockListController::class => ['ods', 'pdf'],
 		ReportController::class => ['valuation', 'movementValue', 'locationValue', 'deadStock'],
 		OrderSheetController::class => ['index', 'show', 'create', 'updateLines', 'send', 'cancel', 'print'],
@@ -280,6 +293,15 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 				$method = $ref->getMethod($action);
 				try {
 					$result = $method->invokeArgs($ctrl, $this->dummyArgs($method));
+					// PortalController::show is the public HTML shell — uniform
+					// 200 for every token by design (PORTAL-ABUSE-SPEC); the
+					// credential check lives only in the throttled JSON API,
+					// so the page itself carries no existence oracle.
+					if ($class === PortalController::class && $method->getName() === 'show') {
+						self::assertSame(200, $result->getStatus(), $symbol);
+						$proved[] = $symbol;
+						continue;
+					}
 					if (!$result instanceof Response) {
 						$failures[] = $symbol . ' not Response';
 						continue;
@@ -300,6 +322,10 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 						}
 					}
 				} catch (PermissionDeniedException|AppAccessDeniedException|MobileGateException $e) {
+					self::assertNotSame('', $e->getMessage(), $symbol);
+				} catch (\OCA\InventoryCheck\Exception\NotFoundException $e) {
+					// Token-auth surfaces deny with a uniform 404 (no oracle).
+					self::assertSame(PortalController::class, $class, $symbol . ' NotFoundException only valid on token-auth surfaces');
 					self::assertNotSame('', $e->getMessage(), $symbol);
 				} catch (\Throwable $e) {
 					$failures[] = $symbol . ' threw ' . $e::class . ': ' . $e->getMessage();
@@ -920,6 +946,66 @@ final class AtlasApiEndpointHappyAuthzTest extends TestCase
 			$mock->method('openForPerson')->willReturn([]);
 			$mock->method('historyForPerson')->willReturn([]);
 			$mock->method('dueBetween')->willReturn([]);
+			$this->byType[$key] = $mock;
+			return $mock;
+		}
+
+		if ($typeName === \OCA\InventoryCheck\Service\LoanRequestService::class) {
+			$lr = new \OCA\InventoryCheck\Db\LoanRequest();
+			$lr->setId(1);
+			$lr->setItemId(1);
+			$lr->setPersonId(1);
+			$lr->setLocationId(1);
+			$lr->setQty(1);
+			$lr->setStatus('pending');
+			$loan = new Loan();
+			$loan->setId(1);
+			$mock = $this->createMock(\OCA\InventoryCheck\Service\LoanRequestService::class);
+			$mock->method('listPending')->willReturn([]);
+			$mock->method('approve')->willReturn(['request' => $lr, 'loan' => $loan, 'movement' => new \OCA\InventoryCheck\Db\Movement()]);
+			$mock->method('decline')->willReturn($lr);
+			$mock->method('submitForPerson')->willReturn($lr);
+			$mock->method('listForPerson')->willReturn([]);
+			$this->byType[$key] = $mock;
+			return $mock;
+		}
+
+		if ($typeName === \OCA\InventoryCheck\Service\ReservationService::class) {
+			$res = new \OCA\InventoryCheck\Db\Reservation();
+			$res->setId(1);
+			$res->setItemId(1);
+			$res->setLocationId(1);
+			$res->setQty(1);
+			$loan = new Loan();
+			$loan->setId(1);
+			$mock = $this->createMock(\OCA\InventoryCheck\Service\ReservationService::class);
+			$mock->method('create')->willReturn($res);
+			$mock->method('listForItem')->willReturn([]);
+			$mock->method('availability')->willReturn(['balance' => 5, 'reserved' => 1, 'available' => 4]);
+			$mock->method('convert')->willReturn(['loan' => $loan, 'movement' => new \OCA\InventoryCheck\Db\Movement()]);
+			$this->byType[$key] = $mock;
+			return $mock;
+		}
+
+		if ($typeName === \OCA\InventoryCheck\Service\MemberTokenService::class) {
+			$person = new Person();
+			$person->setId(1);
+			$person->setDisplayName('Portal Member');
+			$mt = new \OCA\InventoryCheck\Db\MemberToken();
+			$mt->setId(1);
+			$mt->setPersonId(1);
+			$mock = $this->createMock(\OCA\InventoryCheck\Service\MemberTokenService::class);
+			$mock->method('issue')->willReturn(['token' => 'ivm_test', 'personId' => 1]);
+			$mock->method('hasLiveToken')->willReturn(true);
+			// Authz mode: no valid token → resolve denies (uniform 404 path).
+			$mock->method('resolve')->willReturn($mode === 'authz' ? null : [$person, $mt]);
+			$this->byType[$key] = $mock;
+			return $mock;
+		}
+
+		if ($typeName === \OCP\Security\Bruteforce\IThrottler::class) {
+			$mock = $this->createMock(\OCP\Security\Bruteforce\IThrottler::class);
+			$mock->method('sleepDelayOrThrowOnMax')->willReturn(0);
 			$this->byType[$key] = $mock;
 			return $mock;
 		}

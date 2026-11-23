@@ -8,7 +8,7 @@ require __DIR__ . '/harness.php';
 // F2 Wave A — flip-prone lines in the custody surface: checkout delta sign,
 // person-loanability gate, CAS return cap, anonymize open-loan guard,
 // notify dedupe. A surviving mutant means loans can corrupt stock/audit.
-runMutations(dirname(__DIR__, 2), 'CustodyLending|LoanService', [
+runMutations(dirname(__DIR__, 2), 'CustodyLending|LoanService|WaveC|PortalController', [
 	[
 		'name' => 'checkout-sign-flipped',
 		'file' => 'lib/Service/MovementMath.php',
@@ -94,5 +94,64 @@ runMutations(dirname(__DIR__, 2), 'CustodyLending|LoanService', [
 		'file' => 'lib/Service/PersonService.php',
 		'search' => "\t\t\t\t'type' => 'person',\n\t\t\t\t'person' => \$p->toApi(),\n\t\t\t], array_slice(\$persons, 0, self::SEARCH_LIMIT)),",
 		'replace' => "\t\t\t\t'type' => 'ncUser',\n\t\t\t\t'person' => \$p->toApi(),\n\t\t\t], array_slice(\$persons, 0, self::SEARCH_LIMIT)),",
+	],
+	// Wave C — portal token gate, request approve/cap guards, reservation
+	// math + state machine + expiry sweep. A survivor = portal/request
+	// bypass or corrupt availability.
+	[
+		'name' => 'resolve-active-gate-negated',
+		'file' => 'lib/Service/MemberTokenService.php',
+		'search' => 'if (!$person->getActive() || $person->getAnonymized()) {',
+		'replace' => 'if ($person->getActive() || $person->getAnonymized()) {',
+	],
+	[
+		'name' => 'approve-pending-gate-negated',
+		'file' => 'lib/Service/LoanRequestService.php',
+		'search' => "if (\$r->getStatus() !== 'pending') {",
+		'replace' => "if (\$r->getStatus() === 'pending') {",
+	],
+	[
+		'name' => 'approve-location-fallback-removed',
+		'file' => 'lib/Service/LoanRequestService.php',
+		'search' => '$locationId = $locationId ?? $r->getLocationId();',
+		'replace' => '$locationId = $r->getLocationId();',
+	],
+	[
+		'name' => 'open-cap-gate-removed',
+		'file' => 'lib/Service/LoanRequestService.php',
+		'search' => 'if ($this->requests->countOpenForPerson($personId) >= self::MAX_OPEN_PER_PERSON) {',
+		'replace' => 'if (false) {',
+	],
+	[
+		'name' => 'availability-sub-order-flip',
+		'file' => 'lib/Service/ReservationService.php',
+		'search' => "'available' => max(0, \$balance - \$reserved),",
+		'replace' => "'available' => max(0, \$reserved - \$balance),",
+	],
+	[
+		'name' => 'convert-open-gate-negated',
+		'file' => 'lib/Service/ReservationService.php',
+		'search' => 'if (!$r->isOpen()) {',
+		'replace' => 'if ($r->isOpen()) {',
+	],
+	[
+		'name' => 'reservation-due-bound-shrunk',
+		'file' => 'lib/Service/ReservationService.php',
+		'search' => '$toTs > 4_102_444_800',
+		'replace' => '$toTs > 1',
+	],
+	[
+		'name' => 'sweep-window-flip',
+		'file' => 'lib/Db/ReservationMapper.php',
+		'search' => "->andWhere(\$qb->expr()->lt('to_ts', \$qb->createNamedParameter(\$now, IQueryBuilder::PARAM_INT)))",
+		'replace' => "->andWhere(\$qb->expr()->gt('to_ts', \$qb->createNamedParameter(\$now, IQueryBuilder::PARAM_INT)))",
+	],
+	[
+		// Portal resolve guard: inverting it turns every valid token into a
+		// 404 (and serves bad tokens) — every portal test dies.
+		'name' => 'portal-resolve-gate-negated',
+		'file' => 'lib/Controller/PortalController.php',
+		'search' => 'if ($resolved === null) {',
+		'replace' => 'if ($resolved !== null) {',
 	],
 ]);

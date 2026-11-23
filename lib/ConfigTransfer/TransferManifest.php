@@ -165,7 +165,7 @@ final class TransferManifest extends AbstractTransferManifest
 					'counterparty_loc_id' => 'iv_locations',
 				],
 				'depends_on' => ['iv_items', 'iv_locations'],
-				'env_columns' => ['ref_id']],
+				'env_columns' => ['ref_id', 'delivery_note_path']],
 			// Balances are the materialised projection of the same ledger —
 			// same seed-if-empty gate keeps both sides consistent (a balance
 			// row only exists after a movement, so the two tables can never
@@ -204,6 +204,57 @@ final class TransferManifest extends AbstractTransferManifest
 			'iv_item_field_values' => ['class' => 'business', 'strategy' => 'seed-if-empty',
 				'fk' => ['item_id' => 'iv_items', 'field_id' => 'iv_item_fields'],
 				'depends_on' => ['iv_items', 'iv_item_fields']],
+
+			// ══ custody — person registry + loan ledger ══
+			// Persons have no honest natural key (member_no is nullable and
+			// not unique-enforced, display_name is not unique) → same
+			// seed-if-empty gate as the other business tables. nc_user_id is
+			// an instance-bound account link: a ghost uid must not drop the
+			// whole registry row (loans fk into persons), so it rides
+			// env_columns — NULL on insert, link re-established locally.
+			'iv_persons' => ['class' => 'business', 'strategy' => 'seed-if-empty',
+				'env_columns' => ['nc_user_id']],
+			// Loans are transactional ledger rows like movements — no honest
+			// natural key → seed-if-empty. signature_path/damage_photo_path
+			// point at private appdata blobs (never exported — same class as
+			// items photo_name); request_id is the originating loan request
+			// (nullable → fk to the request table).
+			'iv_loans' => ['class' => 'business', 'strategy' => 'seed-if-empty',
+				'fk' => [
+					'item_id' => 'iv_items',
+					'person_id' => 'iv_persons',
+					'location_id' => 'iv_locations',
+					'request_id' => 'iv_loan_requests',
+				],
+				'depends_on' => ['iv_items', 'iv_persons', 'iv_locations', 'iv_loan_requests'],
+				'env_columns' => ['signature_path', 'damage_photo_path']],
+			// Loan requests / reservations / member tokens are transactional
+			// rows without honest natural keys → seed-if-empty like the
+			// ledger they feed. requester_uid/decided_by/created_by are
+			// instance-bound uids → env-dropped (NULL on insert, re-stamped
+			// locally); token_hash is a secret verifier — never on the wire.
+			'iv_loan_requests' => ['class' => 'business', 'strategy' => 'seed-if-empty',
+				'fk' => [
+					'item_id' => 'iv_items',
+					'location_id' => 'iv_locations',
+					'person_id' => 'iv_persons',
+					'loan_id' => 'iv_loans',
+				],
+				'depends_on' => ['iv_items', 'iv_locations', 'iv_persons', 'iv_loans'],
+				'env_columns' => ['requester_uid', 'decided_by']],
+			'iv_reservations' => ['class' => 'business', 'strategy' => 'seed-if-empty',
+				'fk' => [
+					'item_id' => 'iv_items',
+					'location_id' => 'iv_locations',
+					'person_id' => 'iv_persons',
+					'converted_loan_id' => 'iv_loans',
+				],
+				'depends_on' => ['iv_items', 'iv_locations', 'iv_persons', 'iv_loans'],
+				'env_columns' => ['created_by']],
+			'iv_member_tokens' => ['class' => 'business', 'strategy' => 'seed-if-empty',
+				'fk' => ['person_id' => 'iv_persons'],
+				'depends_on' => ['iv_persons'],
+				'env_columns' => ['token_hash']],
 
 			// ══ per-user state ══
 			'iv_loc_fav' => ['class' => 'user-data', 'strategy' => 'upsert-natural-key',

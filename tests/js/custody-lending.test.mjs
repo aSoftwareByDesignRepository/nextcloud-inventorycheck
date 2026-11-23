@@ -72,3 +72,51 @@ test('F2-B: web evidence routes are single-param template-pinned', () => {
 	assert.match(routesPhp, /mobile#loanSignature/);
 	assert.match(routesPhp, /mobile#itemLoans/);
 });
+
+const portalJs = readFileSync(new URL('../../js/portal.js', import.meta.url), 'utf8');
+const portalTpl = readFileSync(new URL('../../templates/portal.php', import.meta.url), 'utf8');
+
+test('Wave C: portal shell is uniform — token is data, not oracle', () => {
+	// The template carries only the token + a busy loading state.
+	assert.match(portalTpl, /data-token/);
+	assert.match(portalTpl, /aria-busy="true"/);
+	assert.match(portalTpl, /iv-portal-root/);
+	// No server-side token branching in the template.
+	assert.doesNotMatch(portalTpl, /if \(.*token/);
+});
+
+test('Wave C: portal.js renders badges only — never stock counts', () => {
+	// Items are filtered by badge string, never by a numeric count.
+	assert.match(portalJs, /i\.badge === 'available'/);
+	// No quantity/balance field is read from the item payload.
+	assert.doesNotMatch(portalJs, /state\.items.*\.qty/);
+	assert.doesNotMatch(portalJs, /item\.balance/);
+});
+
+test('Wave C: portal 404 collapses to one "link not valid" message', () => {
+	assert.match(portalJs, /err\.status === 404 \? tr\('This link is not valid\.'/);
+	assert.match(portalJs, /link is not valid or has expired/);
+});
+
+test('Wave C: portal uses the overlay-dialog recipe, never native prompts', () => {
+	assert.doesNotMatch(portalJs, /window\.(prompt|confirm|alert)/);
+	assert.match(portalJs, /function miniDialog/);
+	assert.match(portalJs, /role: 'dialog'|aria-labelledby/);
+	// Escape closes and focus management is present.
+	assert.match(portalJs, /ev\.key === 'Escape'/);
+});
+
+test('Wave C: portal markup is built via DOM API — no innerHTML injection', () => {
+	assert.doesNotMatch(portalJs, /innerHTML/);
+	assert.doesNotMatch(portalJs, /insertAdjacentHTML/);
+});
+
+test('Wave C: office surfaces + routes are wired', () => {
+	assert.match(appJs, /loanRequests/);
+	assert.match(appJs, /reservations/);
+	assert.match(appJs, /memberToken/);
+	assert.match(routesPhp, /loanRequest#approve/);
+	assert.match(routesPhp, /reservation#convert/);
+	assert.match(routesPhp, /memberToken#issue/);
+	assert.match(routesPhp, /portal#state/);
+});

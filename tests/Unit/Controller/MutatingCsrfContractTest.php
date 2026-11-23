@@ -33,6 +33,7 @@ final class MutatingCsrfContractTest extends TestCase
 		'send', 'cancel', 'updateLines', 'setPreferredSupplier',
 		'verifyPost',
 		'checkin', 'lost', 'anonymize',
+		'approve', 'decline', 'convert', 'revoke',
 	];
 
 	/** @return list<string> */
@@ -43,8 +44,8 @@ final class MutatingCsrfContractTest extends TestCase
 		self::assertNotFalse($files);
 		$out = [];
 		foreach ($files as $file) {
-			if (basename($file) === 'MobileController.php') {
-				continue;
+			if (basename($file) === 'MobileController.php' || basename($file) === 'PortalController.php') {
+				continue; // token-credentialed public surfaces — NoCSRFRequired by design
 			}
 			$out[] = $file;
 		}
@@ -86,8 +87,8 @@ final class MutatingCsrfContractTest extends TestCase
 			if (!preg_match("/'verb'\s*=>\s*'(POST|PUT|PATCH|DELETE)'/", $line)) {
 				continue;
 			}
-			if ($nm[1] === 'mobile') {
-				continue; // PublicPage + device-token surface, CSRF-exempt by design
+			if ($nm[1] === 'mobile' || $nm[1] === 'portal') {
+				continue; // PublicPage + device/member-token surface, CSRF-exempt by design
 			}
 			if (!in_array($nm[2], self::MUTATING, true)) {
 				$missing[] = $nm[1] . '#' . $nm[2];

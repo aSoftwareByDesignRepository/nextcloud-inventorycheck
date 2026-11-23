@@ -503,6 +503,38 @@ class Application extends App implements IBootstrap
 				$c->get(\Psr\Log\LoggerInterface::class),
 			);
 		});
+		// F2 Wave C: requests + reservations + member tokens.
+		$context->registerService(\OCA\InventoryCheck\Service\MemberTokenService::class, static function ($c): \OCA\InventoryCheck\Service\MemberTokenService {
+			return new \OCA\InventoryCheck\Service\MemberTokenService(
+				$c->get(\OCA\InventoryCheck\Db\MemberTokenMapper::class),
+				$c->get(\OCA\InventoryCheck\Db\PersonMapper::class),
+				$c->get(AccessControlService::class),
+				$c->get(\OCA\InventoryCheck\Service\Clock::class),
+			);
+		});
+		$context->registerService(\OCA\InventoryCheck\Service\ReservationService::class, static function ($c): \OCA\InventoryCheck\Service\ReservationService {
+			return new \OCA\InventoryCheck\Service\ReservationService(
+				$c->get(\OCA\InventoryCheck\Db\ReservationMapper::class),
+				$c->get(\OCA\InventoryCheck\Db\ItemMapper::class),
+				$c->get(\OCA\InventoryCheck\Db\LocationMapper::class),
+				$c->get(\OCA\InventoryCheck\Db\BalanceMapper::class),
+				$c->get(AccessControlService::class),
+				$c->get(LocationAclService::class),
+				$c->get(\OCA\InventoryCheck\Db\PersonMapper::class),
+				$c->get(\OCA\InventoryCheck\Service\LoanService::class),
+				$c->get(\OCA\InventoryCheck\Service\Clock::class),
+			);
+		});
+		$context->registerService(\OCA\InventoryCheck\Service\LoanRequestService::class, static function ($c): \OCA\InventoryCheck\Service\LoanRequestService {
+			return new \OCA\InventoryCheck\Service\LoanRequestService(
+				$c->get(\OCA\InventoryCheck\Db\LoanRequestMapper::class),
+				$c->get(\OCA\InventoryCheck\Db\ItemMapper::class),
+				$c->get(\OCA\InventoryCheck\Db\PersonMapper::class),
+				$c->get(AccessControlService::class),
+				$c->get(\OCA\InventoryCheck\Service\LoanService::class),
+				$c->get(\OCA\InventoryCheck\Service\Clock::class),
+			);
+		});
 		$context->registerService(CycleCountService::class, static function ($c): CycleCountService {
 			return new CycleCountService(
 				$c->get(IDBConnection::class),

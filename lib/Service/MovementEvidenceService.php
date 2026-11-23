@@ -164,7 +164,9 @@ class MovementEvidenceService
 		try {
 			$this->folder()->getFile($fileName)->delete();
 		} catch (\Throwable $e) {
-			// Row is already committed — log so a failing backend stops hiding leaks.
+			// best-effort: secondary cleanup — row is already committed, a
+			// failed delete only leaves an orphan blob; log so a failing
+			// backend stops hiding leaks.
 			$this->logger->warning('InventoryCheck: could not delete delivery-note file', [
 				'file' => $fileName,
 				'exception' => $e,

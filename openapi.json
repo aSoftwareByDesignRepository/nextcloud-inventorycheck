@@ -1456,6 +1456,170 @@
           }
         }
       }
+    },
+    "/api/loan-requests": {
+      "get": {
+        "summary": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/loan-requests/{id}/approve": {
+      "post": {
+        "summary": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/loan-requests/{id}/decline": {
+      "post": {
+        "summary": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/reservations": {
+      "post": {
+        "summary": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/items/{id}/reservations": {
+      "get": {
+        "summary": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/reservations/{id}/cancel": {
+      "post": {
+        "summary": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/reservations/{id}/convert": {
+      "post": {
+        "summary": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/persons/{id}/member-token": {
+      "get": {
+        "summary": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "summary": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "summary": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/portal/{token}/api": {
+      "get": {
+        "summary": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/portal/{token}/requests": {
+      "post": {
+        "summary": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/portal/{token}/requests/{id}/cancel": {
+      "post": {
+        "summary": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/portal/{token}/loans/{id}/damage": {
+      "post": {
+        "summary": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/items/{id}/availability": {
+      "get": {
+        "summary": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "locationId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ]
+      }
     }
   },
   "components": {

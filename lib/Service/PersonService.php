@@ -112,19 +112,27 @@ final class PersonService
 			'type' => 'person',
 			'person' => $p->toApi(),
 		], $persons);
-		foreach ($this->userManager->search($term, self::SEARCH_LIMIT) as $user) {
-			assert($user instanceof IUser);
-			$uid = $user->getUID();
-			if (isset($linked[$uid])) {
-				continue; // already represented by its person row
+		// Merge uid search with display-name search — on uid-opaque
+		// backends (LDAP/SAML) search() alone misses "type a name"
+		// matches (people-search-picker contract).
+		$seen = $linked;
+		foreach ([$this->userManager->search($term, self::SEARCH_LIMIT),
+			$this->userManager->searchDisplayName($term, self::SEARCH_LIMIT)] as $users) {
+			foreach ($users as $user) {
+				assert($user instanceof IUser);
+				$uid = $user->getUID();
+				if (isset($seen[$uid])) {
+					continue; // already represented (person row or earlier hit)
+				}
+				$seen[$uid] = true;
+				$results[] = [
+					'type' => 'ncUser',
+					'ncUser' => [
+						'uid' => $uid,
+						'displayName' => $user->getDisplayName() ?: $uid,
+					],
+				];
 			}
-			$results[] = [
-				'type' => 'ncUser',
-				'ncUser' => [
-					'uid' => $uid,
-					'displayName' => $user->getDisplayName() ?: $uid,
-				],
-			];
 		}
 		return ['results' => $results, 'truncated' => $truncated];
 	}

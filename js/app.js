@@ -3633,7 +3633,7 @@
 			loadMasters(ctx),
 			// IV-CUSTOM-FIELDS: defs for the dialog; non-admins get active
 			// defs only (same defs every item payload already carries).
-			api('GET', ctx.urls.api.fields).catch(function () { return []; }),
+			api('GET', ctx.urls.api.fields).catch(function () { return { data: [], __cfFailed: true }; }),
 		]).then(function (pair) {
 		var masters = pair[0];
 		var cfRes = pair[1];
@@ -3694,6 +3694,10 @@
 				className: 'iv-item-more',
 				open: !!existing,
 			}),
+			cfRes && cfRes.__cfFailed ? el('p', {
+				className: 'iv-field__hint',
+				text: tr('Custom fields could not be loaded — save to retry.'),
+			}) : null,
 			existing ? el('p', {
 				className: 'iv-field__hint',
 				text: tr('Changing SKU or scan code does not update already printed labels.'),
@@ -4143,6 +4147,7 @@
 				};
 			});
 			mountItemLoans(ctx, mount, item, loanBalances);
+			mountItemReservations(ctx, mount, item, loanBalances);
 		}).catch(function (err) {
 			setBusy(mount, false);
 			clear(mount);
@@ -8245,6 +8250,13 @@
 			if (term.length < 2) { close(); return; }
 			var mySeq = ++seq;
 			timer = window.setTimeout(function () {
+				clear(list);
+				list.hidden = false;
+				input.setAttribute('aria-expanded', 'true');
+				list.appendChild(el('li', {
+					className: 'iv-picker__empty', 'aria-disabled': 'true',
+					text: tr('Searching…'),
+				}));
 				api('GET', ctx.urls.api.personsSearch + '?search=' + encodeURIComponent(term))
 					.then(function (data) { if (mySeq === seq) renderResults(data, term); })
 					.catch(function () {
@@ -8324,7 +8336,7 @@
 		});
 		var dueInput = el('input', { type: 'date', className: 'iv-input' });
 		var plus14 = new Date(Date.now() + 14 * 86400000);
-		dueInput.value = plus14.toISOString().slice(0, 10);
+		dueInput.value = localDayKey(plus14);
 		var dueClear = btn(tr('No due date'), {
 			onclick: function () { dueInput.value = ''; },
 		});
@@ -8521,6 +8533,283 @@
 		});
 	}
 
+	/* ==================== F2 Wave C: reservations + requests + member link ==== */
+
+	function fmtDay(ts) {
+		if (!ts) return '—';
+		return new Date(ts * 1000).toLocaleDateString();
+	}
+	function resStatusBadge(r) {
+		var map = { reserved: 'iv-badge--warn', fulfilled: 'iv-badge--done', expired: 'iv-badge--paused', cancelled: 'iv-badge--cancelled' };
+		var labels = { reserved: tr('reserved'), fulfilled: tr('fulfilled'), expired: tr('expired'), cancelled: tr('cancelled') };
+		return el('span', { className: 'iv-badge ' + (map[r.status] || ''), text: labels[r.status] || r.status });
+	}
+	function reqStatusBadge(r) {
+		var map = { pending: 'iv-badge--warn', fulfilled: 'iv-badge--done', declined: 'iv-badge--cancelled', cancelled: 'iv-badge--cancelled' };
+		var labels = { pending: tr('waiting'), fulfilled: tr('approved'), declined: tr('declined'), cancelled: tr('cancelled') };
+		return el('span', { className: 'iv-badge ' + (map[r.status] || ''), text: labels[r.status] || r.status });
+	}
+
+	function openReservationDialog(ctx, item, balances, onDone) {
+		var picker = personPicker(ctx);
+		var locSelect = null;
+		if (balances.length > 1) {
+			locSelect = el('select', { className: 'iv-input', required: '' }, balances.map(function (b) {
+				return el('option', { value: String(b.locationId), text: b.locationName || b.locationCode || ('#' + b.locationId) });
+			}));
+		}
+		var qtyIn = el('input', { className: 'iv-input', type: 'number', min: '1', value: '1', required: '' });
+		var fromIn = el('input', { className: 'iv-input', type: 'date', required: '' });
+		var toIn = el('input', { className: 'iv-input', type: 'date', required: '' });
+		var labelIn = el('input', { className: 'iv-input', maxlength: '160' });
+		var body = el('div', null, [
+			field(tr('Quantity'), qtyIn, { name: 'qty' }),
+			locSelect ? field(tr('Location'), locSelect, { name: 'locationId' }) : null,
+			field(tr('From'), fromIn, { name: 'fromTs' }),
+			field(tr('Until'), toIn, { name: 'toTs' }),
+			field(tr('For whom (optional)'), picker.root, { name: 'personId' }),
+			field(tr('Event / purpose (optional)'), labelIn, { name: 'eventLabel' }),
+		].filter(Boolean));
+		dialog(tr('Reserve stock'), [body], function () {
+			var qty = parseInt(qtyIn.value, 10) || 0;
+			var from = fromIn.value ? Math.floor(new Date(fromIn.value + 'T00:00:00').getTime() / 1000) : 0;
+			var to = toIn.value ? Math.floor(new Date(toIn.value + 'T23:59:59').getTime() / 1000) : 0;
+			if (!from || !to || to < from) { toast(tr('Pick a valid date range.'), true); return false; }
+			var person = picker.getPerson();
+			api('POST', ctx.urls.api.reservations, {
+				itemId: item.id,
+				locationId: locSelect ? parseInt(locSelect.value, 10) : balances[0].locationId,
+				qty: qty,
+				fromTs: from,
+				toTs: to,
+				personId: person ? person.id : null,
+				eventLabel: labelIn.value.trim() || null,
+			}).then(function () {
+				toast(tr('Reserved.'));
+				onDone();
+			}).catch(function (err) {
+				if (!applyFieldErrors(body, err.details, err.message)) toast(err.message, true);
+			});
+			return true;
+		}, tr('Reserve'));
+	}
+
+	function reservationColumns(ctx, onChanged) {
+		return [
+			{ key: 'eventLabel', label: tr('Event'), render: function (r) { return r.eventLabel || '—'; } },
+			{ key: 'qty', label: tr('Quantity'), render: function (r) { return formatQty(r.qty); } },
+			{ key: 'window', label: tr('Window'), render: function (r) { return fmtDay(r.fromTs) + ' → ' + fmtDay(r.toTs); } },
+			{ key: 'locationName', label: tr('Location'), render: function (r) { return r.locationName || ('#' + r.locationId); } },
+			{ key: 'personName', label: tr('Person'), render: function (r) { return r.personName || '—'; } },
+			{ key: 'status', label: tr('Status'), render: function (r) { return resStatusBadge(r); } },
+			{ key: 'actions', label: '', render: function (r) {
+				if (r.status !== 'reserved' || !(ctx.isOffice || ctx.isAppAdmin)) return null;
+				return el('span', { className: 'iv-row-actions' }, [
+					btn(tr('Convert'), { className: 'iv-btn iv-btn--secondary', onclick: function () {
+						dialog(tr('Convert to loan'), [el('p', { text: tr('Hand out the reserved items now? The reservation closes and a loan opens.') })], function () {
+							api('POST', urlWithId(ctx.urls.api.reservationConvert, r.id), {}).then(function () {
+								toast(tr('Checked out.'));
+								onChanged();
+							}).catch(function (err) { toast(err.message, true); });
+							return true;
+						}, tr('Check out'));
+					} }),
+					btn(tr('Cancel'), { className: 'iv-btn iv-btn--ghost', onclick: function () {
+						dialog(tr('Cancel reservation'), [el('p', { text: tr('Cancel this reservation? The stock becomes available again.') })], function () {
+							api('POST', urlWithId(ctx.urls.api.reservationCancel, r.id), {}).then(function () {
+								toast(tr('Cancelled.'));
+								onChanged();
+							}).catch(function (err) { toast(err.message, true); });
+							return true;
+						}, tr('Cancel reservation'));
+					} }),
+				]);
+			} },
+		];
+	}
+
+	function mountItemReservations(ctx, mount, item, balances) {
+		if (!ctx.urls.api.reservationsForItem) return;
+		var host = el('section', { className: 'iv-section', 'aria-busy': 'true' }, [
+			el('h2', { className: 'iv-section__title', text: tr('Reservations') }),
+			el('p', { className: 'iv-muted', text: tr('Loading…') }),
+		]);
+		mount.appendChild(host);
+		api('GET', urlWithId(ctx.urls.api.reservationsForItem, item.id)).then(function (data) {
+			host.removeAttribute('aria-busy');
+			clear(host);
+			host.appendChild(el('h2', { className: 'iv-section__title', text: tr('Reservations') }));
+			// Availability per stock location — office sees exact numbers here.
+			var availRow = el('p', { className: 'iv-muted' });
+			host.appendChild(availRow);
+			var parts = [];
+			var chain = Promise.resolve();
+			(balances || []).forEach(function (b) {
+				chain = chain.then(function () {
+					return api('GET', urlWithId(ctx.urls.api.reservationAvailability, item.id) + '?locationId=' + encodeURIComponent(b.locationId))
+						.then(function (a) {
+							parts.push((b.locationName || ('#' + b.locationId)) + ': ' + tr('{n} available', { n: a.available }));
+						}).catch(function () {});
+				});
+			});
+			chain.then(function () { availRow.textContent = parts.join(' · '); });
+			var rows = data.reservations || [];
+			if (!rows.length) {
+				host.appendChild(el('p', { className: 'iv-muted', text: tr('No reservations.') }));
+			} else {
+				host.appendChild(tableOrCards(reservationColumns(ctx, function () {
+					renderItemDetail(ctx);
+				}), rows, { caption: tr('Reservations for this item') }));
+			}
+			if (ctx.isOffice || ctx.isAppAdmin) {
+				host.appendChild(btn(tr('Reserve'), {
+					className: 'iv-btn iv-btn--secondary',
+					onclick: function () {
+						if (!balances || !balances.length) { toast(tr('No stock location to reserve from.'), true); return; }
+						openReservationDialog(ctx, item, balances, function () { renderItemDetail(ctx); });
+					},
+				}));
+			}
+		}).catch(function () { host.removeAttribute('aria-busy'); });
+	}
+
+	function requestColumns(ctx, onChanged) {
+		return [
+			{ key: 'personName', label: tr('Member'), render: function (r) { return r.personName || ('#' + r.personId); } },
+			{ key: 'itemName', label: tr('Item'), render: function (r) { return r.itemName || ('#' + r.itemId); } },
+			{ key: 'qty', label: tr('Quantity'), render: function (r) { return formatQty(r.qty); } },
+			{ key: 'window', label: tr('Wanted'), render: function (r) { return fmtDay(r.wantedFrom) + ' → ' + fmtDay(r.wantedTo); } },
+			{ key: 'purpose', label: tr('Purpose'), render: function (r) { return r.purpose || '—'; } },
+			{ key: 'actions', label: '', render: function (r) {
+				return el('span', { className: 'iv-row-actions' }, [
+					btn(tr('Approve'), { className: 'iv-btn iv-btn--secondary', onclick: function () { openApproveDialog(ctx, r, onChanged); } }),
+					btn(tr('Decline'), { className: 'iv-btn iv-btn--ghost', onclick: function () {
+						var noteIn = el('textarea', { className: 'iv-input', rows: '2', maxlength: '2000' });
+						var body = el('div', null, [field(tr('Note (optional)'), noteIn, { name: 'note' })]);
+						dialog(tr('Decline request'), [body], function () {
+							api('POST', urlWithId(ctx.urls.api.loanRequestDecline, r.id), { note: noteIn.value.trim() || null }).then(function () {
+								toast(tr('Declined.'));
+								onChanged();
+							}).catch(function (err) { toast(err.message, true); });
+							return true;
+						}, tr('Decline'));
+					} }),
+				]);
+			} },
+		];
+	}
+
+	function openApproveDialog(ctx, r, onChanged) {
+		var locSel = el('select', { className: 'iv-input', required: '' }, [
+			el('option', { value: '', text: tr('Loading locations…'), disabled: '', selected: '' }),
+		]);
+		var condSel = el('select', { className: 'iv-input' }, [
+			el('option', { value: 'ok', text: tr('OK') }),
+			el('option', { value: 'used', text: tr('Used') }),
+			el('option', { value: 'defect', text: tr('Defect') }),
+		]);
+		var noteIn = el('textarea', { className: 'iv-input', rows: '2', maxlength: '2000' });
+		var body = el('div', null, [
+			el('p', { className: 'iv-muted', text: tr('{qty} × {item} for {person}', { qty: r.qty, item: r.itemName || r.itemId, person: r.personName || r.personId }) }),
+			field(tr('Handout location'), locSel, { name: 'locationId' }),
+			field(tr('Condition'), condSel, { name: 'conditionOut' }),
+			field(tr('Note (optional)'), noteIn, { name: 'note' }),
+		]);
+		api('GET', ctx.urls.api.locations + '?limit=200&active=1').then(function (d) {
+			clear(locSel);
+			fillSelect(locSel, d.data || d.locations || [], 'id', function (l) { return l.pathLabel || l.name || ('#' + l.id); }, tr('Pick a location…'));
+			if (r.locationId) locSel.value = String(r.locationId);
+		}).catch(function () {});
+		dialog(tr('Approve request'), [body], function () {
+			var locId = parseInt(locSel.value, 10);
+			if (!locId) { toast(tr('Pick the handout location.'), true); return false; }
+			api('POST', urlWithId(ctx.urls.api.loanRequestApprove, r.id), {
+				locationId: locId,
+				conditionOut: condSel.value || null,
+				note: noteIn.value.trim() || null,
+			}).then(function () {
+				toast(tr('Approved — loan opened.'));
+				onChanged();
+			}).catch(function (err) {
+				if (!applyFieldErrors(body, err.details, err.message)) toast(err.message, true);
+			});
+			return true;
+		}, tr('Approve'));
+	}
+
+	function mountRequestQueue(ctx, mount) {
+		if (!ctx.urls.api.loanRequests || !(ctx.isOffice || ctx.isAppAdmin)) return;
+		var host = el('section', { className: 'iv-section', 'aria-busy': 'true' }, [
+			el('h2', { className: 'iv-section__title', text: tr('Loan requests') }),
+			el('p', { className: 'iv-muted', text: tr('Loading…') }),
+		]);
+		mount.appendChild(host);
+		api('GET', ctx.urls.api.loanRequests + '?status=pending&limit=100').then(function (data) {
+			host.removeAttribute('aria-busy');
+			clear(host);
+			host.appendChild(el('h2', { className: 'iv-section__title', text: tr('Loan requests') }));
+			var rows = data.requests || [];
+			if (!rows.length) {
+				host.appendChild(el('p', { className: 'iv-muted', text: tr('No open requests.') }));
+				return;
+			}
+			host.appendChild(tableOrCards(requestColumns(ctx, function () { renderPeople(ctx); }), rows, { caption: tr('Pending loan requests') }));
+		}).catch(function () { host.removeAttribute('aria-busy'); });
+	}
+
+	function mountMemberToken(ctx, mount, person) {
+		if (!ctx.urls.api.memberToken || !(ctx.isOffice || ctx.isAppAdmin) || person.anonymized) return;
+		var host = el('section', { className: 'iv-section', 'aria-busy': 'true' }, [
+			el('h2', { className: 'iv-section__title', text: tr('Member link') }),
+			el('p', { className: 'iv-muted', text: tr('Loading…') }),
+		]);
+		mount.appendChild(host);
+		var reload = function () { renderPersonDetail(ctx); };
+		api('GET', urlWithId(ctx.urls.api.memberToken, person.id)).then(function (state) {
+			host.removeAttribute('aria-busy');
+			clear(host);
+			host.appendChild(el('h2', { className: 'iv-section__title', text: tr('Member link') }));
+			host.appendChild(el('p', { className: 'iv-muted', text: state.live
+				? tr('A link is active — this member can see their loans and send requests.')
+				: tr('No link — create one so this member can see their loans and request items.') }));
+			if (state.live) {
+				host.appendChild(btn(tr('Revoke link'), { className: 'iv-btn iv-btn--ghost', onclick: function () {
+					dialog(tr('Revoke member link'), [el('p', { text: tr('The current link stops working immediately. You can create a new one any time.') })], function () {
+						api('DELETE', urlWithId(ctx.urls.api.memberToken, person.id)).then(function () {
+							toast(tr('Link revoked.'));
+							reload();
+						}).catch(function (err) { toast(err.message, true); });
+						return true;
+					}, tr('Revoke'));
+				} }));
+			}
+			host.appendChild(btn(tr(state.live ? 'New link' : 'Create link'), { className: 'iv-btn iv-btn--secondary', onclick: function () {
+				var make = function () {
+					api('POST', urlWithId(ctx.urls.api.memberToken, person.id), {}).then(function (res) {
+						var url = urlWithId(ctx.urls.api.portalShow, res.token);
+						var abs = url.charAt(0) === '/' ? (window.location.origin + url) : url;
+						var linkBox = el('input', { className: 'iv-input', readonly: '', value: abs, onclick: function () { linkBox.select(); } });
+						dialog(tr('Member link'), [
+							el('p', { text: tr('Copy this link now — it is shown only once. Send it to {name}.', { name: person.displayName }) }),
+							linkBox,
+						], function () {
+							try { linkBox.select(); document.execCommand('copy'); } catch (e) {}
+							reload();
+							return true;
+						}, tr('Copy & close'));
+					}).catch(function (err) { toast(err.message, true); });
+				};
+				if (state.live) {
+					dialog(tr('Replace link'), [el('p', { text: tr('Creating a new link disables the old one immediately.') })], function () { make(); return true; }, tr('New link'));
+				} else {
+					make();
+				}
+			} }));
+		}).catch(function () { host.removeAttribute('aria-busy'); });
+	}
+
+	/* ================== end F2 Wave C ================== */
+
 	function mountItemLoansRefresh(ctx, host, item) {
 		var parent = host.parentNode;
 		clear(host);
@@ -8545,6 +8834,7 @@
 			})
 			: null;
 		ctx.actions.appendChild(newBtn || el('span'));
+		mountRequestQueue(ctx, mount);
 		mount.appendChild(el('section', { className: 'iv-section' }, [
 			field(tr('Search'), searchInput, { name: 'search' }),
 			listHost,
@@ -8650,6 +8940,7 @@
 					? tableOrCards(loanColumns(ctx, function () { renderPersonDetail(ctx); }), loans.open, { caption: tr('Open loans') })
 					: el('p', { className: 'iv-muted', text: tr('No open loans.') }),
 			]));
+			mountMemberToken(ctx, mount, person);
 			mount.appendChild(disclosureSection(tr('History'), [
 				loans.history && loans.history.length
 					? tableOrCards([

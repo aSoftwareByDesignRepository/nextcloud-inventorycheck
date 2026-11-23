@@ -3388,3 +3388,22 @@ textarea {
 	justify-content: flex-end;
 	margin-top: var(--iv-space-3, 12px);
 }
+
+/* F2 Wave C member portal — plain token-spaced list for the guest page */
+.iv-portal-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+.iv-portal-list__item {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--iv-space-2, 8px);
+	padding: var(--iv-space-3, 12px) 0;
+	border-bottom: 1px solid var(--iv-border, var(--color-border));
+}
+.iv-portal-list__item:last-child {
+	border-bottom: none;
+}

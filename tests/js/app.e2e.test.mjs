@@ -10,6 +10,10 @@ import test from 'node:test';
 const appRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const appJs = readFileSync(path.join(appRoot, 'js/app.js'), 'utf8');
 const appCss = readFileSync(path.join(appRoot, 'css/app.css'), 'utf8');
+// Seat/device management converged onto the shared license page (3b30072):
+// server-rendered template + js/common/license-page.js — pin there, not app.js.
+const licensePhp = readFileSync(path.join(appRoot, 'templates/parts/settings/license.php'), 'utf8');
+const licensePageJs = readFileSync(path.join(appRoot, 'js/common/license-page.js'), 'utf8');
 
 test('app.js never assigns innerHTML (XSS hygiene)', () => {
 	assert.equal(/\.innerHTML\s*=/.test(appJs), false, 'must not assign innerHTML');
@@ -121,23 +125,29 @@ test('location ACL settings grant to scanner devices as well as users/groups', (
 	assert.match(appJs, /Unbound scanners stay unrestricted/);
 	assert.match(appJs, /devicesStrict/);
 	assert.match(appJs, /Require location grants for scanners \(strict\)/);
-	assert.match(appJs, /Locations for new scanner \(optional\)/);
-	assert.match(appJs, /iv-device-create-locs/);
+	// Location granting happens via the ACL picker above after registration —
+	// device create lives on the shared license page and carries no per-device
+	// location field.
+	assert.match(licensePhp, /Pair shared scanners/);
 });
 
 test('Track L settings manage seats and device slots with one-time pair code', () => {
-	assert.match(appJs, /licenseSeats/);
+	// Server template: seats list + device slots + register affordances.
+	assert.match(licensePhp, /mobileSeats/);
 	assert.match(appJs, /licenseDevices/);
-	assert.match(appJs, /Assign seat/);
-	assert.match(appJs, /Create device slot/);
-	assert.match(appJs, /iv-pair-code-panel/);
-	assert.match(appJs, /Copy this code now/);
-	assert.match(appJs, /Regenerate code/);
-	assert.match(appJs, /pair-code/);
-	assert.match(appJs, /withinLimit/);
-	assert.match(appJs, /Over seat limit/);
-	assert.equal(/Device pairing: coming soon/.test(appJs), false);
-	assert.equal(/Native scanner app: coming soon/.test(appJs), false);
+	assert.match(licensePhp, /Create device slot/);
+	assert.match(licensePhp, /shown once/);
+	assert.match(licensePhp, /apiSeats/);
+	assert.match(licensePhp, /apiRegisterDevice/);
+	// Shared JS: batch-assign + token modal (pair code shown once) + regen.
+	assert.match(licensePageJs, /-seat-assign-selected/);
+	assert.match(licensePageJs, /Assign seats/);
+	assert.match(licensePageJs, /-license-token-modal/);
+	assert.match(licensePageJs, /pairCode/);
+	assert.match(licensePageJs, /terminal-regen/);
+	assert.match(licensePageJs, /-seats-full-hint/);
+	assert.equal(/Device pairing: coming soon/.test(appJs + licensePhp + licensePageJs), false);
+	assert.equal(/Native scanner app: coming soon/.test(appJs + licensePhp + licensePageJs), false);
 	assert.match(appJs, /data-iv-acl-clear/);
 });
 
@@ -163,10 +173,14 @@ test('location ACL subject and mobile seat assignment use directory pickers, not
 	assert.match(appJs, /aclSubjectPicker = createIdPicker\(\{\s*multi:\s*false,\s*kindFn:/);
 	assert.match(appJs, /aclSubjectPicker\.getId\(\)/);
 	assert.match(appJs, /payload\.subjectId = subjectId/);
-	assert.match(appJs, /seatUidPicker = createIdPicker\(\{\s*kind:\s*'user',\s*multi:\s*false/);
-	assert.match(appJs, /uid:\s*seatUidPicker\.getId\(\)/);
-	assert.equal(/placeholder:\s*tr\('Nextcloud user id'\)/.test(appJs), false);
-	assert.equal(/placeholder:\s*tr\('User id or group id'\)/.test(appJs), false);
+	// Seat assignment is a user-search combobox on the shared license page —
+	// picked uids ride pendingSeatSelection, never a raw id input.
+	assert.match(licensePageJs, /-seat-user-search/);
+	assert.match(licensePageJs, /-seat-search-results/);
+	assert.match(licensePageJs, /pendingSeatSelection\.set\(uid/);
+	assert.match(licensePageJs, /apiMutate\(apiSeats, \{ userId: userId/);
+	assert.equal(/placeholder:\s*tr\('Nextcloud user id'\)/.test(appJs + licensePageJs), false);
+	assert.equal(/placeholder:\s*tr\('User id or group id'\)/.test(appJs + licensePageJs), false);
 });
 
 test('directory picker never falls back to manual free-text entry', () => {

@@ -367,6 +367,17 @@ class PageController extends Controller
 				'itemLoans' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.loan.forItem', 'itemId'),
 				'loanSignature' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.loan.evidenceSignature'),
 				'loanDamagePhoto' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.loan.evidenceDamagePhoto'),
+				// Wave C: reservations / request queue / member tokens
+				'reservations' => $this->urlGenerator->linkToRoute('inventorycheck.reservation.create'),
+				'reservationsForItem' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.reservation.forItem'),
+				'reservationAvailability' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.reservation.availability'),
+				'reservationCancel' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.reservation.cancel'),
+				'reservationConvert' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.reservation.convert'),
+				'loanRequests' => $this->urlGenerator->linkToRoute('inventorycheck.loanRequest.index'),
+				'loanRequestApprove' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.loanRequest.approve'),
+				'loanRequestDecline' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.loanRequest.decline'),
+				'memberToken' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.memberToken.issue'),
+				'portalShow' => RouteUrlTemplate::for($this->urlGenerator, 'inventorycheck.portal.show', 'token', '__ID__', 'x'),
 			],
 		];
 

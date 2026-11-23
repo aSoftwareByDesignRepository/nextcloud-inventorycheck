@@ -48,9 +48,10 @@ final class LoanService
 		?string $lotCode,
 		?string $conditionOut,
 		?string $note,
+		?callable $afterLoanInsert = null,
 	): array {
 		$this->access->requireOffice($actorUid);
-		return $this->checkoutCore($actorUid, $itemId, $locationId, $personId, $qty, $dueAt, $lotCode, $conditionOut, $note);
+		return $this->checkoutCore($actorUid, $itemId, $locationId, $personId, $qty, $dueAt, $lotCode, $conditionOut, $note, $afterLoanInsert);
 	}
 
 	/**
@@ -68,8 +69,9 @@ final class LoanService
 		?string $lotCode,
 		?string $conditionOut,
 		?string $note,
+		?callable $afterLoanInsert = null,
 	): array {
-		return $this->checkoutCore($actorUid, $itemId, $locationId, $personId, $qty, $dueAt, $lotCode, $conditionOut, $note);
+		return $this->checkoutCore($actorUid, $itemId, $locationId, $personId, $qty, $dueAt, $lotCode, $conditionOut, $note, $afterLoanInsert);
 	}
 
 	private function checkoutCore(
@@ -82,6 +84,7 @@ final class LoanService
 		?string $lotCode,
 		?string $conditionOut,
 		?string $note,
+		?callable $afterLoanInsert = null,
 	): array {
 		$person = $this->findPersonOr404($personId);
 		if (!$person->getActive() || $person->getAnonymized()) {
@@ -105,7 +108,7 @@ final class LoanService
 
 		$result = $this->movements->checkout(
 			$actorUid, $itemId, $locationId, $qty, $note, $lotCode,
-			function () use ($itemId, $locationId, $personId, $qty, $lotCode, $dueAt, $cond, $note, $actorUid, $now): int {
+			function () use ($itemId, $locationId, $personId, $qty, $lotCode, $dueAt, $cond, $note, $actorUid, $now, $afterLoanInsert): int {
 				$loan = new Loan();
 				$loan->setItemId($itemId);
 				$loan->setPersonId($personId);
@@ -119,7 +122,13 @@ final class LoanService
 				$loan->setCheckedOutBy($actorUid);
 				$loan->setConditionOut($cond);
 				$loan->setNote($note);
-				return $this->loans->insert($loan)->getId();
+				$loanId = $this->loans->insert($loan)->getId();
+				// Wave C: request/reservation fulfillment rides the same txn —
+				// a CAS miss inside $afterLoanInsert rolls back the movement.
+				if ($afterLoanInsert !== null) {
+					$afterLoanInsert($loanId);
+				}
+				return $loanId;
 			},
 		);
 		$loan = $this->loans->findById($result['loanId']);
