@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 1.6.0 - 2026-11-24
 
 ### Added
 
@@ -22,17 +22,79 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Scan item history (companion):** last-5 movement history section on the scan item view with "alle anzeigen" deep-link to the filtered Recent list.
 - **Product lookup:** barcode → product info fill for the create-item dialog (opt-in, office-gated, rate-limited, fill-empty-only, never auto-saves) plus `postProductLookup` on the companion.
 - `GET /mobile/v1/today` aggregate endpoint for the Chef-Blick strip (capability-gated).
+- mobile#itemLots — FEFO lot list mirror for the companion
+- add Russian (ru) catalog
+- converge on shared family license page (_shared/license-page)
 
 ### Fixed
 
 - **Partial order receives crashed with HTTP 500:** order-receive movements always wrote `ref_leg=0`, so a second receive against the same sheet+item violated unique key `iv_mov_ref_uq2`. Legs are now numbered sequentially.
 - **Stocktake page returned "Access forbidden" for all users:** `page#stocktake` lost its `NoCSRFRequired`/`NoAdminRequired` attributes when the reports surface was added; restored.
 - a11y test asserted a non-existent `--iv-accent` token; corrected to the shared pack's `--iv-accent-ink`.
+- emitted-class coverage — style real gaps, document hooks
+- catalog heals — lazy-plural es/fr, de duplicate value, Create link msgid
+- uniform-404 on loan evidence + portal damage report, civil-date parse, manifest fk_late, null-guarded user search
+- restore color-scheme pins in synced check-shell tokens
+- companionApi advertises breaking floor only
+- heal sv da/nb lot-vocab bleed + manifest verify-cache keys
+- use localized field term instead of literal SKU in da/nb/sv
+- heal committed journal/stock-list cluster — gutted ru/zh cells, dup/polarity/wrong-sense fixes
+- classify iv_journal in the config transfer manifest
+- valueCount resolves def first — uniform 404 on unknown id
+- translate custom-fields cluster, drop lazy-plural msgid (IV-CUSTOM-FIELDS heal)
+- harden body cap + cascade ceiling (GAP-4)
+- heal de license cell to formal donor register
+- heal dead token refs after check-shell tokens sync
+- normalize sibling catalog key order to en.json (atlas intake inventorycheck-intake-20261121T152901Z)
+- heal catalog cells + tr pluralForm header (atlas l10n-quality)
+- es paste imperative carries canonical stem; dedup ru arity key
+- heal plural-array arity for pl/tr/zh catalogs
+- re-sync config-transfer pack; register n() plural msgids in l10n catalogs
+- resync license/transfer packs; converge de/fr/pt_BR seat family to donor canonical
+- heal de/en catalogs; test(repair) setAccessible
+- converge nl seat family to donor 'plaats(en)' canonical
+- retire lazy '(s)' plural hacks + resync license pack to donor canonical
+- heal nl/pl license-pack cells to donor canonical
+- add Service\IconCatalog facade for shared nav-footer partial
+- re-sync — donor renderTerminalRows colActions scope fix
+- mutation responses carry terminal/seat summaries for pack re-render
+- removeDevicePost maps missing device ids to uniform 404
+- dedicated POST device-revoke route for shared pack contract
+- LowStockWidget on IAPIWidgetV2 + r39 license delta craft spec
+- pl "Organisation license" re-sync to donor genitive
+- nb parkode canonical sense (sentinel contract)
+- resync pack — hide closed dialogs (donor 0ba19365d3)
+- heal server-part relocation + policies toggle vars
+- re-sync license-page pack + heal l10n catalogs
+- dark-icon family for chrome surfaces + transfer re-sync
+- pin accordion chevrons to the trailing edge
 
 ### Security
 
 - Member portal tokens are stored hashed; revoked tokens return uniform 404.
 - Mobile order-sheet payloads provably carry no price/cost/supplier keys (key-census test).
+
+### Changed
+
+- invoke private repair path via Closure::bind, drop deprecated setAccessible
+- locale-safe signature-line needles in stock-list asserts
+- add /portal/{token} shell route stub
+- journal-safe teardowns + locale-safe/volatile-var heals
+- heal screenshot-matrix probe bugs (anon/denied ctx isolation, QR-canvas exempt, empty-state race)
+- screenshot-matrix spec + l10n quality-pass helper
+- Classify iv_item_fields + iv_item_field_values in transfer manifest
+- pin mobile CreateItem lookup-prefill needles (C-4)
+- define --iv-mono + muted-on-tint tokens (check-shell sync)
+- re-sync shared packs (config-transfer, view-components) + l10n catalog regen
+- widen es paste REQUIRED regex to p[eé]g
+- Revert "fix(l10n): es paste imperative carries canonical stem"
+- re-sync config-transfer pack to donor tpl
+- l10n: formal register + identical-gap cleanup, zh_TW vocabulary flip
+- resync Russian JS catalog with updated msgid
+- converge seat canonical map to donor terms (de platz, fr place, pt_BR vaga)
+- align nl 'Seat assigned.' sentinel with donor canonical
+- pin license#removeDevicePost in unit contract suites + openapi
+- portalcheck → kanzleicheck cross-reference in comment
 
 ## 1.5.4 - 2026-11-13
 
