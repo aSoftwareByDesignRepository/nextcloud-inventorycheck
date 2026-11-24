@@ -27,6 +27,7 @@ release:
 			--exclude='vendor' \
 			--exclude='node_modules' \
 			--exclude='tests' \
+			--exclude='e2e' \
 			--exclude='docs' \
 			--exclude='.phpunit.result.cache' \
 			--exclude='test-results' \
