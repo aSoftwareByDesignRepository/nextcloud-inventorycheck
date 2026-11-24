@@ -149,7 +149,7 @@ async function assertThemeTokensResolved(page) {
 			tintInfo: cs.getPropertyValue('--iv-tint-info').trim(),
 			scrim: cs.getPropertyValue('--iv-scrim').trim(),
 			touch: cs.getPropertyValue('--iv-touch').trim(),
-			accent: cs.getPropertyValue('--iv-accent').trim(),
+			accent: cs.getPropertyValue('--iv-accent-ink').trim(),
 		}
 	})
 	expect(tokens.bg, 'theme background token').not.toEqual('')
@@ -374,7 +374,7 @@ test.describe('InventoryCheck custom accent adaptation', () => {
 			const cs = getComputedStyle(el || document.body)
 			return {
 				primary: cs.getPropertyValue('--color-primary-element').trim(),
-				accent: cs.getPropertyValue('--iv-accent').trim(),
+				accent: cs.getPropertyValue('--iv-accent-ink').trim(),
 				tint: cs.getPropertyValue('--iv-tint-info').trim(),
 			}
 		})

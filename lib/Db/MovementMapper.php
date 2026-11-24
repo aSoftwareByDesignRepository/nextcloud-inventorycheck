@@ -138,6 +138,25 @@ class MovementMapper extends QBMapper
 	}
 
 	/**
+	 * All movement legs bound to a loan (ref_type='loan', ref_id=loanId)
+	 * across every kind — checkout + checkin. The audit/conservation view:
+	 * loan state must be reconstructible from these rows alone (SPEC AC-29).
+	 *
+	 * @return list<Movement>
+	 */
+	public function findByLoanRef(int $loanId): array
+	{
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('ref_type', $qb->createNamedParameter('loan')))
+			->andWhere($qb->expr()->eq('ref_id', $qb->createNamedParameter($loanId, \PDO::PARAM_INT)))
+			->orderBy('id', 'ASC');
+
+		return $this->findEntities($qb);
+	}
+
+	/**
 	 * Idempotency lookup for (ref_type, ref_id, item_id).
 	 */
 	public function findByRefAndItemId(string $refType, int $refId, int $itemId): ?Movement

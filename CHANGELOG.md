@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- **Custody & lending suite (Waves A–C):** persons registry, loans with checkout/checkin legs and damage/loss tracking, reservations, member self-service portal via hashed tokens (`iv_persons`, `iv_loans`, `iv_reservations`, `iv_loan_requests`, `iv_member_tokens`), seat-aware lending requests with approve/convert/resolve flow.
+- **Total stock overview:** unified per-item totals across locations on the dashboard and item surfaces.
+- **Sub-locations:** hierarchical locations (`locations.parent_id`) with path labels, depth cap, reparent and delete-refusal rules.
+- **Reports surface:** office-only reports page with estimated stock value, movement value, and untouched/dead stock — explicitly labelled estimates, not accounting.
+- **Lot & expiry pack:** per-item track modes (none/lot/serial), FEFO pick hint, expiring-soon digest in restock config.
+- **Custom fields:** admin-defined item fields (`ItemField`/`ItemFieldValue`) with `CustomFieldService`, shown on item detail and settings/fields management.
+- **Compliance pack:** append-only movement journal with SHA-256 hash chain (`iv_journal`, `JournalService`), verify endpoint + settings UI, stock list export as ODS/PDF with signature line.
+- **Receiving evidence:** photo attachments on receive movements (`MovementEvidenceController`).
+- **Companion "Heute" screen:** TodayScreen with section cards (overdue loans, low stock, expiring lots, open counts, today's movements), per-section fault isolation, Chef-Blick estimates behind a server-computed capability flag, offline snapshot with stale badge, local reminders with per-type toggles and quiet hours (`expo-notifications`).
+- **Receive against order (companion):** sent order sheets on the phone — scan-or-tap line receive, diff screen with explicit acknowledge, partial progress, outbox-deduped retry.
+- **Scan item history (companion):** last-5 movement history section on the scan item view with "alle anzeigen" deep-link to the filtered Recent list.
+- **Product lookup:** barcode → product info fill for the create-item dialog (opt-in, office-gated, rate-limited, fill-empty-only, never auto-saves) plus `postProductLookup` on the companion.
+- `GET /mobile/v1/today` aggregate endpoint for the Chef-Blick strip (capability-gated).
+
+### Fixed
+
+- **Partial order receives crashed with HTTP 500:** order-receive movements always wrote `ref_leg=0`, so a second receive against the same sheet+item violated unique key `iv_mov_ref_uq2`. Legs are now numbered sequentially.
+- **Stocktake page returned "Access forbidden" for all users:** `page#stocktake` lost its `NoCSRFRequired`/`NoAdminRequired` attributes when the reports surface was added; restored.
+- a11y test asserted a non-existent `--iv-accent` token; corrected to the shared pack's `--iv-accent-ink`.
+
+### Security
+
+- Member portal tokens are stored hashed; revoked tokens return uniform 404.
+- Mobile order-sheet payloads provably carry no price/cost/supplier keys (key-census test).
+
 ## 1.5.4 - 2026-11-13
 
 ### Fixed

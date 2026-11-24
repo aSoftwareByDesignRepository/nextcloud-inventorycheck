@@ -794,12 +794,19 @@ class MovementService
 			}
 
 			$this->updateBalance($bal, $qtyAfter, $now);
+			// C-8: each order-receive leg needs its own ref_leg — a sheet+item
+			// can be received in several partials, and ref_leg=0 collides under
+			// iv_mov_ref_uq2 (same pattern as loan legs).
+			$refLeg = $orderSheetScope !== null
+				? $this->movements->maxRefLeg(self::REF_TYPE_ORDER_RECEIVE, $orderSheetScope, $itemId) + 1
+				: 0;
 			$mov = $this->insertMovement(
 				$itemId, $locationId, $kind, $delta, $qtyAfter,
 				null, null, $reason, $actorUid, $now,
 				$orderSheetScope !== null ? self::REF_TYPE_ORDER_RECEIVE : null,
 				$orderSheetScope,
 				$lockedLot, null, $spendMinor,
+				$refLeg,
 			);
 
 			// F-07: lot expiry upsert inside the same TX — a differing expiry

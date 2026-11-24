@@ -143,8 +143,6 @@ class PageController extends Controller
 		);
 	}
 
-	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	/** IV-REPORTS-SURFACE: office-only money surface (NN-01). */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -159,6 +157,8 @@ class PageController extends Controller
 		);
 	}
 
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
 	public function stocktake(): TemplateResponse
 	{
 		return $this->page(

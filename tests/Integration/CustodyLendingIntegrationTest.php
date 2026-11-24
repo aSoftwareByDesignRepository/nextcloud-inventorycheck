@@ -10,8 +10,10 @@ use OCA\InventoryCheck\Db\LoanMapper;
 use OCA\InventoryCheck\Db\PersonMapper;
 use OCA\InventoryCheck\Db\ScanDevice;
 use OCA\InventoryCheck\Db\ScanDeviceMapper;
+use OCA\InventoryCheck\Controller\MobileController;
 use OCA\InventoryCheck\Exception\ConflictException;
 use OCA\InventoryCheck\Exception\InsufficientStockException;
+use OCA\InventoryCheck\Exception\MobileGateException;
 use OCA\InventoryCheck\Exception\NotFoundException;
 use OCA\InventoryCheck\Exception\PermissionDeniedException;
 use OCA\InventoryCheck\Exception\ValidationException;
@@ -24,6 +26,8 @@ use OCA\InventoryCheck\Service\LocationAclService;
 use OCA\InventoryCheck\Service\LocationService;
 use OCA\InventoryCheck\Service\MovementService;
 use OCA\InventoryCheck\Service\PersonService;
+use OCA\InventoryCheck\Service\ScanIdempotencyService;
+use OCP\AppFramework\Http\JSONResponse;
 use OCP\IConfig;
 use OCP\IDBConnection;
 use OCP\IUserManager;
@@ -367,6 +371,73 @@ final class CustodyLendingIntegrationTest extends TestCase
 			$acl->purgeDevice($idC);
 			$acl->purgeDevice($idD);
 		}
+	}
+
+	/**
+	 * AC-19: two identical clientRequestIds → exactly one loan row. The
+	 * replay path is the controller's own idemClaimOrReplay, invoked via
+	 * Closure::bind so the test exercises the real wiring without mocking
+	 * the device-auth request.
+	 */
+	public function testLoanCheckoutReplayDoesNotDoubleBook(): void
+	{
+		$suffix = bin2hex(random_bytes(3));
+		[$loc, $item, $person] = $this->fixture($suffix);
+		$c = (new Application())->getContainer();
+		$idem = $c->get(ScanIdempotencyService::class);
+		$controller = $c->get(MobileController::class);
+		$claimOrReplay = \Closure::bind(
+			fn (string $actor, string $claimId, string $hash) => $this->idemClaimOrReplay($actor, $claimId, $hash),
+			$controller,
+			MobileController::class,
+		);
+
+		$actor = 'device:ac19-' . $suffix;
+		$params = [
+			'itemId' => (int)$item['id'],
+			'locationId' => (int)$loc['id'],
+			'personId' => (int)$person->getId(),
+			'qty' => 2,
+		];
+		$claimId = 'loan:' . $idem->normalizeClientRequestId('ac19-' . $suffix);
+		$hash = $idem->fingerprintFromParams($params);
+
+		// First attempt: claim succeeds, the real checkout commits, response
+		// is stored — mirrors loansCheckout() step for step.
+		$this->assertNull($claimOrReplay($actor, $claimId, $hash));
+		$this->loans->checkoutForSeat($actor, (int)$item['id'], (int)$loc['id'], (int)$person->getId(), 2, null, null, 'ok', null);
+		$stored = ['loan' => ['id' => 42]];
+		$idem->complete($actor, $claimId, $stored);
+
+		// Retry with the same key + payload: replayed response, no second loan.
+		$replay = $claimOrReplay($actor, $claimId, $hash);
+		$this->assertInstanceOf(JSONResponse::class, $replay);
+		$this->assertSame($stored, $replay->getData());
+		$this->assertCount(1, $this->loanMapper->openForPerson((int)$person->getId()));
+
+		// Same key, different payload → hard mismatch, never a silent re-book.
+		$otherHash = $idem->fingerprintFromParams(array_merge($params, ['qty' => 3]));
+		try {
+			$claimOrReplay($actor, $claimId, $otherHash);
+			$this->fail('payload mismatch must reject');
+		} catch (MobileGateException $e) {
+			$this->assertSame('idempotency_payload_mismatch', $e->getMessage());
+		}
+
+		// In-flight twin (claimed, never completed) → in_flight, not a dup loan.
+		$inflightId = 'loan:' . $idem->normalizeClientRequestId('ac19-b-' . $suffix);
+		$this->assertTrue($idem->tryClaim($actor, $inflightId, $hash));
+		try {
+			$claimOrReplay($actor, $inflightId, $hash);
+			$this->fail('pending twin must report in-flight');
+		} catch (MobileGateException $e) {
+			$this->assertSame('idempotency_in_flight', $e->getMessage());
+		}
+		// Released claim frees the key for a genuine retry.
+		$idem->release($actor, $inflightId);
+		$this->assertNull($claimOrReplay($actor, $inflightId, $hash));
+
+		$this->assertCount(1, $this->loanMapper->openForPerson((int)$person->getId()), 'exactly one loan for two identical request keys');
 	}
 
 	public function testSignatureStoreReadAndDtoFlags(): void
