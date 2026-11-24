@@ -7,7 +7,7 @@ namespace OCA\InventoryCheck\Tests\Unit\Support;
 use PHPUnit\Framework\TestCase;
 
 /**
- * AC-22 automated proxy: Check-family visual contract vs MobilityCheck.
+ * AC-22 automated proxy: Check-family visual contract vs the mobility app.
  * Full screenshot UAT remains manual; this fails the build on class-prefix
  * leakage and missing shared shell tokens.
  */
@@ -22,7 +22,7 @@ final class FamilyVisualParityContractTest extends TestCase
 		$this->ivRoot = dirname(__DIR__, 3);
 		$mc = dirname($this->ivRoot) . '/mobilitycheck/css/app.css';
 		if (!is_file($mc)) {
-			$this->markTestSkipped('MobilityCheck CSS not present for parity contract');
+			$this->markTestSkipped('the mobility app CSS not present for parity contract');
 		}
 		$this->mcCss = (string)file_get_contents($mc);
 	}
@@ -57,7 +57,7 @@ final class FamilyVisualParityContractTest extends TestCase
 			. (string)file_get_contents($this->ivRoot . '/css/common/accessibility.css');
 		foreach (['skip-link', 'page-header', 'empty-state', 'focus-visible', '44px'] as $token) {
 			$this->assertStringContainsString($token, $ivCss, 'InventoryCheck missing family token: ' . $token);
-			$this->assertStringContainsString($token, $this->mcCss, 'MobilityCheck unexpectedly missing: ' . $token);
+			$this->assertStringContainsString($token, $this->mcCss, 'the mobility app unexpectedly missing: ' . $token);
 		}
 		$this->assertMatchesRegularExpression('/\.iv-/', $ivCss);
 		$this->assertMatchesRegularExpression('/\.mc-/', $this->mcCss);
@@ -68,11 +68,11 @@ final class FamilyVisualParityContractTest extends TestCase
 		$ivCss = (string)file_get_contents($this->ivRoot . '/css/app.css');
 		// InventoryCheck SPEC §11.1: tables→cards below 720 px.
 		$this->assertMatchesRegularExpression('/@media\s*\(\s*max-width:\s*720px\s*\)/', $ivCss);
-		// MobilityCheck family uses tokens breakpoint (767) or explicit max-width.
+		// the mobility app family uses tokens breakpoint (767) or explicit max-width.
 		$this->assertTrue(
 			(bool)preg_match('/@media\s*\(\s*max-width:\s*7\d{2}px\s*\)/', $this->mcCss)
 			|| str_contains($this->mcCss, 'breakpoint'),
-			'MobilityCheck must declare a responsive max-width / breakpoint',
+			'the mobility app must declare a responsive max-width / breakpoint',
 		);
 	}
 }

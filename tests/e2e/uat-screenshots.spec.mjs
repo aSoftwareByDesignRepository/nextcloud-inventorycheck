@@ -7,12 +7,12 @@ import { ensureLoggedIn, credsFromEnv, openInventory } from './helpers/auth.mjs'
 
 /**
  * AC-22 — live UAT screenshots archived under docs/uat/screenshots/.
- * Captures InventoryCheck surfaces + MobilityCheck shell when enabled.
+ * Captures InventoryCheck surfaces + the mobility app shell when enabled.
  */
 const shotDir = resolve(dirname(fileURLToPath(import.meta.url)), '../../docs/uat/screenshots')
 const artifactDir = resolve(dirname(fileURLToPath(import.meta.url)), 'artifacts')
 
-test('AC-22 live screenshot archive vs MobilityCheck', async ({ page }, testInfo) => {
+test('AC-22 live screenshot archive vs the mobility app', async ({ page }, testInfo) => {
 	test.skip(!credsFromEnv('ADMIN') && !credsFromEnv('E2E'), 'Requires NC_ADMIN_* or NC_E2E_*')
 	mkdirSync(shotDir, { recursive: true })
 	mkdirSync(artifactDir, { recursive: true })

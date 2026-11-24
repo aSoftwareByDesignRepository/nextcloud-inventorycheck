@@ -99,7 +99,7 @@ class FlangeController extends Controller
 
 	/**
 	 * F8: retry queued invoice pushes. The retrying actor's uid drives the
-	 * push — InvoiceCheck authorizes it against the project, so a manager
+	 * push — the invoicing app authorizes it against the project, so a manager
 	 * can push what the issuing warehouse user could not.
 	 */
 	#[NoAdminRequired]

@@ -13,7 +13,7 @@ use OCP\IConfig;
 
 /**
  * F8 retry drain — replays flagged invoice pushes. Each row carries the
- * issuing actor's uid; InvoiceCheck re-authorizes that actor on every
+ * issuing actor's uid; the invoicing app re-authorizes that actor on every
  * attempt, so the job grants nothing a user could not do directly.
  * IC's per-line ext_ref dedupe makes replays idempotent.
  */

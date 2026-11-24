@@ -1085,7 +1085,6 @@
 		"Selected {name}.": "Выбрано: {name}.",
 		"Send": "Отправить",
 		"Send issued materials to the customer's draft invoice": "Отправить выданные материалы в черновик счёта заказчика",
-		"Send issued materials to the customer's draft invoice (InvoiceCheck is not installed yet)": "Отправить выданные материалы в черновик счёта заказчика (InvoiceCheck ещё не установлен)",
 		"Send request": "Отправить запрос",
 		"Serial number": "Серийный номер",
 		"Serial number tracking": "Учёт по серийным номерам",

@@ -1086,7 +1086,6 @@
 		"Selected {name}.": "已選擇 {name}。",
 		"Send": "傳送",
 		"Send issued materials to the customer's draft invoice": "將已出庫物料傳送到客戶發票草稿",
-		"Send issued materials to the customer's draft invoice (InvoiceCheck is not installed yet)": "將已出庫物料傳送到客戶發票草稿（尚未安裝 InvoiceCheck）",
 		"Send request": "發送請求",
 		"Serial number": "序列號",
 		"Serial number tracking": "序列號跟蹤",

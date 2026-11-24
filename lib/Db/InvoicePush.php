@@ -8,12 +8,12 @@ use OCP\AppFramework\Db\Entity;
 
 /**
  * F8 outbox row — one per project-bound issue that should mirror its
- * material lines onto an InvoiceCheck draft.
+ * material lines onto an the invoicing app draft.
  *
  * The row is written after the issue commits (the issue is the business
  * fact and never rolls back because a sibling is down). Status:
  *   pending — queued, push not attempted or failed softly (retryable)
- *   done    — InvoiceCheck acknowledged the append (created or replay)
+ *   done    — the invoicing app acknowledged the append (created or replay)
  *   failed  — push rejected; `last_error` carries the why for the
  *             settings surface and the manual retry action
  *

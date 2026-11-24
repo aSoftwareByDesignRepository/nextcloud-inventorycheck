@@ -13,7 +13,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * F8 outbox caller — unit env has no InvoiceCheck container, so the live
+ * F8 outbox caller — unit env has no the invoicing app container, so the live
  * facade hop runs in-container; here we prove staging, ref stability,
  * fail-soft status mapping, and retryable-set accounting.
  */

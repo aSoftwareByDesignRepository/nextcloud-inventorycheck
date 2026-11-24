@@ -283,7 +283,7 @@ final class TransferManifest extends AbstractTransferManifest
 			// they hash; importing them elsewhere fabricates an unverifiable
 			// chain. The target rebuilds its journal from its own movements.
 			'iv_journal' => ['class' => 'internal'],
-			// Outbound push ledger to InvoiceCheck — issue_ref + payload are
+			// Outbound push ledger to the invoicing app — issue_ref + payload are
 			// bound to the source instance's integration state.
 			'iv_inv_push' => ['class' => 'internal'],
 			'iv_notif_log' => ['class' => 'log'],

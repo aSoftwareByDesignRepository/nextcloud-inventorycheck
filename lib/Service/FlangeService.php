@@ -126,7 +126,7 @@ class FlangeService
 			throw new ValidationException('validation_failed', '', [['field' => 'projectId', 'code' => 'validation_failed']]);
 		}
 		$result = $this->runIssue($actorUid, $lines, StockIssueRequest::REF_PROJECT, $projectId, $locationId, self::REF_PROJECT);
-		// F8: mirror issued materials onto the customer's InvoiceCheck
+		// F8: mirror issued materials onto the customer's the invoicing app
 		// draft. Fail-soft — the committed issue is the business fact;
 		// the push rides the outbox flag+retry path.
 		if ($result['ok']) {
@@ -238,7 +238,7 @@ class FlangeService
 
 	/**
 	 * F8 flag+retry: drain the outbox with the retrying actor's uid —
-	 * InvoiceCheck authorizes it against the project. Attempt budget
+	 * the invoicing app authorizes it against the project. Attempt budget
 	 * (bounded, see InvoicePush::findRetryable) is shared across this
 	 * manual drain and the cron InvoicePushRetryJob — an office user
 	 * under-authorized on a project burns attempts either way; the row

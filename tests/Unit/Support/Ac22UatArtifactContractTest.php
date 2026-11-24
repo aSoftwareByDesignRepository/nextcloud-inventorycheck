@@ -14,7 +14,7 @@ final class Ac22UatArtifactContractTest extends TestCase
 		$path = dirname(__DIR__, 3) . '/docs/uat/AC-22-FAMILY-UAT.md';
 		self::assertFileExists($path);
 		$src = (string)file_get_contents($path);
-		self::assertStringContainsString('MobilityCheck', $src);
+		self::assertStringContainsString('the mobility app', $src);
 		self::assertStringContainsString('docs/uat/screenshots/', $src);
 		self::assertStringContainsString('Settings', $src);
 		self::assertStringContainsString('[x]', $src, 'AC-22 criteria must be signed off');

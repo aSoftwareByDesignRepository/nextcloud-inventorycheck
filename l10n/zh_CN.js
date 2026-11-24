@@ -1086,7 +1086,6 @@ OC.L10N.register(
 	"Selected {name}." : "已选择 {name}。",
 	"Send" : "发送",
 	"Send issued materials to the customer's draft invoice" : "将已出库物料发送到客户发票草稿",
-	"Send issued materials to the customer's draft invoice (InvoiceCheck is not installed yet)" : "将已出库物料发送到客户发票草稿（尚未安装 InvoiceCheck）",
 	"Send request" : "发送请求",
 	"Serial number" : "序列号",
 	"Serial number tracking" : "序列号跟踪",

@@ -6511,7 +6511,7 @@
 						invoiceToggle,
 						flange.invoiceCheckEnabled
 							? tr('Send issued materials to the customer\'s draft invoice')
-							: tr('Send issued materials to the customer\'s draft invoice (InvoiceCheck is not installed yet)')
+							: tr('Send issued materials to the customer\'s draft invoice (the invoicing app is not installed yet)')
 					),
 					invoicePending > 0 ? field(tr('Pending invoice pushes') + ' (' + invoicePending + ')', invoiceRetryBtn, { name: 'invoicePushRetry' }) : null,
 					field(tr('Default issue location'), defaultLocSelect, { name: 'defaultIssueLocationId' }),
