@@ -126,7 +126,7 @@ class FlangeService
 			throw new ValidationException('validation_failed', '', [['field' => 'projectId', 'code' => 'validation_failed']]);
 		}
 		$result = $this->runIssue($actorUid, $lines, StockIssueRequest::REF_PROJECT, $projectId, $locationId, self::REF_PROJECT);
-		// F8: mirror issued materials onto the customer's the invoicing app
+		// F8: mirror issued materials onto the customer's invoicing-app
 		// draft. Fail-soft — the committed issue is the business fact;
 		// the push rides the outbox flag+retry path.
 		if ($result['ok']) {

@@ -14,7 +14,7 @@ use OCP\Migration\SimpleMigrationStep;
  * Suite flange F8 — invoice-push outbox.
  *
  * A project-bound stock issue commits first (the issue is the business
- * fact); mirroring its material lines onto an the invoicing app draft is a
+ * fact); mirroring its material lines onto an invoicing-app draft is a
  * best-effort downstream write. `iv_inv_push` is the flag-and-retry
  * outbox: one row per issue, unique on `issue_ref` (deterministic
  * `iv:project:{projectId}:{firstMovementId}`), drained by the retry job

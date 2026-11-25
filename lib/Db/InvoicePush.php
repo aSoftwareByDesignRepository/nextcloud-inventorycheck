@@ -8,7 +8,7 @@ use OCP\AppFramework\Db\Entity;
 
 /**
  * F8 outbox row — one per project-bound issue that should mirror its
- * material lines onto an the invoicing app draft.
+ * material lines onto an invoicing-app draft.
  *
  * The row is written after the issue commits (the issue is the business
  * fact and never rolls back because a sibling is down). Status:

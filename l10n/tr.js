@@ -1086,6 +1086,7 @@ OC.L10N.register(
 	"Selected {name}." : "{name} seçildi.",
 	"Send" : "Gönder",
 	"Send issued materials to the customer's draft invoice" : "Çıkışı yapılan malzemeleri müşterinin fatura taslağına gönder",
+	"Send issued materials to the customer's draft invoice (the invoicing app is not installed yet)" : "Çıkışı yapılan malzemeleri müşterinin fatura taslağına gönder (faturalama uygulaması henüz kurulu değil)",
 	"Send request" : "İstek gönder",
 	"Serial number" : "Seri numarası",
 	"Serial number tracking" : "Seri numarası takibi",

@@ -1086,6 +1086,7 @@ OC.L10N.register(
 	"Selected {name}." : "Selecionado {name}.",
 	"Send" : "Enviar",
 	"Send issued materials to the customer's draft invoice" : "Enviar materiais saídos para a fatura rascunho do cliente",
+	"Send issued materials to the customer's draft invoice (the invoicing app is not installed yet)" : "Enviar materiais saídos para a fatura rascunho do cliente (a aplicação de faturação ainda não está instalada)",
 	"Send request" : "Enviar pedido",
 	"Serial number" : "Número de série",
 	"Serial number tracking" : "Rastreio por número de série",

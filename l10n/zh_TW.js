@@ -1086,6 +1086,7 @@ OC.L10N.register(
 	"Selected {name}." : "已選擇 {name}。",
 	"Send" : "傳送",
 	"Send issued materials to the customer's draft invoice" : "將已出庫物料傳送到客戶發票草稿",
+	"Send issued materials to the customer's draft invoice (the invoicing app is not installed yet)" : "將已出庫物料傳送到客戶發票草稿（尚未安裝開票應用）",
 	"Send request" : "發送請求",
 	"Serial number" : "序列號",
 	"Serial number tracking" : "序列號跟蹤",

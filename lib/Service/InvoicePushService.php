@@ -15,7 +15,7 @@ use Psr\Log\LoggerInterface;
  * the invoicing app's `MaterialsLineAppendFacade`.
  *
  * Fail-soft everywhere: the stock issue is already committed, so a
- * missing/disabled the invoicing app or a rejected push never rolls anything
+ * missing/disabled invoicing app or a rejected push never rolls anything
  * back — the row stays flagged (pending/failed) and the retry job or the
  * settings retry action replays it. The invoicing app dedupes per line on
  * ext_ref, so replay is always safe.

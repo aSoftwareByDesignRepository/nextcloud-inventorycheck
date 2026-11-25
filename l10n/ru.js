@@ -1086,6 +1086,7 @@ OC.L10N.register(
 	"Selected {name}." : "Выбрано: {name}.",
 	"Send" : "Отправить",
 	"Send issued materials to the customer's draft invoice" : "Отправить выданные материалы в черновик счёта заказчика",
+	"Send issued materials to the customer's draft invoice (the invoicing app is not installed yet)" : "Отправить выданные материалы в черновик счёта заказчика (приложение для выставления счетов ещё не установлено)",
 	"Send request" : "Отправить запрос",
 	"Serial number" : "Серийный номер",
 	"Serial number tracking" : "Учёт по серийным номерам",

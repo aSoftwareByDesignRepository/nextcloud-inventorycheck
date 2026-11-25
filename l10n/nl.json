@@ -1089,6 +1089,7 @@
 		"Selected {name}.": "{name} geselecteerd.",
 		"Send": "Verzenden",
 		"Send issued materials to the customer's draft invoice": "Stuur uitgegeven materialen naar de klant-conceptfactuur",
+		"Send issued materials to the customer's draft invoice (the invoicing app is not installed yet)": "Stuur uitgegeven materialen naar de klant-conceptfactuur (de facturatie-app is nog niet geïnstalleerd)",
 		"Send request": "Verzoek sturen",
 		"Serial number": "Serienummer",
 		"Serial number tracking": "Tracking van serienummers",

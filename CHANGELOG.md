@@ -181,7 +181,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Product lookup (GTIN/barcode):** look up product names and details by barcode while creating or booking items — a provider cascade (OpenFacts, UpcItemDb) resolves codes server-side, configurable under Settings → Product lookup, exposed on both the web API and the mobile endpoint.
-- **Invoice push to the invoicing app (suite F8):** stock movements can be pushed to the the invoicing app companion app via a durable `InvoicePush` queue (entity + mapper + service + migration) with a retry background job and a manual retry endpoint.
+- **Invoice push to the invoicing app (suite F8):** stock movements can be pushed to the invoicing-app companion app via a durable `InvoicePush` queue (entity + mapper + service + migration) with a retry background job and a manual retry endpoint.
 
 ### Fixed
 

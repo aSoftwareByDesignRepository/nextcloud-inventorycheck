@@ -1086,6 +1086,7 @@ OC.L10N.register(
 	"Selected {name}." : "Valde {name}.",
 	"Send" : "Skicka",
 	"Send issued materials to the customer's draft invoice" : "Skicka utlämnade material till kundens utkastfaktura",
+	"Send issued materials to the customer's draft invoice (the invoicing app is not installed yet)" : "Skicka utlämnade material till kundens utkastfaktura (faktureringsappen är inte installerat ännu)",
 	"Send request" : "Skicka förfrågan",
 	"Serial number" : "Serienummer",
 	"Serial number tracking" : "Serienummerspårning",
