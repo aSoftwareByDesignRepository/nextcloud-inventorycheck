@@ -4,6 +4,9 @@ import { execFileSync } from 'node:child_process'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { ensureLoggedIn, credsFromEnv, openInventory } from './helpers/auth.mjs'
+import AxeBuilder from '@axe-core/playwright'
+import { applyTheme } from './helpers/theme.mjs'
+import { tabUntil, activateByKeyboard } from './helpers/keyboard.mjs'
 
 /**
  * IV-SUB-LOCATIONS — the audit journey: a warehouse + shelf child get a
@@ -119,4 +122,131 @@ test('IV-SUB-LOCATIONS: pathLabel, depth cap, delete refusal, reparent', async (
 		page.locator(`text=${`Annex ${tag} / Shelf ${tag}`}`),
 	)
 	await expect(childRow.first()).toBeVisible({ timeout: 10_000 })
+})
+
+test.describe('IV-SUB-LOCATIONS UX proof', () => {
+	test.beforeEach(async ({ page }) => {
+		test.skip(!credsFromEnv('ADMIN') && !credsFromEnv('E2E'), 'Requires NC_ADMIN_* or NC_E2E_*')
+		await ensureLoggedIn(page, 'ADMIN')
+	})
+
+	for (const themeId of ['light', 'dark', 'dark-highcontrast']) {
+		test(`axe WCAG 2.1 AA on locations + create dialog @ ${themeId}`, async ({ page }) => {
+			await openInventory(page, '/apps/inventorycheck/locations')
+			await applyTheme(page, /** @type {'light'|'dark'|'dark-highcontrast'} */ (themeId))
+			await expect(page.locator('#iv-page-title, .iv-table, .iv-empty').first()).toBeVisible({ timeout: 15_000 })
+			const pageResults = await new AxeBuilder({ page })
+				.include('#app-content.iv-app')
+				.withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+				.exclude('.toastify')
+				.analyze()
+			expect(pageResults.violations, `page @ ${themeId}: ${JSON.stringify(pageResults.violations, null, 2)}`).toEqual([])
+
+			const newBtn = page.locator('[data-iv-action="location-new"]').first()
+			await expect(newBtn).toBeVisible({ timeout: 15_000 })
+			await activateByKeyboard(newBtn, page)
+			const dlg = page.locator('.iv-dialog')
+			await expect(dlg).toBeVisible({ timeout: 10_000 })
+			const dlgResults = await new AxeBuilder({ page })
+				.include('.iv-dialog')
+				.withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+				.exclude('.toastify')
+				.analyze()
+			expect(dlgResults.violations, `dialog @ ${themeId}: ${JSON.stringify(dlgResults.violations, null, 2)}`).toEqual([])
+			await page.keyboard.press('Escape')
+			await expect(dlg).toBeHidden()
+		})
+	}
+
+	test('keyboard-only create-parent+child journey (Tab/Enter only)', async ({ page }) => {
+		await openInventory(page)
+		const tag = `kb${Date.now().toString(36)}`
+		createdTags.push(tag)
+
+		await openInventory(page, '/apps/inventorycheck/locations')
+		const newBtn = page.locator('[data-iv-action="location-new"]').first()
+		await expect(newBtn).toBeVisible({ timeout: 15_000 })
+		await activateByKeyboard(newBtn, page)
+		const dlg = page.locator('.iv-dialog')
+		await expect(dlg).toBeVisible({ timeout: 10_000 })
+
+		// Parent: code + name via typing, parent select left at "None".
+		await tabUntil(page, { sel: '[data-iv-field="code"] input' })
+		await page.keyboard.type(`SLKBP-${tag}`)
+		await tabUntil(page, { sel: '[data-iv-field="name"] input' })
+		await page.keyboard.type(`KBP ${tag}`)
+		await tabUntil(page, { sel: '[data-iv-action="dialog-confirm"]' })
+		await page.keyboard.press('Enter')
+		await expect(dlg).toBeHidden({ timeout: 15_000 })
+
+		const parent = await api(page, 'GET', `/index.php/apps/inventorycheck/api/locations?roots=1`)
+		const parentRow = (parent.data.data || []).find((r) => r.code === `SLKBP-${tag}`)
+		expect(parentRow, `parent row after keyboard create: ${JSON.stringify(parent.data).slice(0, 400)}`).toBeTruthy()
+		const parentId = parentRow.id
+
+		// Child: same keyboard path, parent select driven by ArrowDown.
+		await activateByKeyboard(newBtn, page)
+		const dlg2 = page.locator('.iv-dialog')
+		await expect(dlg2).toBeVisible({ timeout: 10_000 })
+		await tabUntil(page, { sel: '[data-iv-field="code"] input' })
+		await page.keyboard.type(`SLKBC-${tag}`)
+		await tabUntil(page, { sel: '[data-iv-field="name"] input' })
+		await page.keyboard.type(`KBC ${tag}`)
+
+		await tabUntil(page, { sel: '[data-iv-field="parentId"] select' })
+		// The roots list loads async — wait for the parent option to exist.
+		const parentSel = page.locator('[data-iv-field="parentId"] select')
+		await expect(parentSel.locator('option').filter({ hasText: tag }).first()).toBeAttached({ timeout: 10_000 })
+		// Native select typeahead/arrows are the keyboard path — no pointer.
+		for (let i = 0; i < 80; i++) {
+			const selText = await page.evaluate(() => {
+				const s = document.activeElement
+				return s && s.tagName === 'SELECT' ? (s.options[s.selectedIndex]?.textContent || '') : ''
+			})
+			if (selText.includes(tag)) break
+			await page.keyboard.press('ArrowDown')
+		}
+		const chosen = await parentSel.evaluate((s) => s.options[s.selectedIndex]?.textContent || '')
+		expect(chosen, 'parent select never reached the tagged option via ArrowDown').toContain(tag)
+
+		await tabUntil(page, { sel: '[data-iv-action="dialog-confirm"]' })
+		await page.keyboard.press('Enter')
+		await expect(dlg2).toBeHidden({ timeout: 15_000 })
+
+		// Server proof: child persisted with the parent link + pathLabel.
+		const child = await api(page, 'GET', `/index.php/apps/inventorycheck/api/locations?q=${encodeURIComponent(`SLKBC-${tag}`)}`)
+		const childRow = (child.data.data || []).find((r) => r.code === `SLKBC-${tag}`)
+		expect(childRow, `child row after keyboard create`).toBeTruthy()
+		expect(childRow.parentId).toBe(parentId)
+		expect(childRow.pathLabel).toBe(`KBP ${tag} / KBC ${tag}`)
+	})
+
+	test('desktop ≥1024 layout identity: flat table, no card reflow, no overflow', async ({ page }, testInfo) => {
+		test.skip(testInfo.project.name !== 'chromium-1280', 'desktop leg runs at 1280')
+		await openInventory(page, '/apps/inventorycheck/locations')
+		await expect(page.locator('#iv-page-title, .iv-table, .iv-empty').first()).toBeVisible({ timeout: 15_000 })
+		await page.setViewportSize({ width: 1280, height: 800 })
+
+		// The desktop layout is sacred — sub-locations may only indent the name
+		// cell, never reflow the list into cards or add columns. Structural
+		// assertion: the standard .iv-table renders (not --cards), headers stay
+		// the pre-feature column set (name/code/kind + actions).
+		const table = page.locator('#app-content.iv-app table.iv-table').first()
+		await expect(table).toBeVisible({ timeout: 15_000 })
+		await expect(table).not.toHaveClass(/iv-table--cards/)
+		const headerCount = await table.locator('thead th').count()
+		expect(headerCount, `desktop column count drifted: ${headerCount}`).toBeLessThanOrEqual(4)
+
+		// No horizontal scroll at the desktop widths the spec protects.
+		for (const w of [1024, 1280]) {
+			await page.setViewportSize({ width: w, height: 800 })
+			const overflow = await page.evaluate(() => {
+				const root = document.querySelector('#app-content.iv-app') || document.body
+				return root.scrollWidth > root.clientWidth + 2
+					|| document.documentElement.scrollWidth > window.innerWidth + 2
+			})
+			expect(overflow, `horizontal overflow at ${w}`).toBe(false)
+		}
+		await page.setViewportSize({ width: 1280, height: 800 })
+	})
 })

@@ -4,6 +4,7 @@ import { execFileSync } from 'node:child_process'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { ensureLoggedIn, credsFromEnv, openInventory } from './helpers/auth.mjs'
+import { tabUntil, activateByKeyboard } from './helpers/keyboard.mjs'
 
 /**
  * IV-CUSTODY-LENDING Wave A — person create → checkout decrements stock →
@@ -174,4 +175,86 @@ test('F2: person → checkout → checkin lifecycle + UI surfaces', async ({ pag
 	await expect(
 		page.locator('table, .iv-table').filter({ hasText: `CL P2 ${tag}` }).first(),
 	).toBeVisible({ timeout: 15_000 })
+})
+
+test('F2 UX proof: keyboard-only checkout→checkin journey (Tab/Enter only)', async ({ page }) => {
+	test.skip(!credsFromEnv('ADMIN') && !credsFromEnv('E2E'), 'Requires NC_ADMIN_* or NC_E2E_*')
+
+	await ensureLoggedIn(page, 'ADMIN')
+	await openInventory(page)
+
+	const tag = marker()
+
+	// --- fixtures via API — fixture seeding is not the journey under test ---
+	const loc = await api(page, 'POST', '/index.php/apps/inventorycheck/api/locations', {
+		code: `KB-L-${tag}`.slice(0, 32), name: `KB Loc ${tag}`,
+	})
+	expectOk(loc, 'create location')
+	const item = await api(page, 'POST', '/index.php/apps/inventorycheck/api/items', {
+		sku: `KB-I-${tag}`.slice(0, 64), name: `KB Item ${tag}`,
+	})
+	expectOk(item, 'create item')
+	const itemId = item.data.id
+	expectOk(await api(page, 'POST', '/index.php/apps/inventorycheck/api/movements/receive', {
+		itemId, locationId: loc.data.id, qty: 3,
+	}), 'receive stock')
+	const person = await api(page, 'POST', '/index.php/apps/inventorycheck/api/persons', {
+		displayName: `KB Person ${tag}`, memberNo: `KB-${tag}`.slice(0, 32),
+	})
+	expectOk(person, 'create person')
+
+	// --- keyboard journey starts on the item detail page ---
+	await openInventory(page, `/apps/inventorycheck/items/${itemId}`)
+
+	// Checkout trigger — focused then Enter (suite convention: focus() is the
+	// accepted page-level entry point; everything inside the dialog must be
+	// reached by Tab).
+	const checkoutBtn = page.locator('[data-iv-action="loan-checkout"]').first()
+	await expect(checkoutBtn).toBeVisible({ timeout: 20_000 })
+	await activateByKeyboard(checkoutBtn, page)
+	const dlg = page.locator('.iv-dialog')
+	await expect(dlg).toBeVisible({ timeout: 10_000 })
+
+	// Person combobox (WAI-ARIA): Tab to it, type the member tag, Tab into the
+	// result listbox, Enter picks the option.
+	await tabUntil(page, { sel: 'input[role="combobox"]' })
+	await page.keyboard.type(tag)
+	const personOpt = dlg.locator('li[role="option"]').filter({ hasText: `KB Person ${tag}` }).first()
+	await expect(personOpt).toBeVisible({ timeout: 10_000 })
+	await tabUntil(page, { sel: 'li[role="option"]', text: `KB Person ${tag}` })
+	await page.keyboard.press('Enter')
+
+	// Quantity: defaults to 1 — ArrowUp on the number input raises it to 2.
+	await tabUntil(page, { sel: '[data-iv-field="qty"] input' })
+	await page.keyboard.press('ArrowUp')
+
+	// Confirm via Tab + Enter — never a pointer click.
+	await tabUntil(page, { sel: '[data-iv-action="dialog-confirm"]' })
+	await page.keyboard.press('Enter')
+	await expect(dlg).toBeHidden({ timeout: 15_000 })
+
+	// Server-side proof the checkout landed: open loan with outstanding 2,
+	// balance reduced to 1.
+	const loans = await api(page, 'GET', `/index.php/apps/inventorycheck/api/items/${itemId}/loans`)
+	expectOk(loans, 'item loans')
+	const open = (loans.data.loans || []).find((l) => Number(l.outstanding) > 0)
+	expect(open, `open loan after keyboard checkout: ${JSON.stringify(loans.data)}`).toBeTruthy()
+	expect(Number(open.outstanding)).toBe(2)
+
+	// Checkin: the row action in the refreshed loans table, Enter opens the
+	// dialog, Tab to confirm, Enter posts.
+	const checkinBtn = page.locator('[data-iv-action="loan-checkin"]').first()
+	await expect(checkinBtn).toBeVisible({ timeout: 20_000 })
+	await activateByKeyboard(checkinBtn, page)
+	const dlg2 = page.locator('.iv-dialog')
+	await expect(dlg2).toBeVisible({ timeout: 10_000 })
+	await tabUntil(page, { sel: '[data-iv-action="dialog-confirm"]' })
+	await page.keyboard.press('Enter')
+	await expect(dlg2).toBeHidden({ timeout: 15_000 })
+
+	// Stock restored to 3 — the round-trip completed without pointer input.
+	const bal = await api(page, 'GET', `/index.php/apps/inventorycheck/api/balances?itemId=${itemId}`)
+	expectOk(bal, 'balances')
+	const q = bal.data.data.find((b) => b.locationId === loc.data.id)?.qty ?? bal.data.data[0]?.qty
+	expect(q).toBe(3)
 })

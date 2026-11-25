@@ -5,6 +5,8 @@ import { execFileSync } from 'node:child_process'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { ensureLoggedIn, login, openInventory } from './helpers/auth.mjs'
+import { applyTheme } from './helpers/theme.mjs'
+import { tabUntil, activateByKeyboard } from './helpers/keyboard.mjs'
 
 /**
  * Product lookup E2E — two layers:
@@ -501,5 +503,74 @@ test.describe('product-lookup item dialog UX', () => {
 		// Dialog on the same session must now hide the panel (ctx flags synced).
 		const dialogEl = await openItemsDialog(page)
 		await expect(dialogEl.locator('.iv-lookup')).toHaveCount(0)
+	})
+
+	// UX proof row: the single-theme dialog axe was green — this closes the
+	// remaining ×3-theme leg (server-persisted themes, real round-trip).
+	for (const themeId of ['light', 'dark', 'dark-highcontrast']) {
+		test(`dialog axe WCAG 2.1 AA @ ${themeId}`, async ({ page }) => {
+			await applyTheme(page, /** @type {'light'|'dark'|'dark-highcontrast'} */ (themeId))
+			const dialogEl = await openItemsDialog(page)
+			await expect(dialogEl.locator('.iv-lookup')).toBeVisible()
+			const results = await new AxeBuilder({ page })
+				.include('.iv-dialog')
+				.withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+				.exclude('.toastify')
+				.analyze()
+			expect(results.violations, JSON.stringify(results.violations, null, 2)).toEqual([])
+		})
+	}
+
+	test('keyboard-only lookup → prefill → save (Tab/Enter only)', async ({ page }) => {
+		const gtin = freshGtin()
+		const tag = `kb${Date.now().toString(36)}`
+		await page.route('**/api/product-lookup', (route) => route.fulfill({
+			status: 200,
+			contentType: 'application/json',
+			body: JSON.stringify({
+				found: true,
+				barcode: gtin,
+				name: 'Stub Cola 330ml',
+				brand: 'StubBrand',
+				description: 'Deterministic fixture',
+				sourceUrl: 'https://example.org/p/1',
+				provider: 'openfoodfacts',
+			}),
+		}))
+
+		await openInventory(page, '/apps/inventorycheck/items')
+		const newItem = page.locator('[data-iv-action="item-new"]').first()
+		await expect(newItem).toBeVisible({ timeout: 20_000 })
+		await activateByKeyboard(newItem, page)
+		const dlg = page.locator('.iv-dialog')
+		await expect(dlg).toBeVisible({ timeout: 10_000 })
+
+		// Required primary field first — type the name, then Tab on.
+		await tabUntil(page, { sel: '[data-iv-field="name"] input' })
+		await page.keyboard.type(`KB Lookup ${tag}`)
+
+		// The lookup panel lives in the "More item options" disclosure —
+		// summary toggles open on Enter.
+		await tabUntil(page, { sel: 'details.iv-item-more summary' })
+		await page.keyboard.press('Enter')
+
+		// Scan code → lookup trigger, all by keys.
+		await tabUntil(page, { sel: '[data-iv-field="scanCode"] input' })
+		await page.keyboard.type(gtin)
+		await tabUntil(page, { sel: '[data-iv-action="product-lookup"]' })
+		await page.keyboard.press('Enter')
+		await expect(dlg.locator('.iv-lookup__status')).toContainText(/Open Food Facts/, { timeout: 10_000 })
+
+		// SKU was empty → suggestion landed there; name kept our typing.
+		await expect(dlg.locator('[data-iv-field="sku"] input')).toHaveValue(gtin)
+		await expect(dlg.locator('[data-iv-field="name"] input')).toHaveValue(`KB Lookup ${tag}`)
+
+		await tabUntil(page, { sel: '[data-iv-action="dialog-confirm"]' })
+		await page.keyboard.press('Enter')
+		await expect(dlg).toBeHidden({ timeout: 15_000 })
+
+		// Persisted — the keyboard journey reached the API.
+		const created = await api(page, 'GET', `/index.php/apps/inventorycheck/api/items?q=${encodeURIComponent(`KB Lookup ${tag}`)}`)
+		expect((created.data?.data || []).length).toBe(1)
 	})
 })

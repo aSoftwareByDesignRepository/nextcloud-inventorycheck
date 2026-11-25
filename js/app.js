@@ -4191,6 +4191,7 @@
 		if (ctx.isOffice) {
 			clear(ctx.actions);
 			ctx.actions.appendChild(btn(tr('New location'), {
+				'data-iv-action': 'location-new',
 				primary: true,
 				onclick: function () { openLocationDialog(ctx); },
 			}));
@@ -8470,6 +8471,7 @@
 			{ key: 'actions', label: tr('Actions'), actionsCell: true, render: function (l) {
 				if (!l.outstanding) return '';
 				var kids = [btn(tr('Check in'), {
+					'data-iv-action': 'loan-checkin',
 					className: 'iv-btn iv-btn--compact',
 					onclick: function () { openCheckinDialog(ctx, l, onChanged); },
 				})];
@@ -8524,6 +8526,7 @@
 			}
 			if (ctx.isOffice || ctx.isAppAdmin) {
 				host.appendChild(btn(tr('Check out'), {
+					'data-iv-action': 'loan-checkout',
 					className: 'iv-btn iv-btn--secondary',
 					onclick: function () { openCheckoutDialog(ctx, item, null, balances); },
 				}));
