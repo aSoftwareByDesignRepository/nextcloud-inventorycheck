@@ -24,8 +24,10 @@ use OCA\InventoryCheck\Middleware\AppAccessMiddleware;
 use OCA\InventoryCheck\Notification\Notifier;
 use OCA\InventoryCheck\Public\StockIssueFacade;
 use OCA\InventoryCheck\Repair\BackupBeforeUpdate;
+use OCA\InventoryCheck\Repair\EnsureAgentTables;
 use OCA\InventoryCheck\Repair\EnsureInventoryCheckSchema;
 use OCA\InventoryCheck\Repair\ScrubStaleAclSubjects;
+use OCA\InventoryCheck\Repair\UninstallAgentTables;
 use OCA\InventoryCheck\Repair\UninstallDropTables;
 use OCA\InventoryCheck\Service\AccessControlService;
 use OCA\InventoryCheck\Service\BalanceService;
@@ -405,6 +407,7 @@ class Application extends App implements IBootstrap
 				$c->get(LocationFavouriteMapper::class),
 				$c->get(LocationAclService::class),
 				$c->get(\OCA\InventoryCheck\Db\PersonMapper::class),
+				$c->get(\Psr\Log\LoggerInterface::class),
 			);
 		});
 		$context->registerService(GroupDeletedListener::class, static function ($c): GroupDeletedListener {
@@ -594,6 +597,12 @@ class Application extends App implements IBootstrap
 		$context->registerService(EnsureInventoryCheckSchema::class, static function ($c): EnsureInventoryCheckSchema {
 			return new EnsureInventoryCheckSchema($c->get(IDBConnection::class), $c->get(IConfig::class));
 		});
+		$context->registerService(EnsureAgentTables::class, static function ($c): EnsureAgentTables {
+			return new EnsureAgentTables($c->get(IDBConnection::class));
+		});
+		$context->registerService(UninstallAgentTables::class, static function ($c): UninstallAgentTables {
+			return new UninstallAgentTables($c->get(IDBConnection::class));
+		});
 		$context->registerService(ScrubStaleAclSubjects::class, static function ($c): ScrubStaleAclSubjects {
 			return new ScrubStaleAclSubjects(
 				$c->get(IDBConnection::class),
@@ -704,6 +713,39 @@ class Application extends App implements IBootstrap
 			);
 		});
 		$context->registerMiddleware(AppAccessMiddleware::class);
+
+		// _shared/agent-auth pack — scoped AI-agent tokens (suite MCP contract)
+		$context->registerService(\OCA\InventoryCheck\Agent\AgentManifest::class, function ($c) {
+			return new \OCA\InventoryCheck\Agent\AgentManifest(
+				'inventorycheck',
+				\dirname(__DIR__, 2) . '/appinfo/agent-manifest.json'
+			);
+		});
+		$context->registerService(\OCA\InventoryCheck\Agent\AgentSeatGate::class, function ($c) {
+			return new \OCA\InventoryCheck\Agent\InventoryCheckAgentSeatGate(
+				$c->query(MobileGateService::class)
+			);
+		});
+		$context->registerService(\OCA\InventoryCheck\Agent\AgentAccessGate::class, function ($c) {
+			return new \OCA\InventoryCheck\Agent\InventoryCheckAgentAccessGate(
+				$c->query(AccessControlService::class)
+			);
+		});
+		$context->registerService(\OCA\InventoryCheck\Middleware\AgentAuthMiddleware::class, function ($c) {
+			return new \OCA\InventoryCheck\Middleware\AgentAuthMiddleware(
+				$c->query(\OCP\IRequest::class),
+				$c->query(\OCA\InventoryCheck\Agent\AgentContext::class),
+				$c->query(\OCA\InventoryCheck\Agent\AgentTokenService::class),
+				$c->query(\OCA\InventoryCheck\Agent\AgentManifest::class),
+				$c->query(\OCA\InventoryCheck\Agent\AgentSeatGate::class),
+				$c->query(\OCA\InventoryCheck\Agent\AgentAuditMapper::class),
+				$c->query(\Psr\Log\LoggerInterface::class),
+				'inventorycheck'
+			);
+		});
+		$context->registerMiddleware(\OCA\InventoryCheck\Middleware\AgentAuthMiddleware::class);
+
+		$context->registerEventListener(UserDeletedEvent::class, \OCA\InventoryCheck\Listener\AgentUserDeletedListener::class);
 
 		$context->registerNotifierService(Notifier::class);
 	}

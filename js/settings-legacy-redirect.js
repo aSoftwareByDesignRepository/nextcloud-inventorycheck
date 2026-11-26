@@ -29,6 +29,7 @@
 		'iv-license': 'license',
 		'iv-license-title': 'license',
 		'iv-license-key': 'license',
+		'iv-agent-access': 'agent',
 		'iv-support-us': 'support',
 		'iv-support-us-title': 'support',
 	});

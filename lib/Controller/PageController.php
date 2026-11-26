@@ -42,6 +42,7 @@ class PageController extends Controller
 		private readonly ProductLookupService $productLookup,
 		private readonly LicenseService $license,
 		private readonly \OCA\InventoryCheck\ConfigTransfer\TransferReceiptStore $transferReceipts,
+		private readonly \OCA\InventoryCheck\Agent\AgentSettingsPayload $agentSettings,
 	) {
 		parent::__construct(Application::APP_ID, $request);
 	}
@@ -440,6 +441,11 @@ class PageController extends Controller
 				Util::addStyle(Application::APP_ID, 'common/transfer');
 				Util::addScript(Application::APP_ID, 'transfer-bridge');
 				Util::addScript(Application::APP_ID, 'transfer');
+			}
+			if ($settingsSection === 'agent' && $isAppAdmin) {
+				Util::addStyle(Application::APP_ID, 'agent-access');
+				Util::addScript(Application::APP_ID, 'agent-access');
+				$params['agentAccess'] = $this->agentSettings->payload($uid);
 			}
 			$params['settingsSection'] = $settingsSection;
 			$params['transferLastReceipt'] = $this->transferReceipts->lastReceipt();

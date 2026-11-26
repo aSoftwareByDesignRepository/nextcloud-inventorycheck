@@ -778,7 +778,7 @@ OC.L10N.register(
 	"Notify groups" : "Уведомляемые группы",
 	"Notify users" : "Уведомляемые пользователи",
 	"Number" : "Число",
-	"OK" : "OK",
+	"OK" : "Хорошо.",
 	"OK — a longer passphrase is safer." : "Подойдёт, но более длинная парольная фраза надёжнее.",
 	"Office" : "Офис",
 	"Office \/ storekeeper" : "Офис \/ кладовщик",

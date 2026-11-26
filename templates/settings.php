@@ -20,6 +20,15 @@ if ($ivSettingsSection === 'license' && !empty($_['isAppAdmin'])) {
 	require __DIR__ . '/parts/settings/license.php';
 	echo '</div>';
 }
+if ($ivSettingsSection === 'agent' && !empty($_['isAppAdmin'])) {
+	// Server-rendered shared agent-auth partial (synced pack) — js/app.js
+	// relocates it into the settingsPageSection('agent', …) shell inside
+	// #iv-page-root; agent-access.js binds by id on the moved nodes.
+	$agentAccess = is_array($agentAccess ?? null) ? $agentAccess : ($_['agentAccess'] ?? null);
+	echo '<div id="iv-agent-server-part">';
+	require __DIR__ . '/parts/settings/agent.php';
+	echo '</div>';
+}
 if ($ivSettingsSection === 'transfer' && !empty($_['isAppAdmin'])) {
 	// Server-rendered transfer cards — js/app.js wraps them into the
 	// settingsPageSection('transfer', …) shell inside #iv-page-root.

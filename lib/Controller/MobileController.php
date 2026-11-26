@@ -86,6 +86,7 @@ class MobileController extends Controller
 		private readonly ?\OCA\InventoryCheck\Service\LoanService $loanService = null,
 		private readonly ?\OCA\InventoryCheck\Service\PersonService $personService = null,
 		private readonly ?\OCA\InventoryCheck\Service\LoanEvidenceService $loanEvidence = null,
+		private readonly ?\OCA\InventoryCheck\Agent\AgentContext $agentContext = null,
 	) {
 		parent::__construct(Application::APP_ID, $request);
 	}
@@ -1292,6 +1293,11 @@ class MobileController extends Controller
 	 */
 	private function assertSafeMutationChannel(): void
 	{
+		// Scoped agent token (D-01): AgentAuthMiddleware already authenticated
+		// and scoped this request — the device-token/CSRF rungs do not apply.
+		if ($this->agentContext !== null && $this->agentContext->isArmed()) {
+			return;
+		}
 		$token = trim((string)$this->request->getHeader('X-IV-Device-Token'));
 		if ($token !== '') {
 			return;
@@ -1351,6 +1357,13 @@ class MobileController extends Controller
 	 */
 	private function resolveCaller(bool $requireAuth): array
 	{
+		// Scoped agent token (D-01): AgentAuthMiddleware already authenticated
+		// and scoped this request — the armed request-scoped principal wins over
+		// device tokens and session cookies (explicit credential beats ambient
+		// identity). The seat/license ladder still applies via assertGate below.
+		if ($this->agentContext !== null && $this->agentContext->isArmed()) {
+			return [(string)$this->agentContext->uid(), null];
+		}
 		$token = (string)$this->request->getHeader('X-IV-Device-Token');
 		if ($token !== '') {
 			$hash = $this->license->hashSecret($token);

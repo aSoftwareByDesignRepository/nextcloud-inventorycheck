@@ -365,6 +365,7 @@ Vi forbedrer denne appen med bruk i praksis. Feilrapporter, friksjon og idéer h
 	<repair-steps>
 		<install>
 			<step>OCA\InventoryCheck\Repair\EnsureInventoryCheckSchema</step>
+			<step>OCA\InventoryCheck\Repair\EnsureAgentTables</step>
 		</install>
 		<pre-migration>
 			<step>OCA\InventoryCheck\Repair\BackupBeforeUpdate</step>
@@ -372,9 +373,11 @@ Vi forbedrer denne appen med bruk i praksis. Feilrapporter, friksjon og idéer h
 		<post-migration>
 			<step>OCA\InventoryCheck\Repair\EnsureInventoryCheckSchema</step>
 			<step>OCA\InventoryCheck\Repair\ScrubStaleAclSubjects</step>
+			<step>OCA\InventoryCheck\Repair\EnsureAgentTables</step>
 		</post-migration>
 		<uninstall>
 			<step>OCA\InventoryCheck\Repair\UninstallDropTables</step>
+			<step>OCA\InventoryCheck\Repair\UninstallAgentTables</step>
 		</uninstall>
 	</repair-steps>
 </info>

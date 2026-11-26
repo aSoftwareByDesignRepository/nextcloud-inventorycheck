@@ -5974,6 +5974,26 @@
 			mount.appendChild(licenseSection);
 			return;
 		}
+		if (section === 'agent') {
+			// Server-rendered shared agent-auth partial (templates/parts/
+			// settings/agent.php, synced pack) — relocate it into the
+			// settings-page shell; agent-access.js binds by id on the
+			// moved nodes.
+			clear(mount);
+			setBusy(mount, false);
+			var agentHost = document.getElementById('iv-agent-server-part');
+			var agentKids = [];
+			if (agentHost) {
+				while (agentHost.firstChild) {
+					agentKids.push(agentHost.removeChild(agentHost.firstChild));
+				}
+				agentHost.parentNode.removeChild(agentHost);
+			}
+			// The synced partial renders its own h2#iv-agent-h — the shell's
+			// aria-labelledby points into the moved content.
+			mount.appendChild(settingsPageSection('agent', 'iv-agent-h', agentKids));
+			return;
+		}
 		if (section === 'fields') {
 			clear(mount);
 			setBusy(mount, false);

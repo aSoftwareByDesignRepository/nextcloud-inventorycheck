@@ -12,6 +12,7 @@ use OCA\InventoryCheck\Service\LocationAclService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\User\Events\UserDeletedEvent;
+use Psr\Log\LoggerInterface;
 
 /**
  * GDPR / user-delete: scrub live authorization, seats, favourites, and
@@ -27,6 +28,7 @@ class UserDeletedListener implements IEventListener
 		private LocationFavouriteMapper $favourites,
 		private LocationAclService $locationAcl,
 		private PersonMapper $persons,
+		private LoggerInterface $logger,
 	) {
 	}
 
@@ -36,11 +38,27 @@ class UserDeletedListener implements IEventListener
 			return;
 		}
 		$uid = $event->getUser()->getUID();
-		$this->access->purgeUser($uid);
-		$this->license->removeSeat($uid);
-		$this->favourites->deleteAllForUser($uid);
-		$this->locationAcl->purgeUser($uid);
-		// F2: person rows keep loan history — only the NC-user link goes.
-		$this->persons->unlinkNcUser($uid);
+		// This listener fires on EVERY user deletion system-wide — a missing
+		// table (disabled-but-enabled app state, mid-upgrade, partial
+		// uninstall) must not turn a user deletion into a 500 for an
+		// unrelated app. Each purge is isolated so one failure cannot skip
+		// the remaining scrubs.
+		$purges = [
+			fn () => $this->access->purgeUser($uid),
+			fn () => $this->license->removeSeat($uid),
+			fn () => $this->favourites->deleteAllForUser($uid),
+			fn () => $this->locationAcl->purgeUser($uid),
+			// F2: person rows keep loan history — only the NC-user link goes.
+			fn () => $this->persons->unlinkNcUser($uid),
+		];
+		foreach ($purges as $purge) {
+			try {
+				$purge();
+			} catch (\Throwable $e) {
+				$this->logger->warning('inventorycheck user purge failed', [
+					'exception' => $e,
+				]);
+			}
+		}
 	}
 }

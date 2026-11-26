@@ -1,0 +1,355 @@
+{
+  "schemaVersion": 1,
+  "appId": "inventorycheck",
+  "agentExposure": "declared",
+  "tools": [
+    {
+      "name": "iv_find_item_by_code",
+      "kind": "read",
+      "riskClass": 0,
+      "route": "mobile#byCode",
+      "method": "GET",
+      "path": "/mobile/v1/items/by-code/{code}",
+      "scope": "inventorycheck:items:read",
+      "label": "Find item by code",
+      "description": "Resolve one item by barcode/SKU code.",
+      "params": {
+        "code": { "type": "string", "required": true, "description": "Path parameter." }
+      }
+    },
+    {
+      "name": "iv_list_item_lots",
+      "kind": "read",
+      "riskClass": 0,
+      "route": "mobile#itemLots",
+      "method": "GET",
+      "path": "/mobile/v1/items/{id}/lots",
+      "scope": "inventorycheck:items:read",
+      "label": "List item lots",
+      "description": "Lots/batches held for one item.",
+      "params": {
+        "id": { "type": "integer", "required": true, "description": "Path parameter." }
+      }
+    },
+    {
+      "name": "iv_find_location_by_code",
+      "kind": "read",
+      "riskClass": 0,
+      "route": "mobile#locationByCode",
+      "method": "GET",
+      "path": "/mobile/v1/locations/by-code/{code}",
+      "scope": "inventorycheck:locations:read",
+      "label": "Find location by code",
+      "description": "Resolve one storage location by its code.",
+      "params": {
+        "code": { "type": "string", "required": true, "description": "Path parameter." }
+      }
+    },
+    {
+      "name": "iv_list_locations",
+      "kind": "read",
+      "riskClass": 0,
+      "route": "mobile#locations",
+      "method": "GET",
+      "path": "/mobile/v1/locations",
+      "scope": "inventorycheck:locations:read",
+      "label": "List locations",
+      "description": "List storage locations the caller may see."
+    },
+    {
+      "name": "iv_list_balances",
+      "kind": "read",
+      "riskClass": 0,
+      "route": "mobile#balances",
+      "method": "GET",
+      "path": "/mobile/v1/balances",
+      "scope": "inventorycheck:stock:read",
+      "label": "List stock balances",
+      "description": "Current per-item, per-location stock quantities."
+    },
+    {
+      "name": "iv_list_movements",
+      "kind": "read",
+      "riskClass": 0,
+      "route": "mobile#movements",
+      "method": "GET",
+      "path": "/mobile/v1/movements",
+      "scope": "inventorycheck:stock:read",
+      "label": "List movements",
+      "description": "Append-only receive/issue/transfer/adjust journal."
+    },
+    {
+      "name": "iv_list_low_stock",
+      "kind": "read",
+      "riskClass": 0,
+      "route": "mobile#lowStock",
+      "method": "GET",
+      "path": "/mobile/v1/low-stock",
+      "scope": "inventorycheck:stock:read",
+      "label": "List low stock",
+      "description": "Items below their reorder level (office seats)."
+    },
+    {
+      "name": "iv_today",
+      "kind": "read",
+      "riskClass": 0,
+      "route": "mobile#today",
+      "method": "GET",
+      "path": "/mobile/v1/today",
+      "scope": "inventorycheck:stock:read",
+      "label": "Today feed",
+      "description": "Due loans, expiring lots and today's operational snapshot."
+    },
+    {
+      "name": "iv_list_cycle_counts",
+      "kind": "read",
+      "riskClass": 0,
+      "route": "mobile#cycleCounts",
+      "method": "GET",
+      "path": "/mobile/v1/cycle-counts",
+      "scope": "inventorycheck:cycle_counts:read",
+      "label": "List cycle counts",
+      "description": "Stocktake campaigns visible to the caller."
+    },
+    {
+      "name": "iv_get_cycle_count",
+      "kind": "read",
+      "riskClass": 0,
+      "route": "mobile#cycleCountShow",
+      "method": "GET",
+      "path": "/mobile/v1/cycle-counts/{id}",
+      "scope": "inventorycheck:cycle_counts:read",
+      "label": "Get cycle count",
+      "description": "One campaign with its count lines.",
+      "params": {
+        "id": { "type": "integer", "required": true, "description": "Path parameter." }
+      }
+    },
+    {
+      "name": "iv_list_order_sheets",
+      "kind": "read",
+      "riskClass": 0,
+      "route": "mobile#orderSheets",
+      "method": "GET",
+      "path": "/mobile/v1/order-sheets",
+      "scope": "inventorycheck:order_sheets:read",
+      "label": "List order sheets",
+      "description": "Procurement order sheets pending or in progress."
+    },
+    {
+      "name": "iv_get_order_sheet",
+      "kind": "read",
+      "riskClass": 0,
+      "route": "mobile#orderSheetShow",
+      "method": "GET",
+      "path": "/mobile/v1/order-sheets/{id}",
+      "scope": "inventorycheck:order_sheets:read",
+      "label": "Get order sheet",
+      "description": "One order sheet with its lines.",
+      "params": {
+        "id": { "type": "integer", "required": true, "description": "Path parameter." }
+      }
+    },
+    {
+      "name": "iv_find_lot_by_code",
+      "kind": "read",
+      "riskClass": 0,
+      "route": "mobile#lotByCode",
+      "method": "GET",
+      "path": "/mobile/v1/lots/by-code/{code}",
+      "scope": "inventorycheck:lots:read",
+      "label": "Find lot by code",
+      "description": "Resolve one lot/batch by its code.",
+      "params": {
+        "code": { "type": "string", "required": true, "description": "Path parameter." }
+      }
+    },
+    {
+      "name": "iv_list_expiring_lots",
+      "kind": "read",
+      "riskClass": 0,
+      "route": "mobile#lotsExpiring",
+      "method": "GET",
+      "path": "/mobile/v1/lots/expiring",
+      "scope": "inventorycheck:lots:read",
+      "label": "List expiring lots",
+      "description": "Lots approaching their expiry horizon (qty-only)."
+    },
+    {
+      "name": "iv_search_persons",
+      "kind": "read",
+      "riskClass": 0,
+      "route": "mobile#personSearch",
+      "method": "GET",
+      "path": "/mobile/v1/persons/search",
+      "scope": "inventorycheck:persons:read",
+      "label": "Search persons",
+      "description": "Find persons (loan custodians) by name substring.",
+      "params": {
+        "q": { "type": "string", "required": false, "description": "Substring filter." }
+      }
+    },
+    {
+      "name": "iv_list_item_loans",
+      "kind": "read",
+      "riskClass": 0,
+      "route": "mobile#itemLoans",
+      "method": "GET",
+      "path": "/mobile/v1/items/{id}/loans",
+      "scope": "inventorycheck:loans:read",
+      "label": "List item loans",
+      "description": "Open and historical loans for one item.",
+      "params": {
+        "id": { "type": "integer", "required": true, "description": "Path parameter." }
+      }
+    },
+    {
+      "name": "iv_list_kits",
+      "kind": "read",
+      "riskClass": 0,
+      "route": "mobile#kits",
+      "method": "GET",
+      "path": "/mobile/v1/kits",
+      "scope": "inventorycheck:kits:read",
+      "label": "List kits",
+      "description": "Kit templates available for issue."
+    },
+    {
+      "name": "iv_product_lookup",
+      "kind": "read",
+      "riskClass": 0,
+      "route": "mobile#productLookup",
+      "method": "POST",
+      "path": "/mobile/v1/product-lookup",
+      "scope": "inventorycheck:catalog:read",
+      "label": "Product lookup",
+      "description": "Resolve an unknown barcode against enabled free product databases. Sends only the barcode."
+    },
+    {
+      "name": "iv_create_item",
+      "kind": "write",
+      "riskClass": 1,
+      "route": "mobile#createItem",
+      "method": "POST",
+      "path": "/mobile/v1/items",
+      "idempotency": "clientRequestId",
+      "scope": "inventorycheck:items:write",
+      "label": "Create item",
+      "description": "Create one item master record. clientRequestId is the retry-safe idempotency key.",
+      "params": {
+        "name": { "type": "string", "required": true },
+        "sku": { "type": "string", "required": false },
+        "scanCode": { "type": "string", "required": false, "description": "Barcode to attach." },
+        "locationId": { "type": "integer", "required": false, "description": "Opening-stock location." },
+        "openingQty": { "type": "number", "required": false },
+        "clientRequestId": { "type": "string", "required": true, "description": "Idempotency key — unique per intended write; safe to retry." }
+      }
+    },
+    {
+      "name": "iv_scan_movement",
+      "kind": "write",
+      "riskClass": 2,
+      "route": "mobile#scan",
+      "method": "POST",
+      "path": "/mobile/v1/movements/scan",
+      "idempotency": "clientRequestId",
+      "confirm": "required",
+      "scope": "inventorycheck:stock:write",
+      "label": "Post a stock movement",
+      "description": "Receive, issue, transfer or adjust stock — the companion scan path. Always confirm with the user first.",
+      "params": {
+        "kind": { "type": "string", "required": true, "description": "receive|issue|transfer|adjust." },
+        "code": { "type": "string", "required": false, "description": "Item barcode." },
+        "itemId": { "type": "integer", "required": false },
+        "qty": { "type": "number", "required": false },
+        "qtyDelta": { "type": "number", "required": false },
+        "locationCode": { "type": "string", "required": false },
+        "locationId": { "type": "integer", "required": false },
+        "toLocationCode": { "type": "string", "required": false, "description": "Transfer destination." },
+        "toLocationId": { "type": "integer", "required": false },
+        "lotCode": { "type": "string", "required": false },
+        "reasonCode": { "type": "string", "required": false, "description": "Required when adjust policy is on." },
+        "reason": { "type": "string", "required": false },
+        "spendMinor": { "type": "integer", "required": false, "description": "Invoice-line total on office receives." },
+        "clientRequestId": { "type": "string", "required": true, "description": "Idempotency key — unique per intended write; safe to retry." }
+      }
+    },
+    {
+      "name": "iv_set_cycle_count",
+      "kind": "write",
+      "riskClass": 1,
+      "route": "mobile#cycleCountSetCount",
+      "method": "PUT",
+      "path": "/mobile/v1/cycle-counts/lines/{lineId}",
+      "idempotency": "natural",
+      "scope": "inventorycheck:cycle_counts:write",
+      "label": "Set cycle count",
+      "description": "Record the counted quantity on one stocktake line. Re-writing the same value is naturally idempotent.",
+      "params": {
+        "lineId": { "type": "integer", "required": true, "description": "Path parameter." },
+        "qtyCounted": { "type": "number", "required": true },
+        "blind": { "type": "boolean", "required": false }
+      }
+    },
+    {
+      "name": "iv_checkout_loan",
+      "kind": "write",
+      "riskClass": 2,
+      "route": "mobile#loansCheckout",
+      "method": "POST",
+      "path": "/mobile/v1/loans",
+      "idempotency": "clientRequestId",
+      "confirm": "required",
+      "scope": "inventorycheck:loans:write",
+      "label": "Check out a loan",
+      "description": "Hand an item to a person (custody transition). Always confirm with the user first.",
+      "params": {
+        "itemId": { "type": "integer", "required": false },
+        "code": { "type": "string", "required": false, "description": "Item barcode." },
+        "personId": { "type": "integer", "required": true },
+        "qty": { "type": "number", "required": false },
+        "locationId": { "type": "integer", "required": false },
+        "dueAt": { "type": "string", "required": false, "description": "ISO date." },
+        "conditionOut": { "type": "string", "required": false },
+        "note": { "type": "string", "required": false },
+        "clientRequestId": { "type": "string", "required": true, "description": "Idempotency key — unique per intended write; safe to retry." }
+      }
+    },
+    {
+      "name": "iv_checkin_loan",
+      "kind": "write",
+      "riskClass": 2,
+      "route": "mobile#loanCheckin",
+      "method": "POST",
+      "path": "/mobile/v1/loans/{id}/checkin",
+      "idempotency": "clientRequestId",
+      "confirm": "required",
+      "scope": "inventorycheck:loans:write",
+      "label": "Check in a loan",
+      "description": "Return an item from a person (custody transition). Always confirm with the user first.",
+      "params": {
+        "id": { "type": "integer", "required": true, "description": "Path parameter." },
+        "qty": { "type": "number", "required": false },
+        "locationId": { "type": "integer", "required": false },
+        "note": { "type": "string", "required": false },
+        "clientRequestId": { "type": "string", "required": true, "description": "Idempotency key — unique per intended write; safe to retry." }
+      }
+    }
+  ],
+  "deny": [
+    "mobile#bootstrap",
+    "mobile#widgetSnapshot",
+    "mobile#pairDevice",
+    "mobile#itemPhoto",
+    "mobile#deliveryNote",
+    "mobile#deliveryNoteUpload",
+    "mobile#loanDamagePhoto",
+    "mobile#loanSignature",
+    "mobile#loanEvidence",
+    "mobile#kitIssue",
+    "mobile#orderSheetReceive",
+    "mobile#favourites",
+    "mobile#addFavourite",
+    "mobile#removeFavourite"
+  ]
+}

@@ -205,7 +205,7 @@ OC.L10N.register(
 	"Changed since snapshot" : "Zmienił się od migawki",
 	"Changes apply on the next booking. Admins always keep full access." : "Zmiany dotyczą następnego księgowania. Administratorzy zawsze zachowują pełny dostęp.",
 	"Changing SKU or scan code does not update already printed labels." : "Zmiana SKU lub kodu skanowania nie aktualizuje już drukowanych etykiet.",
-	"Check Partner" : "Check Partner",
+	"Check Partner" : "Przejdź do partnera",
 	"Check for errors" : "Sprawdzanie błędów",
 	"Check in" : "Przyjmij zwrot",
 	"Check out" : "Wypożycz",

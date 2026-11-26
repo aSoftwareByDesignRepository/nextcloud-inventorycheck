@@ -19,7 +19,7 @@ return [
 		['name' => 'page#settings', 'url' => '/settings', 'verb' => 'GET'],
 		// {section} allowlist pinned to SettingsSectionCatalog::routeRequirement() by SettingsPagesContractTest.
 		['name' => 'page#settingsSection', 'url' => '/settings/{section}', 'verb' => 'GET',
-			'requirements' => ['section' => 'access|office|fields|notifications|quantities|location-access|connections|product-lookup|policies|journal|restock|license|transfer|support']],
+			'requirements' => ['section' => 'access|office|fields|notifications|quantities|location-access|connections|product-lookup|policies|journal|restock|license|agent|transfer|support']],
 
 		// ── Config & data transfer (test → production) ──────────────────
 		['name' => 'transfer_api#status', 'url' => '/api/admin/transfer/status', 'verb' => 'GET'],
@@ -233,5 +233,17 @@ return [
 		['name' => 'mobile#loanDamagePhoto', 'url' => '/mobile/v1/loans/{id}/damage-photo', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
 		['name' => 'mobile#loanSignature', 'url' => '/mobile/v1/loans/{id}/signature', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
 		['name' => 'mobile#loanEvidence', 'url' => '/mobile/v1/loans/{id}/evidence/{kind}', 'verb' => 'GET', 'requirements' => ['id' => '\\d+', 'kind' => '[a-z-]+']],
+
+		// _shared/agent-auth pack — scoped AI-agent tokens (suite MCP
+		// contract). The manifest is public; the token admin surface is
+		// session+CSRF only — AgentAuthMiddleware denies agent credentials
+		// on these paths.
+		['name' => 'agent_manifest#show', 'url' => '/agent/v1/manifest', 'verb' => 'GET'],
+		['name' => 'agent_token#index', 'url' => '/agent/v1/tokens', 'verb' => 'GET'],
+		['name' => 'agent_token#mint', 'url' => '/agent/v1/tokens', 'verb' => 'POST'],
+		['name' => 'agent_token#audit', 'url' => '/agent/v1/audit', 'verb' => 'GET'],
+		['name' => 'agent_token#updatePolicy', 'url' => '/agent/v1/policy', 'verb' => 'POST'],
+		['name' => 'agent_token#revoke', 'url' => '/agent/v1/tokens/{id}/revoke', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
+		['name' => 'agent_token#rotate', 'url' => '/agent/v1/tokens/{id}/rotate', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
 	],
 ];
