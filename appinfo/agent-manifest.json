@@ -14,7 +14,11 @@
       "label": "Find item by code",
       "description": "Resolve one item by barcode/SKU code.",
       "params": {
-        "code": { "type": "string", "required": true, "description": "Path parameter." }
+        "code": {
+          "type": "string",
+          "required": true,
+          "description": "Path parameter."
+        }
       }
     },
     {
@@ -28,7 +32,11 @@
       "label": "List item lots",
       "description": "Lots/batches held for one item.",
       "params": {
-        "id": { "type": "integer", "required": true, "description": "Path parameter." }
+        "id": {
+          "type": "integer",
+          "required": true,
+          "description": "Path parameter."
+        }
       }
     },
     {
@@ -42,7 +50,11 @@
       "label": "Find location by code",
       "description": "Resolve one storage location by its code.",
       "params": {
-        "code": { "type": "string", "required": true, "description": "Path parameter." }
+        "code": {
+          "type": "string",
+          "required": true,
+          "description": "Path parameter."
+        }
       }
     },
     {
@@ -122,7 +134,11 @@
       "label": "Get cycle count",
       "description": "One campaign with its count lines.",
       "params": {
-        "id": { "type": "integer", "required": true, "description": "Path parameter." }
+        "id": {
+          "type": "integer",
+          "required": true,
+          "description": "Path parameter."
+        }
       }
     },
     {
@@ -147,7 +163,11 @@
       "label": "Get order sheet",
       "description": "One order sheet with its lines.",
       "params": {
-        "id": { "type": "integer", "required": true, "description": "Path parameter." }
+        "id": {
+          "type": "integer",
+          "required": true,
+          "description": "Path parameter."
+        }
       }
     },
     {
@@ -161,7 +181,11 @@
       "label": "Find lot by code",
       "description": "Resolve one lot/batch by its code.",
       "params": {
-        "code": { "type": "string", "required": true, "description": "Path parameter." }
+        "code": {
+          "type": "string",
+          "required": true,
+          "description": "Path parameter."
+        }
       }
     },
     {
@@ -186,7 +210,11 @@
       "label": "Search persons",
       "description": "Find persons (loan custodians) by name substring.",
       "params": {
-        "q": { "type": "string", "required": false, "description": "Substring filter." }
+        "q": {
+          "type": "string",
+          "required": false,
+          "description": "Substring filter."
+        }
       }
     },
     {
@@ -200,7 +228,11 @@
       "label": "List item loans",
       "description": "Open and historical loans for one item.",
       "params": {
-        "id": { "type": "integer", "required": true, "description": "Path parameter." }
+        "id": {
+          "type": "integer",
+          "required": true,
+          "description": "Path parameter."
+        }
       }
     },
     {
@@ -237,12 +269,33 @@
       "label": "Create item",
       "description": "Create one item master record. clientRequestId is the retry-safe idempotency key.",
       "params": {
-        "name": { "type": "string", "required": true },
-        "sku": { "type": "string", "required": false },
-        "scanCode": { "type": "string", "required": false, "description": "Barcode to attach." },
-        "locationId": { "type": "integer", "required": false, "description": "Opening-stock location." },
-        "openingQty": { "type": "number", "required": false },
-        "clientRequestId": { "type": "string", "required": true, "description": "Idempotency key — unique per intended write; safe to retry." }
+        "name": {
+          "type": "string",
+          "required": true
+        },
+        "sku": {
+          "type": "string",
+          "required": false
+        },
+        "scanCode": {
+          "type": "string",
+          "required": false,
+          "description": "Barcode to attach."
+        },
+        "locationId": {
+          "type": "integer",
+          "required": false,
+          "description": "Opening-stock location."
+        },
+        "openingQty": {
+          "type": "number",
+          "required": false
+        },
+        "clientRequestId": {
+          "type": "string",
+          "required": true,
+          "description": "Idempotency key — unique per intended write; safe to retry."
+        }
       }
     },
     {
@@ -258,20 +311,68 @@
       "label": "Post a stock movement",
       "description": "Receive, issue, transfer or adjust stock — the companion scan path. Always confirm with the user first.",
       "params": {
-        "kind": { "type": "string", "required": true, "description": "receive|issue|transfer|adjust." },
-        "code": { "type": "string", "required": false, "description": "Item barcode." },
-        "itemId": { "type": "integer", "required": false },
-        "qty": { "type": "number", "required": false },
-        "qtyDelta": { "type": "number", "required": false },
-        "locationCode": { "type": "string", "required": false },
-        "locationId": { "type": "integer", "required": false },
-        "toLocationCode": { "type": "string", "required": false, "description": "Transfer destination." },
-        "toLocationId": { "type": "integer", "required": false },
-        "lotCode": { "type": "string", "required": false },
-        "reasonCode": { "type": "string", "required": false, "description": "Required when adjust policy is on." },
-        "reason": { "type": "string", "required": false },
-        "spendMinor": { "type": "integer", "required": false, "description": "Invoice-line total on office receives." },
-        "clientRequestId": { "type": "string", "required": true, "description": "Idempotency key — unique per intended write; safe to retry." }
+        "kind": {
+          "type": "string",
+          "required": true,
+          "description": "receive|issue|transfer|adjust."
+        },
+        "code": {
+          "type": "string",
+          "required": false,
+          "description": "Item barcode."
+        },
+        "itemId": {
+          "type": "integer",
+          "required": false
+        },
+        "qty": {
+          "type": "number",
+          "required": false
+        },
+        "qtyDelta": {
+          "type": "number",
+          "required": false
+        },
+        "locationCode": {
+          "type": "string",
+          "required": false
+        },
+        "locationId": {
+          "type": "integer",
+          "required": false
+        },
+        "toLocationCode": {
+          "type": "string",
+          "required": false,
+          "description": "Transfer destination."
+        },
+        "toLocationId": {
+          "type": "integer",
+          "required": false
+        },
+        "lotCode": {
+          "type": "string",
+          "required": false
+        },
+        "reasonCode": {
+          "type": "string",
+          "required": false,
+          "description": "Required when adjust policy is on."
+        },
+        "reason": {
+          "type": "string",
+          "required": false
+        },
+        "spendMinor": {
+          "type": "integer",
+          "required": false,
+          "description": "Invoice-line total on office receives."
+        },
+        "clientRequestId": {
+          "type": "string",
+          "required": true,
+          "description": "Idempotency key — unique per intended write; safe to retry."
+        }
       }
     },
     {
@@ -286,9 +387,19 @@
       "label": "Set cycle count",
       "description": "Record the counted quantity on one stocktake line. Re-writing the same value is naturally idempotent.",
       "params": {
-        "lineId": { "type": "integer", "required": true, "description": "Path parameter." },
-        "qtyCounted": { "type": "number", "required": true },
-        "blind": { "type": "boolean", "required": false }
+        "lineId": {
+          "type": "integer",
+          "required": true,
+          "description": "Path parameter."
+        },
+        "qtyCounted": {
+          "type": "number",
+          "required": true
+        },
+        "blind": {
+          "type": "boolean",
+          "required": false
+        }
       }
     },
     {
@@ -304,15 +415,45 @@
       "label": "Check out a loan",
       "description": "Hand an item to a person (custody transition). Always confirm with the user first.",
       "params": {
-        "itemId": { "type": "integer", "required": false },
-        "code": { "type": "string", "required": false, "description": "Item barcode." },
-        "personId": { "type": "integer", "required": true },
-        "qty": { "type": "number", "required": false },
-        "locationId": { "type": "integer", "required": false },
-        "dueAt": { "type": "string", "required": false, "description": "ISO date." },
-        "conditionOut": { "type": "string", "required": false },
-        "note": { "type": "string", "required": false },
-        "clientRequestId": { "type": "string", "required": true, "description": "Idempotency key — unique per intended write; safe to retry." }
+        "itemId": {
+          "type": "integer",
+          "required": false
+        },
+        "code": {
+          "type": "string",
+          "required": false,
+          "description": "Item barcode."
+        },
+        "personId": {
+          "type": "integer",
+          "required": true
+        },
+        "qty": {
+          "type": "number",
+          "required": false
+        },
+        "locationId": {
+          "type": "integer",
+          "required": false
+        },
+        "dueAt": {
+          "type": "string",
+          "required": false,
+          "description": "ISO date."
+        },
+        "conditionOut": {
+          "type": "string",
+          "required": false
+        },
+        "note": {
+          "type": "string",
+          "required": false
+        },
+        "clientRequestId": {
+          "type": "string",
+          "required": true,
+          "description": "Idempotency key — unique per intended write; safe to retry."
+        }
       }
     },
     {
@@ -328,11 +469,103 @@
       "label": "Check in a loan",
       "description": "Return an item from a person (custody transition). Always confirm with the user first.",
       "params": {
-        "id": { "type": "integer", "required": true, "description": "Path parameter." },
-        "qty": { "type": "number", "required": false },
-        "locationId": { "type": "integer", "required": false },
-        "note": { "type": "string", "required": false },
-        "clientRequestId": { "type": "string", "required": true, "description": "Idempotency key — unique per intended write; safe to retry." }
+        "id": {
+          "type": "integer",
+          "required": true,
+          "description": "Path parameter."
+        },
+        "qty": {
+          "type": "number",
+          "required": false
+        },
+        "locationId": {
+          "type": "integer",
+          "required": false
+        },
+        "note": {
+          "type": "string",
+          "required": false
+        },
+        "clientRequestId": {
+          "type": "string",
+          "required": true,
+          "description": "Idempotency key — unique per intended write; safe to retry."
+        }
+      }
+    },
+    {
+      "name": "ivc_webhooks_list",
+      "kind": "read",
+      "riskClass": 0,
+      "method": "GET",
+      "path": "/agent/v1/webhooks",
+      "scope": "inventorycheck:webhooks:read",
+      "route": "agent_webhook#index",
+      "label": "List webhooks",
+      "description": "List outbound webhook subscriptions for the token owner."
+    },
+    {
+      "name": "ivc_webhooks_create",
+      "kind": "write",
+      "riskClass": 2,
+      "method": "POST",
+      "path": "/agent/v1/webhooks",
+      "scope": "inventorycheck:webhooks:write",
+      "route": "agent_webhook#create",
+      "confirm": "required",
+      "batch": "forbidden",
+      "idempotency": "clientRequestId",
+      "label": "Create webhook",
+      "description": "Subscribe to app events — creates an HTTPS endpoint subscription.",
+      "params": {
+        "url": {
+          "type": "string",
+          "required": true,
+          "description": "Public https endpoint."
+        },
+        "events": {
+          "type": "array",
+          "required": true,
+          "description": "Event names or ['*']."
+        }
+      }
+    },
+    {
+      "name": "ivc_webhooks_delete",
+      "kind": "write",
+      "riskClass": 2,
+      "method": "DELETE",
+      "path": "/agent/v1/webhooks/{id}",
+      "scope": "inventorycheck:webhooks:write",
+      "route": "agent_webhook#delete",
+      "confirm": "required",
+      "batch": "forbidden",
+      "idempotency": "natural",
+      "label": "Delete webhook",
+      "description": "Remove a webhook subscription.",
+      "params": {
+        "id": {
+          "type": "integer",
+          "required": true
+        }
+      }
+    },
+    {
+      "name": "ivc_webhooks_test",
+      "kind": "write",
+      "riskClass": 1,
+      "method": "POST",
+      "path": "/agent/v1/webhooks/{id}/test",
+      "scope": "inventorycheck:webhooks:write",
+      "route": "agent_webhook#test",
+      "idempotency": "natural",
+      "label": "Test webhook",
+      "description": "Queue a signed test delivery to a subscription.",
+      "params": {
+        "id": {
+          "type": "integer",
+          "required": true
+        }
       }
     }
   ],
@@ -351,5 +584,9 @@
     "mobile#favourites",
     "mobile#addFavourite",
     "mobile#removeFavourite"
+  ],
+  "events": [
+    "agent.write.completed",
+    "webhook.test"
   ]
 }

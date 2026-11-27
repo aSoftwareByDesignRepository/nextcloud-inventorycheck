@@ -740,7 +740,8 @@ class Application extends App implements IBootstrap
 				$c->query(\OCA\InventoryCheck\Agent\AgentSeatGate::class),
 				$c->query(\OCA\InventoryCheck\Agent\AgentAuditMapper::class),
 				$c->query(\Psr\Log\LoggerInterface::class),
-				'inventorycheck'
+				'inventorycheck',
+				$c->query(\OCA\InventoryCheck\Agent\AgentWebhookDispatcher::class)
 			);
 		});
 		$context->registerMiddleware(\OCA\InventoryCheck\Middleware\AgentAuthMiddleware::class);
