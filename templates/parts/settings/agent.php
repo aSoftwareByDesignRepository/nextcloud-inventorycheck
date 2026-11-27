@@ -118,7 +118,7 @@ $iv_tokens = is_array($iv_state['tokens']) ? $iv_state['tokens'] : [];
 	<dialog id="iv-agent-mint-dialog" class="iv-dialog iv-agent-mint-dialog" aria-labelledby="iv-agent-mint-h">
 		<div class="iv-dialog__body">
 			<h3 id="iv-agent-mint-h"><?php p($l->t('Connect your AI')); ?></h3>
-			<form id="iv-agent-mint-form" novalidate>
+			<form id="iv-agent-mint-form" class="iv-form-stack" novalidate>
 				<div class="iv-form-row">
 					<label for="iv-agent-label"><?php p($l->t('Label')); ?></label>
 					<input type="text" id="iv-agent-label" name="label" maxlength="190" required autocomplete="off" placeholder="<?php p($l->t('Claude on my laptop')); ?>">

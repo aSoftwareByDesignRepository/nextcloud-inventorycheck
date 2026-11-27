@@ -391,7 +391,7 @@ class AgentAuthMiddleware extends Middleware
 		if (str_starts_with($path, '/index.php/')) {
 			$path = substr($path, strlen('/index.php'));
 		}
-		foreach (['/apps/inventorycheck', '/index.php/apps/inventorycheck'] as $prefix) {
+		foreach (['/apps/inventorycheck', '/index.php/apps/inventorycheck'] as $prefix) { // urlgate:ok — path matching, not URL emission
 			if ($path === $prefix) {
 				return '/';
 			}
