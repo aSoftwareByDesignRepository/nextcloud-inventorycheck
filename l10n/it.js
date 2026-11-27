@@ -358,7 +358,7 @@ OC.L10N.register(
 	"Damage photo for loan {id}" : "Foto del danno del prestito {id}",
 	"Damaged" : "Danneggiato",
 	"Dashboard" : "Cruscotto",
-	"Dashboard: Low stock and recent bookings" : "Dashboard: giacenza bassa e registrazioni recenti",
+	"Dashboard: Low stock and recent bookings" : "Cruscotto: giacenza bassa e registrazioni recenti",
 	"Data changes" : "Modifiche ai dati",
 	"Data transfer" : "Trasferimento dati",
 	"Date" : "Data",
