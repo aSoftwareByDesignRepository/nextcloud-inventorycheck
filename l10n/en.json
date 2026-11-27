@@ -1529,6 +1529,11 @@
 		"{qty} × {item} for {person}": "{qty} × {item} for {person}",
 		"— choose —": "— choose —",
 		"★ Remove from favourites": "★ Remove from favourites",
-		"☆ Add to favourites": "☆ Add to favourites"
+		"☆ Add to favourites": "☆ Add to favourites",
+		"Endpoint": "Endpoint",
+		"Events": "Events",
+		"Last delivery": "Last delivery",
+		"Webhook endpoints": "Webhook endpoints",
+		"Your AI assistant can register endpoints that receive a signed notification whenever it changes something here. They belong to you — test or revoke them any time.": "Your AI assistant can register endpoints that receive a signed notification whenever it changes something here. They belong to you — test or revoke them any time."
 	}
 }

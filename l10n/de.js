@@ -1479,6 +1479,11 @@ OC.L10N.register(
 	"{qty} × {item} for {person}" : "{qty} × {item} für {person}",
 	"— choose —" : "— wählen —",
 	"★ Remove from favourites" : "★ Aus Favoriten entfernen",
-	"☆ Add to favourites" : "☆ Zu Favoriten hinzufügen"
+	"☆ Add to favourites" : "☆ Zu Favoriten hinzufügen",
+	"Endpoint" : "Endpunkt",
+	"Events" : "Ereignisse",
+	"Last delivery" : "Letzte Zustellung",
+	"Webhook endpoints" : "Webhook-Endpunkte",
+	"Your AI assistant can register endpoints that receive a signed notification whenever it changes something here. They belong to you — test or revoke them any time." : "Ihr KI-Assistent kann Endpunkte registrieren, die eine signierte Benachrichtigung erhalten, wenn er hier etwas ändert. Sie gehören Ihnen — testen oder widerrufen Sie sie jederzeit."
 	}
 );

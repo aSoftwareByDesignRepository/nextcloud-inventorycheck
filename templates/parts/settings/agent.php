@@ -102,6 +102,25 @@ $iv_tokens = is_array($iv_state['tokens']) ? $iv_state['tokens'] : [];
 	</div>
 	<?php endif; ?>
 
+	<div class="iv-agent-webhooks" id="iv-agent-webhooks">
+		<h3 class="iv-agent-sub-h" id="iv-agent-webhooks-h"><?php p($l->t('Webhook endpoints')); ?></h3>
+		<p class="iv-form-row__hint"><?php p($l->t('Your AI assistant can register endpoints that receive a signed notification whenever it changes something here. They belong to you — test or revoke them any time.')); ?></p>
+		<div class="iv-table-wrap iv-agent-tablewrap" tabindex="0" role="region" aria-labelledby="iv-agent-webhooks-h">
+			<table class="iv-table iv-table--cards iv-agent-table" id="iv-agent-webhook-table">
+				<thead>
+					<tr>
+						<th scope="col"><?php p($l->t('Endpoint')); ?></th>
+						<th scope="col"><?php p($l->t('Events')); ?></th>
+						<th scope="col"><?php p($l->t('State')); ?></th>
+						<th scope="col"><?php p($l->t('Last delivery')); ?></th>
+						<th scope="col"><span class="iv-visually-hidden"><?php p($l->t('Actions')); ?></span></th>
+					</tr>
+				</thead>
+				<tbody id="iv-agent-webhook-tbody"></tbody>
+			</table>
+		</div>
+	</div>
+
 	<?php if ($iv_state['isAdmin']): ?>
 	<div class="iv-form-row iv-agent-selfmint">
 		<input type="hidden" name="agent_self_mint" value="0">
