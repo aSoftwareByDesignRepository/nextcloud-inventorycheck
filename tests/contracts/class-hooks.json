@@ -1,6 +1,8 @@
 {
     "iv-access-allowlists": "JS/e2e hook — element carries data-iv-access-allowlists; picker-field children styled",
     "iv-advanced": "<details> 'Advanced restock settings' disclosure — native disclosure chrome, field children styled",
+    "iv-agent-revoke": "JS hook on styled .iv-btn--danger (agent-access.js token row revoke, delegated click)",
+    "iv-agent-rotate": "JS hook on styled .iv-btn--ghost (agent-access.js token row rotate, delegated click)",
     "iv-app--denied": "state modifier on styled .iv-app canvas (access-denied page)",
     "iv-badge--neutral": "explicit neutral badge variant — intentionally resolves to base .iv-badge pill (no accent)",
     "iv-badge--ok": "semantic status marker on styled .iv-badge — active/returned loans render the neutral base pill by design",
@@ -29,6 +31,7 @@
     "iv-stocktake-options": "<details> disclosure wrapper — native chrome",
     "iv-stocktake-save-status": "save-status text node — carries .iv-muted; class is the JS update hook",
     "iv-stocktake-table-host": "mount host for styled stocktake table",
+    "iv-table--cards": "cards-variant marker on styled .iv-table; mobile card transform via .iv-table td[data-cell]::before (app recipe)",
     "iv-transfer-report": "marker on styled .iv-dialog; __verdict/hint children styled",
     "iv-variance-disclosure": "<details> lazy-loaded disclosure wrapper — native chrome",
     "iv-variance-panel": "role=status aria-live host — contents styled"

@@ -63,8 +63,7 @@ $iv_tokens = is_array($iv_state['tokens']) ? $iv_state['tokens'] : [];
 			<tbody id="iv-agent-tbody">
 				<?php foreach ($iv_tokens as $iv_tok): ?>
 				<tr data-token-id="<?php p((string)($iv_tok['id'] ?? '')); ?>" data-token-label="<?php p((string)($iv_tok['label'] ?? '')); ?>"<?php if (($iv_tok['state'] ?? '') !== 'active'): ?> class="iv-agent-row--inactive"<?php endif; ?>>
-					<td data-cell="<?php p($l->t('Label')); ?>">
-						<span class="iv-agent-label"><?php p((string)($iv_tok['label'] ?? '')); ?></span>
+					<td data-cell="<?php p($l->t('Label')); ?>" class="iv-agent-label-cell"><span class="iv-agent-labelcell"><span class="iv-agent-label" title="<?php p((string)($iv_tok['label'] ?? '')); ?>"><?php p((string)($iv_tok['label'] ?? '')); ?></span>
 						<?php if (($iv_tok['state'] ?? '') === 'revoked'): ?>
 							<span class="iv-badge iv-badge--neutral"><?php p($l->t('Revoked')); ?></span>
 						<?php elseif (($iv_tok['state'] ?? '') === 'expired'): ?>
@@ -74,9 +73,8 @@ $iv_tokens = is_array($iv_state['tokens']) ? $iv_state['tokens'] : [];
 						<?php endif; ?>
 						<?php if ($iv_state['isAdmin'] && ($iv_tok['userId'] ?? '') !== ''): ?>
 							<span class="iv-agent-owner"><?php p((string)$iv_tok['userId']); ?></span>
-						<?php endif; ?>
-					</td>
-					<td data-cell="<?php p($l->t('Scopes')); ?>">
+						<?php endif; ?></span></td>
+					<td data-cell="<?php p($l->t('Scopes')); ?>" class="iv-agent-scopes-cell">
 						<span class="iv-agent-scopes">
 						<?php foreach (($iv_tok['scopes'] ?? []) as $iv_scope): ?>
 							<span class="iv-badge iv-badge--neutral iv-agent-scope" title="<?php p((string)$iv_scope); ?>"><?php p((string)($iv_state['scopeLabels'][$iv_scope] ?? $iv_scope)); ?></span>

@@ -32,6 +32,11 @@ final class TransferManifest extends AbstractTransferManifest
 			'access_allowed_group_ids' => ['class' => 'mirrored', 'security' => true, 'refs' => ['kind' => 'gid_list_json'], 'section' => 'access'],
 			'app_admin_user_ids' => ['class' => 'mirrored', 'security' => true, 'refs' => ['kind' => 'uid_list_json'], 'section' => 'access'],
 
+			// ── agent token policy (Settings → AI access) — self-service
+			// mint widens who can mint scoped agent tokens → highlighted
+			// grant ──
+			'agent_self_mint' => ['class' => 'plain', 'security' => true, 'section' => 'agent'],
+
 			// ── office (L3) role + stock-integrity policy ──
 			'office_user_ids' => ['class' => 'plain', 'security' => true, 'refs' => ['kind' => 'uid_list_json'], 'section' => 'office'],
 			'office_group_ids' => ['class' => 'plain', 'security' => true, 'refs' => ['kind' => 'gid_list_json'], 'section' => 'office'],
@@ -101,6 +106,11 @@ final class TransferManifest extends AbstractTransferManifest
 			// target runs its own /journal/verify
 			'journal_last_verify' => 'internal',
 			'journal_last_verify_intact' => 'internal',
+
+			// SSRF dev escape hatch (local test stacks only) — opening
+			// http:// webhook targets on a real instance via a transferred
+			// config would be a security regression → never transferable.
+			'agent_webhook_dev_http' => 'internal',
 
 			// ── internal bookkeeping — never transferred ──
 			'demo_seeded' => 'internal',
@@ -286,6 +296,12 @@ final class TransferManifest extends AbstractTransferManifest
 			// Outbound push ledger to the invoicing app — issue_ref + payload are
 			// bound to the source instance's integration state.
 			'iv_inv_push' => ['class' => 'internal'],
+			// Agent-auth pack state — token_hash values are secret verifiers,
+			// the audit ledger chains to this instance's agent actions, and
+			// webhook rows carry HMAC delivery secrets: all instance-bound.
+			'iv_agent_tokens' => ['class' => 'internal'],
+			'iv_agent_audit' => ['class' => 'internal'],
+			'iv_agent_webhooks' => ['class' => 'internal', 'secret_columns' => ['secret']],
 			'iv_notif_log' => ['class' => 'log'],
 		]);
 	}
