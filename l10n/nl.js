@@ -1479,6 +1479,21 @@ OC.L10N.register(
 	"{qty} × {item} for {person}" : "{qty} × {item} voor {person}",
 	"— choose —" : "— kies —",
 	"★ Remove from favourites" : "★ Uit favorieten verwijderen",
-	"☆ Add to favourites" : "Aan favorieten toevoegen"
+	"☆ Add to favourites" : "Aan favorieten toevoegen",
+	"Endpoint" : "Eindpunt",
+	"Events" : "Gebeurtenissen",
+	"Last delivery" : "Laatste levering",
+	"Webhook endpoints" : "Webhook-eindpunten",
+	"Your AI assistant can register endpoints that receive a signed notification whenever it changes something here. They belong to you — test or revoke them any time." : "Je AI-assistent kan eindpunten registreren die een ondertekende melding ontvangen wanneer hij hier iets wijzigt. Ze zijn van jou — test of herroep ze op elk moment.",
+	"All events" : "Alle gebeurtenissen",
+	"Could not queue the test." : "De test kon niet in de wachtrij worden gezet.",
+	"Disabled" : "Uitgeschakeld",
+	"Endpoint revoked." : "Eindpunt herroepen.",
+	"Endpoints could not be loaded." : "Eindpunten konden niet worden geladen.",
+	"No webhook endpoints yet." : "Nog geen webhook-eindpunten.",
+	"Pending events are dropped — your AI can register a new endpoint any time." : "Gebeurtenissen in behandeling worden verwijderd — je AI kan op elk moment een nieuw eindpunt registreren.",
+	"Stop notifications to" : "Stoppen van meldingen aan",
+	"Test" : "Testen",
+	"Test notification queued — check your endpoint." : "Testmelding in wachtrij — controleer je eindpunt."
 	}
 );

@@ -1479,6 +1479,21 @@ OC.L10N.register(
 	"{qty} × {item} for {person}" : "{qty} × {item} för {person}",
 	"— choose —" : "— välj —",
 	"★ Remove from favourites" : "★ Ta bort från favoriter",
-	"☆ Add to favourites" : "☆ Lägg till i favoriter"
+	"☆ Add to favourites" : "☆ Lägg till i favoriter",
+	"Endpoint" : "Slutpunkt",
+	"Events" : "Händelser",
+	"Last delivery" : "Senaste leverans",
+	"Webhook endpoints" : "Webhook-slutpunkter",
+	"Your AI assistant can register endpoints that receive a signed notification whenever it changes something here. They belong to you — test or revoke them any time." : "Din AI-assistent kan registrera slutpunkter som tar emot ett signerat meddelande när den ändrar något här. De tillhör dig — testa eller återkalla dem när som helst.",
+	"All events" : "Alla händelser",
+	"Could not queue the test." : "Testet kunde inte köas.",
+	"Disabled" : "Inaktiverad",
+	"Endpoint revoked." : "Slutpunkt återkallad.",
+	"Endpoints could not be loaded." : "Slutpunkterna kunde inte läsas in.",
+	"No webhook endpoints yet." : "Inga webhook-slutpunkter ännu.",
+	"Pending events are dropped — your AI can register a new endpoint any time." : "Väntande händelser kasseras — din AI kan registrera en ny slutpunkt när som helst.",
+	"Stop notifications to" : "Stoppa aviseringar till",
+	"Test" : "Testa",
+	"Test notification queued — check your endpoint." : "Testmeddelande i kö — kontrollera din slutpunkt."
 	}
 );

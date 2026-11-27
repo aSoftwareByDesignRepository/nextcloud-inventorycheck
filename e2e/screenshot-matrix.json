@@ -1,78 +1,87 @@
 {
-  "prefix": "iv",
-  "outDir": "craft/web",
-  "viewports": [
-    {
-      "name": "mobile",
-      "width": 320,
-      "height": 800
-    },
-    {
-      "name": "tablet",
-      "width": 768,
-      "height": 800
-    },
-    {
-      "name": "desktop",
-      "width": 1280,
-      "height": 800
-    }
-  ],
-  "surfaces": [
-    {
-      "id": "person-detail",
-      "path": "/people/{personId}",
-      "states": [
-        "populated",
-        "checkin-dialog",
-        "anonymize-dialog"
-      ],
-      "dark": true
-    },
-    {
-      "id": "item-detail-loans",
-      "path": "/items/{itemId}",
-      "states": [
-        "populated",
-        "checkout-dialog"
-      ],
-      "dark": true
-    },
-    {
-      "id": "people",
-      "path": "/people",
-      "states": [
-        "populated",
-        "empty",
-        "person-dialog"
-      ],
-      "emptyDriver": "searchNoMatch",
-      "searchSelector": "#iv-page-root input[type=\"search\"]",
-      "dark": true
-    },
-    {
-      "id": "dashboard-lending",
-      "path": "/",
-      "states": [
-        "populated"
-      ],
-      "dark": true
-    },
-    {
-      "id": "movements-delivery-note",
-      "path": "/movements",
-      "states": [
-        "populated",
-        "delivery-note-dialog"
-      ]
-    },
-    {
-      "id": "people-denied",
-      "path": "/people",
-      "states": [
-        "current"
-      ],
-      "user": "denied"
-    }
-  ]
+ "prefix": "iv",
+ "outDir": "craft/web",
+ "viewports": [
+  {
+   "name": "mobile",
+   "width": 320,
+   "height": 800
+  },
+  {
+   "name": "tablet",
+   "width": 768,
+   "height": 800
+  },
+  {
+   "name": "desktop",
+   "width": 1280,
+   "height": 800
+  }
+ ],
+ "surfaces": [
+  {
+   "id": "person-detail",
+   "path": "/people/{personId}",
+   "states": [
+    "populated",
+    "checkin-dialog",
+    "anonymize-dialog"
+   ],
+   "dark": true
+  },
+  {
+   "id": "item-detail-loans",
+   "path": "/items/{itemId}",
+   "states": [
+    "populated",
+    "checkout-dialog"
+   ],
+   "dark": true
+  },
+  {
+   "id": "people",
+   "path": "/people",
+   "states": [
+    "populated",
+    "empty",
+    "person-dialog"
+   ],
+   "emptyDriver": "searchNoMatch",
+   "searchSelector": "#iv-page-root input[type=\"search\"]",
+   "dark": true
+  },
+  {
+   "id": "dashboard-lending",
+   "path": "/",
+   "states": [
+    "populated"
+   ],
+   "dark": true
+  },
+  {
+   "id": "movements-delivery-note",
+   "path": "/movements",
+   "states": [
+    "populated",
+    "delivery-note-dialog"
+   ]
+  },
+  {
+   "id": "people-denied",
+   "path": "/people",
+   "states": [
+    "current"
+   ],
+   "user": "denied"
+  },
+  {
+   "id": "settings-agent",
+   "path": "/settings/agent",
+   "states": [
+    "populated",
+    "mint-dialog"
+   ],
+   "dark": true
+  }
+ ]
 }

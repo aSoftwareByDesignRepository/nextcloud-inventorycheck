@@ -1479,6 +1479,21 @@ OC.L10N.register(
 	"{qty} × {item} for {person}" : "{qty} × {item} pour {person}",
 	"— choose —" : "— choisir —",
 	"★ Remove from favourites" : "★ Supprimer des favoris",
-	"☆ Add to favourites" : "Ajouter aux favoris"
+	"☆ Add to favourites" : "Ajouter aux favoris",
+	"Endpoint" : "Point de terminaison",
+	"Events" : "Événements",
+	"Last delivery" : "Dernière remise",
+	"Webhook endpoints" : "Points de terminaison webhook",
+	"Your AI assistant can register endpoints that receive a signed notification whenever it changes something here. They belong to you — test or revoke them any time." : "Votre assistant IA peut enregistrer des points de terminaison qui reçoivent une notification signée chaque fois qu’il modifie quelque chose ici. Ils vous appartiennent — testez-les ou révoquez-les à tout moment.",
+	"All events" : "Tous les événements",
+	"Could not queue the test." : "Impossible de mettre le test en file.",
+	"Disabled" : "Désactivé",
+	"Endpoint revoked." : "Point de terminaison révoqué.",
+	"Endpoints could not be loaded." : "Les points de terminaison n’ont pas pu être chargés.",
+	"No webhook endpoints yet." : "Pas encore de points de terminaison webhook.",
+	"Pending events are dropped — your AI can register a new endpoint any time." : "Les événements en attente sont abandonnés — votre IA peut enregistrer un nouveau point de terminaison à tout moment.",
+	"Stop notifications to" : "Arrêter les notifications vers",
+	"Test" : "Tester",
+	"Test notification queued — check your endpoint." : "Notification de test mise en file — vérifiez votre point de terminaison."
 	}
 );

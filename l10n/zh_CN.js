@@ -1479,6 +1479,21 @@ OC.L10N.register(
 	"{qty} × {item} for {person}" : "{qty} × {item} 给 {person}",
 	"— choose —" : "— 请选择 —",
 	"★ Remove from favourites" : "★ 从常用移除",
-	"☆ Add to favourites" : "☆ 加入常用"
+	"☆ Add to favourites" : "☆ 加入常用",
+	"Endpoint" : "端点",
+	"Events" : "事件",
+	"Last delivery" : "上次送达",
+	"Webhook endpoints" : "Webhook 端点",
+	"Your AI assistant can register endpoints that receive a signed notification whenever it changes something here. They belong to you — test or revoke them any time." : "你的 AI 助手可以注册端点，每当它在此处更改内容时，这些端点都会收到签名通知。它们属于你——可以随时测试或撤销。",
+	"All events" : "所有事件",
+	"Could not queue the test." : "无法将测试加入队列。",
+	"Disabled" : "已禁用",
+	"Endpoint revoked." : "端点已撤销。",
+	"Endpoints could not be loaded." : "无法加载端点。",
+	"No webhook endpoints yet." : "还没有 Webhook 端点。",
+	"Pending events are dropped — your AI can register a new endpoint any time." : "待处理的事件将被丢弃——你的 AI 可以随时注册新端点。",
+	"Stop notifications to" : "停止向以下地址发送通知：",
+	"Test" : "测试",
+	"Test notification queued — check your endpoint." : "测试通知已排队——请检查你的端点。"
 	}
 );

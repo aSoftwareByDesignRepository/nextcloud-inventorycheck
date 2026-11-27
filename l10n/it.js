@@ -1479,6 +1479,21 @@ OC.L10N.register(
 	"{qty} × {item} for {person}" : "{qty} × {item} per {person}",
 	"— choose —" : "— scegli —",
 	"★ Remove from favourites" : "★ Rimuovere dai preferiti",
-	"☆ Add to favourites" : "☆ Aggiungere ai preferiti"
+	"☆ Add to favourites" : "☆ Aggiungere ai preferiti",
+	"Endpoint" : "Endpoint",
+	"Events" : "Eventi",
+	"Last delivery" : "Ultima consegna",
+	"Webhook endpoints" : "Endpoint webhook",
+	"Your AI assistant can register endpoints that receive a signed notification whenever it changes something here. They belong to you — test or revoke them any time." : "Il tuo assistente IA può registrare endpoint che ricevono una notifica firmata ogni volta che cambia qualcosa qui. Ti appartengono — provali o revocali in qualsiasi momento.",
+	"All events" : "Tutti gli eventi",
+	"Could not queue the test." : "Impossibile mettere il test in coda.",
+	"Disabled" : "Disabilitato",
+	"Endpoint revoked." : "Endpoint revocato.",
+	"Endpoints could not be loaded." : "Impossibile caricare gli endpoint.",
+	"No webhook endpoints yet." : "Ancora nessun endpoint webhook.",
+	"Pending events are dropped — your AI can register a new endpoint any time." : "Gli eventi in sospeso vengono eliminati — la tua IA può registrare un nuovo endpoint in qualsiasi momento.",
+	"Stop notifications to" : "Interrompere le notifiche a",
+	"Test" : "Testa",
+	"Test notification queued — check your endpoint." : "Notifica di test in coda — controlla il tuo endpoint."
 	}
 );

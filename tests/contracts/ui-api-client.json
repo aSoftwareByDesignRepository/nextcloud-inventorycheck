@@ -1,1241 +1,1287 @@
 {
-  "schemaVersion": 1,
-  "appId": "inventorycheck",
-  "companionDir": "mobile/inventorycheck",
-  "contracts": [
+ "schemaVersion": 1,
+ "appId": "inventorycheck",
+ "companionDir": "mobile/inventorycheck",
+ "contracts": [
+  {
+   "id": "adjust-reason-code",
+   "param": "reasonCode",
+   "description": "Adjust movements require a reasonCode from the fixed catalog whenever require_adjust_reason=1 (default). Server rejects with 422 reason_code_required / invalid_reason_code; web adjust form shows a select fed by GET /api/reason-codes; companion scan/bag review carries reasonCode per line.",
+   "errorCodes": [
+    "reason_code_required",
+    "invalid_reason_code"
+   ],
+   "server": [
     {
-      "id": "adjust-reason-code",
-      "param": "reasonCode",
-      "description": "Adjust movements require a reasonCode from the fixed catalog whenever require_adjust_reason=1 (default). Server rejects with 422 reason_code_required / invalid_reason_code; web adjust form shows a select fed by GET /api/reason-codes; companion scan/bag review carries reasonCode per line.",
-      "errorCodes": [
-        "reason_code_required",
-        "invalid_reason_code"
-      ],
-      "server": [
-        {
-          "file": "lib/Service/ReasonCodes.php",
-          "needles": [
-            "requireForAdjust",
-            "reason_code_required",
-            "invalid_reason_code"
-          ]
-        },
-        {
-          "file": "lib/Service/MovementService.php",
-          "needles": [
-            "ReasonCodes::requireForAdjust($this->config, $reasonCode)"
-          ]
-        }
-      ],
-      "web": [
-        {
-          "file": "js/app.js",
-          "needles": [
-            "reasonCode",
-            "ctx.urls.api.reasonCodes"
-          ]
-        }
-      ],
-      "mobile": [
-        {
-          "file": "src/bag/buildBagScanRequest.ts",
-          "needles": [
-            "reasonCode: line.reasonCode?.trim() || null"
-          ]
-        },
-        {
-          "file": "src/screens/ConfirmScreen.tsx",
-          "needles": [
-            "reasonCode"
-          ]
-        }
-      ]
+     "file": "lib/Service/ReasonCodes.php",
+     "needles": [
+      "requireForAdjust",
+      "reason_code_required",
+      "invalid_reason_code"
+     ]
     },
     {
-      "id": "location-scan-code",
-      "param": "locationCode",
-      "description": "When require_location_scan=1, scan/issue/transfer must confirm the from-location by scanning its barcode. Server enforces 422 location_code_required / location_code_mismatch via LocationScanPolicy::assertMatches; web scan form collects locationCode; companion ScanScreen/BagReview collects it per booking.",
-      "errorCodes": [
-        "location_code_required",
-        "location_code_mismatch"
-      ],
-      "server": [
-        {
-          "file": "lib/Service/LocationScanPolicy.php",
-          "needles": [
-            "assertMatches",
-            "location_code_required",
-            "location_code_mismatch"
-          ]
-        },
-        {
-          "file": "lib/Controller/MobileController.php",
-          "needles": [
-            "locationCode",
-            "location_code"
-          ]
-        }
-      ],
-      "web": [
-        {
-          "file": "js/app.js",
-          "needles": [
-            "locationCode",
-            "name: 'locationCode'"
-          ]
-        }
-      ],
-      "mobile": [
-        {
-          "file": "src/screens/ScanScreen.tsx",
-          "needles": [
-            "locationCode"
-          ]
-        },
-        {
-          "file": "src/bag/buildBagScanRequest.ts",
-          "needles": [
-            "locationCode: line.locationCode?.trim() || null"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "to-location-scan-code",
-      "param": "toLocationCode",
-      "description": "Transfers under require_location_scan must also confirm the destination barcode (toLocationCode). Server validates via LocationScanPolicy::assertMatches with field toLocationCode; web transfer form collects it; companion carries it on transfer lines.",
-      "errorCodes": [
-        "location_code_required",
-        "location_code_mismatch"
-      ],
-      "server": [
-        {
-          "file": "lib/Service/LocationScanPolicy.php",
-          "needles": [
-            "toLocationCode",
-            "location_code_required"
-          ]
-        },
-        {
-          "file": "lib/Controller/MovementController.php",
-          "needles": [
-            "toLocationCodeParam",
-            "to_location_code"
-          ]
-        }
-      ],
-      "web": [
-        {
-          "file": "js/app.js",
-          "needles": [
-            "toLocationCode",
-            "transferBody.toLocationCode"
-          ]
-        }
-      ],
-      "mobile": [
-        {
-          "file": "src/screens/BagReviewScreen.tsx",
-          "needles": [
-            "toLocationCode"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "cycle-count-qty-counted",
-      "param": "qtyCounted",
-      "description": "Counting a stocktake line posts PUT .../cycle-counts/lines/{id} with qtyCounted (integer >= 0). Server validates CycleCountSemantics::isQtyCountedValid -> 422; web stocktake table posts it; companion StocktakeDetailScreen sends it via client.setCycleCount.",
-      "errorCodes": [
-        "validation_failed"
-      ],
-      "server": [
-        {
-          "file": "lib/Service/CycleCountService.php",
-          "needles": [
-            "qtyCounted",
-            "isQtyCountedValid"
-          ]
-        }
-      ],
-      "web": [
-        {
-          "file": "js/app.js",
-          "needles": [
-            "qtyCounted",
-            "cycleCountSetCount"
-          ]
-        }
-      ],
-      "mobile": [
-        {
-          "file": "src/api/client.ts",
-          "needles": [
-            "qtyCounted",
-            "setCycleCount"
-          ]
-        },
-        {
-          "file": "src/screens/StocktakeDetailScreen.tsx",
-          "needles": [
-            "qtyCounted"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "scan-idempotency-key",
-      "param": "clientRequestId",
-      "description": "Companion scan bookings carry clientRequestId so retries replay the stored response instead of double-booking. Server claims/replays via ScanIdempotencyService (409 idempotency_in_flight / idempotency_payload_mismatch); web bookings are single-shot and do not use the key.",
-      "errorCodes": [
-        "idempotency_in_flight",
-        "idempotency_payload_mismatch"
-      ],
-      "server": [
-        {
-          "file": "lib/Controller/MobileController.php",
-          "needles": [
-            "clientRequestId",
-            "client_request_id",
-            "idempotency_payload_mismatch"
-          ]
-        },
-        {
-          "file": "lib/Service/ScanIdempotencyService.php",
-          "needles": [
-            "normalizeClientRequestId",
-            "tryClaim",
-            "releaseStalePending"
-          ]
-        }
-      ],
-      "web": [],
-      "mobile": [
-        {
-          "file": "src/bag/buildBagScanRequest.ts",
-          "needles": [
-            "clientRequestId"
-          ]
-        },
-        {
-          "file": "src/screens/ConfirmScreen.tsx",
-          "needles": [
-            "clientRequestId"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "device-token-header",
-      "param": "X-IV-Device-Token",
-      "description": "Paired scan devices authenticate every /mobile/v1 call with the X-IV-Device-Token header (hash compared server-side). Garbage tokens -> 401 auth_required; deactivated slots -> 402 device_required. Companion request layer sets the header from the paired session.",
-      "errorCodes": [
-        "auth_required",
-        "device_required"
-      ],
-      "server": [
-        {
-          "file": "lib/Controller/MobileController.php",
-          "needles": [
-            "X-IV-Device-Token",
-            "findDeviceByTokenHash",
-            "device_required"
-          ]
-        }
-      ],
-      "web": [],
-      "mobile": [
-        {
-          "file": "src/api/request.ts",
-          "needles": [
-            "X-IV-Device-Token",
-            "session.deviceToken"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "stocktake-close-flags",
-      "param": "abandonUncounted",
-      "description": "Closing a stocktake accepts abandonUncounted (skip uncounted lines) and acknowledgeConflicts (book qty moved mid-count). Server enforces 422 count_incomplete / count_conflict without them; web close dialog sends both flags; companion close flow sends them on /mobile/v1 equivalent.",
-      "errorCodes": [
-        "count_incomplete",
-        "count_conflict",
-        "campaign_not_counting"
-      ],
-      "server": [
-        {
-          "file": "lib/Controller/CycleCountController.php",
-          "needles": [
-            "abandonUncounted",
-            "acknowledgeConflicts"
-          ]
-        },
-        {
-          "file": "lib/Service/CycleCountService.php",
-          "needles": [
-            "count_incomplete",
-            "count_conflict"
-          ]
-        }
-      ],
-      "web": [
-        {
-          "file": "js/app.js",
-          "needles": [
-            "abandonUncounted",
-            "acknowledgeConflicts",
-            "stocktakeCloseQuery"
-          ]
-        }
-      ],
-      "mobile": []
-    },
-    {
-      "id": "device-pair-code",
-      "param": "code",
-      "description": "Pairing a scan device posts {code} to /mobile/v1/devices/pair; server rate-limits failures (429 rate_limited after 10/h/IP) and validates the hashed pair code. Admin settings web surface shows/regenerates the pairCode; companion PairDeviceScreen collects the code.",
-      "errorCodes": [
-        "invalid_pair_code",
-        "rate_limited"
-      ],
-      "server": [
-        {
-          "file": "lib/Controller/MobileController.php",
-          "needles": [
-            "pairDevice",
-            "'code'"
-          ]
-        },
-        {
-          "file": "lib/Service/DevicePairingService.php",
-          "needles": [
-            "pair(",
-            "rate_limited"
-          ]
-        }
-      ],
-      "web": [
-        {
-          "file": "js/common/license-page.js",
-          "needles": [
-            "pairCode",
-            "apiRegenDevice"
-          ]
-        }
-      ],
-      "mobile": [
-        {
-          "file": "src/screens/PairDeviceScreen.tsx",
-          "needles": [
-            "pairCode",
-            "code"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "stocktake-blind-mode",
-      "param": "blind",
-      "description": "Blind counting hides systemQty server-side: GET/PUT cycle-count responses strip book qty when blind=1 (AF-IV13). Web stocktake view toggles it; companion list/detail screens send blind on show/setCount.",
-      "errorCodes": [],
-      "server": [
-        {
-          "file": "lib/Controller/MobileController.php",
-          "needles": [
-            "blind",
-            "systemQty"
-          ]
-        }
-      ],
-      "web": [
-        {
-          "file": "js/app.js",
-          "needles": [
-            "blind",
-            "iv-stocktake-blind"
-          ]
-        }
-      ],
-      "mobile": [
-        {
-          "file": "src/api/client.ts",
-          "needles": [
-            "blind"
-          ]
-        },
-        {
-          "file": "src/screens/StocktakeDetailScreen.tsx",
-          "needles": [
-            "blind"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "item-total-qty",
-      "param": "totalQty",
-      "description": "Read-side response field: items list/detail/by-code carry totalQty = SUM(balances.qty) over actor-visible locations, display-scaled via QtyScale::formatItem. Never stripped by MoneyVisibility (quantity, not money); never client-summed from capped balance rows. Web renders it as the On hand column + item-detail Total line; mobile by-code inherits it automatically.",
-      "errorCodes": [],
-      "server": [
-        {
-          "file": "lib/Service/ItemService.php",
-          "needles": [
-            "'totalQty'",
-            "sumQtyForItem",
-            "sumQtyByItem"
-          ]
-        },
-        {
-          "file": "lib/Db/BalanceMapper.php",
-          "needles": [
-            "sumQtyForItem",
-            "sumQtyByItem"
-          ]
-        },
-        {
-          "file": "lib/Service/QtyScale.php",
-          "needles": [
-            "'totalQty'"
-          ]
-        }
-      ],
-      "web": [
-        {
-          "file": "js/app.js",
-          "needles": [
-            "totalQty",
-            "iv-balance-total",
-            "tr('On hand')"
-          ]
-        }
-      ],
-      "mobile": [
-        {
-          "file": "src/types.ts",
-          "needles": [
-            "totalQty"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "lot-fefo-picker",
-      "param": "locationId",
-      "description": "GET /api/items/{id}/lots returns FEFO-sorted lots with qty+state; the web issue dialog shows the picker (pre-selects earliest expiry, ?locationId= scopes the qty) and the companion client fetchItemLots uses the same shared endpoint.",
-      "errorCodes": [
-        "unknown_item",
-        "unknown_location"
-      ],
-      "server": [
-        {
-          "file": "lib/Controller/LotController.php",
-          "needles": [
-            "itemLots",
-            "lotsWithStock"
-          ]
-        },
-        {
-          "file": "lib/Service/LotService.php",
-          "needles": [
-            "sortFefo",
-            "STATE_EXPIRING"
-          ]
-        }
-      ],
-      "web": [
-        {
-          "file": "js/app.js",
-          "needles": [
-            "data-iv-lot-picker",
-            "ctx.urls.api.itemLots",
-            "expires first"
-          ]
-        }
-      ],
-      "mobile": [
-        {
-          "file": "src/api/client.ts",
-          "needles": [
-            "fetchItemLots",
-            "/lots"
-          ]
-        },
-        {
-          "file": "src/types.ts",
-          "needles": [
-            "ItemLot",
-            "expiresInDays"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "expiry-warn-days",
-      "param": "expiryWarnDays",
-      "description": "Expiry watch window in days (0..365; 0 = watch off). POST /api/config validates via parseExpiryWarnDays and rejects with 422 validation_failed; GET /api/config returns expiryWarnDays; settings UI exposes the field with the 0=off hint.",
-      "errorCodes": [
-        "validation_failed"
-      ],
-      "server": [
-        {
-          "file": "lib/Service/RestockConfig.php",
-          "needles": [
-            "parseExpiryWarnDays",
-            "KEY_EXPIRY_WARN_DAYS"
-          ]
-        },
-        {
-          "file": "lib/Controller/ConfigController.php",
-          "needles": [
-            "parseExpiryWarnDays",
-            "expiryWarnDays"
-          ]
-        }
-      ],
-      "web": [
-        {
-          "file": "js/app.js",
-          "needles": [
-            "expiryWarnDays",
-            "iv-expiry-days-hint"
-          ]
-        }
-      ],
-      "mobile": null
-    },
-    {
-      "id": "reports-dead-stock-days",
-      "param": "days",
-      "description": "Dead-stock window (1..3650, default 90). GET /api/reports/dead-stock?days=N validates range and rejects with 422 validation_failed; the same param drives the dead_stock CSV export kind; /reports page exposes the number input with inline validation.",
-      "errorCodes": [
-        "validation_failed"
-      ],
-      "server": [
-        {
-          "file": "lib/Controller/ReportController.php",
-          "needles": [
-            "deadStock",
-            "'days'",
-            "3650"
-          ]
-        },
-        {
-          "file": "lib/Service/CsvExportService.php",
-          "needles": [
-            "exportDeadStock",
-            "$days < 1 || $days > 3650"
-          ]
-        }
-      ],
-      "web": [
-        {
-          "file": "js/app.js",
-          "needles": [
-            "deadStockReport",
-            "Untouched for at least (days)",
-            "d < 1 || d > 3650"
-          ]
-        }
-      ],
-      "mobile": null
-    },
-    {
-      "id": "product-lookup-barcode",
-      "param": "barcode",
-      "description": "GTIN product lookup (opt-in, office). POST /api/product-lookup validates the barcode and returns invalid_barcode/feature_disabled/rate_limited/unavailable; mobile POST /mobile/v1/product-lookup mirrors it.",
-      "errorCodes": [
-        "invalid_barcode",
-        "feature_disabled",
-        "rate_limited",
-        "unavailable"
-      ],
-      "server": [
-        {
-          "file": "lib/Controller/ProductLookupController.php",
-          "needles": [
-            "getParam('barcode'"
-          ]
-        },
-        {
-          "file": "lib/Service/ProductLookupService.php",
-          "needles": [
-            "invalid_barcode"
-          ]
-        }
-      ],
-      "web": [
-        {
-          "file": "js/common/product-lookup.js",
-          "needles": [
-            "barcode"
-          ]
-        }
-      ],
-      "mobile": [
-        {
-          "file": "src/api/client.ts",
-          "needles": [
-            "postProductLookup",
-            "barcode"
-          ]
-        },
-        {
-          "file": "src/screens/CreateItemScreen.tsx",
-          "needles": [
-            "postProductLookup",
-            "lookupName",
-            "GTIN_RE"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "location-hierarchy",
-      "param": "parentId",
-      "description": "IV-SUB-LOCATIONS read+write field: locations carry parentId (nullable root link, depth cap 1) plus server-computed parentName/parentActive/pathLabel; web list shows pathLabel + parent picker (roots=1 endpoint), companion renders pathLabel on scan/confirm/location screens with name fallback. Server enforces validation_failed for non-root parent, self-parent, or reparenting a location that has children; delete returns location_has_children.",
-      "errorCodes": [
-        "validation_failed",
-        "unknown_location",
-        "location_has_children"
-      ],
-      "server": [
-        {
-          "file": "lib/Service/LocationService.php",
-          "needles": [
-            "assertValidParent",
-            "pathLabel",
-            "location_has_children",
-            "parseParentId",
-            "parentsOf"
-          ]
-        },
-        {
-          "file": "lib/Db/LocationMapper.php",
-          "needles": [
-            "findRoots",
-            "hasChildren",
-            "byIds",
-            "parent_id"
-          ]
-        },
-        {
-          "file": "lib/Service/LocationAclService.php",
-          "needles": [
-            "withDescendants"
-          ]
-        },
-        {
-          "file": "lib/Db/Location.php",
-          "needles": [
-            "'parentId'"
-          ]
-        }
-      ],
-      "web": [
-        {
-          "file": "js/app.js",
-          "needles": [
-            "parentId",
-            "pathLabel",
-            "roots=1",
-            "iv-loc-child",
-            "iv-loc-parent-label"
-          ]
-        }
-      ],
-      "mobile": [
-        {
-          "file": "src/types.ts",
-          "needles": [
-            "parentId",
-            "pathLabel"
-          ]
-        },
-        {
-          "file": "src/screens/ConfirmScreen.tsx",
-          "needles": [
-            "pathLabel"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "order-sheet-receive",
-      "param": "ref",
-      "description": "IV-RECEIVE-AGAINST-ORDER (C-8): POST /mobile/v1/order-sheets/{id}/receive requires ref (client idempotency key, 'orcv:' claim) plus qty>0 and locationId; lotCode required for lot/serial lines. Seat-gated office+; uniform 404 hides non-entitled sheets; mobile payload is qty-only (NN-01). Companion queues the full body in the outbox with the stable ref so a retry replays one booking (NN-03).",
-      "errorCodes": [
-        "validation_failed",
-        "idempotency_in_flight",
-        "idempotency_payload_mismatch",
-        "order_sheet_closed"
-      ],
-      "server": [
-        {
-          "file": "lib/Controller/MobileController.php",
-          "needles": [
-            "orderSheetReceive",
-            "'orcv:' . $ref",
-            "receiveAgainstOrder",
-            "formatMobileOrderSheet"
-          ]
-        },
-        {
-          "file": "lib/Service/MovementService.php",
-          "needles": [
-            "REF_TYPE_ORDER_RECEIVE",
-            "receiveAgainstOrder",
-            "applyReceiveToSheet"
-          ]
-        },
-        {
-          "file": "lib/Service/OrderSheetService.php",
-          "needles": [
-            "listForMobile",
-            "showForMobile",
-            "applyReceiveToSheet"
-          ]
-        }
-      ],
-      "web": null,
-      "mobile": [
-        {
-          "file": "src/api/client.ts",
-          "needles": [
-            "postOrderSheetReceive",
-            "orderReceiveBodyFromOutbox",
-            "/order-sheets/${sheetId}/receive"
-          ]
-        },
-        {
-          "file": "src/screens/OrderSheetDetailScreen.tsx",
-          "needles": [
-            "ref: refRef.current ?? buildOrderReceiveRef()",
-            "locationId",
-            "enqueueOrderReceive",
-            "postOrderSheetReceive"
-          ]
-        },
-        {
-          "file": "src/offline/outbox.ts",
-          "needles": [
-            "enqueueOrderReceive",
-            "postOrderReceive"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "custom-fields",
-      "param": "customValues",
-      "description": "IV-CUSTOM-FIELDS: admin-defined item attributes (text/number/date/select). GET /api/items* payloads carry `customFields` (merged def+value, stale flag on obsolete select values); POST/PUT accept `customValues` keyed by field id with errors rendered inline as cf_<id>. Required is enforced on writes only. Field defs CRUD lives at /api/fields (admin writes; readers get active defs). CSV export adds one column per active field; import maps headers matching field names.",
-      "errorCodes": [
-        "validation_failed",
-        "required",
-        "field_name_exists",
-        "field_type_immutable"
-      ],
-      "server": [
-        {
-          "file": "lib/Service/CustomFieldService.php",
-          "needles": [
-            "validateValues",
-            "assertRequiredSatisfied",
-            "persistValues",
-            "columnMap"
-          ]
-        },
-        {
-          "file": "lib/Controller/FieldController.php",
-          "needles": [
-            "index",
-            "create",
-            "update",
-            "destroy"
-          ]
-        },
-        {
-          "file": "lib/Service/ItemService.php",
-          "needles": [
-            "customValues",
-            "customFields",
-            "payloadForItems"
-          ]
-        },
-        {
-          "file": "lib/Service/CsvImportService.php",
-          "needles": [
-            "customCols",
-            "custom_values"
-          ]
-        },
-        {
-          "file": "lib/Service/CsvExportService.php",
-          "needles": [
-            "customFields",
-            "activeDefs",
-            "valuesForItems"
-          ]
-        }
-      ],
-      "web": [
-        {
-          "file": "js/app.js",
-          "needles": [
-            "customValues",
-            "cf_",
-            "ctx.urls.api.fields",
-            "data-iv-custom-fields",
-            "renderFieldsSettings",
-            "openFieldDialog"
-          ]
-        }
-      ],
-      "mobile": [
-        {
-          "file": "src/types.ts",
-          "needles": [
-            "customFields",
-            "ItemCustomField",
-            "stale"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "journal-verify",
-      "param": "verifiedAt",
-      "description": "IV-COMPLIANCE-PACK: movement journal chain verify + stock-list downloads. GET/POST /api/journal/verify walks the chain office+ and persists the verdict snapshot; GET /api/journal returns entry count + last-verify. Downloads at /api/stock-list.ods|.pdf are browser navigations, office+ gated like the CSV export. Journal writes happen inside movement transactions only \u2014 no client mutation surface, so web/mobile entries pin read/display needles.",
-      "errorCodes": [
-        "journal_busy"
-      ],
-      "server": [
-        {
-          "file": "lib/Service/JournalService.php",
-          "needles": [
-            "canonicalPayload",
-            "entryHashFor",
-            "append",
-            "verify",
-            "journal_busy"
-          ]
-        },
-        {
-          "file": "lib/Service/MovementService.php",
-          "needles": [
-            "$this->journal->append",
-            "movementId"
-          ]
-        },
-        {
-          "file": "lib/Controller/JournalController.php",
-          "needles": [
-            "status",
-            "verify",
-            "requireOffice"
-          ]
-        },
-        {
-          "file": "lib/Controller/StockListController.php",
-          "needles": [
-            "ods",
-            "pdf",
-            "requireOffice"
-          ]
-        },
-        {
-          "file": "lib/Service/StockListService.php",
-          "needles": [
-            "snapshot",
-            "buildOds",
-            "buildPdf"
-          ]
-        }
-      ],
-      "web": [
-        {
-          "file": "js/app.js",
-          "needles": [
-            "renderJournalSettings",
-            "journalVerify",
-            "stockListOds",
-            "stockListPdf",
-            "renderJournalResult"
-          ]
-        }
-      ],
-      "mobile": null,
-      "mobileReason": "office-only audit surface; the companion never verifies chains or downloads print artifacts"
-    },
-    {
-      "id": "custody-lending",
-      "param": "personId",
-      "description": "IV-CUSTODY-LENDING Wave A: person registry + loan lifecycle. POST /api/loans checks out stock to a person (office+, hard non-negative floor); POST /api/loans/{id}/checkin returns qty under CAS (open\u2192partial\u2192returned, lost terminal); POST /api/loans/{id}/lost. GET /api/persons/search merges app persons + NC users (search= canonical, q= alias, truncated flag). POST /api/persons/{id}/anonymize is the GDPR erasure path \u2014 blocked while open loans exist. No DELETE anywhere \u2014 rows are never hard-deleted.",
-      "errorCodes": [
-        "person_has_open_loans",
-        "person_not_loanable",
-        "person_anonymized",
-        "qty_exceeds_outstanding",
-        "loan_not_open",
-        "loan_checkin_conflict",
-        "unknown_person",
-        "unknown_loan",
-        "unknown_item",
-        "unknown_location",
-        "insufficient_stock",
-        "invalid_qty",
-        "inactive_item",
-        "inactive_location",
-        "invalid_lot_code",
-        "serial_qty_must_be_one",
-        "serial_exists",
-        "validation_failed"
-      ],
-      "server": [
-        {
-          "file": "lib/Service/LoanService.php",
-          "needles": [
-            "checkout",
-            "checkin",
-            "markLost",
-            "person_not_loanable",
-            "qty_exceeds_outstanding",
-            "loan_not_open",
-            "tryApplyReturn"
-          ]
-        },
-        {
-          "file": "lib/Service/PersonService.php",
-          "needles": [
-            "search",
-            "create",
-            "anonymize",
-            "person_has_open_loans",
-            "deleted person #",
-            "ncUserId"
-          ]
-        },
-        {
-          "file": "lib/Service/MovementService.php",
-          "needles": [
-            "checkout",
-            "checkin",
-            "REF_TYPE_LOAN",
-            "maxRefLeg"
-          ]
-        },
-        {
-          "file": "lib/Db/LoanMapper.php",
-          "needles": [
-            "tryApplyReturn",
-            "findByIdForUpdate",
-            "openScoped",
-            "dueBetween"
-          ]
-        },
-        {
-          "file": "lib/Service/LoanDueNotifyService.php",
-          "needles": [
-            "loandue:",
-            "dueBetween",
-            "notify"
-          ]
-        },
-        {
-          "file": "lib/Controller/PersonController.php",
-          "needles": [
-            "index",
-            "search",
-            "create",
-            "show",
-            "update",
-            "anonymize",
-            "loans"
-          ]
-        },
-        {
-          "file": "lib/Controller/LoanController.php",
-          "needles": [
-            "index",
-            "create",
-            "checkin",
-            "lost",
-            "forItem"
-          ]
-        }
-      ],
-      "web": [
-        {
-          "file": "js/app.js",
-          "needles": [
-            "personPicker",
-            "openCheckoutDialog",
-            "openCheckinDialog",
-            "openMarkLostDialog",
-            "renderPeople",
-            "renderPersonDetail",
-            "mountItemLoans",
-            "loanStatusBadge",
-            "personsSearch",
-            "loanCheckin",
-            "personAnonymize",
-            "itemLoans",
-            "Create person",
-            "More options",
-            "data-iv-loans-card"
-          ]
-        },
-        {
-          "file": "templates/common/navigation.php",
-          "needles": [
-            "isPeople",
-            "navUrls['people']"
-          ]
-        },
-        {
-          "file": "lib/Controller/PageController.php",
-          "needles": [
-            "people",
-            "person",
-            "personsSearch",
-            "personLoans",
-            "loanCheckin",
-            "itemLoans"
-          ]
-        }
-      ],
-      "mobile": null,
-      "mobileReason": "Wave A is web-only per spec; mobile loans endpoints (/mobile/v1/loans + checkin + signature) land in Wave B."
-    },
-    {
-      "id": "delivery-note-upload",
-      "param": "file",
-      "description": "Receive movements accept an optional Lieferschein photo as multipart `file` (POST /api/movements/{id}/delivery-note office+; POST /mobile/v1/movements/{id}/delivery-note seat/device). Movement DTOs expose hasDeliveryNote only \u2014 the AppData path never serializes (NN-01). Upload is post-commit and must never block the booking (NN-02).",
-      "errorCodes": [
-        "upload_failed",
-        "photo_too_large",
-        "photo_type_invalid",
-        "invalid_kind"
-      ],
-      "server": [
-        {
-          "file": "lib/Service/MovementEvidenceService.php",
-          "needles": [
-            "upload_failed",
-            "photo_too_large",
-            "photo_type_invalid",
-            "invalid_kind",
-            "getDeliveryNotePath"
-          ]
-        }
-      ],
-      "web": [
-        {
-          "file": "js/app.js",
-          "needles": [
-            "deliveryNoteUpload",
-            "deliveryNoteCell",
-            "fd.append('file'",
-            "hasDeliveryNote"
-          ]
-        }
-      ],
-      "mobile": [
-        {
-          "file": "src/api/client.ts",
-          "needles": [
-            "uploadDeliveryNote",
-            "delivery-note"
-          ]
-        },
-        {
-          "file": "src/screens/ConfirmScreen.tsx",
-          "needles": [
-            "deliveryNote",
-            "uploadDeliveryNote"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "custody-mobile",
-      "param": "personId",
-      "description": "IV-CUSTODY Wave B: mobile checkout/checkin. POST /mobile/v1/loans {itemId|code, locationId, personId, qty, dueAt?, lotCode?, conditionOut?, note?, signaturePng? (base64 PNG, post-commit best-effort), clientRequestId}; POST /mobile/v1/loans/{id}/checkin {qty?, conditionIn?, note?, clientRequestId} (qty omitted = full outstanding); POST .../damage-photo multipart + .../signature base64 retry; GET /mobile/v1/items/{id}/loans + /mobile/v1/persons/search (persons only, never NC user directory); GET evidence blobs auth'd. Loan DTOs expose hasSignature/hasDamagePhoto only (NN-07).",
-      "errorCodes": [
-        "unknown_loan",
-        "unknown_person",
-        "person_not_loanable",
-        "loan_not_open",
-        "qty_exceeds_outstanding",
-        "insufficient_stock",
-        "invalid_qty",
-        "invalid_lot_code",
-        "serial_qty_must_be_one",
-        "validation_failed",
-        "signature_invalid",
-        "upload_failed",
-        "photo_too_large",
-        "photo_type_invalid",
-        "idempotency_in_flight",
-        "idempotency_payload_mismatch"
-      ],
-      "server": [
-        {
-          "file": "lib/Service/LoanService.php",
-          "needles": [
-            "checkoutForSeat",
-            "checkinForSeat",
-            "openForItemForSeat"
-          ]
-        },
-        {
-          "file": "lib/Service/LoanEvidenceService.php",
-          "needles": [
-            "storeSignature",
-            "storeDamagePhoto",
-            "signature_invalid",
-            "SIG_MAX_BYTES"
-          ]
-        },
-        {
-          "file": "lib/Service/PersonService.php",
-          "needles": [
-            "searchForSeat"
-          ]
-        },
-        {
-          "file": "lib/Controller/MobileController.php",
-          "needles": [
-            "loansCheckout",
-            "loanCheckin",
-            "loanDamagePhoto",
-            "loanSignature",
-            "itemLoans",
-            "personSearch",
-            "signaturePng",
-            "lci:"
-          ]
-        }
-      ],
-      "web": [
-        {
-          "file": "js/app.js",
-          "needles": [
-            "loanSignature",
-            "loanDamagePhoto",
-            "hasSignature",
-            "hasDamagePhoto",
-            "openLoanEvidence"
-          ]
-        }
-      ],
-      "mobile": [
-        {
-          "file": "src/api/client.ts",
-          "needles": [
-            "postLoanCheckout",
-            "postLoanCheckin",
-            "uploadLoanDamagePhoto",
-            "postLoanSignature",
-            "searchPersons",
-            "getItemLoans",
-            "signaturePng",
-            "damage-photo"
-          ]
-        },
-        {
-          "file": "src/offline/outbox.ts",
-          "needles": [
-            "loanCheckout",
-            "loanCheckin"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "custody-wave-c",
-      "param": "itemId",
-      "description": "IV-CUSTODY Wave C: office reservations (create/cancel/convert->loan/availability) + request queue (approve->loan one-tx/decline) + member tokens (issue/revoke/state) + public portal (state/request/cancel/damage-report; token=credential, uniform-404, throttled, badge-only stock). Mobile: none \u2014 office+portal surfaces only per SPEC.",
-      "errorCodes": [
-        "unknown_reservation",
-        "reservation_not_open",
-        "unknown_request",
-        "request_not_pending",
-        "too_many_open_requests",
-        "portal_not_found",
-        "unknown_loan",
-        "unknown_person",
-        "validation_failed",
-        "insufficient_stock",
-        "conflict"
-      ],
-      "server": [
-        {
-          "file": "lib/Service/ReservationService.php",
-          "needles": [
-            "create",
-            "cancel",
-            "convert",
-            "availability",
-            "sweepExpired",
-            "tryTransition"
-          ]
-        },
-        {
-          "file": "lib/Service/LoanRequestService.php",
-          "needles": [
-            "submitForPerson",
-            "cancelForPerson",
-            "approve",
-            "decline",
-            "tryDecide",
-            "MAX_OPEN_PER_PERSON"
-          ]
-        },
-        {
-          "file": "lib/Service/MemberTokenService.php",
-          "needles": [
-            "issue",
-            "revoke",
-            "resolve",
-            "hash",
-            "ivm_",
-            "random_bytes"
-          ]
-        },
-        {
-          "file": "lib/Controller/PortalController.php",
-          "needles": [
-            "resolveOr404",
-            "sleepDelayOrThrowOnMax",
-            "registerAttempt",
-            "portal_not_found",
-            "badge"
-          ]
-        },
-        {
-          "file": "lib/Migration/Version1019Date20261124080000.php",
-          "needles": [
-            "iv_loan_requests",
-            "iv_reservations",
-            "iv_member_tokens",
-            "token_hash",
-            "addUniqueIndex"
-          ]
-        }
-      ],
-      "web": [
-        {
-          "file": "js/app.js",
-          "needles": [
-            "reservations",
-            "loanRequests",
-            "memberToken"
-          ]
-        }
-      ],
-      "mobile": [],
-      "mobileNote": "Wave C is office+portal only \u2014 no companion endpoints per SPEC."
+     "file": "lib/Service/MovementService.php",
+     "needles": [
+      "ReasonCodes::requireForAdjust($this->config, $reasonCode)"
+     ]
     }
-  ]
+   ],
+   "web": [
+    {
+     "file": "js/app.js",
+     "needles": [
+      "reasonCode",
+      "ctx.urls.api.reasonCodes"
+     ]
+    }
+   ],
+   "mobile": [
+    {
+     "file": "src/bag/buildBagScanRequest.ts",
+     "needles": [
+      "reasonCode: line.reasonCode?.trim() || null"
+     ]
+    },
+    {
+     "file": "src/screens/ConfirmScreen.tsx",
+     "needles": [
+      "reasonCode"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "location-scan-code",
+   "param": "locationCode",
+   "description": "When require_location_scan=1, scan/issue/transfer must confirm the from-location by scanning its barcode. Server enforces 422 location_code_required / location_code_mismatch via LocationScanPolicy::assertMatches; web scan form collects locationCode; companion ScanScreen/BagReview collects it per booking.",
+   "errorCodes": [
+    "location_code_required",
+    "location_code_mismatch"
+   ],
+   "server": [
+    {
+     "file": "lib/Service/LocationScanPolicy.php",
+     "needles": [
+      "assertMatches",
+      "location_code_required",
+      "location_code_mismatch"
+     ]
+    },
+    {
+     "file": "lib/Controller/MobileController.php",
+     "needles": [
+      "locationCode",
+      "location_code"
+     ]
+    }
+   ],
+   "web": [
+    {
+     "file": "js/app.js",
+     "needles": [
+      "locationCode",
+      "name: 'locationCode'"
+     ]
+    }
+   ],
+   "mobile": [
+    {
+     "file": "src/screens/ScanScreen.tsx",
+     "needles": [
+      "locationCode"
+     ]
+    },
+    {
+     "file": "src/bag/buildBagScanRequest.ts",
+     "needles": [
+      "locationCode: line.locationCode?.trim() || null"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "to-location-scan-code",
+   "param": "toLocationCode",
+   "description": "Transfers under require_location_scan must also confirm the destination barcode (toLocationCode). Server validates via LocationScanPolicy::assertMatches with field toLocationCode; web transfer form collects it; companion carries it on transfer lines.",
+   "errorCodes": [
+    "location_code_required",
+    "location_code_mismatch"
+   ],
+   "server": [
+    {
+     "file": "lib/Service/LocationScanPolicy.php",
+     "needles": [
+      "toLocationCode",
+      "location_code_required"
+     ]
+    },
+    {
+     "file": "lib/Controller/MovementController.php",
+     "needles": [
+      "toLocationCodeParam",
+      "to_location_code"
+     ]
+    }
+   ],
+   "web": [
+    {
+     "file": "js/app.js",
+     "needles": [
+      "toLocationCode",
+      "transferBody.toLocationCode"
+     ]
+    }
+   ],
+   "mobile": [
+    {
+     "file": "src/screens/BagReviewScreen.tsx",
+     "needles": [
+      "toLocationCode"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "cycle-count-qty-counted",
+   "param": "qtyCounted",
+   "description": "Counting a stocktake line posts PUT .../cycle-counts/lines/{id} with qtyCounted (integer >= 0). Server validates CycleCountSemantics::isQtyCountedValid -> 422; web stocktake table posts it; companion StocktakeDetailScreen sends it via client.setCycleCount.",
+   "errorCodes": [
+    "validation_failed"
+   ],
+   "server": [
+    {
+     "file": "lib/Service/CycleCountService.php",
+     "needles": [
+      "qtyCounted",
+      "isQtyCountedValid"
+     ]
+    }
+   ],
+   "web": [
+    {
+     "file": "js/app.js",
+     "needles": [
+      "qtyCounted",
+      "cycleCountSetCount"
+     ]
+    }
+   ],
+   "mobile": [
+    {
+     "file": "src/api/client.ts",
+     "needles": [
+      "qtyCounted",
+      "setCycleCount"
+     ]
+    },
+    {
+     "file": "src/screens/StocktakeDetailScreen.tsx",
+     "needles": [
+      "qtyCounted"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "scan-idempotency-key",
+   "param": "clientRequestId",
+   "description": "Companion scan bookings carry clientRequestId so retries replay the stored response instead of double-booking. Server claims/replays via ScanIdempotencyService (409 idempotency_in_flight / idempotency_payload_mismatch); web bookings are single-shot and do not use the key.",
+   "errorCodes": [
+    "idempotency_in_flight",
+    "idempotency_payload_mismatch"
+   ],
+   "server": [
+    {
+     "file": "lib/Controller/MobileController.php",
+     "needles": [
+      "clientRequestId",
+      "client_request_id",
+      "idempotency_payload_mismatch"
+     ]
+    },
+    {
+     "file": "lib/Service/ScanIdempotencyService.php",
+     "needles": [
+      "normalizeClientRequestId",
+      "tryClaim",
+      "releaseStalePending"
+     ]
+    }
+   ],
+   "web": [],
+   "mobile": [
+    {
+     "file": "src/bag/buildBagScanRequest.ts",
+     "needles": [
+      "clientRequestId"
+     ]
+    },
+    {
+     "file": "src/screens/ConfirmScreen.tsx",
+     "needles": [
+      "clientRequestId"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "device-token-header",
+   "param": "X-IV-Device-Token",
+   "description": "Paired scan devices authenticate every /mobile/v1 call with the X-IV-Device-Token header (hash compared server-side). Garbage tokens -> 401 auth_required; deactivated slots -> 402 device_required. Companion request layer sets the header from the paired session.",
+   "errorCodes": [
+    "auth_required",
+    "device_required"
+   ],
+   "server": [
+    {
+     "file": "lib/Controller/MobileController.php",
+     "needles": [
+      "X-IV-Device-Token",
+      "findDeviceByTokenHash",
+      "device_required"
+     ]
+    }
+   ],
+   "web": [],
+   "mobile": [
+    {
+     "file": "src/api/request.ts",
+     "needles": [
+      "X-IV-Device-Token",
+      "session.deviceToken"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "stocktake-close-flags",
+   "param": "abandonUncounted",
+   "description": "Closing a stocktake accepts abandonUncounted (skip uncounted lines) and acknowledgeConflicts (book qty moved mid-count). Server enforces 422 count_incomplete / count_conflict without them; web close dialog sends both flags; companion close flow sends them on /mobile/v1 equivalent.",
+   "errorCodes": [
+    "count_incomplete",
+    "count_conflict",
+    "campaign_not_counting"
+   ],
+   "server": [
+    {
+     "file": "lib/Controller/CycleCountController.php",
+     "needles": [
+      "abandonUncounted",
+      "acknowledgeConflicts"
+     ]
+    },
+    {
+     "file": "lib/Service/CycleCountService.php",
+     "needles": [
+      "count_incomplete",
+      "count_conflict"
+     ]
+    }
+   ],
+   "web": [
+    {
+     "file": "js/app.js",
+     "needles": [
+      "abandonUncounted",
+      "acknowledgeConflicts",
+      "stocktakeCloseQuery"
+     ]
+    }
+   ],
+   "mobile": []
+  },
+  {
+   "id": "device-pair-code",
+   "param": "code",
+   "description": "Pairing a scan device posts {code} to /mobile/v1/devices/pair; server rate-limits failures (429 rate_limited after 10/h/IP) and validates the hashed pair code. Admin settings web surface shows/regenerates the pairCode; companion PairDeviceScreen collects the code.",
+   "errorCodes": [
+    "invalid_pair_code",
+    "rate_limited"
+   ],
+   "server": [
+    {
+     "file": "lib/Controller/MobileController.php",
+     "needles": [
+      "pairDevice",
+      "'code'"
+     ]
+    },
+    {
+     "file": "lib/Service/DevicePairingService.php",
+     "needles": [
+      "pair(",
+      "rate_limited"
+     ]
+    }
+   ],
+   "web": [
+    {
+     "file": "js/common/license-page.js",
+     "needles": [
+      "pairCode",
+      "apiRegenDevice"
+     ]
+    }
+   ],
+   "mobile": [
+    {
+     "file": "src/screens/PairDeviceScreen.tsx",
+     "needles": [
+      "pairCode",
+      "code"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "stocktake-blind-mode",
+   "param": "blind",
+   "description": "Blind counting hides systemQty server-side: GET/PUT cycle-count responses strip book qty when blind=1 (AF-IV13). Web stocktake view toggles it; companion list/detail screens send blind on show/setCount.",
+   "errorCodes": [],
+   "server": [
+    {
+     "file": "lib/Controller/MobileController.php",
+     "needles": [
+      "blind",
+      "systemQty"
+     ]
+    }
+   ],
+   "web": [
+    {
+     "file": "js/app.js",
+     "needles": [
+      "blind",
+      "iv-stocktake-blind"
+     ]
+    }
+   ],
+   "mobile": [
+    {
+     "file": "src/api/client.ts",
+     "needles": [
+      "blind"
+     ]
+    },
+    {
+     "file": "src/screens/StocktakeDetailScreen.tsx",
+     "needles": [
+      "blind"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "item-total-qty",
+   "param": "totalQty",
+   "description": "Read-side response field: items list/detail/by-code carry totalQty = SUM(balances.qty) over actor-visible locations, display-scaled via QtyScale::formatItem. Never stripped by MoneyVisibility (quantity, not money); never client-summed from capped balance rows. Web renders it as the On hand column + item-detail Total line; mobile by-code inherits it automatically.",
+   "errorCodes": [],
+   "server": [
+    {
+     "file": "lib/Service/ItemService.php",
+     "needles": [
+      "'totalQty'",
+      "sumQtyForItem",
+      "sumQtyByItem"
+     ]
+    },
+    {
+     "file": "lib/Db/BalanceMapper.php",
+     "needles": [
+      "sumQtyForItem",
+      "sumQtyByItem"
+     ]
+    },
+    {
+     "file": "lib/Service/QtyScale.php",
+     "needles": [
+      "'totalQty'"
+     ]
+    }
+   ],
+   "web": [
+    {
+     "file": "js/app.js",
+     "needles": [
+      "totalQty",
+      "iv-balance-total",
+      "tr('On hand')"
+     ]
+    }
+   ],
+   "mobile": [
+    {
+     "file": "src/types.ts",
+     "needles": [
+      "totalQty"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "lot-fefo-picker",
+   "param": "locationId",
+   "description": "GET /api/items/{id}/lots returns FEFO-sorted lots with qty+state; the web issue dialog shows the picker (pre-selects earliest expiry, ?locationId= scopes the qty) and the companion client fetchItemLots uses the same shared endpoint.",
+   "errorCodes": [
+    "unknown_item",
+    "unknown_location"
+   ],
+   "server": [
+    {
+     "file": "lib/Controller/LotController.php",
+     "needles": [
+      "itemLots",
+      "lotsWithStock"
+     ]
+    },
+    {
+     "file": "lib/Service/LotService.php",
+     "needles": [
+      "sortFefo",
+      "STATE_EXPIRING"
+     ]
+    }
+   ],
+   "web": [
+    {
+     "file": "js/app.js",
+     "needles": [
+      "data-iv-lot-picker",
+      "ctx.urls.api.itemLots",
+      "expires first"
+     ]
+    }
+   ],
+   "mobile": [
+    {
+     "file": "src/api/client.ts",
+     "needles": [
+      "fetchItemLots",
+      "/lots"
+     ]
+    },
+    {
+     "file": "src/types.ts",
+     "needles": [
+      "ItemLot",
+      "expiresInDays"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "expiry-warn-days",
+   "param": "expiryWarnDays",
+   "description": "Expiry watch window in days (0..365; 0 = watch off). POST /api/config validates via parseExpiryWarnDays and rejects with 422 validation_failed; GET /api/config returns expiryWarnDays; settings UI exposes the field with the 0=off hint.",
+   "errorCodes": [
+    "validation_failed"
+   ],
+   "server": [
+    {
+     "file": "lib/Service/RestockConfig.php",
+     "needles": [
+      "parseExpiryWarnDays",
+      "KEY_EXPIRY_WARN_DAYS"
+     ]
+    },
+    {
+     "file": "lib/Controller/ConfigController.php",
+     "needles": [
+      "parseExpiryWarnDays",
+      "expiryWarnDays"
+     ]
+    }
+   ],
+   "web": [
+    {
+     "file": "js/app.js",
+     "needles": [
+      "expiryWarnDays",
+      "iv-expiry-days-hint"
+     ]
+    }
+   ],
+   "mobile": null
+  },
+  {
+   "id": "reports-dead-stock-days",
+   "param": "days",
+   "description": "Dead-stock window (1..3650, default 90). GET /api/reports/dead-stock?days=N validates range and rejects with 422 validation_failed; the same param drives the dead_stock CSV export kind; /reports page exposes the number input with inline validation.",
+   "errorCodes": [
+    "validation_failed"
+   ],
+   "server": [
+    {
+     "file": "lib/Controller/ReportController.php",
+     "needles": [
+      "deadStock",
+      "'days'",
+      "3650"
+     ]
+    },
+    {
+     "file": "lib/Service/CsvExportService.php",
+     "needles": [
+      "exportDeadStock",
+      "$days < 1 || $days > 3650"
+     ]
+    }
+   ],
+   "web": [
+    {
+     "file": "js/app.js",
+     "needles": [
+      "deadStockReport",
+      "Untouched for at least (days)",
+      "d < 1 || d > 3650"
+     ]
+    }
+   ],
+   "mobile": null
+  },
+  {
+   "id": "product-lookup-barcode",
+   "param": "barcode",
+   "description": "GTIN product lookup (opt-in, office). POST /api/product-lookup validates the barcode and returns invalid_barcode/feature_disabled/rate_limited/unavailable; mobile POST /mobile/v1/product-lookup mirrors it.",
+   "errorCodes": [
+    "invalid_barcode",
+    "feature_disabled",
+    "rate_limited",
+    "unavailable"
+   ],
+   "server": [
+    {
+     "file": "lib/Controller/ProductLookupController.php",
+     "needles": [
+      "getParam('barcode'"
+     ]
+    },
+    {
+     "file": "lib/Service/ProductLookupService.php",
+     "needles": [
+      "invalid_barcode"
+     ]
+    }
+   ],
+   "web": [
+    {
+     "file": "js/common/product-lookup.js",
+     "needles": [
+      "barcode"
+     ]
+    }
+   ],
+   "mobile": [
+    {
+     "file": "src/api/client.ts",
+     "needles": [
+      "postProductLookup",
+      "barcode"
+     ]
+    },
+    {
+     "file": "src/screens/CreateItemScreen.tsx",
+     "needles": [
+      "postProductLookup",
+      "lookupName",
+      "GTIN_RE"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "location-hierarchy",
+   "param": "parentId",
+   "description": "IV-SUB-LOCATIONS read+write field: locations carry parentId (nullable root link, depth cap 1) plus server-computed parentName/parentActive/pathLabel; web list shows pathLabel + parent picker (roots=1 endpoint), companion renders pathLabel on scan/confirm/location screens with name fallback. Server enforces validation_failed for non-root parent, self-parent, or reparenting a location that has children; delete returns location_has_children.",
+   "errorCodes": [
+    "validation_failed",
+    "unknown_location",
+    "location_has_children"
+   ],
+   "server": [
+    {
+     "file": "lib/Service/LocationService.php",
+     "needles": [
+      "assertValidParent",
+      "pathLabel",
+      "location_has_children",
+      "parseParentId",
+      "parentsOf"
+     ]
+    },
+    {
+     "file": "lib/Db/LocationMapper.php",
+     "needles": [
+      "findRoots",
+      "hasChildren",
+      "byIds",
+      "parent_id"
+     ]
+    },
+    {
+     "file": "lib/Service/LocationAclService.php",
+     "needles": [
+      "withDescendants"
+     ]
+    },
+    {
+     "file": "lib/Db/Location.php",
+     "needles": [
+      "'parentId'"
+     ]
+    }
+   ],
+   "web": [
+    {
+     "file": "js/app.js",
+     "needles": [
+      "parentId",
+      "pathLabel",
+      "roots=1",
+      "iv-loc-child",
+      "iv-loc-parent-label"
+     ]
+    }
+   ],
+   "mobile": [
+    {
+     "file": "src/types.ts",
+     "needles": [
+      "parentId",
+      "pathLabel"
+     ]
+    },
+    {
+     "file": "src/screens/ConfirmScreen.tsx",
+     "needles": [
+      "pathLabel"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "order-sheet-receive",
+   "param": "ref",
+   "description": "IV-RECEIVE-AGAINST-ORDER (C-8): POST /mobile/v1/order-sheets/{id}/receive requires ref (client idempotency key, 'orcv:' claim) plus qty>0 and locationId; lotCode required for lot/serial lines. Seat-gated office+; uniform 404 hides non-entitled sheets; mobile payload is qty-only (NN-01). Companion queues the full body in the outbox with the stable ref so a retry replays one booking (NN-03).",
+   "errorCodes": [
+    "validation_failed",
+    "idempotency_in_flight",
+    "idempotency_payload_mismatch",
+    "order_sheet_closed"
+   ],
+   "server": [
+    {
+     "file": "lib/Controller/MobileController.php",
+     "needles": [
+      "orderSheetReceive",
+      "'orcv:' . $ref",
+      "receiveAgainstOrder",
+      "formatMobileOrderSheet"
+     ]
+    },
+    {
+     "file": "lib/Service/MovementService.php",
+     "needles": [
+      "REF_TYPE_ORDER_RECEIVE",
+      "receiveAgainstOrder",
+      "applyReceiveToSheet"
+     ]
+    },
+    {
+     "file": "lib/Service/OrderSheetService.php",
+     "needles": [
+      "listForMobile",
+      "showForMobile",
+      "applyReceiveToSheet"
+     ]
+    }
+   ],
+   "web": null,
+   "mobile": [
+    {
+     "file": "src/api/client.ts",
+     "needles": [
+      "postOrderSheetReceive",
+      "orderReceiveBodyFromOutbox",
+      "/order-sheets/${sheetId}/receive"
+     ]
+    },
+    {
+     "file": "src/screens/OrderSheetDetailScreen.tsx",
+     "needles": [
+      "ref: refRef.current ?? buildOrderReceiveRef()",
+      "locationId",
+      "enqueueOrderReceive",
+      "postOrderSheetReceive"
+     ]
+    },
+    {
+     "file": "src/offline/outbox.ts",
+     "needles": [
+      "enqueueOrderReceive",
+      "postOrderReceive"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "custom-fields",
+   "param": "customValues",
+   "description": "IV-CUSTOM-FIELDS: admin-defined item attributes (text/number/date/select). GET /api/items* payloads carry `customFields` (merged def+value, stale flag on obsolete select values); POST/PUT accept `customValues` keyed by field id with errors rendered inline as cf_<id>. Required is enforced on writes only. Field defs CRUD lives at /api/fields (admin writes; readers get active defs). CSV export adds one column per active field; import maps headers matching field names.",
+   "errorCodes": [
+    "validation_failed",
+    "required",
+    "field_name_exists",
+    "field_type_immutable"
+   ],
+   "server": [
+    {
+     "file": "lib/Service/CustomFieldService.php",
+     "needles": [
+      "validateValues",
+      "assertRequiredSatisfied",
+      "persistValues",
+      "columnMap"
+     ]
+    },
+    {
+     "file": "lib/Controller/FieldController.php",
+     "needles": [
+      "index",
+      "create",
+      "update",
+      "destroy"
+     ]
+    },
+    {
+     "file": "lib/Service/ItemService.php",
+     "needles": [
+      "customValues",
+      "customFields",
+      "payloadForItems"
+     ]
+    },
+    {
+     "file": "lib/Service/CsvImportService.php",
+     "needles": [
+      "customCols",
+      "custom_values"
+     ]
+    },
+    {
+     "file": "lib/Service/CsvExportService.php",
+     "needles": [
+      "customFields",
+      "activeDefs",
+      "valuesForItems"
+     ]
+    }
+   ],
+   "web": [
+    {
+     "file": "js/app.js",
+     "needles": [
+      "customValues",
+      "cf_",
+      "ctx.urls.api.fields",
+      "data-iv-custom-fields",
+      "renderFieldsSettings",
+      "openFieldDialog"
+     ]
+    }
+   ],
+   "mobile": [
+    {
+     "file": "src/types.ts",
+     "needles": [
+      "customFields",
+      "ItemCustomField",
+      "stale"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "journal-verify",
+   "param": "verifiedAt",
+   "description": "IV-COMPLIANCE-PACK: movement journal chain verify + stock-list downloads. GET/POST /api/journal/verify walks the chain office+ and persists the verdict snapshot; GET /api/journal returns entry count + last-verify. Downloads at /api/stock-list.ods|.pdf are browser navigations, office+ gated like the CSV export. Journal writes happen inside movement transactions only — no client mutation surface, so web/mobile entries pin read/display needles.",
+   "errorCodes": [
+    "journal_busy"
+   ],
+   "server": [
+    {
+     "file": "lib/Service/JournalService.php",
+     "needles": [
+      "canonicalPayload",
+      "entryHashFor",
+      "append",
+      "verify",
+      "journal_busy"
+     ]
+    },
+    {
+     "file": "lib/Service/MovementService.php",
+     "needles": [
+      "$this->journal->append",
+      "movementId"
+     ]
+    },
+    {
+     "file": "lib/Controller/JournalController.php",
+     "needles": [
+      "status",
+      "verify",
+      "requireOffice"
+     ]
+    },
+    {
+     "file": "lib/Controller/StockListController.php",
+     "needles": [
+      "ods",
+      "pdf",
+      "requireOffice"
+     ]
+    },
+    {
+     "file": "lib/Service/StockListService.php",
+     "needles": [
+      "snapshot",
+      "buildOds",
+      "buildPdf"
+     ]
+    }
+   ],
+   "web": [
+    {
+     "file": "js/app.js",
+     "needles": [
+      "renderJournalSettings",
+      "journalVerify",
+      "stockListOds",
+      "stockListPdf",
+      "renderJournalResult"
+     ]
+    }
+   ],
+   "mobile": null,
+   "mobileReason": "office-only audit surface; the companion never verifies chains or downloads print artifacts"
+  },
+  {
+   "id": "custody-lending",
+   "param": "personId",
+   "description": "IV-CUSTODY-LENDING Wave A: person registry + loan lifecycle. POST /api/loans checks out stock to a person (office+, hard non-negative floor); POST /api/loans/{id}/checkin returns qty under CAS (open→partial→returned, lost terminal); POST /api/loans/{id}/lost. GET /api/persons/search merges app persons + NC users (search= canonical, q= alias, truncated flag). POST /api/persons/{id}/anonymize is the GDPR erasure path — blocked while open loans exist. No DELETE anywhere — rows are never hard-deleted.",
+   "errorCodes": [
+    "person_has_open_loans",
+    "person_not_loanable",
+    "person_anonymized",
+    "qty_exceeds_outstanding",
+    "loan_not_open",
+    "loan_checkin_conflict",
+    "unknown_person",
+    "unknown_loan",
+    "unknown_item",
+    "unknown_location",
+    "insufficient_stock",
+    "invalid_qty",
+    "inactive_item",
+    "inactive_location",
+    "invalid_lot_code",
+    "serial_qty_must_be_one",
+    "serial_exists",
+    "validation_failed"
+   ],
+   "server": [
+    {
+     "file": "lib/Service/LoanService.php",
+     "needles": [
+      "checkout",
+      "checkin",
+      "markLost",
+      "person_not_loanable",
+      "qty_exceeds_outstanding",
+      "loan_not_open",
+      "tryApplyReturn"
+     ]
+    },
+    {
+     "file": "lib/Service/PersonService.php",
+     "needles": [
+      "search",
+      "create",
+      "anonymize",
+      "person_has_open_loans",
+      "deleted person #",
+      "ncUserId"
+     ]
+    },
+    {
+     "file": "lib/Service/MovementService.php",
+     "needles": [
+      "checkout",
+      "checkin",
+      "REF_TYPE_LOAN",
+      "maxRefLeg"
+     ]
+    },
+    {
+     "file": "lib/Db/LoanMapper.php",
+     "needles": [
+      "tryApplyReturn",
+      "findByIdForUpdate",
+      "openScoped",
+      "dueBetween"
+     ]
+    },
+    {
+     "file": "lib/Service/LoanDueNotifyService.php",
+     "needles": [
+      "loandue:",
+      "dueBetween",
+      "notify"
+     ]
+    },
+    {
+     "file": "lib/Controller/PersonController.php",
+     "needles": [
+      "index",
+      "search",
+      "create",
+      "show",
+      "update",
+      "anonymize",
+      "loans"
+     ]
+    },
+    {
+     "file": "lib/Controller/LoanController.php",
+     "needles": [
+      "index",
+      "create",
+      "checkin",
+      "lost",
+      "forItem"
+     ]
+    }
+   ],
+   "web": [
+    {
+     "file": "js/app.js",
+     "needles": [
+      "personPicker",
+      "openCheckoutDialog",
+      "openCheckinDialog",
+      "openMarkLostDialog",
+      "renderPeople",
+      "renderPersonDetail",
+      "mountItemLoans",
+      "loanStatusBadge",
+      "personsSearch",
+      "loanCheckin",
+      "personAnonymize",
+      "itemLoans",
+      "Create person",
+      "More options",
+      "data-iv-loans-card"
+     ]
+    },
+    {
+     "file": "templates/common/navigation.php",
+     "needles": [
+      "isPeople",
+      "navUrls['people']"
+     ]
+    },
+    {
+     "file": "lib/Controller/PageController.php",
+     "needles": [
+      "people",
+      "person",
+      "personsSearch",
+      "personLoans",
+      "loanCheckin",
+      "itemLoans"
+     ]
+    }
+   ],
+   "mobile": null,
+   "mobileReason": "Wave A is web-only per spec; mobile loans endpoints (/mobile/v1/loans + checkin + signature) land in Wave B."
+  },
+  {
+   "id": "delivery-note-upload",
+   "param": "file",
+   "description": "Receive movements accept an optional Lieferschein photo as multipart `file` (POST /api/movements/{id}/delivery-note office+; POST /mobile/v1/movements/{id}/delivery-note seat/device). Movement DTOs expose hasDeliveryNote only — the AppData path never serializes (NN-01). Upload is post-commit and must never block the booking (NN-02).",
+   "errorCodes": [
+    "upload_failed",
+    "photo_too_large",
+    "photo_type_invalid",
+    "invalid_kind"
+   ],
+   "server": [
+    {
+     "file": "lib/Service/MovementEvidenceService.php",
+     "needles": [
+      "upload_failed",
+      "photo_too_large",
+      "photo_type_invalid",
+      "invalid_kind",
+      "getDeliveryNotePath"
+     ]
+    }
+   ],
+   "web": [
+    {
+     "file": "js/app.js",
+     "needles": [
+      "deliveryNoteUpload",
+      "deliveryNoteCell",
+      "fd.append('file'",
+      "hasDeliveryNote"
+     ]
+    }
+   ],
+   "mobile": [
+    {
+     "file": "src/api/client.ts",
+     "needles": [
+      "uploadDeliveryNote",
+      "delivery-note"
+     ]
+    },
+    {
+     "file": "src/screens/ConfirmScreen.tsx",
+     "needles": [
+      "deliveryNote",
+      "uploadDeliveryNote"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "custody-mobile",
+   "param": "personId",
+   "description": "IV-CUSTODY Wave B: mobile checkout/checkin. POST /mobile/v1/loans {itemId|code, locationId, personId, qty, dueAt?, lotCode?, conditionOut?, note?, signaturePng? (base64 PNG, post-commit best-effort), clientRequestId}; POST /mobile/v1/loans/{id}/checkin {qty?, conditionIn?, note?, clientRequestId} (qty omitted = full outstanding); POST .../damage-photo multipart + .../signature base64 retry; GET /mobile/v1/items/{id}/loans + /mobile/v1/persons/search (persons only, never NC user directory); GET evidence blobs auth'd. Loan DTOs expose hasSignature/hasDamagePhoto only (NN-07).",
+   "errorCodes": [
+    "unknown_loan",
+    "unknown_person",
+    "person_not_loanable",
+    "loan_not_open",
+    "qty_exceeds_outstanding",
+    "insufficient_stock",
+    "invalid_qty",
+    "invalid_lot_code",
+    "serial_qty_must_be_one",
+    "validation_failed",
+    "signature_invalid",
+    "upload_failed",
+    "photo_too_large",
+    "photo_type_invalid",
+    "idempotency_in_flight",
+    "idempotency_payload_mismatch"
+   ],
+   "server": [
+    {
+     "file": "lib/Service/LoanService.php",
+     "needles": [
+      "checkoutForSeat",
+      "checkinForSeat",
+      "openForItemForSeat"
+     ]
+    },
+    {
+     "file": "lib/Service/LoanEvidenceService.php",
+     "needles": [
+      "storeSignature",
+      "storeDamagePhoto",
+      "signature_invalid",
+      "SIG_MAX_BYTES"
+     ]
+    },
+    {
+     "file": "lib/Service/PersonService.php",
+     "needles": [
+      "searchForSeat"
+     ]
+    },
+    {
+     "file": "lib/Controller/MobileController.php",
+     "needles": [
+      "loansCheckout",
+      "loanCheckin",
+      "loanDamagePhoto",
+      "loanSignature",
+      "itemLoans",
+      "personSearch",
+      "signaturePng",
+      "lci:"
+     ]
+    }
+   ],
+   "web": [
+    {
+     "file": "js/app.js",
+     "needles": [
+      "loanSignature",
+      "loanDamagePhoto",
+      "hasSignature",
+      "hasDamagePhoto",
+      "openLoanEvidence"
+     ]
+    }
+   ],
+   "mobile": [
+    {
+     "file": "src/api/client.ts",
+     "needles": [
+      "postLoanCheckout",
+      "postLoanCheckin",
+      "uploadLoanDamagePhoto",
+      "postLoanSignature",
+      "searchPersons",
+      "getItemLoans",
+      "signaturePng",
+      "damage-photo"
+     ]
+    },
+    {
+     "file": "src/offline/outbox.ts",
+     "needles": [
+      "loanCheckout",
+      "loanCheckin"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "custody-wave-c",
+   "param": "itemId",
+   "description": "IV-CUSTODY Wave C: office reservations (create/cancel/convert->loan/availability) + request queue (approve->loan one-tx/decline) + member tokens (issue/revoke/state) + public portal (state/request/cancel/damage-report; token=credential, uniform-404, throttled, badge-only stock). Mobile: none — office+portal surfaces only per SPEC.",
+   "errorCodes": [
+    "unknown_reservation",
+    "reservation_not_open",
+    "unknown_request",
+    "request_not_pending",
+    "too_many_open_requests",
+    "portal_not_found",
+    "unknown_loan",
+    "unknown_person",
+    "validation_failed",
+    "insufficient_stock",
+    "conflict"
+   ],
+   "server": [
+    {
+     "file": "lib/Service/ReservationService.php",
+     "needles": [
+      "create",
+      "cancel",
+      "convert",
+      "availability",
+      "sweepExpired",
+      "tryTransition"
+     ]
+    },
+    {
+     "file": "lib/Service/LoanRequestService.php",
+     "needles": [
+      "submitForPerson",
+      "cancelForPerson",
+      "approve",
+      "decline",
+      "tryDecide",
+      "MAX_OPEN_PER_PERSON"
+     ]
+    },
+    {
+     "file": "lib/Service/MemberTokenService.php",
+     "needles": [
+      "issue",
+      "revoke",
+      "resolve",
+      "hash",
+      "ivm_",
+      "random_bytes"
+     ]
+    },
+    {
+     "file": "lib/Controller/PortalController.php",
+     "needles": [
+      "resolveOr404",
+      "sleepDelayOrThrowOnMax",
+      "registerAttempt",
+      "portal_not_found",
+      "badge"
+     ]
+    },
+    {
+     "file": "lib/Migration/Version1019Date20261124080000.php",
+     "needles": [
+      "iv_loan_requests",
+      "iv_reservations",
+      "iv_member_tokens",
+      "token_hash",
+      "addUniqueIndex"
+     ]
+    }
+   ],
+   "web": [
+    {
+     "file": "js/app.js",
+     "needles": [
+      "reservations",
+      "loanRequests",
+      "memberToken"
+     ]
+    }
+   ],
+   "mobile": [],
+   "mobileNote": "Wave C is office+portal only — no companion endpoints per SPEC."
+  },
+  {
+   "id": "agent-token-mint-label",
+   "param": "label",
+   "description": "Agent-token mint requires a non-empty label ≤190 chars (and preset or an explicit scopes list — custom preset with zero scopes is rejected). Server rejects 422 invalid_type (non-string JSON label — boundary coercion ban) / invalid_length (empty-after-trim or >190). The /settings/agent mint dialog collects the label in #iv-agent-label (client gate 'Enter a label.', server fields map → 'Check the label.') and the scope chips under preset=custom ('Pick at least one permission.'). Web-only admin surface: the companion authenticates via Basic app-password and never mints agent tokens (api-matrix companion_impact n_a).",
+   "errorCodes": [
+    "invalid_type",
+    "invalid_length",
+    "invalid"
+   ],
+   "server": [
+    {
+     "file": "lib/Controller/AgentTokenController.php",
+     "needles": [
+      "'label' => 'invalid_type'",
+      "'scopes' => 'invalid_type'",
+      "'preset' => 'invalid'"
+     ]
+    },
+    {
+     "file": "lib/Agent/AgentTokenService.php",
+     "needles": [
+      "'label' => 'invalid_length'"
+     ]
+    }
+   ],
+   "web": [
+    {
+     "file": "templates/parts/settings/agent.php",
+     "needles": [
+      "iv-agent-label",
+      "iv-agent-label-error",
+      "iv-agent-chips",
+      "iv-agent-scopes-error"
+     ]
+    },
+    {
+     "file": "js/agent-access.js",
+     "needles": [
+      "Enter a label.",
+      "Pick at least one permission.",
+      "Check the label."
+     ]
+    }
+   ],
+   "mobile": null
+  }
+ ]
 }

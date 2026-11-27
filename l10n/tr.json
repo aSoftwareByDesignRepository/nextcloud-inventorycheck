@@ -1513,6 +1513,21 @@
 		"{qty} × {item} for {person}": "{qty} × {item} — {person}",
 		"— choose —": "— seç —",
 		"★ Remove from favourites": "★ Sık kullanılanlardan çıkar",
-		"☆ Add to favourites": "☆ Sık kullanılanlara ekle"
+		"☆ Add to favourites": "☆ Sık kullanılanlara ekle",
+		"Endpoint": "Uç nokta",
+		"Events": "Olaylar",
+		"Last delivery": "Son teslimat",
+		"Webhook endpoints": "Webhook uç noktaları",
+		"Your AI assistant can register endpoints that receive a signed notification whenever it changes something here. They belong to you — test or revoke them any time.": "Yapay zekâ asistanınız, burada bir şeyi değiştirdiğinde imzalı bildirim alan uç noktalar kaydedebilir. Bunlar size aittir — istediğiniz zaman test edin veya iptal edin.",
+		"All events": "Tüm olaylar",
+		"Could not queue the test.": "Test kuyruğa alınamadı.",
+		"Disabled": "Devre dışı",
+		"Endpoint revoked.": "Uç nokta iptal edildi.",
+		"Endpoints could not be loaded.": "Uç noktalar yüklenemedi.",
+		"No webhook endpoints yet.": "Henüz webhook uç noktası yok.",
+		"Pending events are dropped — your AI can register a new endpoint any time.": "Bekleyen olaylar atılır — yapay zekânız istediği zaman yeni bir uç nokta kaydedebilir.",
+		"Stop notifications to": "Bildirimleri durdur:",
+		"Test": "Test",
+		"Test notification queued — check your endpoint.": "Test bildirimi kuyruğa alındı — uç noktanızı kontrol edin."
 	}
 }

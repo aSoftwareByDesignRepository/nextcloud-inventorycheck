@@ -273,10 +273,11 @@ async function runAxe(page) {
 const READY = {
 	'people': '#iv-page-root input[type="search"]',
 	'person-detail': '#iv-page-root .iv-section:nth-of-type(2)',
-	'item-detail-loans': '.iv-section:has(table .iv-btn--small) button.iv-btn--secondary',
+	'item-detail-loans': '[data-iv-action="loan-checkout"]',
 	'dashboard-lending': '[data-iv-loans-card]',
 	'movements-delivery-note': '[data-iv-action^="delivery-note"]',
 	'people-denied': '.iv-app--denied, #iv-denied-main',
+	'settings-agent': '#iv-agent-access',
 }
 
 async function waitPeopleListSettled(page) {
@@ -501,29 +502,35 @@ const STATE_DRIVERS = {
 		'empty': driveEmpty,
 		'person-dialog': async (page) => {
 			await waitPeopleListSettled(page)
-			await page.locator('#iv-page-actions button.iv-btn--primary, #iv-page-actions button.primary').first().click()
+			await page.locator('#iv-page-actions button.iv-btn--primary, #iv-page-actions button.primary').first().click({ timeout: 12_000 })
 			await expect(page.locator(insideDlg('[data-iv-action="dialog-confirm"]'))).toBeVisible({ timeout: 12_000 })
 		},
 	},
 	'person-detail': {
 		'checkin-dialog': async (page) => {
 			await waitPersonLoansSettled(page)
-			await page.locator('#iv-page-root table .iv-btn--small:not(.iv-btn--ghost)').first().click()
+			await page.locator('#iv-page-root [data-iv-action="loan-checkin"]').first().click({ timeout: 12_000 })
 			await expect(page.locator(insideDlg('[data-iv-action="dialog-confirm"]'))).toBeVisible({ timeout: 12_000 })
 		},
 		'anonymize-dialog': async (page) => {
 			await waitPersonLoansSettled(page)
-			await page.locator('#iv-page-actions .iv-btn--ghost').first().click()
+			await page.locator('#iv-page-actions .iv-btn--ghost').first().click({ timeout: 12_000 })
 			await expect(page.locator(insideDlg('[data-iv-action="dialog-confirm"]'))).toBeVisible({ timeout: 12_000 })
 		},
 	},
 	'item-detail-loans': {
 		'checkout-dialog': async (page) => {
-			// The Lent out section carries the loans table; its Check out button
-			// is the secondary action inside that section.
-			const lentSection = page.locator('.iv-section', { has: page.locator('table .iv-btn--small') })
-			await lentSection.locator('button.iv-btn--secondary').first().click()
+			// The Lent out section exposes Check out via a data-iv-action hook
+			// (class names churned once already — hooks are stable).
+			await page.locator('[data-iv-action="loan-checkout"]').first().click({ timeout: 12_000 })
 			await expect(page.locator(insideDlg('[data-iv-action="dialog-confirm"]'))).toBeVisible({ timeout: 12_000 })
+		},
+	},
+	'settings-agent': {
+		'mint-dialog': async (page) => {
+			// Connect CTA exists in both empty-state and table-actions mounts.
+			await page.locator('#iv-agent-connect').first().click()
+			await expect(page.locator('#iv-agent-mint-dialog[open]')).toBeVisible({ timeout: 12_000 })
 		},
 	},
 	'movements-delivery-note': {
@@ -863,8 +870,7 @@ test.describe('SCREENSHOT_MATRIX capture — F2 custody delta', () => {
 		await page.goto(`${APP}/items/${fixtures.itemId}`, { waitUntil: 'domcontentloaded' })
 		await settle(page)
 		await probeDialogLifecycle(page, 'checkout', async () => {
-			const lentSection = page.locator('.iv-section', { has: page.locator('table .iv-btn--small') })
-			const b = lentSection.locator('button.iv-btn--secondary').first()
+			const b = page.locator('[data-iv-action="loan-checkout"]').first()
 			if (!(await b.count())) return false
 			await b.click()
 			return true
@@ -872,8 +878,7 @@ test.describe('SCREENSHOT_MATRIX capture — F2 custody delta', () => {
 		// Keyboard-only leg: person picker combobox fully by keyboard.
 		{
 			const kb = { id: 'checkout-keyboard-combobox', checks: {}, status: 'ok', fails: [] }
-			const lentSection = page.locator('.iv-section', { has: page.locator('table .iv-btn--small') })
-			await lentSection.locator('button.iv-btn--secondary').first().click()
+			await page.locator('[data-iv-action="loan-checkout"]').first().click({ timeout: 12_000 })
 			await waitDialog(page)
 			const combo = page.locator(insideDlg('[role="combobox"], .iv-combobox input, .iv-picker input')).first()
 			if (await combo.count()) {
@@ -904,13 +909,13 @@ test.describe('SCREENSHOT_MATRIX capture — F2 custody delta', () => {
 		await settle(page)
 		await waitPersonLoansSettled(page)
 		await probeDialogLifecycle(page, 'checkin', async () => {
-			const b = page.locator('#iv-page-root table .iv-btn--small:not(.iv-btn--ghost)').first()
+			const b = page.locator('#iv-page-root [data-iv-action="loan-checkin"]').first()
 			if (!(await b.count())) return false
 			await b.click()
 			return true
 		})
 		await probeDialogLifecycle(page, 'mark-lost', async () => {
-			const b = page.locator('#iv-page-root table .iv-btn--small.iv-btn--ghost').first()
+			const b = page.locator('#iv-page-root table td.actions-cell .iv-btn--compact.iv-btn--ghost').first()
 			if (!(await b.count())) return false
 			await b.click()
 			return true
